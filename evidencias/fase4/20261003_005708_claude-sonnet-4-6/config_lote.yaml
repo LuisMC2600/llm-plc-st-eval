@@ -1,0 +1,19 @@
+experimento:
+  nombre: eval_llm_plc_st
+  ejecuciones_por_tarea: 3
+  estrategias:
+  - zero_shot
+  - few_shot
+generacion:
+  temperature: 0.2
+  max_tokens: 2500
+modelos:
+- id: claude-sonnet-4-6
+  proveedor: anthropic
+rutas:
+  tareas: tasks.json
+  repositorio: ../data/definitivo
+  log: ../data/definitivo/log.jsonl
+reintentos:
+  max_intentos: 4
+  espera_base_s: 5

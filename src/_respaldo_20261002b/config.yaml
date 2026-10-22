@@ -1,0 +1,45 @@
+# =====================================================================
+# Configuración del pipeline experimental — Tesis LLMs + PLC (FIE-UTP)
+# Tarea 3.3 del plan de trabajo. TODO parámetro experimental vive aquí:
+# el código no contiene valores "mágicos" (variable de control).
+# =====================================================================
+
+experimento:
+  nombre: "eval_llm_plc_st"
+  ejecuciones_por_tarea: 3          # múltiples ejecuciones -> consistencia
+  # Banco completo: 30 tareas (sin filtro_tareas). 30 x 4 modelos x 2 estrategias
+  # x 3 ejecuciones = 720. Ampliacion 2026-09-09: T2 y T4 pasan de n=1 a n=3
+  # (C5-C8); T3 y T5 quedan como estudio de caso cualitativo con n=1.
+  estrategias: ["zero_shot", "few_shot"]
+
+# Parámetros de generación FIJOS para todos los modelos (variable de control).
+# Confirmar valores definitivos en la calibración/dry run (tarea 3.4).
+generacion:
+  temperature: 0.2
+  max_tokens: 2500                  # según presupuesto de la propuesta
+
+# Identificadores EXACTOS de modelo — CONGELADOS el 2026-09-09 (riesgo R1).
+# Verificado ese dia contra la documentacion de cada proveedor:
+#   claude-sonnet-4-20250514 fue RETIRADO el 2026-06-15; su reemplazo oficial
+#   es claude-sonnet-4-6, que ademas es el modelo usado en el piloto y en el
+#   articulo CITDES, por lo que se conserva la comparabilidad. gpt-4o se fija
+#   al snapshot con fecha que la API reporto en el piloto, para que el alias
+#   no se desplace a mitad del experimento.
+modelos:
+  - id: "gpt-4o-2024-08-06"         # snapshot reportado por la API en el piloto
+    proveedor: "openai"
+  - id: "claude-sonnet-4-6"         # mismo modelo del piloto; activo, retiro no antes de 2027-02-17
+    proveedor: "anthropic"
+  - id: "gemini-2.5-pro"            # activo en la familia 2.5 al 2026-09-09
+    proveedor: "google"
+  - id: "qwen2.5-coder:14b"         # servido localmente por Ollama
+    proveedor: "ollama"
+
+rutas:
+  tareas: "tasks.json"
+  repositorio: "../data/definitivo"        # repositorio/<modelo>/<tarea>/<estrategia>/ejec_<n>.st
+  log: "../data/definitivo/log.jsonl"      # dato primario tabular del estudio
+
+reintentos:
+  max_intentos: 4
+  espera_base_s: 5                  # backoff exponencial: 5, 10, 20, 40 s

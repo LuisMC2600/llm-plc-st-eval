@@ -1,0 +1,5 @@
+modelo,estrategia,n,tokens_salida_media,latencia_media_s
+claude-sonnet-4-6,few_shot,36,495.14,7.98
+claude-sonnet-4-6,zero_shot,36,756.89,12.45
+gpt-4o,few_shot,36,300.72,8.62
+gpt-4o,zero_shot,36,413.92,11.78

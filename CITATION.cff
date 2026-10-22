@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+title: >-
+  llm-plc-st-eval: evaluación de LLMs como asistentes de programación de PLC
+  en Structured Text (IEC 61131-3)
+message: Si utiliza este material, por favor cítelo como se indica.
+type: software
+authors:
+  - family-names: Montenegro Caballero
+    given-names: Luis Carlos
+    affiliation: >-
+      Facultad de Ingeniería Eléctrica,
+      Universidad Tecnológica de Panamá
+abstract: >-
+  Infraestructura experimental, datos y evidencias del trabajo de graduación
+  «LLMs como Asistentes de Programación PLC en la Academia: Evaluación de
+  Precisión y Confiabilidad». Incluye un banco de 30 tareas de programación de
+  PLC, las 720 respuestas de cuatro modelos de lenguaje (gpt-4o-2024-08-06,
+  claude-sonnet-4-6, gemini-3.1-pro-preview y qwen2.5-coder:14b) bajo dos
+  estrategias de prompting, 23 bancos de prueba autoverificables en Structured
+  Text, los scripts de compilación y simulación en CODESYS, la evaluación con
+  rúbrica, la taxonomía de errores PLC-CWE y el análisis estadístico.
+keywords:
+  - IEC 61131-3
+  - Structured Text
+  - controladores lógicos programables
+  - modelos de lenguaje
+  - ingeniería de prompts
+  - CODESYS
+license: MIT
+version: 1.0-tesis
+date-released: '2026-11-01'

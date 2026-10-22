@@ -1,0 +1,13 @@
+tarea,id,ciclo_ms,esperado,paso_esperado,compila,veredicto,resultado,pasos_fallidos,coincide,seg_sim,nota,errores
+I5,claude-sonnet-4-6|few_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1",,,4.7000000000000002,,
+I5,claude-sonnet-4-6|few_shot|ejec_2,10,,,1,2,"1,1,1,1,1,2,1",5,,4.7000000000000002,,
+I5,claude-sonnet-4-6|few_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1",,,4.7000000000000002,,
+I5,claude-sonnet-4-6|zero_shot|ejec_1,10,,,0,,,,,,El tipo 'UDINT' no puede compararse con el tipo 'TIME',2
+I5,claude-sonnet-4-6|zero_shot|ejec_2,10,,,1,2,"1,1,1,2,2,2,2","3,4,5,6",,4.7000000000000002,,
+I5,claude-sonnet-4-6|zero_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1",,,4.7000000000000002,,
+I5,gpt-4o|few_shot|ejec_1,10,,,1,2,"1,1,1,1,1,2,1",5,,4.7000000000000002,,
+I5,gpt-4o|few_shot|ejec_2,10,,,1,2,"1,2,2,2,2,2,2","1,2,3,4,5,6",,4.7000000000000002,,
+I5,gpt-4o|few_shot|ejec_3,10,,,1,2,"1,2,2,2,2,2,2","1,2,3,4,5,6",,4.7000000000000002,,
+I5,gpt-4o|zero_shot|ejec_1,10,,,1,2,"1,2,2,2,2,2,2","1,2,3,4,5,6",,4.7000000000000002,,
+I5,gpt-4o|zero_shot|ejec_2,10,,,1,2,"1,1,1,2,2,2,2","3,4,5,6",,4.7000000000000002,,
+I5,gpt-4o|zero_shot|ejec_3,10,,,1,2,"1,2,2,2,2,2,2","1,2,3,4,5,6",,4.7000000000000002,,

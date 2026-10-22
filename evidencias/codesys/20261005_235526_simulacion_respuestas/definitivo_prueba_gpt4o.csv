@@ -1,0 +1,25 @@
+tarea,id,ciclo_ms,esperado,paso_esperado,compila,veredicto,resultado,pasos_fallidos,coincide,seg_sim,nota,errores,pou
+A6,gpt-4o-2024-08-06|few_shot|ejec_1,10,,,0,,,,,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;  ,22,
+A6,gpt-4o-2024-08-06|few_shot|ejec_2,10,,,0,,,,,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;  ,32,
+A6,gpt-4o-2024-08-06|few_shot|ejec_3,10,,,0,,,,,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;  ,32,
+A6,gpt-4o-2024-08-06|zero_shot|ejec_1,10,,,0,,,,,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := FALSE;  	forzadoActivo[i] := FALSE;  END_FOR;  ,14,
+A6,gpt-4o-2024-08-06|zero_shot|ejec_2,10,,,0,,,,,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	forzados[i] := FALSE;  	actuador[i] := FALSE;  END_FOR;  ,16,
+A6,gpt-4o-2024-08-06|zero_shot|ejec_3,10,,,0,,,,,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;  ,32,
+B1,gpt-4o-2024-08-06|few_shot|ejec_1,10,,,1,2,"1,1,1,1,1,1,2",6,,1.8,,,
+B1,gpt-4o-2024-08-06|few_shot|ejec_2,10,,,1,2,"1,1,1,1,1,1,2",6,,1.8,,,
+B1,gpt-4o-2024-08-06|few_shot|ejec_3,10,,,1,2,"1,1,1,1,1,1,2",6,,1.8,,,
+B1,gpt-4o-2024-08-06|zero_shot|ejec_1,10,,,1,2,"1,1,1,1,1,1,2",6,,1.8,,,
+B1,gpt-4o-2024-08-06|zero_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1",,,1.8,,,
+B1,gpt-4o-2024-08-06|zero_shot|ejec_3,10,,,1,2,"1,1,1,1,1,1,2",6,,1.8,,,
+B7,gpt-4o-2024-08-06|few_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,1.8,,,FUNCTION
+B7,gpt-4o-2024-08-06|few_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,1.8,,,FUNCTION
+B7,gpt-4o-2024-08-06|few_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,1.8,,,FUNCTION
+B7,gpt-4o-2024-08-06|zero_shot|ejec_1,10,,,0,,,,,,'modoAuto' no es ninguna entrada de 'SELBOMBA',3,PROGRAM
+B7,gpt-4o-2024-08-06|zero_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,1.8,,,FUNCTION_BLOCK
+B7,gpt-4o-2024-08-06|zero_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,1.8,,,FUNCTION_BLOCK
+C3,gpt-4o-2024-08-06|few_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1,1,1,1,1",,,23.100000000000001,,,
+C3,gpt-4o-2024-08-06|few_shot|ejec_2,10,,,0,,,,,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion',2,
+C3,gpt-4o-2024-08-06|few_shot|ejec_3,10,,,0,,,,,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion',2,
+C3,gpt-4o-2024-08-06|zero_shot|ejec_1,10,,,0,,,,,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion',2,
+C3,gpt-4o-2024-08-06|zero_shot|ejec_2,10,,,0,,,,,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion',2,
+C3,gpt-4o-2024-08-06|zero_shot|ejec_3,10,,,0,,,,,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion',2,

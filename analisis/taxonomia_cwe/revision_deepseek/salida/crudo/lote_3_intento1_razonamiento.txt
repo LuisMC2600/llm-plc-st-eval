@@ -1,0 +1,518 @@
+Necesito responder solo con JSON list. Debo analizar cada caso y asignar categoría principal según causa raíz del primer paso fallido. Categorías exactas.
+
+Debo revisar cada código y pasos fallidos. Vamos uno por uno.
+
+Primero, entender tareas.
+
+Caso J51: tarea B8 contador de aperturas con flanco. Código:
+VAR puertaAbiertaAnterior
+IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta; END_IF
+Lógica reset, contador si puertaAbierta AND NOT anterior, luego actualizar anterior, luego aviso.
+Posible problema: inicialización de puertaAbiertaAnterior. Si en el primer ciclo puertaAbierta es FALSE, NOT anterior TRUE, asigna FALSE. Si puertaAbierta TRUE en primer ciclo, asigna TRUE. Eso no parece mal. Pero revisemos: "IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta;" en cada ciclo solo si anterior FALSE. En el primer ciclo con puertaAbierta TRUE, asigna TRUE, luego después IF puertaAbierta AND NOT anterior -> FALSE, no cuenta. El flanco inicial de apertura si puertaAbierta empieza FALSE y luego TRUE, primer ciclo FALSE: anterior = FALSE; actualización anterior = FALSE. Segundo ciclo TRUE: contador +1. Bien. Si puertaAbierta inicia TRUE y requerimiento primer flanco? Banco probable inicia con puertaAbierta FALSE. El código no tiene edge persistente entre ciclos? Sí.
+
+¿Por qué falla? Paso 1: primer flanco: 1 apertura. El código no inicializa nAperturas? Declaración nAperturas INT (no init). Variables no inicializadas en CODESYS? INT por defecto 0 probablemente. nAperturas := nAperturas + 1. Bien. Pasos 2,3 bien. Umbral >=5 bien. Reset: si reset TRUE, nAperturas := 0, aviso FALSE. Luego contador si puertaAbierta AND NOT anterior. Si reset se mantiene TRUE, puede contar? "IF reset THEN nAperturas := 0; aviso := FALSE; END_IF" luego "if puertaAbierta AND NOT anterior THEN nAperturas := nAperturas +1" aunque reset TRUE, entonces cuenta y tendría 1. Después aviso se fuerza en lógica final si nAperturas >=5 else FALSE. Entonces con reset TRUE, nAperturas no se desactiva? Suena mal para reset. Paso 8 "Tras soltar el reset vuelve a contar", no falla? Lista pasos fallidos incluye paso 8, además de 1-6? El paso 8 falló. Quizá por la lógica de reset y actualización de anterior.
+
+Pero pide categoría principal que explica el primer paso fallido. El primer paso fallido listado es "Paso 1" requisito "Primer flanco: 1 apertura (funcion nominal)". Si el código falla el paso 1, la causa raíz podría ser FLANCO (conteo/disparo por nivel en lugar de flanco, memoria actualizada mal). En código, la inicialización: IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta; END_IF. Si puertaAbiertaAnterior es FALSE en el ciclo inicial y puertaAbierta es FALSE, asigna FALSE. Si puertaAbiertaAbierta es TRUE en ciclo inicial, asigna TRUE. En ambos casos no es un flanco inicial porque la primera lectura se usa como valor anterior. Si el banco de pruebas comienza con puertaAbierta TRUE antes de la primera ejecución (por ejemplo, primera llamada con puertaAbierta TRUE), el requisito "Primer flanco: 1 apertura" espera que un flanco de FALSE a TRUE en entrada (quizá se produce entre ciclo 0 y ciclo 1) se cuente. El código puede fallar por la inicialización de la memoria del estado anterior. Vamos a analizar: Supongamos que en la primera ejecución puertaAbierta = TRUE (el banco aplica flanco: estado anterior era FALSE, ahora TRUE). El código IF NOT puertaAbiertaAnterior (inicialmente FALSE) THEN puertaAbiertaAnterior := TRUE; END_IF => no flanco, por lo que no cuenta. Debería usar flanco si anterior inicial FALSE y puertaAbierta TRUE. Entonces falla primer flanco. La razón es la inicialización incorrecta del estado anterior: asigna el estado actual en el primer ciclo en lugar de tratarlo como memoria persistente previa. Eso es FLANCO (memoria del estado anterior actualizada en el orden equivocado / inicialización incorrecta). La categoría FLANCO.
+
+J07: Contador CTU. Código usa C1: CTU; asigna PV:=12; luego IF sensorPieza THEN C1.CU := TRUE ELSE FALSE; IF btnReset THEN C1.RESET := TRUE ELSE FALSE; cuenta := C1.CV; IF C1.Q THEN loteListo:=TRUE ELSE FALSE. No invoca el bloque contador C1. En CODESYS, un CTU es un bloque de función. Para que funcione, debe ser invocado con C1(CU:=sensorPieza, RESET:=btnReset, PV:=12). Aquí solo se asignan sus entradas, pero no se llama. En CODESYS, los FB se invocan como C1(CU := ..., RESET := ..., PV := ...). Asignar entradas sin llamar no actualiza CV, Q. O si se usa C1.CU := TRUE quizá no llama. Por tanto no cuenta. El primer paso fallido: Primer flanco ascendente cuenta 1. La causa raíz es contador no invocado. Categoría FLANCO (conteo o disparo por nivel en lugar de por flanco, contador no invocado o incrementado sin evento). En categorías FLANCO incluye "contador no invocado o incrementado sin evento". Perfecto.
+
+J22, J32, J38, J44: semáforo. Necesitan analizar cada uno.
+
+Caso J22: semáforo. Paso fallido 7: "Deshabilitado estando en rojo: amarillo intermitente 1 s/1 s medido con verde y rojo vigilados: mezcla TEMPORIZACION y SECUENCIA". El código:
+IF habilitado THEN
+   IF NOT prevHab THEN estado :=0; tFase(IN:=FALSE, PT:=T#20S); END_IF;
+   CASE estado ...
+   tBlink(IN:=FALSE, PT:=T#1S); blink:=FALSE;
+ELSE
+   luzV:=FALSE; luzR:=FALSE;
+   tFase(IN:=FALSE, PT:=T#20S);
+   tBlink(IN:= NOT tBlink.Q, PT:=T#1S);
+   luzA := tBlink.Q;
+END_IF;
+prevHab := habilitado;
+
+En modo deshabilitado, utiliza TP con IN := NOT tBlink.Q, PT:=1S. Es un patrón para rearmar el pulso: cuando Q FALSE, IN TRUE, pulso de 1s; cuando Q TRUE, IN FALSE, pero TP Q permanece TRUE por duración del pulso, después expira y Q FALSE, IN TRUE de nuevo. Para TP en CODESYS, cuando IN se pone TRUE, Q se activa durante PT. Si IN FALSE mientras Q es TRUE, Q permanece? TP es pulso: Q TRUE mientras el temporizador esté corriendo, no requiere IN mantenido. Al expirar Q FALSE. Con IN := NOT Q se genera un pulso repetitivo: Q inicia TRUE, IN FALSE; al expirar Q FALSE, IN TRUE, pulso, etc. Eso produce luzA = Q: 1s ON y 1s OFF? Veamos: al inicio Q FALSE, IN TRUE, Q TRUE por 1s; luzA TRUE. Después de 1s, Q FALSE, IN TRUE, Q TRUE de nuevo inmediatamente? El TP es nivel/disparo de pulso. Cuando Q expira, el bloque evalúa IN=TRUE en el mismo ciclo? Sí, y start timer, Q se activa otra vez. Por tanto el tiempo OFF puede ser cero, no 1s apagado. La salida luzA es Q, que estará TRUE durante 1s y luego se rearma inmediatamente. El requisito pide 1 s encendido, 1 s apagado. El código no genera apagado de 1s, porque rearma el pulso en el flanco de Q bajando sin mantener IN bajo por 1s. La salida amarillo intermitente es solo pulso de 1s ON y 0s OFF? Depende de la ejecución. En el ciclo en que tBlink.Q cambia a FALSE, la expresión NOT tBlink.Q es TRUE, por lo que arranca de nuevo. Entonces el ciclo de parpadeo es 1s encendido, 0s apagado (o un ciclo de scan de apagado), no cumple. Sin embargo, también al deshabilitar estando en rojo, tBlink ya estaba llamada con IN:=FALSE en el ciclo anterior y blink FALSE. Entonces al primer ciclo con habilitado FALSE: tBlink(IN:=NOT Q) con Q FALSE => TRUE, Q TRUE; salida TRUE. Así que luzA encendida. Al expirar un segundo, Q FALSE, IN se rearma. Posiblemente falla por temporización. La categoría principal para primer paso fallido (paso 7) es TEMPORIZACION, porque no cumple el patrón de intermitencia 1s/1s (tipo de temporizador equivocado o rearmado mal). Aunque el enunciado dice "mezcla TEMPORIZACION y SECUENCIA", la categoría que explica el fallo es temporización (TP no genera off de 1s). Revisemos otras posibilidades: al deshabilitar desde rojo, el código apaga luzV y luzR, luzA parpadea. No hay un mal estado de secuencia. El problema es el temporizador de parpadeo. Respondo TEMPORIZACION.
+
+J32: semáforo código:
+IF habilitado THEN
+  CASE estado...
+  bBlinkTrig := FALSE;
+  tBlink(IN := FALSE, PT := T#1S);
+ELSE
+  luzV:=FALSE; luzR:=FALSE;
+  tBlink(IN := bBlinkTrig, PT := T#1S);
+  IF NOT tBlink.Q AND NOT bBlinkTrig THEN bBlinkTrig := TRUE; END_IF;
+  IF tBlink.Q THEN bBlinkTrig := FALSE; END_IF;
+  luzA := tBlink.Q;
+  tFase(IN:=FALSE, PT:=T#20S);
+  estado :=0;
+END_IF;
+No actualiza prevHab? En código no veo prevHab. Al habilitar no reinicia estado? Está "estado := 0" en ELSE (deshabilitado), y tFase reset? En habilitado CASE arranca en estado 0, no hay flanco, pero está bien. En modo intermitente, usa TP y una lógica bBlinkTrig para rearmarlo. Veamos secuencia:
+Inicial bBlinkTrig FALSE. tBlink(IN:=FALSE, PT:=1S) -> Q FALSE. IF NOT Q AND NOT bBlinkTrig => TRUE, bBlinkTrig := TRUE. IF Q? no. En el mismo ciclo no llama tBlink de nuevo. El próximo ciclo: tBlink(IN:=TRUE) -> Q TRUE; luego IF NOT Q AND NOT b... false; IF tBlink.Q THEN bBlinkTrig:=FALSE. Entonces durante Q TRUE, bBlinkTrig FALSE. Cuando Q expira y baja, en el siguiente ciclo tBlink(IN:=FALSE) Q FALSE; luego IF NOT Q AND NOT bBlinkTrig (TRUE AND TRUE) => bBlinkTrig TRUE; en el mismo ciclo no se activa. Al próximo ciclo, tBlink(IN:=TRUE) -> Q TRUE. Entonces hay un ciclo de scan (o dos) de demora. debería generar aproximadamente 1s ON y un scan OFF. No 1s off. Similar problem. Categoría TEMPORIZACION.
+
+J38: semáforo:
+IF NOT habilitado THEN
+    tIntermitente(IN := TRUE, PT := T#1S);
+    luzV := FALSE; luzR := FALSE; luzA := tIntermitente.Q;
+    tCiclo(IN := FALSE);
+    estado := 0;
+ELSE
+    tIntermitente(IN := FALSE);
+    CASE estado ...
+END_IF
+Usa tIntermitente: TON con IN:=TRUE continuo. TON con IN TRUE mantiene Q TRUE después de PT (no intermitente, simplemente luzA fija encendida al cabo de 1s). No parpadea. Eso es TEMPORIZACION: tipo temporizador equivocado (TON en lugar de TP o lógica de parpadeo). El paso 7 falla: amarillo intermitente no intermitente. Categoría TEMPORIZACION.
+
+J44: semáforo:
+IF NOT habilitado THEN
+   estado :=0; tFase(IN:=FALSE, PT:=T#20S);
+   tParpadeo(IN := NOT tParpadeo.Q AND NOT bParpadeoOn, PT := T#1S);
+   IF tParpadeo.Q THEN bParpadeoOn := NOT bParpadeoOn; END_IF;
+   luzV:=FALSE; luzA:=bParpadeoOn; luzR:=FALSE;
+ELSE
+   tParpadeo(IN:=FALSE, PT:=T#1S);
+   bParpadeoOn := FALSE;
+   CASE estado...
+Similar a J32, usa TP con rearme, pero luego alterna bParpadeoOn solo en flanco de Q. Al inicio bParpadeoOn FALSE, tParpadeo IN := NOT Q AND NOT bOn = TRUE, Q TRUE; luego IF Q THEN bParpadeoOn := NOT FALSE = TRUE. luzA TRUE. Después Q expira; al próximo ciclo tParpadeo(IN:=NOT FALSE AND NOT TRUE) = FALSE, Q FALSE; IF Q no; luzA permanece bOn TRUE (no alterna). No enciende/apaga. Parece que bParpadeoOn se queda TRUE indefinidamente. Por tanto falla intermitencia. Categoría TEMPORIZACION (lógica de intermitencia mal implementada). Sin embargo, el paso 7 es el único, pide "medido con verde y rojo vigilados: mezcla TEMPORIZACION y SECUENCIA". El código apaga verde y rojo, así que quizá no hay fallo de secuencia. SOLO temporización. Categoría TEMPORIZACION.
+
+Casos J09, J10, J20, J25, J34, J41: proceso llenado. Debo analizar cada uno y primer fallo.
+
+J09: Código:
+VAR estado INT := 0;
+IF btnParo THEN ...
+ELSIF btnInicio THEN
+  CASE estado OF
+    0: IF btnInicio THEN estado:=1; END_IF;
+    1: vLlenado:=TRUE; IF nivelAlto THEN vLlenado:=FALSE; estado:=2; tMezcla(IN:=TRUE, PT:=T#60S); END_IF;
+    2: motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado:=3; END_IF;
+    3: vDescarga := TRUE; IF nivelBajo THEN vDescarga:=FALSE; estado:=0; END_IF;
+  END_CASE;
+END_IF;
+
+Problem: En estado 2, motorMezcla := tMezcla.Q. Al pasar a estado 2, en el mismo ciclo se ejecuta tMezcla(IN:=TRUE) en estado 1? No, estado se puso 2, luego sigue CASE, no hay ELSE. En el siguiente ciclo, estado 2: motorMezcla := tMezcla.Q. Eso está bien: tMezcla Q es FALSE al inicio, entonces motorMezcla FALSE! Y en la siguiente línea IF NOT tMezcla.Q THEN estado:=3. Por tanto, al entrar en mezcla, Q aún no ha expirado, motorMezcla := tMezcla.Q (FALSE), y transiciona inmediatamente a descarga. O en el mismo ciclo? Vamos a ver: en estado 1 cuando nivelAlto TRUE, se pone estado:=2 y tMezcla(IN:=TRUE). El CASE no evalúa estado 2 en el mismo ciclo? En ST, CASE evaluado una vez, el selector estado al inicio de CASE es 1, así que no. El próximo ciclo, CASE estado 2: motorMezcla := tMezcla.Q (todavía FALSE porque el temporizador acaba de iniciarse y 1 ciclo no ha transcurrido 60s), luego IF NOT tMezcla.Q THEN estado:=3. Por lo tanto, la transición a descarga ocurre inmediatamente, sin mezcla. El primer paso fallido es paso 2 "Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues". El error es temp: comprueba tMezcla.Q en lugar de esperar a que expire; usa Q como salida del temporizador TON, Q es FALSE mientras no ha terminado, por lo que la lógica está invertida. Debería ser IF tMezcla.Q THEN estado:=3; motorMezcla TRUE durante tMezcla. Categoría principal: TEMPORIZACION (temporizador tipo? En realidad usa TON pero condición de transición invertida: espera Q inactivo en vez de Q activo). Aunque es secuencia transición errónea, la causa raíz es temporización. El paso dice "mezcla SECUENCIA y TEMPORIZACION". La categoría permitida primera: TEMPORIZACION. Revisamos si primer fallo es paso 2, no paso 1. El código no muestra paso 1 fallido. Para paso 2, el fallo es que en mezcla, motor no activo y transición inmediata. La causa raíz es temporizador mal usado (TON Q falso al inicio). Categoría TEMPORIZACION.
+
+J10: Código:
+CASE estado OF
+  0: salidas apagadas; IF btnInicio THEN estado:=1; END_IF
+  1: vLlenado TRUE; IF nivelAlto THEN vLlenado FALSE; estado:=2; tMezcla(IN:=TRUE, PT:=T#60S); END_IF
+  2: motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado:=3; END_IF
+  3: vDescarga TRUE; IF nivelBajo THEN vDescarga FALSE; estado:=0; END_IF
+END_CASE
+IF btnParo THEN salidas apagadas estado:=0; tMezcla(IN:=FALSE); END_IF
+
+Similar a J09: motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado:=3. Al entrar a estado 2, Q FALSE, motor apagado y transición inmediata. Primer fallo paso 2. Categoría TEMPORIZACION.
+
+J20: Código:
+VAR estado INT; timerMezcla TON;
+IF NOT btnInicio THEN estado := 0; END_IF
+CASE estado OF
+ 0: salidas apagadas; IF btnInicio THEN estado:=1; END_IF
+ 1: vLlenado TRUE; IF nivelAlto THEN vLlenado FALSE; estado:=2; timerMezcla(IN:=TRUE, PT:=T#60S); END_IF
+ 2: motorMezcla := TRUE; timerMezcla(IN:=TRUE); IF timerMezcla.Q THEN motorMezcla:=FALSE; estado:=3; END_IF
+ 3: vDescarga TRUE; IF nivelBajo THEN vDescarga FALSE; estado:=0; END_IF
+END_CASE
+IF btnParo THEN ... END_IF
+
+Aquí hay varios problemas: "IF NOT btnInicio THEN estado := 0; END_IF" al inicio de cada ciclo. Esto forzará estado 0 cada vez que btnInicio no está pulsado. En estado de mezcla, si btnInicio no está pulsado, estado se pone a 0, interrumpiendo. Este es un problema de secuencia/seguridad? Primer paso fallido es paso 2: "Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues". ¿Por qué falla? Si durante llenado, btnInicio está TRUE (el banco probablemente mantiene btnInicio pulsado solo un ciclo o lo mantiene? El enunciado "al pulsar btnInicio" se abre la válvula. No dice mantener. En el código: estado 0 -> al pulsar btnInicio estado 1. Si el banco suelta btnInicio, en el siguiente ciclo IF NOT btnInicio THEN estado :=0, por lo que no se mantiene llenando. Sin embargo, el paso 1 (¿llenado?) no aparece en fallidos, solo paso 2. Puede que el banco mantenga btnInicio pulsado hasta nivelAlto? No lo sé. El código en estado 2: motorMezcla := TRUE; timerMezcla(IN:=TRUE); IF timerMezcla.Q THEN ... Aquí motor mezcla permanece activo hasta que Q se active. Eso es correcto. El problema podría ser la línea IF NOT btnInicio THEN estado:=0 al principio, que puede reiniciar en cualquier estado cuando btnInicio no esté activo. En el paso 2, si btnInicio se suelta, estado regresa a 0, no hay mezcla. El requisito "Entra en mezcla en el segundo ciclo" (paso 9) también fallido. La causa raíz es SECUENCIA: pérdida de autorretención, transición de etapa sensible al botón en lugar de retenerse. Pero el primer fallo paso 2: "transicion a mezcla y mezcla aún activa 1 s después". Si antes de nivelAlto, btnInicio probablemente estaba en TRUE? Supongamos que el banco mantiene btnInicio TRUE durante todo el llenado hasta nivelAlto. Entonces al llegar a estado 2, IF NOT btnInicio no se cumple (btnInicio TRUE). Entonces la mezcla funciona correctamente: motorMezcla TRUE, timer ON. ¿Por qué falla paso 2? Tal vez el banco suelta btnInicio después de iniciar. En un proceso típico, el botón inicio es pulsador momentáneo. El código no autorretiene el estado 0->1; pero si btnInicio solo se pulsa, en el siguiente ciclo estado se pone a 0 y se apagan salidas, no llenará. El banco fallaría paso 1 (llenado) si suelta btnInicio y no se retiene. Pero no listaron paso 1 fallido, quizá porque no hay paso 1? La lista de pasos fallidos inicia en paso 2. El paso 1 sería "Inicio: se abre válvula de llenado" y no falló? Raro: si no falló paso 1, entonces btnInicio se mantuvo o el código en paso 1 no se evalúa con btnInicio suelto. Podría ser que en el banco, btnInicio se mantiene constante en TRUE hasta que se active nivelAlto, para aislar los pasos. Luego el fallo en paso 2 se debe a otra cosa.
+
+Después de entrar en estado 2, "motorMezcla := TRUE; timerMezcla(IN:=TRUE); IF timerMezcla.Q THEN ...". correcto. Si IF NOT btnInicio no lo interrumpe en este escenario, no hay fallo. Pero J20 lista paso 2 fallido. Revisemos estado 1: vLlenado := TRUE; IF nivelAlto THEN vLlenado FALSE; estado:=2; timerMezcla(IN:=TRUE,...). Bien. En estado 2, motorMezcla TRUE. El mezclador estará activo. ¿Por qué falla "transicion a mezcla y mezcla aun activa 1 s despues"? Posiblemente por la línea "IF NOT btnInicio THEN estado := 0;" en estado=1: si btnInicio no está pulsado, estado 0. Eso puede ocurrir si el banco suelta btnInicio antes de nivelAlto. Entonces no habrá transición a mezcla. El paso 1 (llenado) podría no fallar porque en el momento del inicio se mantuvo btnInicio? No claro.
+
+Tal vez J20 falla en paso 2 por otra razón: La variable `estado` no está inicializada (VAR estado : INT; no := 0). En la primera ejecución, estado puede ser 0 por defecto en CODESYS (INT 0). La línea IF NOT btnInicio THEN estado:=0. Si btnInicio es FALSE en reposo, estado 0. Al pulsar btnInicio, IF NOT btnInicio no se cumple, CASE estado 0, btnInicio TRUE, estado 1. Si btnInicio se mantiene TRUE hasta nivelAlto, ok. Si btnInicio se suelta después de detectar flanco, el siguiente ciclo la línea IF NOT btnInicio THEN estado:=0 se cumple, revierte a estado 0, apaga vLlenado y aborta llenado. El paso 2 requeriría estar en mezcla, por lo que falla. La categoría sería SECUENCIA (pérdida de autorretención o retención). J20 también tiene temporizador quizá bien. La causa raíz principal: SECUENCIA, por la falta de autorretención del estado activo al soltar btnInicio. El código depende del nivel de btnInicio para no resetear. Esto es secuencia.
+
+J25: Código:
+VAR estado INT :=0; tMezcla TP;
+IF btnParo THEN estado:=0; salidas apagadas; END_IF
+CASE estado OF
+ 0: IF btnInicio THEN estado:=1; vLlenado:=TRUE; END_IF
+ 1: IF nivelAlto THEN estado:=2; vLlenado:=FALSE; tMezcla(IN:=TRUE, PT:=T#60S); motorMezcla:=TRUE; END_IF
+ 2: IF tMezcla.Q THEN estado:=3; motorMezcla:=FALSE; vDescarga:=TRUE; END_IF
+ 3: IF nivelBajo THEN estado:=0; vDescarga:=FALSE; END_IF
+END_CASE
+
+Usa TP para mezcla. En estado 2, no llama tMezcla(IN:=?) en cada ciclo. Solo se llamó una vez al entrar en estado 1/2? Fíjate: en estado 1 cuando nivelAlto: tMezcla(IN:=TRUE, PT:=T#60S); motorMezcla:=TRUE; estado:=2. En los siguientes ciclos en estado 2, no llama tMezcla. Para un TF TP, si no se invoca cada ciclo, su salida Q no se actualiza. En CODESYS, los bloques de función temporizadores requieren invocación continua para actualizar su tiempo; si dejas de llamar, Q se congela. Entonces tMezcla.Q nunca se pondrá TRUE, motorMezcla permanecerá TRUE? En estado 2, no se actualiza Q, por lo que no se detectará el fin. motorMezcla no se desactivará. El paso 2 falla: "transición a mezcla y mezcla aun activa 1s después". En este código, motorMezcla TRUE se activa, y como tMezcla no se invoca, Q permanece FALSE, pero motorMezcla queda TRUE. Aún activo después de 1s? Sí, motorMezcla está TRUE. Entonces el paso 2 "mezcla aun activa" se cumpliría, no fallaría. El paso 3 falla "~59.5 s de mezcla: aun no termina"; luego paso 9 no listado? Lista solo paso 2 y 3. El primer fallo listado es paso 2, que no es por lo que dije. Revisemos el requisito paso 2: "Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues: mezcla SECUENCIA y TEMPORIZACION [v2]". El código en estado 1 si nivelAlto TRUE: hace transición y motor TRUE. Salida motorMezcla TRUE. Eso cumple. ¿Por qué falla? Quizá por el temporizador TP no invocado, Q se congela, pero no impide motor activo. El banco puede comprobar que el motor está activo 1 s después y lo está. Entonces no debería fallar. Sin embargo, listaron paso 2 como fallido. Debe ser por otra cosa.
+
+Puede ser que el modo de usar TP sea incorrecto: TP es pulso. Al entrar en estado 2, tMezcla(IN:=TRUE) dispara Q TRUE por 60s, y Q se activa inmediatamente. Luego en el primer ciclo de estado 2, no se invoca; Q podría permanecer TRUE? Si no se invoca, no se actualiza. Pero motorMezcla se asigna TRUE en el estado 1. La transición a estado 3 se condiciona a IF tMezcla.Q THEN en estado 2. Si Q se queda FALSE (porque no invocas), no. Si Q se queda TRUE? Depende de la implementación. Sin invocar, Q puede permanecer en su último valor. Al invocar TP(IN:=TRUE) en estado 1, Q se activa inmediatamente (pulso) y si el ciclo es corto, Q es TRUE. Al siguiente ciclo, estado 2 no invoca tMezcla, por lo que Q podría quedar TRUE. Entonces IF tMezcla.Q THEN se cumple en el primer ciclo de estado 2, transiciona inmediatamente a descarga, motorMezcla FALSE. Esto sí provocaría que no haya mezcla 1s después. ¿Es esto? TP se activa al flanco de IN: Q se pone TRUE desde el primer ciclo que se llama con IN TRUE. Luego si no se continúa llamando, en CODESYS TP internamente guarda estado, y en el ciclo que se llamó (estado 1) al final Q es TRUE. Al siguiente ciclo no se llama, la variable Q permanece TRUE (ya que no se actualiza). En el CASE estado 2: IF tMezcla.Q THEN se cumple, motorMezcla := FALSE; vDescarga := TRUE. Entonces no hay mezcla. Eso sería fallo paso 2. La causa raíz es temporizador no invocado en cada ciclo (categoría TEMPORIZACION). O más bien secuencia: la transición a descarga se produce inmediatamente porque tMezcla.Q quedó activa. La categoría permitida TEMPORIZACION incluye "temporizador no invocado en cada ciclo". Este es el problema. Por lo tanto J25 categoría TEMPORIZACION.
+
+J34: Código:
+IF btnInicio AND NOT btnParo AND estado = 0 THEN estado:=1; vLlenado:=TRUE; END_IF
+IF nivelAlto THEN estado:=2; vLlenado:=FALSE; motorMezcla:=TRUE; tMezcla(IN:=TRUE, PT:=T#60S); END_IF
+IF tMezcla.Q THEN estado:=3; motorMezcla:=FALSE; vDescarga:=TRUE; END_IF
+IF nivelBajo THEN estado:=0; vDescarga:=FALSE; END_IF
+IF btnParo THEN estado:=0; salidas apagadas; tMezcla(IN:=FALSE); END_IF
+
+Nota: condiciones sin restricción de estado actual. Esto es un patrón de máquina de estados incompleta. Por ejemplo, "IF nivelAlto THEN estado:=2..." se ejecuta siempre que nivelAlto sea TRUE, sin importar el estado. Si nivelAlto está TRUE al inicio (o durante descarga), saltará a mezcla. En el paso 2 "Nivel alto: transicion a mezcla y mezcla aun activa 1s despues": Al estar en llenado (estado 1?) No hay CASE. La primera línea inicia llenado si estado 0 y btnInicio. Luego IF nivelAlto THEN estado:=2, motorMezcla TRUE, tMezcla TRUE. Luego IF tMezcla.Q THEN... (todavía no). Entonces motorMezcla TRUE en mismo ciclo, está activa. Luego siguiente línea IF nivelBajo THEN... Si nivelBajo FALSE, no. Entonces mezcla activa. Parece cumplir. Pero listan paso 2 fallido. Revisemos: usan tMezcla TP. En estado mezcla, no se restringe la comprobación de nivelAlto. Si nivelAlto permanece TRUE, en cada ciclo IF nivelAlto THEN estado:=2; vLlenado:=FALSE; motorMezcla:=TRUE; tMezcla(IN:=TRUE, PT:=T#60S); END_IF. tMezcla TP se re-dispara con IN constantemente TRUE. TP solo re-dispara en flanco ascendente de IN; si IN permanece TRUE, no re-dispara. Pero si se asigna IN:=TRUE cada ciclo, no hay flanco si ya estaba TRUE. El TP sigue corriendo. No obstante, si tMezcla.Q se activa, la línea IF tMezcla.Q THEN estado:=3 motorMezcla FALSE vDescarga TRUE; entonces estado 3. Luego la línea IF nivelAlto (si aún TRUE) se ejecuta después? En el mismo ciclo, el orden es: IF nivelAlto THEN (se ejecuta antes de IF tMezcla.Q). Si nivelAlto TRUE, se setea estado 2 y motor TRUE de nuevo, luego IF tMezcla.Q THEN estado 3 y motor FALSE. El orden exacto en J34: primero IF nivelAlto, luego IF tMezcla.Q. Si nivelAlto TRUE y tMezcla.Q TRUE en el mismo ciclo, al final prevalece estado 3, motor FALSE. OK.
+
+¿Por qué falla el paso 2? Podría ser porque `tMezcla` es TP y no se invoca continuamente en estado 2. En J34, tMezcla solo se invoca en la línea IF nivelAlto THEN. Si nivelAlto se desactiva (lo normal al cerrar válvula y avanzar a mezcla), en los siguientes ciclos no se llama tMezcla. Entonces, para TP, Q puede quedar TRUE después de disparar? Vamos: En el ciclo en que nivelAlto TRUE, tMezcla(IN:=TRUE) se invoca con flanco ascendente (si antes no estaba IN TRUE). TP Q se activa TRUE. Luego nivelAlto desaparece. En ciclos siguientes, no se invoca tMezcla, Q permanece TRUE (último valor). Entonces IF tMezcla.Q THEN (sin invocar) se cumple inmediatamente en el siguiente ciclo, transicionando a descarga; motorMezcla FALSE. Al no haber mezcla, falla paso 2. La causa raíz es TEMPORIZACION (temporizador no invocado en cada ciclo, TP mal gestionado). Similar a J25. Categoría TEMPORIZACION.
+
+J41: Código:
+VAR estado INT:=0; tMezcla TP;
+IF btnParo THEN estado:=0; salidas FALSE; END_IF
+CASE estado OF
+ 0: IF btnInicio THEN estado:=1; vLlenado:=TRUE; END_IF
+ 1: IF nivelAlto THEN estado:=2; vLlenado:=FALSE; tMezcla(IN:=TRUE, PT:=T#60S); motorMezcla:=TRUE; END_IF
+ 2: IF tMezcla.Q THEN estado:=3; motorMezcla:=FALSE; vDescarga:=TRUE; END_IF
+ 3: IF nivelBajo THEN estado:=0; vDescarga:=FALSE; END_IF
+END_CASE
+
+Es idéntico a J25 salvo que no hay salida en estado 0. También usa TP y no invoca en estado 2. Por tanto el problema es temporizador no invocado en cada ciclo, Q queda TRUE y transita inmediatamente. El primer fallo paso 2 (transición a mezcla y mezcla aun activa). Categoría TEMPORIZACION. Aunque si Q queda TRUE, motorMezcla FALSE en el siguiente ciclo, no mezcla. Correcto.
+
+Ahora, J09, J10 usan TON con condición invertida. J20 puede ser SECUENCIA o TEMPORIZACION? Debo decidir.
+
+Revisemos J20 con detalle.
+
+J20:
+VAR estado INT; timerMezcla TON;
+// Inicialización del bloque
+IF NOT btnInicio THEN estado :=0; END_IF
+
+CASE estado OF
+0: salidas apagadas; IF btnInicio THEN estado:=1; END_IF
+1: vLlenado:=TRUE; IF nivelAlto THEN vLlenado:=FALSE; estado:=2; timerMezcla(IN:=TRUE, PT:=T#60S); END_IF
+2: motorMezcla:=TRUE; timerMezcla(IN:=TRUE); IF timerMezcla.Q THEN motorMezcla:=FALSE; estado:=3; END_IF
+3: vDescarga:=TRUE; IF nivelBajo THEN vDescarga:=FALSE; estado:=0; END_IF
+END_CASE
+IF btnParo THEN ...
+
+La línea IF NOT btnInicio THEN estado :=0; se ejecuta al inicio de cada ciclo. Si btnInicio es un pulsador momentáneo (el banco suelta después de un ciclo), en estado 1 (llenado) al soltar btnInicio, estado :=0; vLlenado se apaga en CASE estado 0? En el mismo ciclo, después de IF NOT btnInicio, CASO estado 0: salidas false, IF btnInicio (FALSE) no. Por tanto aborta llenado. Si nivelAlto no se ha alcanzado, fallará llenado. El banco no listó paso 1, solo paso 2. Significa que el paso 1 sí se cumplió. ¿Cómo? Tal vez el banco no comprueba el mantenimiento de llenado con btnInicio suelto, o mantiene btnInicio TRUE todo el tiempo hasta nivelAlto. En muchos bancos de pruebas, "al pulsar btnInicio" se interpreta como un flanco, y luego se suelta; el programa debería retener llenado. Si J20 no autorretiene, el paso 1 probablemente fallaría (no abre vLlenado o se cierra). Pero no aparece. Quizá el paso 1 del banco consiste en "btnInicio pulsado y mantenido? Se abre vLlenado". No lo sé.
+
+Revisemos el paso 2 de J20 falló. Podría ser por la condición IF NOT btnInicio THEN estado:=0. Supongamos que para la prueba, btnInicio se mantiene TRUE constantemente hasta que se active nivelAlto (así pudo pasar paso 1). Al activarse nivelAlto, el código en estado 1 lo detecta, asigna estado 2 y timerMezcla IN TRUE. En el mismo ciclo no se ejecuta IF NOT btnInicio? Se ejecuta al inicio con btnInicio TRUE, por lo que no resetea. Luego CASE estado 1. Fin. Siguiente ciclo: IF NOT btnInicio (si btnInicio sigue TRUE? Cuando se activa nivelAlto, el banco quizá libera btnInicio en ese mismo instante. Si el banco suelta btnInicio al detectar nivelAlto, en el siguiente ciclo btnInicio FALSE, IF NOT btnInicio THEN estado:=0, aborta mezcla. Entonces falla paso 2. De nuevo causa SECUENCIA: falta autorretención, el estado actual depende del nivel continuo de btnInicio. Además, el paso 9 "Entra en mezcla en el segundo ciclo" fallido, lo que apoya que la mezcla se pierde entre ciclos. Entonces J20 categoría SECUENCIA.
+
+Pero J09 y J10 también tienen una construcción similar con ELSIF btnInicio? J09: IF btnParo THEN ... ELSIF btnInicio THEN CASE... END_IF. Eso significa que si btnInicio no está pulsado, no ejecuta CASE, por tanto no mantendrá estado? En J09, si btnInicio se suelta, no corre CASE; en estado 1, vLlenado no se actualiza? Las salidas conservan su valor. En CODESYS, las salidas conservan el valor si no se escriben. Por lo tanto, vLlenado puede quedar TRUE. En estado 2, si btnInicio suelto, no se ejecuta CASE, motorMezcla no se actualiza (mantiene FALSE quizá), pero el fallo principal es la condición invertida en estado 2. La lógica ELSIF btnInicio significa que solo cuando btnInicio TRUE se ejecuta la máquina de estados. Si btnInicio es un pulso, no funcionará después. Sin embargo, J09 listó solo paso 2 y 3, no paso 1. Puede que btnInicio se mantenga TRUE. La causa raíz principal del paso 2 es temporización.
+
+J10: CASO siempre se ejecuta (sin ELSIF btnInicio). Solo la transición de reposo a llenado depende de btnInicio. Eso está bien: autorretiene. La mezcla falla por Q invertido. Categoría TEMPORIZACION.
+
+J25/J34/J41: usan TP y no invocan en cada ciclo. La categoría es TEMPORIZACION.
+
+Ahora, J25/J34/J41 podrían también ser SECUENCIA? Pero la causa raíz concreta es el temporizador no invocado; categoría TEMPORIZACION.
+
+J20: categoría SECUENCIA probablemente. Sin embargo, el código J20 también usa TON correctamente (motorMezcla TRUE y transición cuando Q TRUE). El fallo puede ser la línea IF NOT btnInicio THEN estado:=0. Es un problema de secuencia/retención/transición. El primer paso fallido incluye "Entra en mezcla en el segundo ciclo". Eso es secuencia. Así que J20 -> SECUENCIA.
+
+J09: también tiene ELSIF btnInicio, que es secuencia/retención. Podría ser el fallo principal en lugar de temporización. Revisemos J09 pasos fallidos: paso 2 (transición a mezcla y mezcla activa 1s), paso 3 (~59.5s mezcla aun no termina), paso 4 (~60.5s ya descarga), paso 5 (nivel bajo vuelve a reposo), paso 9 (entra en mezcla en segundo ciclo). Si el fallo principal fuera ELSIF btnInicio, entonces si btnInicio se suelta, no se llega a mezclar. En J09, la estructura:
+IF btnParo THEN ...
+ELSIF btnInicio THEN
+  CASE estado OF
+    0: IF btnInicio THEN estado:=1; END_IF;
+    1: vLlenado:=TRUE; IF nivelAlto THEN vLlenado:=FALSE; estado:=2; tMezcla(IN:=TRUE, PT:=T#60S); END_IF;
+    2: motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado:=3; END_IF;
+    3: vDescarga:=TRUE; IF nivelBajo THEN ...
+  END_CASE;
+END_IF;
+
+Si btnInicio es pulsador momentáneo, en el segundo ciclo tras soltarse, ELSIF btnInicio FALSE, no CASE, salidas mantienen. vLlenado quedó TRUE, así que llenado continuaría (aunque no se ejecute de nuevo). Si el nivelAlto se activa, el CASE no se ejecuta hasta que btnInicio se pulse de nuevo. Por lo tanto, la transición a mezcla no ocurrirá al alcanzar nivelAlto, a menos que btnInicio esté TRUE en ese momento. El banco suele mantener btnInicio TRUE? No. Entonces J09 fallaría la transición a mezcla. Eso es SECUENCIA (transición depende de btnInicio continuo). Luego también la mezcla con Q invertido. El primer fallo sería por secuencia. Hay que decidir cuál es la causa raíz que explica el primer paso fallido. El paso 2 requisito: "Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues". ¿Qué falla? Si btnInicio no está mantenido, no se ejecutará CASE en el momento en que nivelAlto se active. Por tanto no transiciona ni mezcla. Eso es una causa de secuencia. Por otro lado, si btnInicio se mantiene, el CASE se ejecuta y la transición a mezcla ocurre, pero inmediatamente estado 2 con motorMezcla := tMezcla.Q (FALSE) y IF NOT tMezcla.Q -> estado 3 inmediatamente; no mezcla. Eso es temporización. ¿Cuál es más probable en el banco? El banco de prueba automático para tareas de PLC suele modelar botones como señales booleanas que cambian según pasos. Usualmente btnInicio es un pulso (TRUE un ciclo) y no se mantiene. La tarea dice "al pulsar btnInicio" se abre la válvula, no "mientras btnInicio esté activo". Por lo tanto, el botón es un flanco. Un código correcto debería autorretener el estado. En J09, la lógica está envuelta en `ELSIF btnInicio`, lo que impide que la secuencia avance si no está pulsado. Eso es un error de secuencia/autoretención. Si el banco suelta btnInicio, el paso 1 (llenado) podría no fallar si vLlenado ya se setó TRUE y permanece; pero en estado 1, el CASE solo se ejecutó una vez con btnInicio TRUE. Después, vLlenado permanece TRUE. Entonces llenado continúa. Al activarse nivelAlto (paso 2), btnInicio está FALSE, ELSIF false, CASE no se ejecuta, por lo que no hay transición. Por eso falla paso 2. Esta es una causa de SECUENCIA (transición errónea por pérdida de retención). Después, aunque se arreglara, el estado 2 tiene problema de temporizador. El primer paso fallido se debe a secuencia.
+
+J10: el CASE se ejecuta siempre. El estado 1 autorretiene (vLlenado TRUE) y la transición a estado 2 ocurre con nivelAlto independientemente de btnInicio. Luego en estado 2, el error de temporización. Por lo tanto J10 causa raíz TEMPORIZACION.
+
+J09 requiere discernir. El banco listó pasos 2,3,4,5,9. Incluye paso 5 "Nivel bajo: vuelve a reposo". Si la secuencia no llega a mezcla y descarga por ELSIF, fallaría. El paso 4 ~60.5s ya descarga también. Si no hay transición a mezcla por btnInicio, falla todo. Categoría SECUENCIA.
+
+J20: código con CASE siempre, pero la línea "IF NOT btnInicio THEN estado :=0" es un reinicio por nivel. Eso es secuencia: pérdida de autorretención, ya que el estado se resetea constantemente si btnInicio no está activo. Por tanto SECUENCIA.
+
+J25/J34/J41: usan TP y no invocan. Algunos no restringen estados? J34 tiene condiciones sin estado, pero el primer fallo es paso 2 por temporizador no invocado. Categoría TEMPORIZACION.
+
+J32/J44 semáforo: TEMPORIZACION.
+
+J22 semáforo: TEMPORIZACION.
+
+J38: TEMPORIZACION.
+
+Ahora, verificar J07: contador CTU. Código no invoca C1. El banco no detectará cuenta. Categoría FLANCO (contador no invocado). Es primer fallo: primer flanco ascendente cuenta 1. FLANCO.
+
+J51: contador de aperturas. Primer fallo: primer flanco. Categoría FLANCO. Revisemos si el código tiene sus salidas aviso, nAperturas. Puede que el banco use primera ejecución con puertaAbierta TRUE y reset FALSE. El código no cuenta porque inicializa anterior con puertaAbierta. Eso es FLANCO. También el reset no evita contar mientras reset TRUE. Pero primer fallo es primer flanco. FLANCO.
+
+J09 y J20 categoría SECUENCIA. J10 categoría TEMPORIZACION.
+
+J25, J34, J41 categoría TEMPORIZACION.
+
+Vamos a redactar justificaciones concisas.
+
+J51: justificación: en el primer ciclo, `IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta;` copia el estado actual en la memoria de flanco, por lo que si la puerta ya está TRUE en el primer ciclo no se detecta el flanco. O "pierde el primer flanco al inicializar la memoria con el valor actual". Categoría FLANCO.
+
+J07: justificación: asigna `C1.CU`, `C1.RESET` y `C1.PV` pero nunca invoca `C1(CU:=sensorPieza, RESET:=btnReset, PV:=12);`, por lo que el CTU no se ejecuta y no cuenta. Categoría FLANCO.
+
+J22: justificación: `tBlink(IN := NOT tBlink.Q, PT := T#1S)` rearma el TP inmediatamente cuando Q baja; no genera 1s de apagado. Categoría TEMPORIZACION.
+
+J32: justificación: el TP con `bBlinkTrig` se relanza en el flanco de Q sin tiempo OFF, por lo que la intermitencia no cumple 1s/1s. Categoría TEMPORIZACION.
+
+J38: justificación: usa un TON con IN:=TRUE fijo, que enciende luzA fija tras 1s en lugar de parpadear. Categoría TEMPORIZACION.
+
+J44: justificación: `tParpadeo(IN := NOT tParpadeo.Q AND NOT bParpadeoOn...` con alternancia en Q hace que `bParpadeoOn` quede fijo, no genera apagado. Categoría TEMPORIZACION. Revisemos J44: En detalle, cuando tParpadeo.Q es TRUE, bParpadeoOn se alterna a TRUE. luzA TRUE. Al expirar Q FALSE, la condición `NOT tParpadeo.Q AND NOT bParpadeoOn` es FALSE porque bParpadeoOn TRUE, por lo que no rearma; `IF tParpadeo.Q` no se cumple; bParpadeoOn sigue TRUE. luzA TRUE para siempre. Eso es un fallo de temporización/intermitencia. Categoría TEMPORIZACION.
+
+J09: justificación: la máquina de estados está dentro de `ELSIF btnInicio THEN`, por lo que solo avanza cuando btnInicio está pulsado; al soltarlo no transiciona a mezcla. Categoría SECUENCIA. Aunque también tiene problema en estado 2 con `motorMezcla := tMezcla.Q` y `IF NOT tMezcla.Q THEN estado:=3` que aborta mezcla; pero primer fallo es secuencia. ¿Estamos seguros? Si el banco mantiene btnInicio constante durante todos los pasos? No. El enunciado "al pulsar btnInicio" sugiere flanco. En J09 ELSIF btnInicio sin autorretención es un problema de secuencia. Sí.
+
+J10: justificación: en estado 2 `motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado:=3;` invierte la lógica del TON: Q es FALSE mientras no expira, por lo que pasa a descarga inmediatamente y la mezcla no dura 60s. Categoría TEMPORIZACION.
+
+J20: justificación: `IF NOT btnInicio THEN estado := 0;` al inicio de cada ciclo deshace la autorretención; al soltar btnInicio el proceso vuelve a reposo y no mantiene la etapa de mezcla. Categoría SECUENCIA. Aunque el motor en estado 2 se asigna TRUE y timerMezcla correcto. La causa raíz es secuencia. Fine.
+
+J25: justificación: `tMezcla` (TP) solo se invoca una vez al entrar a mezcla; en el estado 2 no se llama cada ciclo, por lo que su Q queda congelado o no expira y la transición falla. Categoría TEMPORIZACION.
+
+J34: justificación: el TP `tMezcla` solo se invoca en el bloque `IF nivelAlto THEN`; en estado de mezcla sin nivelAlto no se invoca, por lo que Q no se actualiza y la salida/transición no ocurre. Categoría TEMPORIZACION.
+
+J41: similar a J25. Justificación: en estado 2 no se invoca `tMezcla`, temporizador TP no se actualiza; no temporiza correctamente. Categoría TEMPORIZACION.
+
+Revisemos J25 y J41: En CODESYS, si no invocas un FB temporizador, sus salidas no se actualizan. TP Q se activó en el ciclo de llamada; al siguiente ciclo no se llama, Q permanece TRUE. Entonces IF tMezcla.Q se cumple en el primer ciclo estado 2, transiciona a descarga. Eso es fallo "mezcla aun activa". Justificar que no invoca tMezcla en cada ciclo y por eso Q no temporiza 60s (queda congelado/transición prematura). Categoría TEMPORIZACION.
+
+J34: la lógica con IF sin estado y tMezcla TP. Si nivelAlto se mantiene TRUE, tMezcla se invoca cada ciclo con IN TRUE. En TP, si IN se mantiene TRUE, Q se activa en el flanco y permanece TRUE por 60s, luego se desactiva aunque IN siga TRUE? TP es pulso: Q TRUE durante PT desde flanco, independientemente de IN. Si invoca con IN TRUE cada ciclo, Q expira y permanece FALSE mientras IN no tenga flanco. Entonces al expirar Q FALSE, IF tMezcla.Q no se cumple, no transiciona. Pero si nivelAlto se desactiva, no se invoca. En el caso típico, nivelAlto se desactiva después de cerrar válvula? El nivelAlto es un sensor de nivel: al cerrar vLlenado y empezar mezcla, el nivel alto podría permanecer alto durante un tiempo hasta descarga? En un tanque, nivelAlto permanece TRUE durante mezcla y descarga hasta vaciar. Si nivelAlto permanece TRUE, tMezcla se invoca cada ciclo, TP funciona. Entonces J34 no fallaría por no invocar? Revisemos.
+
+J34:
+IF btnInicio ... estado:=1 vLlenado TRUE
+IF nivelAlto THEN estado:=2; vLlenado FALSE; motorMezcla TRUE; tMezcla(IN:=TRUE, PT:=T#60S); END_IF
+IF tMezcla.Q THEN estado:=3; motorMezcla FALSE; vDescarga TRUE; END_IF
+IF nivelBajo THEN estado:=0; vDescarga FALSE; END_IF
+IF btnParo THEN ... END_IF
+
+Aquí, si nivelAlto es TRUE, en cada ciclo se ejecuta `IF nivelAlto THEN` sin restricción de estado. Cuando entra en estado 2, el primer ciclo nivelAlto TRUE: dispara tMezcla TP. TP Q se activa TRUE inmediatamente. Luego en el mismo ciclo, IF tMezcla.Q THEN se cumple (Q TRUE), estado:=3, motorMezcla FALSE, vDescarga TRUE. ¡Inmediatamente en el mismo ciclo! Porque TP Q se activa al flanco de IN en el mismo ciclo. Entonces no hay mezcla. Por tanto falla paso 2. La causa raíz es el uso de TP: con TP, Q se activa inmediatamente y se desactiva al expirar; además la condición `IF tMezcla.Q THEN` está en el mismo ciclo, llevando a descarga prematura. Aunque también no invoca en cada ciclo si nivelAlto baja. La razón principal: TP es temporizador de pulso; Q está TRUE desde el inicio, no cuando termina. Es similar a temporizador equivocado. Categoría TEMPORIZACION. Justificación: al usar TP, `tMezcla.Q` es TRUE desde el disparo, por lo que `IF tMezcla.Q THEN` transiciona a descarga inmediatamente, no tras 60s. Eso es bueno.
+
+J25/J41 con CASE y TP: en estado 1, al nivelAlto: `tMezcla(IN:=TRUE); motorMezcla:=TRUE; estado:=2`. En el mismo ciclo no se evalúa estado 2 por CASE. Al siguiente ciclo estado 2: no invoca tMezcla (en J25/J41 estado 2 solo IF tMezcla.Q). Como Q quedó TRUE desde el disparo (porque TP Q se activa en el ciclo de flanco), en el primer ciclo de estado 2 `IF tMezcla.Q THEN` se cumple, transiciona a descarga. Así que falla. Justificación: TP se activa con Q=TRUE en el flanco; como no se espera a `tMezcla.Q` como final de 60s y no se invoca en cada ciclo, la transición es prematura. Podemos resumir "temporizador de pulso mal utilizado (Q activa desde el inicio) y no invocado en cada ciclo". Categoría TEMPORIZACION.
+
+J09 y J10 con TON: En estado 2, `motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado:=3; END_IF`. TON Q es FALSE mientras no expira, por lo que `NOT tMezcla.Q` es TRUE, transiciona inmediatamente. Justificación: "lógica invertida: se transiciona con `NOT tMezcla.Q`, es decir justo al iniciar el temporizador cuando Q es FALSE". Categoría TEMPORIZACION.
+
+J32 semáforo: revisamos en detalle. En deshabilitado, `tBlink(IN := bBlinkTrig, PT := T#1S); IF NOT tBlink.Q AND NOT bBlinkTrig THEN bBlinkTrig:=TRUE; IF tBlink.Q THEN bBlinkTrig:=FALSE; luzA := tBlink.Q;`
+La salida luzA es Q directamente. TP Q TRUE durante 1s, luego FALSE brevemente mientras se rearma. No hay 1s off. TEMPORIZACION.
+
+J44: la salida luzA es `bParpadeoOn`, y la lógica hace que bParpadeoOn se quede TRUE. Justificación: `bParpadeoOn` se invierte en Q activo y no se apaga cuando expira, por lo que `luzA` queda fija. TEMPORIZACION.
+
+J22: la salida luzA es tBlink.Q con TP rearmado inmediatamente. TEMPORIZACION.
+
+J38: TON fijo; luzA se activa después de 1s y queda fija. TEMPORIZACION.
+
+Debemos producir lista JSON con 12 casos? Contemos casos: J51, J07, J22, J32, J38, J44, J09, J10, J20, J25, J34, J41 = 12. Mantener orden.
+
+Categorías finales:
+
+- J51: FLANCO
+- J07: FLANCO
+- J22: TEMPORIZACION
+- J32: TEMPORIZACION
+- J38: TEMPORIZACION
+- J44: TEMPORIZACION
+- J09: SECUENCIA (o TEMPORIZACION? Decidamos cuidadosamente)
+- J10: TEMPORIZACION
+- J20: SECUENCIA
+- J25: TEMPORIZACION
+- J34: TEMPORIZACION
+- J41: TEMPORIZACION
+
+Reconsiderar J09. ¿Es SECUENCIA? Vamos a modelar J09 con btnInicio momentáneo.
+
+Código J09:
+IF btnParo THEN
+  estado:=0; salidas false;
+ELSIF btnInicio THEN
+  CASE estado OF
+    0: IF btnInicio THEN estado:=1; END_IF;
+    1: vLlenado:=TRUE; IF nivelAlto THEN vLlenado:=FALSE; estado:=2; tMezcla(IN:=TRUE, PT:=T#60S); END_IF;
+    2: motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado:=3; END_IF;
+    3: vDescarga := TRUE; IF nivelBajo THEN vDescarga:=FALSE; estado:=0; END_IF;
+  END_CASE;
+END_IF;
+
+Si btnInicio solo True durante el primer ciclo, en ese primer ciclo estado 0: estado 1, y vLlenado? En estado 0 no asigna vLlenado. Pero en el siguiente ciclo, como btnInicio FALSE, ELSIF false, no CASE. vLlenado no se asigna TRUE (nunca se puso en estado 1 porque no se ejecutó). Por lo tanto, no comienza el llenado. El paso 1 (suponiendo "pulsar btnInicio abre vLlenado") fallaría de inmediato. Sin embargo, el banco no listó paso 1 fallido. Eso indica que btnInicio se mantiene TRUE o que no hay paso 1. En los datos, pasos fallidos J09: 2,3,4,5,9. No incluye 1. Por tanto, el banco pudo mantener btnInicio TRUE hasta que se active nivelAlto. De lo contrario fallaría paso 1. Entonces J09 falla el paso 2 por el problema de mezcla (Q invertido), no por ELSIF. Si btnInicio está TRUE durante todo el llenado, al llegar nivelAlto, CASE estado 1 con btnInicio TRUE: transiciona a estado 2, tMezcla IN TRUE. Siguiente ciclo: btnInicio puede seguir TRUE? El banco podría liberar btnInicio al detectar nivelAlto. Si lo libera en el mismo paso, en el siguiente ciclo ELSIF false, no CASE, estado permanece 2, motorMezcla no se actualiza (no se escribe), tMezcla no se invoca, etc. Las salidas mantienen. Particularmente, motorMezcla se escribió? En el ciclo de transición estado 1 no se escribió motorMezcla; solo vLlenado FALSE. Entonces motorMezcla mantiene FALSE. En el siguiente ciclo, ELSIF false, motorMezcla sigue FALSE. No hay mezcla. El paso 2 fallaría. Si btnInicio se mantiene TRUE durante todo el ciclo hasta que se complete la mezcla, entonces el problema es Q invertido. No sabemos. La tarea dice botón de inicio; normalmente es pulsador. El banco de pruebas suele simular un pulso en btnInicio y luego a FALSE. Si J09 no retiene, el paso 1 fallaría. Como no listó paso 1, quizá asumieron que btnInicio está en TRUE constante durante ciertos periodos? Es posible que el banco tenga pasos con btnInicio en TRUE solo en el instante inicial y luego se suelta, y aun así J09 no fallaría paso 1? Vamos: primer ciclo btnInicio TRUE, estado 0 -> estado 1; no asigna vLlenado. Segundo ciclo btnInicio FALSE, ELSIF false, no CASE, vLlenado sigue FALSE (inicial por defecto). Entonces falla paso 1 (vLlenado no se abre). Por tanto si el banco lista solo paso 2, no es porque btnInicio se suelte. Entonces btnInicio debe mantenerse TRUE. Por ejemplo, el paso 1 evalúa con btnInicio TRUE y vLlenado TRUE? En código, segundo ciclo btnInicio TRUE -> CASE estado 1: vLlenado := TRUE. Si desde el primer ciclo btnInicio se mantiene TRUE, en el segundo vLlenado TRUE. Paso 1 se cumple. Entonces el banco mantiene btnInicio TRUE hasta nivelAlto. Al llegar nivelAlto, estado 2, tMezcla inicia. Luego, si btnInicio se mantiene TRUE durante la mezcla (quizá el banco lo mantiene hasta fin del proceso, lo cual es extraño), el problema es Q invertido. Si btnInicio se suelta al detectar nivelAlto, el proceso se congelaría, pero el paso 2 falla. Sin embargo, el banco no listó paso 1, así que la liberación de btnInicio probablemente ocurre después de paso 1, tal vez al detectar nivelAlto. No sé.
+
+De todas maneras, J09 tiene DOS errores: (1) ELSIF btnInicio no autorretiene, (2) en estado 2 condición invertida. El primer fallo listado es paso 2, y la causa raíz podría ser SECUENCIA si btnInicio se suelta al inicio de mezcla, o TEMPORIZACION si btnInicio se mantiene. ¿Cuál es la causa más directa visible en el código para el paso 2? La línea `motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado:=3;` es claramente errónea y explica el fallo del paso 2 "transicion a mezcla y mezcla aun activa 1s despues": al entrar en estado 2, Q es FALSE, motorMezcla FALSE, y la condición IF NOT Q se cumple, pasando a estado 3 inmediatamente. Esto es independiente de btnInicio, si se ejecuta el CASE. En la mayoría de modelos, la categoría principal puede ser TEMPORIZACION. J09 y J10 comparten este error. J10 no tiene ELSIF y también falla paso 2 por el mismo error. Por tanto J09 debería ser TEMPORIZACION también. La lista de pasos fallidos de J09 incluye paso 9 "Entra en mezcla en el segundo ciclo" que también falla por lo mismo: no mantiene mezcla. La causa raíz es la lógica de temporizador invertida. J20 sí tiene temporizador correcto, pero falla por secuencia. Entonces J09 TEMPORIZACION.
+
+Revisar J09 con ELSIF btnInicio: si btnInicio se mantiene TRUE, sí. Si no, falla secuencia. La categoría principal debe ser la causa raíz que explica el primer fallo, no necesariamente el error más evidente. El primer fallo paso 2: si btnInicio se suelta, no se ejecuta CASE, y no habrá mezcla; si se mantiene, se ejecuta y falla por Q invertido. El banco automático probablemente configura btnInicio de acuerdo a la tarea: "al pulsar btnInicio" un pulso. Si fuera así, J09 fallaría el paso 1, no listado. Entonces no es pulso. O quizá el banco no comprueba el paso 1, o el paso 1 no existe. En los pasos fallidos, el primer listado es paso 2; no se listó paso 1. Pudo ser que el paso 1 no falló. Por tanto btnInicio estaba TRUE el tiempo suficiente. Luego la causa es TEMPORIZACION. J09 categoría TEMPORIZACION.
+
+J20: Primer fallo paso 2. Código con `IF NOT btnInicio THEN estado:=0`. Si btnInicio se mantiene TRUE (como parece para J09), no falla. Si btnInicio es pulse, falla paso 1. No listan paso 1. Entonces similar: btnInicio mantenido. Luego J20 en estado 2: motorMezcla:=TRUE; timerMezcla(IN:=TRUE); IF timerMezcla.Q THEN ... es correcto. Entonces, si btnInicio está TRUE durante la mezcla, no falla. ¿Por qué falla entonces? Tal vez la línea IF NOT btnInicio se evalúa con btnInicio FALSE porque el banco suelta btnInicio después de iniciar? En el paso 1, btnInicio pudo ser un pulso, pero como vLlenado se setea TRUE en el mismo ciclo y permanece? En J20, la línea IF NOT btnInicio THEN estado:=0 se ejecuta antes del CASE. Primer ciclo: btnInicio TRUE -> IF NOT no true, CASE estado 0, btnInicio TRUE, estado 1, no asigna vLlenado? En estado 0 no asigna. Segundo ciclo btnInicio FALSE -> IF NOT btnInicio THEN estado:=0, CASE estado 0 salidas false. Entonces vLlenado no se enciende. Falla paso 1. Como no listó paso 1, btnInicio se mantuvo TRUE. Luego en estado 2, con btnInicio TRUE no falla. ¡Contradicción! ¿Entonces por qué J20 falla? Veamos el código J20 en detalle: En estado 2, `timerMezcla(IN := TRUE); IF timerMezcla.Q THEN motorMezcla := FALSE; estado := 3; END_IF`. TON con IN:=TRUE se inicia en estado 1 y se sigue llamando en estado 2. Q se activa a los 60s. Bien. MotorMezcla TRUE. No hay problema. La única otra cosa: `IF NOT btnInicio THEN estado := 0;` es un `IF` que se ejecuta en cada ciclo. Si btnInicio está TRUE durante todo el llenado y mezcla, no problema. ¿Quizá btnInicio se suelta al detectar nivelAlto, pero no antes? Entonces en estado 2, primer ciclo btnInicio FALSE, IF NOT btnInicio THEN estado 0; interrumpe la mezcla. El paso 2 falla. El paso 1 no falla porque durante llenado btnInicio se mantiene TRUE hasta nivelAlto, luego el banco suelta btnInicio y activa nivelAlto simultáneamente. Entonces J20 falla por secuencia (pérdida de retención al liberar btnInicio). Esto es plausible. Para J09 con ELSIF btnInicio, si btnInicio se suelta al detectar nivelAlto, en el siguiente ciclo ELSIF false, no CASE; las salidas quedan con vLlenado FALSE, motorMezcla no se activa; pasando a nada. Eso también falla paso 2 por secuencia. ¿Entonces J09 también SECUENCIA? Hmm.
+
+Debo inferir qué hará el banco exactamente. En los pasos listados, el fallo es el primer paso fallido. En J09, los pasos fallidos incluyen "Nivel alto: transicion a mezcla y mezcla aun activa 1s despues: mezcla SECUENCIA y TEMPORIZACION [v2]" y "~59.5 s de mezcla: aun no termina", etc. El hecho de que falle ~59.5 sugiere que no está en mezcla, probablemente se saltó a descarga o reposo. En J09, el ELSIF btnInicio podría congelar el proceso en vez de saltarlo. Si btnInicio se suelta al nivelAlto, la secuencia no avanza: no hay descarga, motor apagado. Eso haría fallar todos esos pasos. Si btnInicio se mantiene, el Q invertido la salta a descarga. No sé cuál es.
+
+La tarea de clasificación pide "Asigna a cada caso UNA categoría principal: la causa raíz que explica el primer paso fallido." Podemos elegir la más directa en el código. Para J09, hay dos problemas. La primera instrucción problemática en el flujo que causa el fallo en el paso 2 es que la máquina de estados está condicionada por `ELSIF btnInicio`, que es una transición de secuencia ausente/errónea (pérdida de autorretención). Sin embargo, J09 en la línea `motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado :=3;` es un error de temporización. ¿Cuál ocurre primero en el flujo si btnInicio está presente? Si btnInicio está TRUE, entra y luego el error de temporización. Si btnInicio está FALSE, no entra. El fallo del paso 2 se observa "transicion a mezcla y mezcla activa". En el instante en que se activa nivelAlto, btnInicio puede ser TRUE (porque lo mantuvo el banco). El código transiciona a estado 2, y luego en el siguiente ciclo si btnInicio se mantiene, Q invertido falla. Si btnInicio se suelta justo, no. La mayoría de bancos de prueba no mantienen botón inicio; entonces J09 fallaría el paso 1 (si no listaron). Por lo tanto, asumir que el banco mantiene btnInicio TRUE hasta nivelAlto es contradictorio con la tarea, pero necesario para no fallar paso 1. Entonces el fallo principal es el error de temporización. J20, si el banco suelta btnInicio al nivelAlto, falla por secuencia. Por tanto mi elección actual: J09 TEMPORIZACION, J20 SECUENCIA.
+
+Revisemos J09 con lógica ELSIF: Si btnInicio TRUE (mantenido durante llenado), al llegar nivelAlto, en el ciclo del flanco de nivelAlto, CASE estado 1: vLlenado:=TRUE (aunque ya), IF nivelAlto TRUE -> vLlenado FALSE, estado 2, tMezcla(IN:=TRUE). El motorMezcla no se asigna en este ciclo. Al siguiente ciclo, asumiendo btnInicio TRUE, CASE estado 2: motorMezcla := tMezcla.Q (FALSE, ya que el TON Q aún no ha cumplido 60s); IF NOT tMezcla.Q TRUE -> estado 3. Por tanto no hay mezcla. Eso es TEMPORIZACION.
+
+J20: si btnInicio TRUE durante llenado, al llegar nivelAlto, en el ciclo del flanco, estado 1 -> estado 2, timerMezcla IN TRUE. Al siguiente ciclo, si btnInicio TRUE, CASE estado 2: motorMezcla TRUE, timerMezcla TRUE, Q aún FALSE, no transiciona; mezcla activa. Entonces no falla. Si falla, btnInicio no está TRUE. La línea IF NOT btnInicio pone estado 0. Eso es SECUENCIA. Perfecto.
+
+J34: similar a J25/J41, no depende de botón inicio para mantener; el fallo es TP. La transición a descarga puede ocurrir en el mismo ciclo de nivelAlto, como expliqué. Por tanto TEMPORIZACION.
+
+Ahora, para J10: usa CASE siempre. Si btnInicio no está TRUE, el estado 1 se mantiene? Sí, porque CASE se ejecuta siempre. En estado 0: IF btnInicio THEN estado:=1. Luego en estado 1, vLlenado:=TRUE; IF nivelAlto... etc. Está bien. Al llegar mezcla, falla por Q invertido. TEMPORIZACION.
+
+J09 TEMPORIZACION.
+
+J22 TEMPORIZACION.
+
+Bien.
+
+Debo asegurar que las justificaciones no excedan una o dos frases y mencionen línea o construcción.
+
+Ahora, verificar J51: El código tiene la línea `IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta; END_IF`. Es una inicialización extraña. En concreto, si puertaAbiertaAnterior es FALSE en el primer ciclo y puertaAbierta es TRUE, se asigna TRUE, perdiendo el flanco. Si puertaAbierta está FALSE, ok. El banco pudo iniciar con puertaAbierta FALSE y luego TRUE. Entonces primer flanco se detecta correctamente. ¿Por qué listó paso 1 como fallido? Analicemos mejor.
+
+Supongamos primera llamada: puertaAbierta FALSE, reset FALSE. Variables no inicializadas: nAperturas 0, puertaAbiertaAnterior FALSE.
+IF NOT puertaAbiertaAnterior (TRUE) THEN puertaAbiertaAnterior := puertaAbierta (FALSE)
+reset false
+IF puertaAbierta AND NOT anterior (FALSE AND TRUE) false
+actualizar anterior := puertaAbierta (FALSE)
+aviso nAperturas >=5 false
+Segunda llamada: puertaAbierta TRUE.
+IF NOT puertaAbiertaAnterior? anterior FALSE => TRUE: THEN puertaAbiertaAnterior := puertaAbierta (TRUE). Luego reset no.
+IF puertaAbierta AND NOT anterior: TRUE AND NOT TRUE = FALSE, no cuenta.
+Actualizar anterior := TRUE.
+Así que el flanco de FALSE a TRUE no se cuenta. ¡Ah! Incluso si puertaAbierta inicial es FALSE, el código inicializa `puertaAbiertaAnterior` con el valor actual en cada ciclo si anterior es FALSE. En la segunda llamada, antes de evaluar el flanco, asigna `puertaAbiertaAnterior := puertaAbierta` (TRUE) porque anterior era FALSE. Por tanto destruye el flanco. La lógica de inicialización `IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta;` se ejecuta cada ciclo mientras anterior sea FALSE; si el estado previo real era FALSE, justo antes de comparar lo pone a TRUE, eliminando el flanco. Eso es error de FLANCO. Justificación: la inicialización sobrescribe la memoria del estado anterior cada ciclo cuando vale FALSE, por lo que el flanco nunca se detecta. Categoría FLANCO.
+
+J07: error contador no invocado. Categoría FLANCO.
+
+J32: ¿posible categoría SECUENCIA? No, el fallo es solo intermitencia. TEMPORIZACION.
+
+J22: TEMPORIZACION.
+
+J38: TEMPORIZACION.
+
+J44: TEMPORIZACION.
+
+J25: Vamos a redactar: En estado 2 no se invoca `tMezcla`, TP no actualiza Q; además TP con Q activo desde el flanco provoca transición prematura. Categoría TEMPORIZACION.
+
+J34: La transición `IF tMezcla.Q THEN` se evalúa en el mismo ciclo del disparo de TP, por lo que avanza a descarga inmediatamente; uso de TP como temporizador de duración. Categoría TEMPORIZACION.
+
+J41: Similar a J25: TP no se invoca en el estado 2 y Q queda activo desde el disparo; transición prematura. TEMPORIZACION.
+
+J20: justificación: `IF NOT btnInicio THEN estado :=0;` ejecuta al inicio de cada ciclo, deshace la retención de la secuencia; al soltar btnInicio el proceso no permanece en mezcla. SECUENCIA.
+
+J09: justificación: en estado 2 `motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado :=3;` evalúa Q de un TON antes de expirar, por lo que `NOT Q` es TRUE y salta de mezcla a descarga inmediatamente. Categoría TEMPORIZACION. No mencionar ELSIF; quizá no es primer fallo.
+
+J10: misma justificación. TEMPORIZACION.
+
+J51: justificación: `IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta;` sobrescribe el estado anterior antes de evaluar el flanco, eliminando la transición. FLANCO.
+
+J07: justificación: no se invoca `C1` como bloque; solo asigna sus entradas, por lo que el contador no se actualiza. FLANCO.
+
+J22: justificación: rearme de TP con `IN := NOT tBlink.Q` produce 1s ON y apagado de solo un ciclo, no 1s OFF. TEMPORIZACION.
+
+J32: justificación: el TP se rearma con `bBlinkTrig` sin temporizar 1s en bajo; el pulso no genera intermitencia simétrica. TEMPORIZACION.
+
+J38: justificación: usa `TON` con IN:=TRUE fijo, por lo que `luzA` se enciende fijo a 1s y no parpadea. TEMPORIZACION.
+
+J44: justificación: `luzA:=bParpadeoOn` y `bParpadeoOn` solo se alterna en Q=TRUE, quedando fijo; no hay parpadeo. TEMPORIZACION.
+
+Repasemos categorías permitidas: TEMPORIZACION, SECUENCIA, SEGURIDAD, INICIALIZACION, FLANCO, CALCULO. Mi lista no usa SEGURIDAD, INICIALIZACION, CALCULO. Correcto.
+
+Posible caso J20: ¿podría ser SEGURIDAD? El paro está bien, no. SECUENCIA.
+
+J09: ¿Paso fallido 5 "Nivel bajo: vuelve a reposo" después de la mezcla. Con Q invertido, en estado 3 descarga, vDescarga TRUE; al nivelBajo, IF nivelBajo THEN vDescarga FALSE, estado 0. Eso funcionaría si llega a descarga. La transición a descarga ocurre inmediatamente. Entonces el nivelBajo vuelve a reposo. ¿Por qué falla? Porque para llegar a nivelBajo, la descarga debe mantenerse. El código en estado 3 con ELSIF btnInicio: si btnInicio no está TRUE, no se ejecuta CASE, por lo que no detecta nivelBajo. Entonces hay problema de secuencia. J09 podría ser SECUENCIA por el ELSIF. Por ejemplo, al pasar a descarga, btnInicio ya no está TRUE; ELSIF false, no se ejecuta CASE, vDescarga se mantiene? vDescarga se puso TRUE al transicionar? En J09, al final de estado 2, no hay vDescarga TRUE. En estado 3, vDescarga := TRUE se ejecuta solo si CASE se ejecuta. Si btnInicio FALSE, no se ejecuta, vDescarga queda FALSE. Entonces no descarga. Así que J09 falla en descarga y paso 5. Si el ELSIF fuera el problema, el primer fallo en paso 2 es secuencia. Si el Q invertido, en el ciclo de transición a estado 3 (si btnInicio TRUE) se ejecuta vDescarga TRUE en el siguiente ciclo si btnInicio TRUE; si btnInicio permanece TRUE, vDescarga TRUE. Si btnInicio se suelta en descarga, no se detecta nivelBajo. Entonces ambos importan. La pregunta pide causa raíz que explica el primer paso fallido. El primer paso fallido es paso 2: "Nivel alto: transicion a mezcla y mezcla aun activa 1s despues". Si btnInicio se mantiene TRUE tras nivelAlto, el código entra a mezcla y se salta a descarga; falla. Si btnInicio se suelta tras nivelAlto, no entra a mezcla ni descarga. El banco pudo soltar btnInicio después de detectar nivelAlto, pero en el mismo ciclo aún está TRUE? La condición ELSIF btnInicio se evalúa con el valor actual. Si el banco cambia btnInicio a FALSE al mismo tiempo que nivelAlto TRUE, en ese ciclo ELSIF false, no transiciona. Entonces falla de inmediato. ¿Cómo evita fallar paso 1? Porque en paso 1 btnInicio TRUE. En el paso 2, nivelAlto TRUE y btnInicio quizá FALSE. La causa es secuencia. J09 listó paso 2 fallido. J10 listó mismo paso 2 y su código no tiene ELSIF; su causa es temporización. J09 podría ser secuencia. Necesito decidir con base en el código y lo que pide.
+
+El banco automático probablemente para la tarea de llenado usa un script. Los pasos del banco:
+1. Inicio: abre vLlenado (btnInicio pulso). 
+2. Nivel alto: transición a mezcla y mezcla activa 1s después.
+3. ~59.5s mezcla no termina.
+4. ~60.5s descarga.
+5. Nivel bajo: reposo.
+...
+9. Entra en mezcla en segundo ciclo.
+...
+11. Tras paro permanece en reposo.
+
+En J09, si btnInicio es un pulso, no abre vLlenado (porque ELSIF false en segundo ciclo) y fallaría paso 1. No está listado el paso 1, lo que sugiere que J09 quizá sí pasó el paso 1. Por lo tanto, btnInicio no fue un pulso: quizá el banco lo mantiene en TRUE desde inicio hasta nivelAlto. Entonces el primer fallo es temporización. Si btnInicio se mantiene TRUE, J09 no sufre secuencia. Entonces TEMPORIZACION. J20 si btnInicio se mantiene TRUE desde inicio hasta nivelAlto, no sufre de secuencia tampoco, pero J20 fallaría por otra cosa. ¿Cuál? En J20, con btnInicio TRUE constante, en estado 2 motorMezcla TRUE y timerMezcla TON correcto; no falla. Entonces J20 no explica su fallo. Por tanto, el banco no mantiene btnInicio TRUE todo el tiempo; probablemente lo suelta en algún momento. ¿Por qué J09 no falló paso 1 entonces? Quizá J09 no listó paso 1 porque en el paso 1, btnInicio TRUE, ELSIF true, estado 0 -> estado 1; vLlenado no se escribe en estado 0, pero en el siguiente ciclo btnInicio podría seguir TRUE? Si el banco mantiene btnInicio TRUE durante el paso 1 (dos ciclos), vLlenado se enciende. Luego en paso 2, nivelAlto TRUE, quizá btnInicio se suelta? Entonces J09 falla secuencia. J20 con btnInicio suelto en paso 2: IF NOT btnInicio entonces estado 0, falla secuencia. J10 con CASE siempre no sufre. Entonces J09 y J20 podrían ser SECUENCIA. J09 TEMPORIZACION también presente, pero primer fallo secuencia. La lista de pasos fallidos de J09 incluye paso 9 "Entra en mezcla en el segundo ciclo"; si el proceso se congela por ELSIF, no entra en mezcla. Si Q invertido, tampoco permanece en mezcla. Ambos.
+
+¿Cómo determinar cuál es la causa raíz que debe asignarse? Las categorías permitidas definen SECUENCIA: "transiciones de la secuencia o de la máquina de estados ausentes o erróneas, pérdida de la autorretención o de la retención, alternancia incorrecta o acción ejecutada en un momento equivocado." TEMPORIZACION: "retardos, pulsos, intermitencias o plazos que no cumplen el tiempo especificado: tipo de temporizador equivocado, retardo a la desconexión mal emulado, temporizador no invocado en cada ciclo, reiniciado en cada ciclo o sin rearme entre operaciones."
+
+En J09, hay `ELSIF btnInicio THEN` que condiciona la ejecución de la máquina de estados. Eso es claramente pérdida de autorretención/transición errónea. Es un problema de secuencia. Pero también el temporizador invertido es temporización. El primer paso fallido (paso 2) se debe probablemente a la falta de retención (si btnInicio es pulsador). La tarea original dice "al pulsar btnInicio", no "mientras btnInicio esté activo". Por lo tanto, la condición `ELSIF btnInicio` es un fallo de secuencia. J09 debería ser SECUENCIA. J20 tiene `IF NOT btnInicio THEN estado:=0`, que es igual de secuencia. J10 no tiene ese problema; es TEMPORIZACION. J09 y J20 comparten secuencia. J09 también tiene temporización, pero el primer fallo es secuencia. Reconsideremos J09 listado de pasos: Si el primer fallo fuera por secuencia, el fallo del paso 2 es "Nivel alto: transicion a mezcla y mezcla aun activa 1s despues". Con btnInicio suelto, no hay transición; no hay mezcla. Eso encaja. Si fuera temporización, habría transición a descarga, por lo que el motor no estaría activo. ¿Cómo distingue el banco? El paso 2 comprueba motorMezcla 1s después de nivelAlto. En ambos falla. El paso 4 ~60.5s comprueba vDescarga. Con Q invertido, vDescarga se activaría demasiado pronto, por lo que en ~60.5s seguiría en descarga o reposo? En Q invertido: al nivelAlto, estado 2, siguiente ciclo estado 3 vDescarga TRUE. Si btnInicio se mantiene TRUE, vDescarga TRUE anticipada. A los 60.5s, vDescarga podría seguir TRUE o quizá reposo si nivelBajo no se activa. El paso 4 espera "ya descarga"; en realidad descarga ya está activa, pero puede seguir activa, así que no fallaría. Si el banco detecta que descarga se activó demasiado pronto, el paso 4 de "~60.5s ya descarga" puede fallar porque a esa hora no está descarga (ya terminó o volvió a reposo). Si btnInicio se mantiene y nivelBajo no ocurre, descarga sigue activa, cumpliendo "ya descarga". Entonces el paso 4 no fallaría. J09 listó paso 4 fallido. Eso sugiere que no es Q invertido, sino secuencia: no entra en descarga, por lo que falla ~60.5s. Además paso 5 falla. Entonces J09 SECUENCIA. J20: con IF NOT btnInicio estado 0, no entra en descarga; falla. J20 listó paso 4? Sí, J20 lista paso 2,3,4,9. Por tanto SECUENCIA. J10: Q invertido con CASE siempre. Descarga se activa inmediatamente; a los ~60.5s, si nivelBajo no llega, descarga sigue activa. J10 lista paso 2,3,9, no paso 4. Interesante. J10 no listó paso 4 (~60.5s ya descarga) ni paso 5. ¿Por qué? Porque Q invertido causa descarga inmediata. A ~60.5s, si descarga sigue activa (no nivelBajo), el paso 4 podría cumplirse. Por tanto no falla. J10 falla pasos 2 y 3 (mezcla). J09 listó paso 4 y 5, lo que sugiere que no es Q invertido; es secuencia (no avanza a descarga). J20 listó paso 4 también. J25 listó solo paso 2 y 3; no paso 4. J34 listó paso 2,3,4,5,6,9,11. Hmm.
+
+Analicemos J34: Es TP con IF sin restricción. Lista muchos fallos. Si falla descarga, secuencia.
+
+J25 listó pasos 2 y 3, no paso 4. Con TP y transición prematura a descarga, descarga activa; paso 4 puede cumplirse. Por tanto TEMPORIZACION.
+
+J41 listó pasos 2 y 3; TEMPORIZACION.
+
+J09 listó pasos 2,3,4,5,9. Si fuera Q invertido, pasos 4 y 5 probablemente no fallarían; si secuencia, fallan. Por tanto J09 SECUENCIA. J20 listó pasos 2,3,4,9; secuencia. J10 listó pasos 2,3,9; temporización.
+
+J34 listó pasos 2,3,4,5,6,9,11. Veamos: J34 usa TP e IF sin restricción. Podría fallar mucho. La causa raíz TEMPORIZACION quizá. La lista de fallados incluye paso 4 (ya descarga a ~60.5s). Si TP activa descarga prematura, a los 60.5 s descarga sigue activa, igual cumple. Entonces ¿por qué falla paso 4? Porque la lógica de J34 sin restricción de estado: si nivelAlto sigue TRUE, en cada ciclo `IF nivelAlto THEN estado:=2; vLlenado FALSE; motorMezcla TRUE; tMezcla(IN:=TRUE); END_IF`. Al expirar TP Q FALSE, la condición `IF tMezcla.Q THEN` no transiciona; pero como nivelAlto sigue TRUE, el código continúa disparando tMezcla con IN TRUE sin flanco, por lo que TP no se rearma, Q permanece FALSE. Entonces no entra en descarga, falla paso 4. Por tanto TEMPORIZACION. OK.
+
+J09: Si Q invertido (TON), no hay descarga? En Q invertido, al entrar estado 2, siguiente ciclo IF NOT Q TRUE -> estado 3, descarga. Entonces descarga se activa. A los 60.5s sigue descarga (o reposo si nivelBajo ya ocurrió), no falla. Las listas J09 paso 4 fallado, así que Q invertido no explica. En J10 Q invertido no lista paso 4 fallado, consistente. Por tanto J09 causa secuencia. J09 SECUENCIA. J20 SECUENCIA. J10 TEMPORIZACION.
+
+J09: justificación: la máquina de estados está bajo `ELSIF btnInicio THEN`, por lo que al soltar btnInicio no se ejecuta; no autorretiene y no transiciona a mezcla/descarga. SECUENCIA.
+
+J20: justificación: `IF NOT btnInicio THEN estado := 0;` al inicio de cada ciclo fuerza reposo cuando el botón no está pulsado, rompiendo la retención de la etapa. SECUENCIA.
+
+J10: TEMPORIZACION.
+
+Revisemos J20 pasos listados: 2,3,4,9. No paso 5. Con secuencia no llega a descarga/nivelBajo, falla 4. Correcto. J20 también tiene Q correcto, por lo que si btnInicio se mantuviera, no fallaría. Secuencia.
+
+Ahora J07: categoría FLANCO.
+
+J51: categoría FLANCO.
+
+J22, J32, J38, J44: TEMPORIZACION.
+
+J25, J41, J34: TEMPORIZACION.
+
+J34: aunque lista paso 5 y 6, la causa raíz podría ser temporización (TP mal usado) que no transiciona a descarga correctamente. Sí.
+
+J41: listó solo paso 2 y 3, no 4/5. TP mal usado con transición prematura; TEMPORIZACION.
+
+J25: listó paso 2 y 3. TEMPORIZACION.
+
+J09: SECUENCIA.
+
+J20: SECUENCIA.
+
+Ahora, para J09 y J20, hay que redactar justificación clara.
+
+J09: El código envuelve la máquina de estados en `IF btnParo THEN ... ELSIF btnInicio THEN ... END_IF`. Esto hace que la secuencia solo se evalúe cuando btnInicio esté pulsado. Al ser un botón de inicio momentáneo, el estado no se retiene y no avanza en las fases. Es SECUENCIA. Mencionar línea: `ELSIF btnInicio THEN` y `CASE estado`.
+
+J20: La línea `IF NOT btnInicio THEN estado := 0;` antes del CASE resetea el estado cada ciclo con btnInicio a FALSE; ausencia de retención/autoretención. SECUENCIA.
+
+J10: En estado 2, `motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado:=3;` usa Q de TON al revés. TEMPORIZACION.
+
+J25/J41: Usan TP para medir mezcla y no lo invocan en cada ciclo; el TP activa Q en el flanco, no al terminar. TEMPORIZACION.
+
+J34: `tMezcla` es TP, y en el mismo ciclo en que se dispara se evalúa `IF tMezcla.Q THEN`; TP Q es TRUE de inmediato, salta a descarga antes de tiempo. TEMPORIZACION.
+
+J22: Como `TP` rearma con `IN:=NOT tBlink.Q`, el tiempo apagado es casi nulo. TEMPORIZACION.
+
+J32: Similar con `bBlinkTrig`, no genera OFF de 1s. TEMPORIZACION.
+
+J38: TON con IN fijo. TEMPORIZACION.
+
+J44: `bParpadeoOn` se queda fijo. TEMPORIZACION.
+
+Ahora escribir JSON final. El enunciado pide SOLO lista JSON. No incluir markdown. Formato exacto: [{"codigo": "J51", "categoria": "FLANCO", "justificacion": "..."}]. En el mismo orden.
+
+Vamos a asegurar el orden: J51, J07, J22, J32, J38, J44, J09, J10, J20, J25, J34, J41. Sí.
+
+Categorías:
+J51 FLANCO
+J07 FLANCO
+J22 TEMPORIZACION
+J32 TEMPORIZACION
+J38 TEMPORIZACION
+J44 TEMPORIZACION
+J09 SECUENCIA
+J10 TEMPORIZACION
+J20 SECUENCIA
+J25 TEMPORIZACION
+J34 TEMPORIZACION
+J41 TEMPORIZACION
+
+Revisemos J09: ¿Es correcto asignar SECUENCIA y no TEMPORIZACION? Los pasos fallidos de J09 incluyen el paso 2 con "mezcla SECUENCIA y TEMPORIZACION [v2]" y paso 3 mezcla. La causa raíz: `ELSIF btnInicio THEN` es un error de secuencia. El código también tiene el error de temporización en estado 2, pero si btnInicio está suelto, no se ejecuta. El primer fallo paso 2 sucede por secuencia. OK.
+
+J20: El código en estado 2 con TON correcto, por lo que el fallo es secuencia. OK.
+
+J34: Justificación: "tMezcla es TP; se dispara con `tMezcla(IN:=TRUE)` y en el mismo ciclo `IF tMezcla.Q THEN` se cumple porque TP activa Q inmediatamente, por lo que no se espera 60 s." Eso es temporización. J34 también no invoca en cada ciclo, pero la transición prematura es lo principal.
+
+J41: Aunque si no invoca, Q permanece TRUE y transiciona prematura. Justificación: "En estado 2 no se invoca tMezcla en cada ciclo; TP activa Q desde el flanco, por lo que IF tMezcla.Q salta a descarga prematuramente." TEMPORIZACION.
+
+J25: Similar.
+
+J51: justificación: "`IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta;` sobrescribe la memoria anterior justo antes de evaluar el flanco, eliminando la transición." FLANCO.
+
+J07: "No se invoca `C1`; solo se asignan `C1.CU`, `C1.RESET` y `C1.PV`, por lo que el CTU no se ejecuta." FLANCO.
+
+J22: "`tBlink(IN := NOT tBlink.Q...)` rearma el TP sin temporizar 1 s apagado, dando intermitencia incorrecta." TEMPORIZACION.
+
+J32: "El TP con `bBlinkTrig` se relanza al expirar Q, sin mantener 1 s en bajo; no genera parpadeo 1s/1s." TEMPORIZACION.
+
+J38: "Usa un TON con IN:=TRUE permanente; luzA se enciende fija tras 1s, no parpadea." TEMPORIZACION.
+
+J44: "`bParpadeoOn` solo alterna cuando el pulso Q es TRUE, por lo que queda fijo y `luzA` no parpadea." TEMPORIZACION.
+
+J09: "La máquina de estados está dentro de `ELSIF btnInicio`; al soltar el botón no se ejecuta y no se retienen las fases." SECUENCIA.
+
+J10: "En mezcla usa `motorMezcla := tMezcla.Q; IF NOT tMezcla.Q THEN estado:=3`; con TON Q es FALSE al inicio, por lo que salta inmediatamente." TEMPORIZACION.
+
+J20: "`IF NOT btnInicio THEN estado :=0;` fuerza reposo cada ciclo sin botón; la secuencia no se autorretiene." SECUENCIA.
+
+J25: "Usa TP y no lo invoca en el estado 2; TP Q se activa desde el flanco, por lo que la transición se produce prematuramente." TEMPORIZACION.
+
+J34: "`tMezcla` TP y `IF tMezcla.Q THEN` en el mismo ciclo tras disparar: TP activa Q inmediatamente, adelantando la descarga." TEMPORIZACION.
+
+J41: similar J25.
+
+Asegurar JSON válido. No incluir tildes? Puede incluir tildes. El prompt pide responder solo JSON. Incluiré justificaciones en español.
+
+Lista final.

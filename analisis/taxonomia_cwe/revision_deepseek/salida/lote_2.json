@@ -1,0 +1,62 @@
+[
+ {
+  "codigo": "J29",
+  "categoria": "FLANCO",
+  "justificacion": "La línea 'sensorAnterior := sensorPieza;' se ejecuta antes de evaluar 'sensorPieza AND NOT sensorAnterior', por lo que el flanco ascendente nunca se detecta."
+ },
+ {
+  "codigo": "J31",
+  "categoria": "FLANCO",
+  "justificacion": "Se inicializa 'sensorAnterior' con el valor actual de 'sensorPieza' antes del IF, impidiendo que 'NOT sensorAnterior' detecte el primer flanco."
+ },
+ {
+  "codigo": "J04",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "TON se arranca con IN := NOT quemadorOn; en reposo con quemador apagado, Q es FALSE y NOT Q activa ventilador, emulando mal el retardo a la desconexión."
+ },
+ {
+  "codigo": "J21",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "TON con IN := NOT quemadorOn provoca que en arranque con quemador apagado 'NOT tonPostApagado.Q' sea TRUE y encienda el ventilador."
+ },
+ {
+  "codigo": "J26",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Usa TP: al arrancar con quemador apagado se ejecuta tApagado(IN:=TRUE) y Q es TRUE, encendiendo ventilador; además no rearma correctamente el segundo post-enfriamiento."
+ },
+ {
+  "codigo": "J30",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "TP se activa en reposo con quemador apagado y su Q inicial TRUE enciende el ventilador; el temporizador no rearma para el segundo post-enfriamiento."
+ },
+ {
+  "codigo": "J33",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Al arrancar con quemador apagado, timerDone es FALSE y 'IF quemadorOn OR NOT timerDone' enciende el ventilador; además la bandera no se reinicia entre post-enfriamientos."
+ },
+ {
+  "codigo": "J36",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "TON con IN := NOT quemadorOn; en reposo con quemador apagado 'NOT tPostMarcha.Q' es TRUE y activa la salida desde el primer ciclo."
+ },
+ {
+  "codigo": "J37",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "TON con IN := NOT quemadorOn; en arranque con quemador apagado 'NOT tonPostApagado.Q' es TRUE y enciende el ventilador."
+ },
+ {
+  "codigo": "J39",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "TON con IN := NOT quemadorOn; con quemador apagado al arranque, 'NOT tonApagado.Q' es TRUE y enciende el ventilador."
+ },
+ {
+  "codigo": "J40",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Al arranque, timerDone es FALSE y la condición 'NOT quemadorOn AND NOT timerDone' activa ventilador; la bandera no se reinicia para el segundo post-enfriamiento."
+ },
+ {
+  "codigo": "J48",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Con TP, al arrancar con quemador apagado se activa tApagado(IN:=TRUE) y Q TRUE enciende ventilador; no rearma correctamente el segundo post-enfriamiento."
+ }
+]

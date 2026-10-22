@@ -1,0 +1,227 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20261003000312
+Nombre de usuario: DESKTOP-2K8TKD6\LUIS C
+Usuario RunAs: DESKTOP-2K8TKD6\LUIS C
+Nombre de la configuración: 
+Máquina: DESKTOP-2K8TKD6 (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\herramientas\ejecutar_con_evidencia.ps1 -Modelo qwen2.5-coder:14b -Confirmar
+Id. de proceso: 41664
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+===== 1. Integridad del banco frente al piloto =====
+
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_000312_qwen2.5-coder_14b\20261003_000312_01_integridad_hashes.png  (1920x1080)  sha256=11a89e8fe56df090
+
+===== 2. Configuracion del lote =====
+
+
+===== 3. Dry-run =====
+[dry-run] qwen2.5-coder:14b | C8 | few_shot | ejec 3
+
+Resumen: 0 ya existÝan, 180 pendientes.
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_000312_qwen2.5-coder_14b\20261003_000313_02_dryrun.png  (1920x1080)  sha256=e434a6dc0d9066f2
+
+===== 4. Ejecucion (llamadas reales) =====
+[ok] qwen2.5-coder:14b | B1 | zero_shot | ejec 1 (17.04s)
+[ok] qwen2.5-coder:14b | B1 | zero_shot | ejec 2 (11.35s)
+[ok] qwen2.5-coder:14b | B1 | zero_shot | ejec 3 (11.42s)
+[ok] qwen2.5-coder:14b | B1 | few_shot | ejec 1 (5.67s)
+[ok] qwen2.5-coder:14b | B1 | few_shot | ejec 2 (6.51s)
+[ok] qwen2.5-coder:14b | B1 | few_shot | ejec 3 (5.12s)
+[ok] qwen2.5-coder:14b | B2 | zero_shot | ejec 1 (9.59s)
+[ok] qwen2.5-coder:14b | B2 | zero_shot | ejec 2 (9.14s)
+[ok] qwen2.5-coder:14b | B2 | zero_shot | ejec 3 (8.21s)
+[ok] qwen2.5-coder:14b | B2 | few_shot | ejec 1 (5.22s)
+[ok] qwen2.5-coder:14b | B2 | few_shot | ejec 2 (5.06s)
+[ok] qwen2.5-coder:14b | B2 | few_shot | ejec 3 (4.88s)
+[ok] qwen2.5-coder:14b | B3 | zero_shot | ejec 1 (8.45s)
+[ok] qwen2.5-coder:14b | B3 | zero_shot | ejec 2 (10.27s)
+[ok] qwen2.5-coder:14b | B3 | zero_shot | ejec 3 (8.93s)
+[ok] qwen2.5-coder:14b | B3 | few_shot | ejec 1 (6.62s)
+[ok] qwen2.5-coder:14b | B3 | few_shot | ejec 2 (6.39s)
+[ok] qwen2.5-coder:14b | B3 | few_shot | ejec 3 (6.7s)
+[ok] qwen2.5-coder:14b | B4 | zero_shot | ejec 1 (15.94s)
+[ok] qwen2.5-coder:14b | B4 | zero_shot | ejec 2 (9.75s)
+[ok] qwen2.5-coder:14b | B4 | zero_shot | ejec 3 (12.14s)
+[ok] qwen2.5-coder:14b | B4 | few_shot | ejec 1 (11.26s)
+[ok] qwen2.5-coder:14b | B4 | few_shot | ejec 2 (9.93s)
+[ok] qwen2.5-coder:14b | B4 | few_shot | ejec 3 (8.9s)
+[ok] qwen2.5-coder:14b | B5 | zero_shot | ejec 1 (7.02s)
+[ok] qwen2.5-coder:14b | B5 | zero_shot | ejec 2 (7.65s)
+[ok] qwen2.5-coder:14b | B5 | zero_shot | ejec 3 (8.61s)
+[ok] qwen2.5-coder:14b | B5 | few_shot | ejec 1 (6.95s)
+[ok] qwen2.5-coder:14b | B5 | few_shot | ejec 2 (6.0s)
+[ok] qwen2.5-coder:14b | B5 | few_shot | ejec 3 (4.98s)
+[ok] qwen2.5-coder:14b | B6 | zero_shot | ejec 1 (9.6s)
+[ok] qwen2.5-coder:14b | B6 | zero_shot | ejec 2 (7.71s)
+[ok] qwen2.5-coder:14b | B6 | zero_shot | ejec 3 (7.42s)
+[ok] qwen2.5-coder:14b | B6 | few_shot | ejec 1 (4.56s)
+[ok] qwen2.5-coder:14b | B6 | few_shot | ejec 2 (5.51s)
+[ok] qwen2.5-coder:14b | B6 | few_shot | ejec 3 (4.4s)
+[ok] qwen2.5-coder:14b | B7 | zero_shot | ejec 1 (7.86s)
+[ok] qwen2.5-coder:14b | B7 | zero_shot | ejec 2 (7.44s)
+[ok] qwen2.5-coder:14b | B7 | zero_shot | ejec 3 (7.16s)
+[ok] qwen2.5-coder:14b | B7 | few_shot | ejec 1 (4.42s)
+[ok] qwen2.5-coder:14b | B7 | few_shot | ejec 2 (4.29s)
+[ok] qwen2.5-coder:14b | B7 | few_shot | ejec 3 (4.29s)
+[ok] qwen2.5-coder:14b | B8 | zero_shot | ejec 1 (9.23s)
+[ok] qwen2.5-coder:14b | B8 | zero_shot | ejec 2 (9.17s)
+[ok] qwen2.5-coder:14b | B8 | zero_shot | ejec 3 (10.39s)
+[ok] qwen2.5-coder:14b | B8 | few_shot | ejec 1 (7.22s)
+[ok] qwen2.5-coder:14b | B8 | few_shot | ejec 2 (7.19s)
+[ok] qwen2.5-coder:14b | B8 | few_shot | ejec 3 (7.16s)
+[ok] qwen2.5-coder:14b | I1 | zero_shot | ejec 1 (18.45s)
+[ok] qwen2.5-coder:14b | I1 | zero_shot | ejec 2 (16.59s)
+[ok] qwen2.5-coder:14b | I1 | zero_shot | ejec 3 (19.95s)
+[ok] qwen2.5-coder:14b | I1 | few_shot | ejec 1 (13.64s)
+[ok] qwen2.5-coder:14b | I1 | few_shot | ejec 2 (14.45s)
+[ok] qwen2.5-coder:14b | I1 | few_shot | ejec 3 (13.66s)
+[ok] qwen2.5-coder:14b | I2 | zero_shot | ejec 1 (13.22s)
+[ok] qwen2.5-coder:14b | I2 | zero_shot | ejec 2 (17.04s)
+[ok] qwen2.5-coder:14b | I2 | zero_shot | ejec 3 (20.7s)
+[ok] qwen2.5-coder:14b | I2 | few_shot | ejec 1 (11.82s)
+[ok] qwen2.5-coder:14b | I2 | few_shot | ejec 2 (11.86s)
+[ok] qwen2.5-coder:14b | I2 | few_shot | ejec 3 (11.33s)
+[ok] qwen2.5-coder:14b | I3 | zero_shot | ejec 1 (12.89s)
+[ok] qwen2.5-coder:14b | I3 | zero_shot | ejec 2 (12.52s)
+[ok] qwen2.5-coder:14b | I3 | zero_shot | ejec 3 (12.67s)
+[ok] qwen2.5-coder:14b | I3 | few_shot | ejec 1 (12.36s)
+[ok] qwen2.5-coder:14b | I3 | few_shot | ejec 2 (11.53s)
+[ok] qwen2.5-coder:14b | I3 | few_shot | ejec 3 (11.35s)
+[ok] qwen2.5-coder:14b | I4 | zero_shot | ejec 1 (19.46s)
+[ok] qwen2.5-coder:14b | I4 | zero_shot | ejec 2 (18.78s)
+[ok] qwen2.5-coder:14b | I4 | zero_shot | ejec 3 (14.4s)
+[ok] qwen2.5-coder:14b | I4 | few_shot | ejec 1 (13.24s)
+[ok] qwen2.5-coder:14b | I4 | few_shot | ejec 2 (11.24s)
+[ok] qwen2.5-coder:14b | I4 | few_shot | ejec 3 (13.89s)
+[ok] qwen2.5-coder:14b | I5 | zero_shot | ejec 1 (14.47s)
+[ok] qwen2.5-coder:14b | I5 | zero_shot | ejec 2 (12.84s)
+[ok] qwen2.5-coder:14b | I5 | zero_shot | ejec 3 (13.42s)
+[ok] qwen2.5-coder:14b | I5 | few_shot | ejec 1 (11.49s)
+[ok] qwen2.5-coder:14b | I5 | few_shot | ejec 2 (11.85s)
+[ok] qwen2.5-coder:14b | I5 | few_shot | ejec 3 (10.73s)
+[ok] qwen2.5-coder:14b | I6 | zero_shot | ejec 1 (10.0s)
+[ok] qwen2.5-coder:14b | I6 | zero_shot | ejec 2 (14.74s)
+[ok] qwen2.5-coder:14b | I6 | zero_shot | ejec 3 (14.69s)
+[ok] qwen2.5-coder:14b | I6 | few_shot | ejec 1 (9.08s)
+[ok] qwen2.5-coder:14b | I6 | few_shot | ejec 2 (9.97s)
+[ok] qwen2.5-coder:14b | I6 | few_shot | ejec 3 (10.06s)
+[ok] qwen2.5-coder:14b | I7 | zero_shot | ejec 1 (14.64s)
+[ok] qwen2.5-coder:14b | I7 | zero_shot | ejec 2 (15.03s)
+[ok] qwen2.5-coder:14b | I7 | zero_shot | ejec 3 (15.68s)
+[ok] qwen2.5-coder:14b | I7 | few_shot | ejec 1 (15.03s)
+[ok] qwen2.5-coder:14b | I7 | few_shot | ejec 2 (11.28s)
+[ok] qwen2.5-coder:14b | I7 | few_shot | ejec 3 (13.35s)
+[ok] qwen2.5-coder:14b | I8 | zero_shot | ejec 1 (16.43s)
+[ok] qwen2.5-coder:14b | I8 | zero_shot | ejec 2 (14.26s)
+[ok] qwen2.5-coder:14b | I8 | zero_shot | ejec 3 (15.82s)
+[ok] qwen2.5-coder:14b | I8 | few_shot | ejec 1 (11.57s)
+[ok] qwen2.5-coder:14b | I8 | few_shot | ejec 2 (11.6s)
+[ok] qwen2.5-coder:14b | I8 | few_shot | ejec 3 (11.57s)
+[ok] qwen2.5-coder:14b | A1 | zero_shot | ejec 1 (13.38s)
+[ok] qwen2.5-coder:14b | A1 | zero_shot | ejec 2 (12.66s)
+[ok] qwen2.5-coder:14b | A1 | zero_shot | ejec 3 (13.46s)
+[ok] qwen2.5-coder:14b | A1 | few_shot | ejec 1 (14.15s)
+[ok] qwen2.5-coder:14b | A1 | few_shot | ejec 2 (13.32s)
+[ok] qwen2.5-coder:14b | A1 | few_shot | ejec 3 (13.88s)
+[ok] qwen2.5-coder:14b | A2 | zero_shot | ejec 1 (21.46s)
+[ok] qwen2.5-coder:14b | A2 | zero_shot | ejec 2 (24.56s)
+[ok] qwen2.5-coder:14b | A2 | zero_shot | ejec 3 (26.43s)
+[ok] qwen2.5-coder:14b | A2 | few_shot | ejec 1 (21.79s)
+[ok] qwen2.5-coder:14b | A2 | few_shot | ejec 2 (21.57s)
+[ok] qwen2.5-coder:14b | A2 | few_shot | ejec 3 (20.26s)
+[ok] qwen2.5-coder:14b | A3 | zero_shot | ejec 1 (18.49s)
+[ok] qwen2.5-coder:14b | A3 | zero_shot | ejec 2 (16.4s)
+[ok] qwen2.5-coder:14b | A3 | zero_shot | ejec 3 (17.72s)
+[ok] qwen2.5-coder:14b | A3 | few_shot | ejec 1 (13.86s)
+[ok] qwen2.5-coder:14b | A3 | few_shot | ejec 2 (12.59s)
+[ok] qwen2.5-coder:14b | A3 | few_shot | ejec 3 (12.53s)
+[ok] qwen2.5-coder:14b | A4 | zero_shot | ejec 1 (16.68s)
+[ok] qwen2.5-coder:14b | A4 | zero_shot | ejec 2 (16.51s)
+[ok] qwen2.5-coder:14b | A4 | zero_shot | ejec 3 (16.27s)
+[ok] qwen2.5-coder:14b | A4 | few_shot | ejec 1 (14.0s)
+[ok] qwen2.5-coder:14b | A4 | few_shot | ejec 2 (12.54s)
+[ok] qwen2.5-coder:14b | A4 | few_shot | ejec 3 (12.96s)
+[ok] qwen2.5-coder:14b | A5 | zero_shot | ejec 1 (13.81s)
+[ok] qwen2.5-coder:14b | A5 | zero_shot | ejec 2 (12.34s)
+[ok] qwen2.5-coder:14b | A5 | zero_shot | ejec 3 (13.3s)
+[ok] qwen2.5-coder:14b | A5 | few_shot | ejec 1 (10.74s)
+[ok] qwen2.5-coder:14b | A5 | few_shot | ejec 2 (11.65s)
+[ok] qwen2.5-coder:14b | A5 | few_shot | ejec 3 (11.11s)
+[ok] qwen2.5-coder:14b | A6 | zero_shot | ejec 1 (20.49s)
+[ok] qwen2.5-coder:14b | A6 | zero_shot | ejec 2 (20.7s)
+[ok] qwen2.5-coder:14b | A6 | zero_shot | ejec 3 (21.35s)
+[ok] qwen2.5-coder:14b | A6 | few_shot | ejec 1 (20.52s)
+[ok] qwen2.5-coder:14b | A6 | few_shot | ejec 2 (17.33s)
+[ok] qwen2.5-coder:14b | A6 | few_shot | ejec 3 (19.63s)
+[ok] qwen2.5-coder:14b | C1 | zero_shot | ejec 1 (35.99s)
+[ok] qwen2.5-coder:14b | C1 | zero_shot | ejec 2 (21.51s)
+[ok] qwen2.5-coder:14b | C1 | zero_shot | ejec 3 (17.32s)
+[ok] qwen2.5-coder:14b | C1 | few_shot | ejec 1 (10.41s)
+[ok] qwen2.5-coder:14b | C1 | few_shot | ejec 2 (19.04s)
+[ok] qwen2.5-coder:14b | C1 | few_shot | ejec 3 (27.33s)
+[ok] qwen2.5-coder:14b | C2 | zero_shot | ejec 1 (14.72s)
+[ok] qwen2.5-coder:14b | C2 | zero_shot | ejec 2 (13.76s)
+[ok] qwen2.5-coder:14b | C2 | zero_shot | ejec 3 (14.51s)
+[ok] qwen2.5-coder:14b | C2 | few_shot | ejec 1 (14.17s)
+[ok] qwen2.5-coder:14b | C2 | few_shot | ejec 2 (14.26s)
+[ok] qwen2.5-coder:14b | C2 | few_shot | ejec 3 (14.61s)
+[ok] qwen2.5-coder:14b | C3 | zero_shot | ejec 1 (5.8s)
+[ok] qwen2.5-coder:14b | C3 | zero_shot | ejec 2 (5.54s)
+[ok] qwen2.5-coder:14b | C3 | zero_shot | ejec 3 (6.41s)
+[ok] qwen2.5-coder:14b | C3 | few_shot | ejec 1 (7.27s)
+[ok] qwen2.5-coder:14b | C3 | few_shot | ejec 2 (6.58s)
+[ok] qwen2.5-coder:14b | C3 | few_shot | ejec 3 (5.92s)
+[ok] qwen2.5-coder:14b | C4 | zero_shot | ejec 1 (21.99s)
+[ok] qwen2.5-coder:14b | C4 | zero_shot | ejec 2 (23.78s)
+[ok] qwen2.5-coder:14b | C4 | zero_shot | ejec 3 (22.28s)
+[ok] qwen2.5-coder:14b | C4 | few_shot | ejec 1 (19.83s)
+[ok] qwen2.5-coder:14b | C4 | few_shot | ejec 2 (19.79s)
+[ok] qwen2.5-coder:14b | C4 | few_shot | ejec 3 (22.24s)
+[ok] qwen2.5-coder:14b | C5 | zero_shot | ejec 1 (27.32s)
+[ok] qwen2.5-coder:14b | C5 | zero_shot | ejec 2 (74.9s)  [TRUNCADA por tope de tokens]
+[ok] qwen2.5-coder:14b | C5 | zero_shot | ejec 3 (23.54s)
+[ok] qwen2.5-coder:14b | C5 | few_shot | ejec 1 (39.04s)
+[ok] qwen2.5-coder:14b | C5 | few_shot | ejec 2 (15.92s)
+[ok] qwen2.5-coder:14b | C5 | few_shot | ejec 3 (16.63s)
+[ok] qwen2.5-coder:14b | C6 | zero_shot | ejec 1 (17.9s)
+[ok] qwen2.5-coder:14b | C6 | zero_shot | ejec 2 (23.96s)
+[ok] qwen2.5-coder:14b | C6 | zero_shot | ejec 3 (23.73s)
+[ok] qwen2.5-coder:14b | C6 | few_shot | ejec 1 (12.03s)
+[ok] qwen2.5-coder:14b | C6 | few_shot | ejec 2 (19.46s)
+[ok] qwen2.5-coder:14b | C6 | few_shot | ejec 3 (12.19s)
+[ok] qwen2.5-coder:14b | C7 | zero_shot | ejec 1 (9.38s)
+[ok] qwen2.5-coder:14b | C7 | zero_shot | ejec 2 (6.77s)
+[ok] qwen2.5-coder:14b | C7 | zero_shot | ejec 3 (9.92s)
+[ok] qwen2.5-coder:14b | C7 | few_shot | ejec 1 (7.56s)
+[ok] qwen2.5-coder:14b | C7 | few_shot | ejec 2 (7.29s)
+[ok] qwen2.5-coder:14b | C7 | few_shot | ejec 3 (8.61s)
+[ok] qwen2.5-coder:14b | C8 | zero_shot | ejec 1 (7.79s)
+[ok] qwen2.5-coder:14b | C8 | zero_shot | ejec 2 (8.42s)
+[ok] qwen2.5-coder:14b | C8 | zero_shot | ejec 3 (7.62s)
+[ok] qwen2.5-coder:14b | C8 | few_shot | ejec 1 (3.93s)
+[ok] qwen2.5-coder:14b | C8 | few_shot | ejec 2 (3.78s)
+[ok] qwen2.5-coder:14b | C8 | few_shot | ejec 3 (3.72s)
+
+Resumen: 0 ya existÝan, 180 procesadas.
+Duracion: 40,1 min
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_000312_qwen2.5-coder_14b\20261003_004319_03_fin_ejecucion.png  (1920x1080)  sha256=cee25b58e98269f9
+
+===== 5. Verificacion posterior (pendientes deben ser 0) =====
+Resumen: 180 ya existÝan, 0 pendientes.
+
+===== 6. Resumen =====
+
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20261003004319
+**********************

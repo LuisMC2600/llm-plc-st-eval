@@ -1,0 +1,50 @@
+item,n,acuerdo,kappa,kappa_pond_cuad,acuerdo_pm1,dif_media_IA_menos_humano
+C1 E1 detectado,24,1.000,1.000,,,
+C1 E1 corrección (ambos detectan),18,1.000,nan,,,
+C1 E2 detectado,24,0.917,0.750,,,
+C1 E2 corrección (ambos detectan),18,1.000,1.000,,,
+C1 E3 detectado,24,0.958,0.864,,,
+C1 E3 corrección (ambos detectan),19,0.789,0.486,,,
+C1 E4 detectado,24,1.000,nan,,,
+C1 E4 corrección (ambos detectan),24,0.958,0.833,,,
+C1 adicionales (n.º),24,0.500,0.071,0.071,1.000,-0.500
+C1 inventados (n.º),24,0.458,0.268,0.476,0.875,+0.500
+C1 detectados (0–4),24,0.875,0.789,0.910,1.000,+0.125
+C5 E1 detectado,24,1.000,1.000,,,
+C5 E1 corrección (ambos detectan),22,1.000,nan,,,
+C5 E2 detectado,24,1.000,nan,,,
+C5 E2 corrección (ambos detectan),24,0.917,0.000,,,
+C5 E3 detectado,24,0.917,0.798,,,
+C5 E3 corrección (ambos detectan),16,0.938,0.000,,,
+C5 E4 detectado,24,1.000,1.000,,,
+C5 E4 corrección (ambos detectan),21,1.000,nan,,,
+C5 adicionales (n.º),24,1.000,nan,nan,1.000,+0.000
+C5 inventados (n.º),24,0.708,0.597,0.923,1.000,+0.042
+C5 detectados (0–4),24,0.917,0.829,0.944,1.000,+0.000
+C6 E1 detectado,24,0.958,0.833,,,
+C6 E1 corrección (ambos detectan),20,1.000,nan,,,
+C6 E2 detectado,24,1.000,nan,,,
+C6 E2 corrección (ambos detectan),24,1.000,1.000,,,
+C6 E3 detectado,24,1.000,1.000,,,
+C6 E3 corrección (ambos detectan),23,1.000,nan,,,
+C6 E4 detectado,24,1.000,1.000,,,
+C6 E4 corrección (ambos detectan),23,0.957,0.000,,,
+C6 adicionales (n.º),24,1.000,nan,nan,1.000,+0.000
+C6 inventados (n.º),24,0.958,0.489,0.793,1.000,-0.042
+C6 detectados (0–4),24,0.958,0.869,0.920,1.000,-0.042
+C2 E/S tanque,24,1.000,1.000,,,
+C2 E/S pozo,24,1.000,1.000,,,
+C2 E/S paro,24,1.000,nan,,,
+C2 E/S bomba,24,0.875,0.000,,,
+C2 E/S luz,24,1.000,nan,,,
+C2 tipos,24,1.000,nan,,,
+C2 POU,24,1.000,1.000,,,
+C2 justificación,24,1.000,nan,,,
+C2 A1,24,1.000,1.000,,,
+C2 A2,24,1.000,1.000,,,
+C2 A3,24,0.750,0.500,,,
+C2 A4,24,0.833,0.636,,,
+C2 A5,24,0.958,0.778,,,
+C2 A6,24,0.917,0.814,,,
+C2 código incluido,24,1.000,nan,,,
+C2 ambigüedades adicionales (n.º),24,0.333,0.203,0.765,0.750,+0.917

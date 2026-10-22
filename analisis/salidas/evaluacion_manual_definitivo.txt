@@ -1,0 +1,53 @@
+Evaluador 1: 96 respuestas leidas, 0 incompletas
+
+===== DIAGNOSTICO DE CODIGO (C1, C5, C6): 72 respuestas, clave de 4 errores por tarea =====
+  GLOBAL                         deteccion 256/288 =  88.9 % [ 84.7;  92.0] | correccion valida 243/288 =  84.4 % [ 79.7;  88.1]
+                                 completo 4/4  49/ 72 =  68.1 % [ 56.6;  77.7] | inventados: media 0.94, con alguno 40/72 | adicionales validos: media 0.01
+  gemini-3.1-pro-preview         deteccion  72/ 72 = 100.0 % [ 94.9; 100.0] | correccion valida  72/ 72 = 100.0 % [ 94.9; 100.0]
+                                 completo 4/4  18/ 18 = 100.0 % [ 82.4; 100.0] | inventados: media 0.50, con alguno 6/18 | adicionales validos: media 0.00
+  claude-sonnet-4-6              deteccion  72/ 72 = 100.0 % [ 94.9; 100.0] | correccion valida  72/ 72 = 100.0 % [ 94.9; 100.0]
+                                 completo 4/4  18/ 18 = 100.0 % [ 82.4; 100.0] | inventados: media 1.00, con alguno 12/18 | adicionales validos: media 0.06
+  gpt-4o-2024-08-06              deteccion  65/ 72 =  90.3 % [ 81.3;  95.2] | correccion valida  63/ 72 =  87.5 % [ 77.9;  93.3]
+                                 completo 4/4  11/ 18 =  61.1 % [ 38.6;  79.7] | inventados: media 0.78, con alguno 10/18 | adicionales validos: media 0.00
+  qwen2.5-coder_14b              deteccion  47/ 72 =  65.3 % [ 53.8;  75.2] | correccion valida  36/ 72 =  50.0 % [ 38.7;  61.3]
+                                 completo 4/4   2/ 18 =  11.1 % [  3.1;  32.8] | inventados: media 1.50, con alguno 12/18 | adicionales validos: media 0.00
+  gemini-3.1-pro-pre | zero_shot deteccion  36/ 36 = 100.0 % [ 90.4; 100.0] | correccion valida  36/ 36 = 100.0 % [ 90.4; 100.0]
+                                 completo 4/4   9/  9 = 100.0 % [ 70.1; 100.0] | inventados: media 0.67, con alguno 3/9 | adicionales validos: media 0.00
+  gemini-3.1-pro-pre | few_shot  deteccion  36/ 36 = 100.0 % [ 90.4; 100.0] | correccion valida  36/ 36 = 100.0 % [ 90.4; 100.0]
+                                 completo 4/4   9/  9 = 100.0 % [ 70.1; 100.0] | inventados: media 0.33, con alguno 3/9 | adicionales validos: media 0.00
+  claude-sonnet-4-6 | zero_shot  deteccion  36/ 36 = 100.0 % [ 90.4; 100.0] | correccion valida  36/ 36 = 100.0 % [ 90.4; 100.0]
+                                 completo 4/4   9/  9 = 100.0 % [ 70.1; 100.0] | inventados: media 0.89, con alguno 6/9 | adicionales validos: media 0.00
+  claude-sonnet-4-6 | few_shot   deteccion  36/ 36 = 100.0 % [ 90.4; 100.0] | correccion valida  36/ 36 = 100.0 % [ 90.4; 100.0]
+                                 completo 4/4   9/  9 = 100.0 % [ 70.1; 100.0] | inventados: media 1.11, con alguno 6/9 | adicionales validos: media 0.11
+  gpt-4o-2024-08-06 | zero_shot  deteccion  31/ 36 =  86.1 % [ 71.3;  93.9] | correccion valida  30/ 36 =  83.3 % [ 68.1;  92.1]
+                                 completo 4/4   4/  9 =  44.4 % [ 18.9;  73.3] | inventados: media 0.56, con alguno 4/9 | adicionales validos: media 0.00
+  gpt-4o-2024-08-06 | few_shot   deteccion  34/ 36 =  94.4 % [ 81.9;  98.5] | correccion valida  33/ 36 =  91.7 % [ 78.2;  97.1]
+                                 completo 4/4   7/  9 =  77.8 % [ 45.3;  93.7] | inventados: media 1.00, con alguno 6/9 | adicionales validos: media 0.00
+  qwen2.5-coder_14b | zero_shot  deteccion  25/ 36 =  69.4 % [ 53.1;  82.0] | correccion valida  17/ 36 =  47.2 % [ 32.0;  63.0]
+                                 completo 4/4   1/  9 =  11.1 % [  2.0;  43.5] | inventados: media 0.78, con alguno 5/9 | adicionales validos: media 0.00
+  qwen2.5-coder_14b | few_shot   deteccion  22/ 36 =  61.1 % [ 44.9;  75.2] | correccion valida  19/ 36 =  52.8 % [ 37.0;  68.0]
+                                 completo 4/4   1/  9 =  11.1 % [  2.0;  43.5] | inventados: media 2.22, con alguno 7/9 | adicionales validos: media 0.00
+  -- por tarea y por error de la clave: detecciones de 24
+     C1: E1 18  E2 20  E3 20  E4 24   | por modelo (de 24 = 6 respuestas x 4 errores): gemini 24  claude 24  gpt-4o 20  qwen2. 14
+     C5: E1 22  E2 24  E3 17  E4 21   | por modelo (de 24 = 6 respuestas x 4 errores): gemini 24  claude 24  gpt-4o 21  qwen2. 15
+     C6: E1 20  E2 24  E3 23  E4 23   | por modelo (de 24 = 6 respuestas x 4 errores): gemini 24  claude 24  gpt-4o 24  qwen2. 18
+
+===== C2, DE REQUISITO AMBIGUO A ESPECIFICACION: 24 respuestas (estudio de caso, n = 1 tarea) =====
+  gemini-3.1-pro-preview     E/S presentes 5.00 de 5 | tipos validos 6/6 | justificacion coherente 6/6 | ambiguedades de la clave 4.33 de 6 | adicionales 1.67 | incluyo codigo 0/6 | POU: {'FUNCTION_BLOCK': 6}
+  claude-sonnet-4-6          E/S presentes 5.00 de 5 | tipos validos 6/6 | justificacion coherente 6/6 | ambiguedades de la clave 4.67 de 6 | adicionales 5.00 | incluyo codigo 0/6 | POU: {'FUNCTION_BLOCK': 6}
+  gpt-4o-2024-08-06          E/S presentes 4.83 de 5 | tipos validos 6/6 | justificacion coherente 6/6 | ambiguedades de la clave 3.17 de 6 | adicionales 2.33 | incluyo codigo 0/6 | POU: {'FUNCTION_BLOCK': 6}
+  qwen2.5-coder_14b          E/S presentes 4.17 de 5 | tipos validos 6/6 | justificacion coherente 6/6 | ambiguedades de la clave 1.00 de 6 | adicionales 4.17 | incluyo codigo 0/6 | POU: {'PROGRAM': 3, 'FUNCTION_BLOCK': 3}
+  TODOS                      E/S presentes 4.75 de 5 | tipos validos 24/24 | justificacion coherente 24/24 | ambiguedades de la clave 3.29 de 6 | adicionales 3.29 | incluyo codigo 0/24 | POU: {'FUNCTION_BLOCK': 21, 'PROGRAM': 3}
+  -- ambiguedades de la clave, respuestas que las plantean (de 24): A1  2  A2 18  A3 12  A4 18  A5 22  A6  7
+
+===== CONCORDANCIA ENTRE EVALUADORES (submuestra) =====
+  Respuestas calificadas por ambos: 96
+  Deteccion de errores de la clave (C1, C5, C6)  n = 288 decisiones | acuerdo  97.9 % | kappa de Cohen 0.90
+  Correccion valida (C1, C5, C6)                 n = 288 decisiones | acuerdo  96.2 % | kappa de Cohen 0.86
+  C2: senales, tipos, justificacion y codigo     n = 192 decisiones | acuerdo  98.4 % | kappa de Cohen 0.94
+  C2: ambiguedades de la clave                   n = 144 decisiones | acuerdo  91.0 % | kappa de Cohen 0.82
+  TODAS las decisiones S/N                       n = 912 decisiones | acuerdo  96.4 % | kappa de Cohen 0.88
+  Errores inventados (conteo)                    n =  72 respuestas | coinciden exacto  70.8 % | diferencia absoluta media 0.33
+  Hallazgos o ambiguedades adicionales (conteo)  n =  96 respuestas | coinciden exacto  70.8 % | diferencia absoluta media 0.35
+  Respuestas de diagnostico con alguna discrepancia en deteccion: 6 de 72 -> C1-110, C1-130, C1-170, C5-107, C5-162, C6-175
+  Referencia habitual de kappa: < 0,40 pobre; 0,41-0,60 moderado; 0,61-0,80 sustancial; > 0,80 casi perfecto (Landis y Koch, 1977).

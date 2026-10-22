@@ -1,0 +1,1397 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>I3 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>I3 — Gestión de alarmas con prioridad (Intermedio)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja I3 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa la gestión de tres alarmas con prioridad: alm1 es de prioridad alta, alm2 media y alm3 baja. Cualquier alarma activa enciende la sirena. La salida codigoAlm debe reportar el número de la alarma de mayor prioridad presente (1, 2 o 3; 0 si no hay alarmas). Cada alarma debe quedar retenida (aunque su causa desaparezca) hasta que se reconozca individualmente con ack1, ack2 o ack3, respectivamente; el reconocimiento solo tiene efecto si la causa ya desapareció. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Alarmas con variables de entrada alm1, alm2, alm3, ack1, ack2, ack3 (BOOL) y salidas sirena (BOOL) y codigoAlm (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_I3.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea I3 (gestion de alarmas con prioridad)
+    ---------------------------------------------------------------------------
+    Tres alarmas con prioridad (alm1 alta, alm2 media, alm3 baja). Cualquiera
+    activa enciende la sirena. codigoAlm reporta la de mayor prioridad presente
+    (0 si no hay). Cada alarma queda RETENIDA aunque su causa desaparezca hasta
+    que se reconozca individualmente, y el reconocimiento SOLO tiene efecto si
+    la causa ya desaparecio.
+
+    USO: crear este PROGRAM junto al FUNCTION_BLOCK de la respuesta a evaluar y
+    ejecutar en modo Simulacion. Al terminar, leer &#x27;veredicto&#x27;: 1 = supera,
+    2 = falla.
+
+    ---------------------------------------------------------------------------
+    CORRECCION DEL 2026-09-09 (enmienda 12). Validado con validar_harness_I3.py.
+    La version anterior daba veredicto 1 a una implementacion cuyo ACK borraba
+    la alarma AUNQUE la causa siguiera presente, que es la violacion directa de
+    la regla central del enunciado. Los nueve pasos daban exactamente el mismo
+    resultado que con la implementacion correcta.
+
+    Causa: en toda la secuencia no habia un solo instante en que una entrada
+    ackN estuviera activa a la vez que su almN. Los reconocimientos se
+    aplicaban siempre con la causa ya retirada, de modo que la mitad de la
+    regla (&quot;no debe borrar con la causa presente&quot;) no se ejercitaba nunca.
+
+    Es notable porque ENMIENDAS_HARNESSES.md ya aprobaba explicitamente ese
+    paso en su lista: &quot;I3: ACK con la causa todavia presente (no debe borrar) y
+    ACK tras retirarla (si debe)&quot;. El paso estaba aprobado en el documento pero
+    no implementado en el banco.
+
+    Correccion: se anade el paso 2, que aplica ack3 con alm3 todavia activa y
+    exige que la alarma NO se borre. La secuencia pasa de 9 a 10 pasos.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reposo: sin alarmas, con los ACK activos (no deben hacer nada) *)
+            alm1 := FALSE; alm2 := FALSE; alm3 := FALSE;
+            ack1 := TRUE;  ack2 := TRUE;  ack3 := TRUE;
+            espSirena := FALSE; espCodigo := 0;
+        1:  (* Alarma baja activa *)
+            ack1 := FALSE; ack2 := FALSE; ack3 := FALSE;
+            alm3 := TRUE;
+            espSirena := TRUE;  espCodigo := 3;
+        2:  (* ACK CON LA CAUSA TODAVIA PRESENTE: no debe borrar (enmienda 12) *)
+            ack3 := TRUE;
+            espSirena := TRUE;  espCodigo := 3;
+        3:  (* Se retira la causa y se suelta el ACK: sigue retenida *)
+            alm3 := FALSE; ack3 := FALSE;
+            espSirena := TRUE;  espCodigo := 3;
+        4:  (* ACK con la causa ya retirada: ahora si debe borrar *)
+            ack3 := TRUE;
+            espSirena := FALSE; espCodigo := 0;
+        5:  (* Dos alarmas: domina la de mayor prioridad de las presentes *)
+            ack3 := FALSE; alm2 := TRUE; alm3 := TRUE;
+            espSirena := TRUE;  espCodigo := 2;
+        6:  (* Entra la de prioridad alta *)
+            alm1 := TRUE;
+            espSirena := TRUE;  espCodigo := 1;
+        7:  (* Se retira y reconoce la alta: queda la media *)
+            alm1 := FALSE; ack1 := TRUE;
+            espSirena := TRUE;  espCodigo := 2;
+        8:  (* Se retira y reconoce la media: queda la baja *)
+            alm2 := FALSE; ack2 := TRUE;
+            espSirena := TRUE;  espCodigo := 3;
+        9:  (* Se retira y reconoce la baja: todo en reposo *)
+            alm3 := FALSE; ack3 := TRUE;
+            espSirena := FALSE; espCodigo := 0;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#I3-8823">I3-8823</a><a href="#I3-1249">I3-1249</a><a href="#I3-2429">I3-2429</a><a href="#I3-2584">I3-2584</a><a href="#I3-9331">I3-9331</a><a href="#I3-6376">I3-6376</a><a href="#I3-8129">I3-8129</a><a href="#I3-2453">I3-2453</a><a href="#I3-5104">I3-5104</a><a href="#I3-3183">I3-3183</a><a href="#I3-8600">I3-8600</a><a href="#I3-6496">I3-6496</a><a href="#I3-4378">I3-4378</a><a href="#I3-1066">I3-1066</a><a href="#I3-1113">I3-1113</a><a href="#I3-9934">I3-9934</a><a href="#I3-7296">I3-7296</a><a href="#I3-3545">I3-3545</a><a href="#I3-7173">I3-7173</a><a href="#I3-9721">I3-9721</a><a href="#I3-2759">I3-2759</a><a href="#I3-4645">I3-4645</a><a href="#I3-1393">I3-1393</a><a href="#I3-4818">I3-4818</a></div>
+<div class="caja resp" id="I3-8823"><div class="cod"><h3>I3-8823</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Causa de alarma 1 - prioridad alta   *)
+    alm2 : BOOL; (* Causa de alarma 2 - prioridad media  *)
+    alm3 : BOOL; (* Causa de alarma 3 - prioridad baja   *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1            *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2            *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3            *)
+END_VAR
+
+VAR_OUTPUT
+    sirena    : BOOL; (* TRUE si hay al menos una alarma activa *)
+    codigoAlm : INT;  (* Código de la alarma de mayor prioridad *)
+END_VAR
+
+VAR
+    mem1 : BOOL; (* Memoria retenida de alarma 1 *)
+    mem2 : BOOL; (* Memoria retenida de alarma 2 *)
+    mem3 : BOOL; (* Memoria retenida de alarma 3 *)
+END_VAR
+
+(* ── Lógica de retención (set/reset con prioridad al set) ── *)
+
+(* Alarma 1: se activa con alm1; se borra solo si ack1=TRUE y alm1=FALSE *)
+IF alm1 THEN
+    mem1 := TRUE;
+ELSIF ack1 AND NOT alm1 THEN
+    mem1 := FALSE;
+END_IF;
+
+(* Alarma 2: se activa con alm2; se borra solo si ack2=TRUE y alm2=FALSE *)
+IF alm2 THEN
+    mem2 := TRUE;
+ELSIF ack2 AND NOT alm2 THEN
+    mem2 := FALSE;
+END_IF;
+
+(* Alarma 3: se activa con alm3; se borra solo si ack3=TRUE y alm3=FALSE *)
+IF alm3 THEN
+    mem3 := TRUE;
+ELSIF ack3 AND NOT alm3 THEN
+    mem3 := FALSE;
+END_IF;
+
+(* ── Sirena: encendida si cualquier alarma está retenida ── *)
+sirena := mem1 OR mem2 OR mem3;
+
+(* ── Código de alarma: mayor prioridad presente ── *)
+IF mem1 THEN
+    codigoAlm := 1;
+ELSIF mem2 THEN
+    codigoAlm := 2;
+ELSIF mem3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0; (* Sin alarmas activas *)
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-1249"><div class="cod"><h3>I3-1249</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Causa de alarma 1 - prioridad alta *)
+    alm2 : BOOL; (* Causa de alarma 2 - prioridad media *)
+    alm3 : BOOL; (* Causa de alarma 3 - prioridad baja *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena    : BOOL; (* Sirena activa si hay alguna alarma retenida *)
+    codigoAlm : INT;  (* Codigo de la alarma de mayor prioridad activa *)
+END_VAR
+VAR
+    ret1 : BOOL; (* Alarma 1 retenida *)
+    ret2 : BOOL; (* Alarma 2 retenida *)
+    ret3 : BOOL; (* Alarma 3 retenida *)
+END_VAR
+
+(* --- Logica de retencion por alarma --- *)
+
+(* Alarma 1: se activa con alm1; se libera solo si alm1 desaparecio y llega ack1 *)
+IF alm1 THEN
+    ret1 := TRUE;
+ELSIF ack1 AND NOT alm1 THEN
+    ret1 := FALSE;
+END_IF;
+
+(* Alarma 2: se activa con alm2; se libera solo si alm2 desaparecio y llega ack2 *)
+IF alm2 THEN
+    ret2 := TRUE;
+ELSIF ack2 AND NOT alm2 THEN
+    ret2 := FALSE;
+END_IF;
+
+(* Alarma 3: se activa con alm3; se libera solo si alm3 desaparecio y llega ack3 *)
+IF alm3 THEN
+    ret3 := TRUE;
+ELSIF ack3 AND NOT alm3 THEN
+    ret3 := FALSE;
+END_IF;
+
+(* --- Sirena: activa si al menos una alarma esta retenida --- *)
+sirena := ret1 OR ret2 OR ret3;
+
+(* --- Codigo de alarma: mayor prioridad presente --- *)
+IF ret1 THEN
+    codigoAlm := 1;
+ELSIF ret2 THEN
+    codigoAlm := 2;
+ELSIF ret3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0; (* Sin alarmas activas *)
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-2429"><div class="cod"><h3>I3-2429</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; // Alarma de prioridad alta
+    alm2 : BOOL; // Alarma de prioridad media
+    alm3 : BOOL; // Alarma de prioridad baja
+    ack1 : BOOL; // Reconocimiento de alarma 1
+    ack2 : BOOL; // Reconocimiento de alarma 2
+    ack3 : BOOL; // Reconocimiento de alarma 3
+END_VAR
+
+VAR_OUTPUT
+    sirena : BOOL; // Indica si la sirena está activa
+    codigoAlm : INT; // Código de la alarma de mayor prioridad activa
+END_VAR
+
+VAR
+    ret1 : BOOL; // Retención de la alarma 1
+    ret2 : BOOL; // Retención de la alarma 2
+    ret3 : BOOL; // Retención de la alarma 3
+END_VAR
+
+// Retención de alarmas
+IF alm1 THEN
+    ret1 := TRUE;
+END_IF;
+
+IF alm2 THEN
+    ret2 := TRUE;
+END_IF;
+
+IF alm3 THEN
+    ret3 := TRUE;
+END_IF;
+
+// Reconocimiento de alarmas
+IF ack1 AND NOT alm1 THEN
+    ret1 := FALSE;
+END_IF;
+
+IF ack2 AND NOT alm2 THEN
+    ret2 := FALSE;
+END_IF;
+
+IF ack3 AND NOT alm3 THEN
+    ret3 := FALSE;
+END_IF;
+
+// Determinación de la alarma de mayor prioridad
+IF ret1 THEN
+    codigoAlm := 1;
+ELSIF ret2 THEN
+    codigoAlm := 2;
+ELSIF ret3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+
+// Activación de la sirena si hay alguna alarma retenida
+sirena := ret1 OR ret2 OR ret3;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-2584"><div class="cod"><h3>I3-2584</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; // Causa de alarma 1 (Prioridad Alta)
+    alm2 : BOOL; // Causa de alarma 2 (Prioridad Media)
+    alm3 : BOOL; // Causa de alarma 3 (Prioridad Baja)
+    ack1 : BOOL; // Reconocimiento alarma 1
+    ack2 : BOOL; // Reconocimiento alarma 2
+    ack3 : BOOL; // Reconocimiento alarma 3
+END_VAR
+
+VAR_OUTPUT
+    sirena : BOOL;   // Sirena activa si hay alguna alarma presente
+    codigoAlm : INT; // Código de la alarma de mayor prioridad (1, 2, 3 o 0)
+END_VAR
+
+VAR
+    memAlm1 : BOOL; // Memoria de retención para alarma 1
+    memAlm2 : BOOL; // Memoria de retención para alarma 2
+    memAlm3 : BOOL; // Memoria de retención para alarma 3
+END_VAR
+
+// 1. Lógica de retención y reconocimiento de alarmas
+// La alarma se activa si la causa está presente.
+// Se mantiene retenida mientras no se reciba el &#x27;ack&#x27; correspondiente.
+// Si la causa sigue presente, el &#x27;ack&#x27; no tiene efecto (almX fuerza el TRUE).
+memAlm1 := alm1 OR (memAlm1 AND NOT ack1);
+memAlm2 := alm2 OR (memAlm2 AND NOT ack2);
+memAlm3 := alm3 OR (memAlm3 AND NOT ack3);
+
+// 2. Lógica de activación de la sirena
+// Se enciende si cualquiera de las alarmas retenidas está activa
+sirena := memAlm1 OR memAlm2 OR memAlm3;
+
+// 3. Lógica de prioridad para el código de alarma
+// Se evalúa en orden descendente de prioridad (Alta -&gt; Media -&gt; Baja)
+IF memAlm1 THEN
+    codigoAlm := 1;
+ELSIF memAlm2 THEN
+    codigoAlm := 2;
+ELSIF memAlm3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0; // Ninguna alarma activa
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-9331"><div class="cod"><h3>I3-9331</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Alarma 1 - Prioridad alta *)
+    alm2 : BOOL; (* Alarma 2 - Prioridad media *)
+    alm3 : BOOL; (* Alarma 3 - Prioridad baja *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena : BOOL; (* Sirena de alarma *)
+    codigoAlm : INT; (* Código de alarma de mayor prioridad *)
+END_VAR
+VAR
+    retAlm1 : BOOL; (* Retención de alarma 1 *)
+    retAlm2 : BOOL; (* Retención de alarma 2 *)
+    retAlm3 : BOOL; (* Retención de alarma 3 *)
+END_VAR
+
+(* Retención de alarmas *)
+IF alm1 THEN
+    retAlm1 := TRUE;
+ELSIF ack1 AND NOT alm1 THEN
+    retAlm1 := FALSE;
+END_IF;
+
+IF alm2 THEN
+    retAlm2 := TRUE;
+ELSIF ack2 AND NOT alm2 THEN
+    retAlm2 := FALSE;
+END_IF;
+
+IF alm3 THEN
+    retAlm3 := TRUE;
+ELSIF ack3 AND NOT alm3 THEN
+    retAlm3 := FALSE;
+END_IF;
+
+(* Determinación de la alarma de mayor prioridad *)
+IF retAlm1 THEN
+    codigoAlm := 1;
+ELSIF retAlm2 THEN
+    codigoAlm := 2;
+ELSIF retAlm3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+
+(* Activación de la sirena si hay cualquier alarma activa *)
+sirena := retAlm1 OR retAlm2 OR retAlm3;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-6376"><div class="cod"><h3>I3-6376</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 10 pasos del harness (pasos 2,3; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Alarma de prioridad alta *)
+    alm2 : BOOL; (* Alarma de prioridad media *)
+    alm3 : BOOL; (* Alarma de prioridad baja *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena : BOOL; (* Sirena *)
+    codigoAlm : INT; (* Código de la alarma de mayor prioridad *)
+END_VAR
+VAR
+    retAlm1 : BOOL; (* Retención de alarma 1 *)
+    retAlm2 : BOOL; (* Retención de alarma 2 *)
+    retAlm3 : BOOL; (* Retención de alarma 3 *)
+END_VAR
+
+(* Retención de alarmas *)
+IF NOT ack1 THEN
+    retAlm1 := alm1;
+ELSE
+    retAlm1 := FALSE;
+END_IF;
+
+IF NOT ack2 THEN
+    retAlm2 := alm2;
+ELSE
+    retAlm2 := FALSE;
+END_IF;
+
+IF NOT ack3 THEN
+    retAlm3 := alm3;
+ELSE
+    retAlm3 := FALSE;
+END_IF;
+
+(* Determinación de la alarma de mayor prioridad *)
+IF retAlm1 THEN
+    sirena := TRUE;
+    codigoAlm := 1;
+ELSIF retAlm2 THEN
+    sirena := TRUE;
+    codigoAlm := 2;
+ELSIF retAlm3 THEN
+    sirena := TRUE;
+    codigoAlm := 3;
+ELSE
+    sirena := FALSE;
+    codigoAlm := 0;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-8129"><div class="cod"><h3>I3-8129</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Causa de alarma 1 (Prioridad alta) *)
+    alm2 : BOOL; (* Causa de alarma 2 (Prioridad media) *)
+    alm3 : BOOL; (* Causa de alarma 3 (Prioridad baja) *)
+    ack1 : BOOL; (* Reconocimiento alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena : BOOL; (* Sirena activa si hay alguna alarma *)
+    codigoAlm : INT; (* Codigo de alarma de mayor prioridad (1-3, 0 si no hay) *)
+END_VAR
+VAR
+    latch1 : BOOL; (* Memoria de alarma 1 *)
+    latch2 : BOOL; (* Memoria de alarma 2 *)
+    latch3 : BOOL; (* Memoria de alarma 3 *)
+END_VAR
+
+(* Retencion de alarmas: se mantienen activas hasta recibir ack sin la causa presente *)
+latch1 := alm1 OR (latch1 AND NOT ack1);
+latch2 := alm2 OR (latch2 AND NOT ack2);
+latch3 := alm3 OR (latch3 AND NOT ack3);
+
+(* La sirena se enciende si cualquier alarma esta retenida *)
+sirena := latch1 OR latch2 OR latch3;
+
+(* Evaluacion de prioridad para el codigo de alarma *)
+IF latch1 THEN
+    codigoAlm := 1;
+ELSIF latch2 THEN
+    codigoAlm := 2;
+ELSIF latch3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-2453"><div class="cod"><h3>I3-2453</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; // Causa de alarma 1 (Prioridad Alta)
+    alm2 : BOOL; // Causa de alarma 2 (Prioridad Media)
+    alm3 : BOOL; // Causa de alarma 3 (Prioridad Baja)
+    ack1 : BOOL; // Reconocimiento alarma 1
+    ack2 : BOOL; // Reconocimiento alarma 2
+    ack3 : BOOL; // Reconocimiento alarma 3
+END_VAR
+
+VAR_OUTPUT
+    sirena : BOOL;   // Sirena activa si hay alguna alarma presente
+    codigoAlm : INT; // Código de alarma de mayor prioridad (1, 2, 3 o 0)
+END_VAR
+
+VAR
+    memAlm1 : BOOL; // Memoria de retención alarma 1
+    memAlm2 : BOOL; // Memoria de retención alarma 2
+    memAlm3 : BOOL; // Memoria de retención alarma 3
+END_VAR
+
+// Gestión de retención y reconocimiento (Alarma 1)
+// Se activa con la causa. El ACK solo funciona si la causa (alm1) ya desapareció.
+IF alm1 THEN
+    memAlm1 := TRUE;
+ELSIF ack1 THEN
+    memAlm1 := FALSE;
+END_IF;
+
+// Gestión de retención y reconocimiento (Alarma 2)
+IF alm2 THEN
+    memAlm2 := TRUE;
+ELSIF ack2 THEN
+    memAlm2 := FALSE;
+END_IF;
+
+// Gestión de retención y reconocimiento (Alarma 3)
+IF alm3 THEN
+    memAlm3 := TRUE;
+ELSIF ack3 THEN
+    memAlm3 := FALSE;
+END_IF;
+
+// Activación de la sirena (cualquier alarma retenida la enciende)
+sirena := memAlm1 OR memAlm2 OR memAlm3;
+
+// Evaluación de prioridad para el código de salida
+IF memAlm1 THEN
+    codigoAlm := 1; // Prioridad Alta
+ELSIF memAlm2 THEN
+    codigoAlm := 2; // Prioridad Media
+ELSIF memAlm3 THEN
+    codigoAlm := 3; // Prioridad Baja
+ELSE
+    codigoAlm := 0; // Sin alarmas
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-5104"><div class="cod"><h3>I3-5104</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL;  // Alarma de prioridad alta
+    alm2 : BOOL;  // Alarma de prioridad media
+    alm3 : BOOL;  // Alarma de prioridad baja
+    ack1 : BOOL;  // Reconocimiento de alarma 1
+    ack2 : BOOL;  // Reconocimiento de alarma 2
+    ack3 : BOOL;  // Reconocimiento de alarma 3
+END_VAR
+
+VAR_OUTPUT
+    sirena : BOOL;  // Salida sirena
+    codigoAlm : INT;  // Código de la alarma de mayor prioridad
+END_VAR
+
+VAR
+    alm1Retenido : BOOL;  // Alarma 1 retenida
+    alm2Retenido : BOOL;  // Alarma 2 retenida
+    alm3Retenido : BOOL;  // Alarma 3 retenida
+END_VAR
+
+// Retención de alarmas
+IF alm1 THEN
+    alm1Retenido := TRUE;
+END_IF
+
+IF alm2 THEN
+    alm2Retenido := TRUE;
+END_IF
+
+IF alm3 THEN
+    alm3Retenido := TRUE;
+END_IF
+
+// Reconocimiento de alarmas
+IF ack1 AND NOT alm1 THEN
+    alm1Retenido := FALSE;
+END_IF
+
+IF ack2 AND NOT alm2 THEN
+    alm2Retenido := FALSE;
+END_IF
+
+IF ack3 AND NOT alm3 THEN
+    alm3Retenido := FALSE;
+END_IF
+
+// Determinación de la alarma de mayor prioridad
+IF alm1Retenido THEN
+    codigoAlm := 1;
+    sirena := TRUE;
+ELSIF alm2Retenido THEN
+    codigoAlm := 2;
+    sirena := TRUE;
+ELSIF alm3Retenido THEN
+    codigoAlm := 3;
+    sirena := TRUE;
+ELSE
+    codigoAlm := 0;
+    sirena := FALSE;
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-3183"><div class="cod"><h3>I3-3183</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; // Alarma de prioridad alta
+    alm2 : BOOL; // Alarma de prioridad media
+    alm3 : BOOL; // Alarma de prioridad baja
+    ack1 : BOOL; // Reconocimiento de alarma 1
+    ack2 : BOOL; // Reconocimiento de alarma 2
+    ack3 : BOOL; // Reconocimiento de alarma 3
+END_VAR
+
+VAR_OUTPUT
+    sirena : BOOL; // Indica si la sirena está activa
+    codigoAlm : INT; // Código de la alarma de mayor prioridad activa
+END_VAR
+
+VAR
+    retAlm1 : BOOL; // Retención de alarma 1
+    retAlm2 : BOOL; // Retención de alarma 2
+    retAlm3 : BOOL; // Retención de alarma 3
+END_VAR
+
+// Retención de alarmas
+IF alm1 THEN
+    retAlm1 := TRUE;
+END_IF;
+
+IF alm2 THEN
+    retAlm2 := TRUE;
+END_IF;
+
+IF alm3 THEN
+    retAlm3 := TRUE;
+END_IF;
+
+// Reconocimiento de alarmas
+IF ack1 AND NOT alm1 THEN
+    retAlm1 := FALSE;
+END_IF;
+
+IF ack2 AND NOT alm2 THEN
+    retAlm2 := FALSE;
+END_IF;
+
+IF ack3 AND NOT alm3 THEN
+    retAlm3 := FALSE;
+END_IF;
+
+// Determinación del código de alarma de mayor prioridad
+IF retAlm1 THEN
+    codigoAlm := 1;
+ELSIF retAlm2 THEN
+    codigoAlm := 2;
+ELSIF retAlm3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+
+// Activación de la sirena si hay alguna alarma retenida
+sirena := retAlm1 OR retAlm2 OR retAlm3;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-8600"><div class="cod"><h3>I3-8600</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Alarma 1 - Prioridad alta *)
+    alm2 : BOOL; (* Alarma 2 - Prioridad media *)
+    alm3 : BOOL; (* Alarma 3 - Prioridad baja *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena : BOOL; (* Sirena de alarma *)
+    codigoAlm : INT; (* Código de la alarma de mayor prioridad presente *)
+END_VAR
+VAR
+    retAlm1 : BOOL; (* Retención de alarma 1 *)
+    retAlm2 : BOOL; (* Retención de alarma 2 *)
+    retAlm3 : BOOL; (* Retención de alarma 3 *)
+END_VAR
+
+(* Retención de alarmas *)
+IF alm1 THEN
+    retAlm1 := TRUE;
+ELSIF ack1 AND NOT alm1 THEN
+    retAlm1 := FALSE;
+END_IF;
+
+IF alm2 THEN
+    retAlm2 := TRUE;
+ELSIF ack2 AND NOT alm2 THEN
+    retAlm2 := FALSE;
+END_IF;
+
+IF alm3 THEN
+    retAlm3 := TRUE;
+ELSIF ack3 AND NOT alm3 THEN
+    retAlm3 := FALSE;
+END_IF;
+
+(* Determinación del código de alarma de mayor prioridad *)
+IF retAlm1 THEN
+    codigoAlm := 1;
+ELSIF retAlm2 THEN
+    codigoAlm := 2;
+ELSIF retAlm3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+
+(* Activación de la sirena si hay cualquier alarma activa *)
+sirena := retAlm1 OR retAlm2 OR retAlm3;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-6496"><div class="cod"><h3>I3-6496</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Causa de alarma 1 - prioridad alta *)
+    alm2 : BOOL; (* Causa de alarma 2 - prioridad media *)
+    alm3 : BOOL; (* Causa de alarma 3 - prioridad baja *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena    : BOOL; (* Sirena activa si hay alguna alarma retenida *)
+    codigoAlm : INT;  (* Codigo de la alarma de mayor prioridad activa *)
+END_VAR
+VAR
+    ret1 : BOOL; (* Bit de retencion de alarma 1 *)
+    ret2 : BOOL; (* Bit de retencion de alarma 2 *)
+    ret3 : BOOL; (* Bit de retencion de alarma 3 *)
+END_VAR
+
+(* --- Logica de retencion --- *)
+(* La alarma se activa al aparecer la causa; se borra solo si la causa
+   ya desaparecio Y se pulsa el reconocimiento correspondiente *)
+
+(* Alarma 1: se retiene con alm1; se libera con ack1 cuando alm1 = FALSE *)
+IF alm1 THEN
+    ret1 := TRUE;
+ELSIF ack1 AND NOT alm1 THEN
+    ret1 := FALSE;
+END_IF;
+
+(* Alarma 2: se retiene con alm2; se libera con ack2 cuando alm2 = FALSE *)
+IF alm2 THEN
+    ret2 := TRUE;
+ELSIF ack2 AND NOT alm2 THEN
+    ret2 := FALSE;
+END_IF;
+
+(* Alarma 3: se retiene con alm3; se libera con ack3 cuando alm3 = FALSE *)
+IF alm3 THEN
+    ret3 := TRUE;
+ELSIF ack3 AND NOT alm3 THEN
+    ret3 := FALSE;
+END_IF;
+
+(* --- Sirena --- *)
+(* Activa si al menos una alarma esta retenida *)
+sirena := ret1 OR ret2 OR ret3;
+
+(* --- Codigo de alarma de mayor prioridad --- *)
+(* Se evalua en orden descendente de prioridad *)
+IF ret1 THEN
+    codigoAlm := 1;
+ELSIF ret2 THEN
+    codigoAlm := 2;
+ELSIF ret3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0; (* Sin alarmas activas *)
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-4378"><div class="cod"><h3>I3-4378</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; // Alarma de prioridad alta
+    alm2 : BOOL; // Alarma de prioridad media
+    alm3 : BOOL; // Alarma de prioridad baja
+    ack1 : BOOL; // Reconocimiento de alarma 1
+    ack2 : BOOL; // Reconocimiento de alarma 2
+    ack3 : BOOL; // Reconocimiento de alarma 3
+END_VAR
+
+VAR_OUTPUT
+    sirena : BOOL; // Salida para encender la sirena
+    codigoAlm : INT; // Código de la alarma de mayor prioridad
+END_VAR
+
+VAR
+    alm1Retenido : BOOL := FALSE; // Alarma 1 retenida
+    alm2Retenido : BOOL := FALSE; // Alarma 2 retenida
+    alm3Retenido : BOOL := FALSE; // Alarma 3 retenida
+END_VAR
+
+// Retención de alarmas
+IF alm1 THEN
+    alm1Retenido := TRUE;
+END_IF
+
+IF alm2 THEN
+    alm2Retenido := TRUE;
+END_IF
+
+IF alm3 THEN
+    alm3Retenido := TRUE;
+END_IF
+
+// Reconocimiento de alarmas
+IF ack1 AND NOT alm1 THEN
+    alm1Retenido := FALSE;
+END_IF
+
+IF ack2 AND NOT alm2 THEN
+    alm2Retenido := FALSE;
+END_IF
+
+IF ack3 AND NOT alm3 THEN
+    alm3Retenido := FALSE;
+END_IF
+
+// Determinación de la alarma de mayor prioridad
+IF alm1Retenido THEN
+    codigoAlm := 1;
+    sirena := TRUE;
+ELSIF alm2Retenido THEN
+    codigoAlm := 2;
+    sirena := TRUE;
+ELSIF alm3Retenido THEN
+    codigoAlm := 3;
+    sirena := TRUE;
+ELSE
+    codigoAlm := 0;
+    sirena := FALSE;
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-1066"><div class="cod"><h3>I3-1066</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Alarma de prioridad alta *)
+    alm2 : BOOL; (* Alarma de prioridad media *)
+    alm3 : BOOL; (* Alarma de prioridad baja *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena : BOOL; (* Sirena *)
+    codigoAlm : INT; (* Código de la alarma de mayor prioridad *)
+END_VAR
+VAR
+    alm1Retenido : BOOL; (* Alarma 1 retenida *)
+    alm2Retenido : BOOL; (* Alarma 2 retenido *)
+    alm3Retenido : BOOL; (* Alarma 3 retenido *)
+END_VAR
+
+(* Retención de alarmas *)
+IF NOT alm1 AND ack1 THEN
+    alm1Retenido := FALSE;
+END_IF
+IF NOT alm2 AND ack2 THEN
+    alm2Retenido := FALSE;
+END_IF
+IF NOT alm3 AND ack3 THEN
+    alm3Retenido := FALSE;
+END_IF
+
+IF alm1 THEN
+    alm1Retenido := TRUE;
+END_IF
+IF alm2 THEN
+    alm2Retenido := TRUE;
+END_IF
+IF alm3 THEN
+    alm3Retenido := TRUE;
+END_IF
+
+(* Determinación de la alarma de mayor prioridad *)
+IF alm1Retenido THEN
+    sirena := TRUE;
+    codigoAlm := 1;
+ELSIF alm2Retenido THEN
+    sirena := TRUE;
+    codigoAlm := 2;
+ELSIF alm3Retenido THEN
+    sirena := TRUE;
+    codigoAlm := 3;
+ELSE
+    sirena := FALSE;
+    codigoAlm := 0;
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-1113"><div class="cod"><h3>I3-1113</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; // Alarma de prioridad alta
+    alm2 : BOOL; // Alarma de prioridad media
+    alm3 : BOOL; // Alarma de prioridad baja
+    ack1 : BOOL; // Reconocimiento de alarma 1
+    ack2 : BOOL; // Reconocimiento de alarma 2
+    ack3 : BOOL; // Reconocimiento de alarma 3
+END_VAR
+
+VAR_OUTPUT
+    sirena : BOOL; // Indica si la sirena está activa
+    codigoAlm : INT; // Código de la alarma de mayor prioridad activa
+END_VAR
+
+VAR
+    retAlm1 : BOOL; // Retención de alarma 1
+    retAlm2 : BOOL; // Retención de alarma 2
+    retAlm3 : BOOL; // Retención de alarma 3
+END_VAR
+
+// Retención de alarmas
+IF alm1 THEN
+    retAlm1 := TRUE;
+END_IF;
+
+IF alm2 THEN
+    retAlm2 := TRUE;
+END_IF;
+
+IF alm3 THEN
+    retAlm3 := TRUE;
+END_IF;
+
+// Reconocimiento de alarmas
+IF ack1 AND NOT alm1 THEN
+    retAlm1 := FALSE;
+END_IF;
+
+IF ack2 AND NOT alm2 THEN
+    retAlm2 := FALSE;
+END_IF;
+
+IF ack3 AND NOT alm3 THEN
+    retAlm3 := FALSE;
+END_IF;
+
+// Determinación del código de alarma de mayor prioridad
+IF retAlm1 THEN
+    codigoAlm := 1;
+ELSIF retAlm2 THEN
+    codigoAlm := 2;
+ELSIF retAlm3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+
+// Activación de la sirena
+sirena := retAlm1 OR retAlm2 OR retAlm3;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-9934"><div class="cod"><h3>I3-9934</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Causa alarma 1 (Prioridad alta) *)
+    alm2 : BOOL; (* Causa alarma 2 (Prioridad media) *)
+    alm3 : BOOL; (* Causa alarma 3 (Prioridad baja) *)
+    ack1 : BOOL; (* Reconocimiento alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena : BOOL; (* Sirena general *)
+    codigoAlm : INT; (* Codigo de alarma de mayor prioridad *)
+END_VAR
+VAR
+    mem1 : BOOL; (* Memoria alarma 1 *)
+    mem2 : BOOL; (* Memoria alarma 2 *)
+    mem3 : BOOL; (* Memoria alarma 3 *)
+END_VAR
+
+(* Retencion de alarmas: se mantienen activas hasta recibir ack sin la causa presente *)
+mem1 := alm1 OR (mem1 AND NOT ack1);
+mem2 := alm2 OR (mem2 AND NOT ack2);
+mem3 := alm3 OR (mem3 AND NOT ack3);
+
+(* La sirena se enciende si hay al menos una alarma activa en memoria *)
+sirena := mem1 OR mem2 OR mem3;
+
+(* Evaluacion de prioridad para el codigo de alarma *)
+IF mem1 THEN
+    codigoAlm := 1;
+ELSIF mem2 THEN
+    codigoAlm := 2;
+ELSIF mem3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-7296"><div class="cod"><h3>I3-7296</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Causa de alarma 1 - prioridad alta   *)
+    alm2 : BOOL; (* Causa de alarma 2 - prioridad media  *)
+    alm3 : BOOL; (* Causa de alarma 3 - prioridad baja   *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1            *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2            *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3            *)
+END_VAR
+
+VAR_OUTPUT
+    sirena    : BOOL; (* TRUE si hay al menos una alarma activa *)
+    codigoAlm : INT;  (* Código de la alarma de mayor prioridad *)
+END_VAR
+
+VAR
+    mem1 : BOOL; (* Memoria retenida de alarma 1 *)
+    mem2 : BOOL; (* Memoria retenida de alarma 2 *)
+    mem3 : BOOL; (* Memoria retenida de alarma 3 *)
+END_VAR
+
+(* ── Lógica de retención (set/reset con prioridad al set) ── *)
+
+(* Alarma 1: se activa con alm1; se borra solo si ack1 Y la causa ya desapareció *)
+IF alm1 THEN
+    mem1 := TRUE;
+ELSIF ack1 AND NOT alm1 THEN
+    mem1 := FALSE;
+END_IF;
+
+(* Alarma 2: ídem con alm2 / ack2 *)
+IF alm2 THEN
+    mem2 := TRUE;
+ELSIF ack2 AND NOT alm2 THEN
+    mem2 := FALSE;
+END_IF;
+
+(* Alarma 3: ídem con alm3 / ack3 *)
+IF alm3 THEN
+    mem3 := TRUE;
+ELSIF ack3 AND NOT alm3 THEN
+    mem3 := FALSE;
+END_IF;
+
+(* ── Sirena: encendida si cualquier alarma está retenida ── *)
+sirena := mem1 OR mem2 OR mem3;
+
+(* ── Código de alarma: mayor prioridad presente ── *)
+IF mem1 THEN
+    codigoAlm := 1;
+ELSIF mem2 THEN
+    codigoAlm := 2;
+ELSIF mem3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0; (* Sin alarmas activas *)
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-3545"><div class="cod"><h3>I3-3545</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Alarma 1 - Prioridad alta *)
+    alm2 : BOOL; (* Alarma 2 - Prioridad media *)
+    alm3 : BOOL; (* Alarma 3 - Prioridad baja *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena : BOOL; (* Sirena de alarma *)
+    codigoAlm : INT; (* Código de la alarma de mayor prioridad *)
+END_VAR
+VAR
+    retAlm1 : BOOL; (* Retención de alarma 1 *)
+    retAlm2 : BOOL; (* Retención de alarma 2 *)
+    retAlm3 : BOOL; (* Retención de alarma 3 *)
+END_VAR
+
+(* Retención de alarmas *)
+IF alm1 THEN
+    retAlm1 := TRUE;
+ELSIF ack1 AND NOT alm1 THEN
+    retAlm1 := FALSE;
+END_IF
+
+IF alm2 THEN
+    retAlm2 := TRUE;
+ELSIF ack2 AND NOT alm2 THEN
+    retAlm2 := FALSE;
+END_IF
+
+IF alm3 THEN
+    retAlm3 := TRUE;
+ELSIF ack3 AND NOT alm3 THEN
+    retAlm3 := FALSE;
+END_IF
+
+(* Determinación del código de alarma de mayor prioridad *)
+IF retAlm1 THEN
+    codigoAlm := 1;
+ELSIF retAlm2 THEN
+    codigoAlm := 2;
+ELSIF retAlm3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF
+
+(* Activación de la sirena si hay alguna alarma retenida *)
+sirena := retAlm1 OR retAlm2 OR retAlm3;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-7173"><div class="cod"><h3>I3-7173</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 10 pasos del harness (pasos 2,3; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Alarma de alta prioridad *)
+    alm2 : BOOL; (* Alarma de media prioridad *)
+    alm3 : BOOL; (* Alarma de baja prioridad *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena : BOOL; (* Sirena *)
+    codigoAlm : INT; (* Código de alarma *)
+END_VAR
+VAR
+    retAlm1 : BOOL; (* Retención de alarma 1 *)
+    retAlm2 : BOOL; (* Retención de alarma 2 *)
+    retAlm3 : BOOL; (* Retención de alarma 3 *)
+END_VAR
+
+(* Retención de alarmas *)
+IF NOT ack1 THEN
+    retAlm1 := alm1;
+ELSE
+    retAlm1 := FALSE;
+END_IF;
+
+IF NOT ack2 THEN
+    retAlm2 := alm2;
+ELSE
+    retAlm2 := FALSE;
+END_IF;
+
+IF NOT ack3 THEN
+    retAlm3 := alm3;
+ELSE
+    retAlm3 := FALSE;
+END_IF;
+
+(* Determinación de la alarma de mayor prioridad *)
+IF retAlm1 THEN
+    codigoAlm := 1;
+ELSIF retAlm2 THEN
+    codigoAlm := 2;
+ELSIF retAlm3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+
+(* Encendido de la sirena si hay alguna alarma activa *)
+sirena := retAlm1 OR retAlm2 OR retAlm3;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-9721"><div class="cod"><h3>I3-9721</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Causa de alarma 1 - prioridad alta *)
+    alm2 : BOOL; (* Causa de alarma 2 - prioridad media *)
+    alm3 : BOOL; (* Causa de alarma 3 - prioridad baja *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena    : BOOL; (* Sirena activa si hay alguna alarma retenida *)
+    codigoAlm : INT;  (* Codigo de la alarma de mayor prioridad activa *)
+END_VAR
+VAR
+    ret1 : BOOL; (* Alarma 1 retenida *)
+    ret2 : BOOL; (* Alarma 2 retenida *)
+    ret3 : BOOL; (* Alarma 3 retenida *)
+END_VAR
+
+(* --- Logica de retencion por alarma --- *)
+
+(* Alarma 1: se activa con alm1; se libera solo si alm1 desaparecio y se reconoce *)
+IF alm1 THEN
+    ret1 := TRUE;
+ELSIF ack1 AND NOT alm1 THEN
+    ret1 := FALSE;
+END_IF;
+
+(* Alarma 2: se activa con alm2; se libera solo si alm2 desaparecio y se reconoce *)
+IF alm2 THEN
+    ret2 := TRUE;
+ELSIF ack2 AND NOT alm2 THEN
+    ret2 := FALSE;
+END_IF;
+
+(* Alarma 3: se activa con alm3; se libera solo si alm3 desaparecio y se reconoce *)
+IF alm3 THEN
+    ret3 := TRUE;
+ELSIF ack3 AND NOT alm3 THEN
+    ret3 := FALSE;
+END_IF;
+
+(* --- Sirena: activa si al menos una alarma esta retenida --- *)
+sirena := ret1 OR ret2 OR ret3;
+
+(* --- Codigo de alarma: reporta la de mayor prioridad retenida --- *)
+IF ret1 THEN
+    codigoAlm := 1;
+ELSIF ret2 THEN
+    codigoAlm := 2;
+ELSIF ret3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-2759"><div class="cod"><h3>I3-2759</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; // Causa alarma 1 (Prioridad Alta)
+    alm2 : BOOL; // Causa alarma 2 (Prioridad Media)
+    alm3 : BOOL; // Causa alarma 3 (Prioridad Baja)
+    ack1 : BOOL; // Reconocimiento alarma 1
+    ack2 : BOOL; // Reconocimiento alarma 2
+    ack3 : BOOL; // Reconocimiento alarma 3
+END_VAR
+
+VAR_OUTPUT
+    sirena : BOOL;   // Sirena activa si hay alguna alarma presente
+    codigoAlm : INT; // Código de la alarma de mayor prioridad (1, 2, 3 o 0 si no hay)
+END_VAR
+
+VAR
+    estadoAlm1 : BOOL; // Estado retenido de la alarma 1
+    estadoAlm2 : BOOL; // Estado retenido de la alarma 2
+    estadoAlm3 : BOOL; // Estado retenido de la alarma 3
+END_VAR
+
+// 1. Lógica de retención (latch) y reconocimiento
+// La alarma se activa si la causa está presente. 
+// Se mantiene activa mientras no se reconozca (ack).
+// Si la causa sigue presente, el ack no tiene efecto (almX domina).
+estadoAlm1 := alm1 OR (estadoAlm1 AND NOT ack1);
+estadoAlm2 := alm2 OR (estadoAlm2 AND NOT ack2);
+estadoAlm3 := alm3 OR (estadoAlm3 AND NOT ack3);
+
+// 2. Lógica de prioridad para el código de alarma
+// Se evalúa en orden descendente de prioridad (1 -&gt; 2 -&gt; 3)
+IF estadoAlm1 THEN
+    codigoAlm := 1;
+ELSIF estadoAlm2 THEN
+    codigoAlm := 2;
+ELSIF estadoAlm3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+
+// 3. Lógica de activación de la sirena
+// Se enciende si cualquiera de los estados retenidos es verdadero
+sirena := estadoAlm1 OR estadoAlm2 OR estadoAlm3;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-4645"><div class="cod"><h3>I3-4645</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; // Alarma de prioridad alta
+    alm2 : BOOL; // Alarma de prioridad media
+    alm3 : BOOL; // Alarma de prioridad baja
+    ack1 : BOOL; // Reconocimiento de alarma 1
+    ack2 : BOOL; // Reconocimiento de alarma 2
+    ack3 : BOOL; // Reconocimiento de alarma 3
+END_VAR
+
+VAR_OUTPUT
+    sirena : BOOL; // Salida para encender la sirena
+    codigoAlm : INT; // Código de la alarma de mayor prioridad
+END_VAR
+
+VAR
+    alm1Retenido : BOOL; // Alarma 1 retenida
+    alm2Retenido : BOOL; // Alarma 2 retenida
+    alm3Retenido : BOOL; // Alarma 3 retenida
+END_VAR
+
+// Retención de alarmas
+IF alm1 THEN
+    alm1Retenido := TRUE;
+END_IF;
+IF alm2 THEN
+    alm2Retenido := TRUE;
+END_IF;
+IF alm3 THEN
+    alm3Retenido := TRUE;
+END_IF;
+
+// Reconocimiento de alarmas
+IF ack1 AND NOT alm1 THEN
+    alm1Retenido := FALSE;
+END_IF;
+IF ack2 AND NOT alm2 THEN
+    alm2Retenido := FALSE;
+END_IF;
+IF ack3 AND NOT alm3 THEN
+    alm3Retenido := FALSE;
+END_IF;
+
+// Determinación de la alarma de mayor prioridad
+IF alm1Retenido THEN
+    codigoAlm := 1;
+    sirena := TRUE;
+ELSIF alm2Retenido THEN
+    codigoAlm := 2;
+    sirena := TRUE;
+ELSIF alm3Retenido THEN
+    codigoAlm := 3;
+    sirena := TRUE;
+ELSE
+    codigoAlm := 0;
+    sirena := FALSE;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-1393"><div class="cod"><h3>I3-1393</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Alarma 1 - Prioridad alta *)
+    alm2 : BOOL; (* Alarma 2 - Prioridad media *)
+    alm3 : BOOL; (* Alarma 3 - Prioridad baja *)
+    ack1 : BOOL; (* Reconocimiento alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena : BOOL; (* Sirena activa *)
+    codigoAlm : INT; (* Codigo de alarma activa de mayor prioridad *)
+END_VAR
+VAR
+    mem1 : BOOL; (* Memoria de alarma 1 *)
+    mem2 : BOOL; (* Memoria de alarma 2 *)
+    mem3 : BOOL; (* Memoria de alarma 3 *)
+END_VAR
+
+(* Retencion de alarmas: se mantienen hasta que desaparece la causa y se reconocen *)
+mem1 := alm1 OR (mem1 AND NOT ack1);
+mem2 := alm2 OR (mem2 AND NOT ack2);
+mem3 := alm3 OR (mem3 AND NOT ack3);
+
+(* La sirena se enciende si cualquier alarma esta en memoria *)
+sirena := mem1 OR mem2 OR mem3;
+
+(* Determinacion del codigo de alarma por prioridad *)
+IF mem1 THEN
+    codigoAlm := 1;
+ELSIF mem2 THEN
+    codigoAlm := 2;
+ELSIF mem3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I3-4818"><div class="cod"><h3>I3-4818</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Causa de alarma 1 - prioridad alta   *)
+    alm2 : BOOL; (* Causa de alarma 2 - prioridad media  *)
+    alm3 : BOOL; (* Causa de alarma 3 - prioridad baja   *)
+    ack1 : BOOL; (* Reconocimiento individual alarma 1   *)
+    ack2 : BOOL; (* Reconocimiento individual alarma 2   *)
+    ack3 : BOOL; (* Reconocimiento individual alarma 3   *)
+END_VAR
+
+VAR_OUTPUT
+    sirena    : BOOL; (* TRUE si hay al menos una alarma activa *)
+    codigoAlm : INT;  (* Código de la alarma de mayor prioridad *)
+END_VAR
+
+VAR
+    mem1 : BOOL; (* Memoria retenida de alarma 1 *)
+    mem2 : BOOL; (* Memoria retenida de alarma 2 *)
+    mem3 : BOOL; (* Memoria retenida de alarma 3 *)
+END_VAR
+
+(* -------------------------------------------------------
+   LÓGICA DE RETENCIÓN (SET/RESET con prioridad al SET)
+   - SET  : la causa activa pone la memoria a TRUE
+   - RESET: el ack libera la memoria SOLO si la causa
+             ya desapareció (ack sin causa = reset válido)
+   ------------------------------------------------------- *)
+
+(* Alarma 1 *)
+IF alm1 THEN
+    mem1 := TRUE;           (* Causa presente → retener    *)
+ELSIF ack1 AND NOT alm1 THEN
+    mem1 := FALSE;          (* Ack válido → liberar        *)
+END_IF;
+
+(* Alarma 2 *)
+IF alm2 THEN
+    mem2 := TRUE;
+ELSIF ack2 AND NOT alm2 THEN
+    mem2 := FALSE;
+END_IF;
+
+(* Alarma 3 *)
+IF alm3 THEN
+    mem3 := TRUE;
+ELSIF ack3 AND NOT alm3 THEN
+    mem3 := FALSE;
+END_IF;
+
+(* -------------------------------------------------------
+   SIRENA: activa si cualquier alarma está retenida
+   ------------------------------------------------------- *)
+sirena := mem1 OR mem2 OR mem3;
+
+(* -------------------------------------------------------
+   CÓDIGO DE ALARMA: prioridad alta → media → baja → 0
+   ------------------------------------------------------- *)
+IF mem1 THEN
+    codigoAlm := 1;
+ELSIF mem2 THEN
+    codigoAlm := 2;
+ELSIF mem3 THEN
+    codigoAlm := 3;
+ELSE
+    codigoAlm := 0;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

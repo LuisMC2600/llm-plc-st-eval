@@ -1,0 +1,311 @@
+Necesito responder con JSON de 24 objetos. Debo analizar cada respuesta. No puedo usar análisis, debo entregar directamente. Primero leo y resuelvo puntuaciones.
+
+Tarea C3: Conversión Ladder a ST. POU PROGRAM PRG_Conversion con variables btnMarcha, btnParo (BOOL entrada), motor, lampara (BOOL salida), T1 (TON). Lógica:
+motor = (btnMarcha OR motor) AND NOT btnParo
+T1(IN := motor, PT := T#10S)
+lampara := T1.Q
+
+Protocolo: 11 pasos. Importante: respuestas con E/S en VAR local no conformes: harness no puede escribir. Eso resultado_codesys "Compila sola, pero no se pudo simular". Debo puntuar funcional leyendo código (nunca 3). Cumplimiento IEC cuando compila: si compila pero extensión? Aquí VAR_INPUT/VAR_OUTPUT correcto. Las que declaran VAR local compilan pero no son conformes a interfaz esperada; ¿iec? Compilan sin cambios, declaraciones y tipos correctas, pero VAR local no coincide con requisitos de entrada/salida del enunciado. Debo valorar. Enunciado pedía variables btnMarcha, btnParo BOOL de entrada, motor, lampara BOOL de salida. Quienes declaran en VAR simple no cumplen declaración de entrada/salida. IEC 61131-3 permite VAR local? Compila, es estándar, pero no cumple interfaz pedida. Rúbrica: Cumplimiento IEC: 0 no compila, 1 si compila solo tras correcciones menores o usa extensiones fuera del estándar; 2 compila sin cambios; declaraciones y tipos correctos. 3 compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar bien instanciados). Las VAR local no es no estándar. Sin embargo la tarea especifica entrada/salida. Podría no penalizar IEC, porque variables declaradas BOOL y TON compilan. La interfaz no conforme ya penaliza funcional y quizás mantenibilidad/claridad? La rúbrica de IEC dice "declaraciones y tipos correctos". Estrictamente, declarar entradas/salidas como VAR local no es "correcto" respecto a pedido. Podría puntuar iec=1? "compila solo tras correcciones menores" no exacto, compila solo. "o usa extensiones fuera del estándar" no. No hay categoría para interfaz no conforme. Quizás iec=2: compila, declaraciones y tipos correctos (aunque no E/S formales) es lo más apropiado. Si estamos evaluando IEC 61131-3, VAR extern no importa para IEC sino interfaz. Los mensajes del harness "no se pudo simular" no es fallo de compilador. La regla fija: "Si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3." no dice iec. Entonces iec según compilación sin cambios y standard: creo 2 para todas que compilan, excepto quizás un caso con lógica errónea? Veamos.
+
+Respuestas:
+
+1 C3-2896: VAR local, código correcto lógica. resultado compila sola no simula. funcional? Interfaz no conforme, pero leyendo código la lógica es correcta. La regla: "Si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3." Como la lógica es correcta pero no puede probarse entradas/salidas. ¿Puntuar funcional? En rúbrica: 0 no implementa lógica o falla nominal; 2 correcto en caso nominal y mayoría límites; 3 solo si probado todos. No probado. Debatir: Programa no conforme a interfaz; podría no recibir entradas. La lógica nominal es correcta, enclavamiento, TON, parada. Debido a interfaz no conforme, funcional no puede ser 3. Debe ser entre 0 y 2. Diría 2: lógica correcta al leer, falla solo interfaz, casos límite correctos en código. Pero hay que ser consistente con otras 24, hay respuestas con VAR local y lógica correcta (C3-6882, C3-3977? C3-2623, C3-2155, C3-1088) y algunas con lógica errónea (C3-3977, C3-9667, C3-5466). Las correctas VAR local funcional=2 quizá. La regla fija: si compila pero no se pudo simular: nunca 3. Podría ser 2 si código correcto.
+
+C3-6882: VAR local, lógica correcta (motor := ((btnMarcha OR motor) AND NOT btnParo), T1 y lampara). Func 2. Comentarios. END_PROGRAM. 
+
+C3-5764: Compila pasa 11. funcional_fijo 3. iec null. Código correcto VAR_INPUT/VAR_OUTPUT, T1 TON. iec: idiomático? Usa VAR_INPUT/OUTPUT, TON, T#10S, comentarios. 3. Coherencia 3, claridad 3, mantenibilidad 2 o 3? Rúbrica mantenibilidad 3: diseño extensible (parámetros de entrada del FB...). Aquí no usa FB, es PROGRAM; constantes no parametrizadas excepto T#10S inline. Variables están declaradas, cambios localizados. 2. Podría 2. Claridad: nombres descriptivos, secciones ordenadas, comentarios útiles; 3. Coherencia robusta: interlocks completos, comportamiento seguro ante simultáneas (marcha y paro: gana paro). 3.
+
+C3-5896: similar. Pasa. iec: 3? Usa VAR_INPUT/VAR_OUTPUT, TON, T#10S, comentario explica. 3. coh 3, clar 3, mant 2. 
+
+C3-2206: similar. Pasa. iec 3 (aunque comentarios con // pero valid). coh 3, clar 3, mant 2.
+
+C3-8154: similar. iec 3, coh 3, clar 3, mant 2.
+
+C3-6261: similar, lógica correcta. iec 3, coh 3, clar 2? Comentarios tiene "Serie = AND..." y descripciones; nombres descriptivos. Claridad 2 o 3. Estructura ordenada pero menos explicaciones. Dado docente cuidadoso, 3 para comentarios útiles? Puede ser 2 si no explica porqué, pero comenta mapeo. Similar. Repartiré. Mantenibilidad 2.
+
+C3-3977: VAR local, código: motor := (btnMarcha OR motor) AND btnParo;  // falta NOT: error. Y T1 con IF motor THEN IN:=TRUE ELSE IN:=FALSE. Las entradas locales. Resultado no simular. Funcional: lógica no implementa botón paro? Contacto NC btnParo: en ST debe NOT btnParo. Ellos usan btnParo directo. Significa que motor se activa solo cuando btnParo TRUE (y start/motor); en protocolo con btnParo TRUE, paso 4 espera motor FALSE. Fallaría. Tampoco probado. funcional 0 o 1. Rúbrica: no implementa lógica pedida, falla caso nominal (arranque con btnParo F? En protocolo arranque paso1 btnParo F, con `AND btnParo` motor quedaría FALSE, falla nominal). Entonces funcional 0. iec: compila, pero declaraciones y tipos correctos? VAR local. Lógica error. Cumplimiento IEC: compila estándar, declaraciones y tipos correctos. iec=2. Coherencia: condición del NC invertida mal, no contradicción; coherencia mayormente coherente? En realidad lógica no coherente con pedido. Podría 1 (lógica mayormente coherente con error). Claridad: comentarios, nombres. Estructura básica. 2. Mantenibilidad: 2? usan IF innecesario, parámetro inline. 1? 
+
+C3-3323: Pasa 11. Similar. iec 3, coh 3, clar 3, mant 2.
+
+C3-8076: Pasa. similar. iec 3, coh 3, clar 3, mant 2.
+
+C3-1695: Pasa. similar. iec 3, coh 3, clar 3, mant 2.
+
+C3-2623: VAR local, lógica correcta con IF. No simular. funcional 2. iec 2. coherencia 3? Código correcto. Claridad 2 o 3. Mantenibilidad 2. 
+
+C3-8055: Pasa. lógica correcta. iec 3, coh 3, clar 3, mant 2.
+
+C3-2360: Pasa. iec 3, coh 3, clar 3, mant 2.
+
+C3-9536: Pasa. iec 3, coh 3, clar 3, mant 2.
+
+C3-2155: VAR local, lógica correcta. funcional 2. iec 2. coh 3, clar 2/3, mant 2.
+
+C3-1446: Pasa. iec 3, coh 3, clar 3, mant 2.
+
+C3-8015: Pasa. Usa IF motor T1(IN:=TRUE) ELSE T1(IN:=FALSE) en lugar de T1(IN:=motor). Correcto funcional. iec 2 o 3? Es idiomático? TON con IN booleano y PT, standard. Usar IF es menos idiomático pero válido. En protocolo pasa. La rúbrica iec 3: "usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON... bien instanciados)" Aunque IF, TON correcto. Puede ser 2 por menos idiomático, sin embargo POU adecuado, TON bien instanciado, T#10S. Cumple 3. Tal vez 2 para no uso directo, pero T1(IN:=motor, PT:=T#10S) es más idiomático. Evaluador: 2 si declaraciones y tipos correctos, 3 si además idiomático. IF no es grave, TON instanciado bien. Puedo dar 2 a código con IF? Veamos C3-8015: compila, POU PROGRAM, variables okay, TON con llamada en IF. Eso es estándar. La rúbrica no penaliza IF, pero 3 requiere construcciones idiomáticas. Este es menos idiomático por IF. Doy iec=2. coh 3, clar 3? Tiene comentarios. Mant 2. 
+
+C3-9667: VAR local, código motor := (btnMarcha OR motor) AND btnParo; error NOT. No simular. funcional 0. iec 2. coh 1 (error lógico, botón NC directo). claridad 2. mant 2. Similar C3-3977.
+
+C3-1285: Compila, falla pasos 3,9. Código:
+IF NOT T1.Q THEN
+    T1(IN := FALSE, PT := T#10S);
+END_IF
+...
+IF motor THEN
+    T1(IN := TRUE);
+ELSE
+    T1(IN := FALSE);
+END_IF
+lampara := T1.Q
+Este es extraño: primero inicializa T1 con IN false si Q false, pero no asigna PT cuando motor true, y peor al llamar T1(IN:=TRUE) sin PT? En CODESYS TON mantiene PT si no se asigna? La llamada sin PT podría usar valor previo. Sin embargo falla pasos 3 y 9: lámpara no se enciende en 3(esperado T) y 9(esperado T). Quizás T1.Q no llega. Porque condición IF NOT T1.Q se ejecuta mientras Q falso, llama T1(IN:=FALSE,PT:=T#10S) en cada scan; después en el mismo scan la segunda llamada T1(IN:=TRUE) sin PT? En CODESYS las llamadas múltiples a misma instancia de TON en el mismo ciclo pueden no acumular bien. En scan si motor true: IF NOT T1.Q llama T1 con IN FALSE reseteando; luego IF motor T1(IN:=TRUE) sin PT, el timer comienza desde cero? La llamada con IN:=FALSE antes de TRUE en mismo ciclo impide que temporizador avance. Entonces lampara nunca se activa. Por eso falla 3 y 9. Todos otros pasos? En paso 1 arranque motor true, lampara false. Pasos con motor false, paro resetea. Correcto excepto temporizador no activa lámpara. Funcional: falla caso nominal? Caso nominal arranca motor y tras 10s lámpara, aquí no enciende. Falla 2 pasos. Rúbrica funcional 0: no implementa lógica pedida o falla caso nominal. ¿Caso nominal incluye lámpara? Sí falla temporizador. Podría ser 0 o 1. "0: no implementa la lógica pedida o falla en el caso nominal. 1: funciona en el caso nominal pero falla en casos límite evidentes". Aquí falla en los pasos 3 y 9 que son el encendido de lámpara, no límite, es nominal. funcional=0 o 1? El motor y paro funcionan, pero lámpara nunca enciende. No implementa la lógica de lámpara completa. 0. 
+iec: compila sin cambios, declaraciones y tipos correctos, TON instanciado bien. 2 (no idiomático por doble llamada y IF). coh: 0 o 1: condiciones muertas? Hay lógica redundante/contradictoria: IF NOT T1.Q llama T1(IN:=FALSE) siempre mientras no haya alcanzado, impide que alcance? Es condición muerta que impide operar temporizador. "0: condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar." La doble llamada con reset previo es estado muerto para timer. coh=0. Claridad: nombres y comentarios, estructura básica. 2. Mantenibilidad: 1 o 2. Usa constantes? PT inline, no hay constantes; lógica confusa. 1.
+
+C3-2752: Idéntico a C3-1285? Sí. funcional 0, iec 2, coh 0, claridad 2, mant 1.
+
+C3-4158: Pasa 11. Código correcto con IF? No, T1(IN:=motor, PT:=T#10S), pasa. iec 3, coh 3, clar 3, mant 2.
+
+C3-1088: VAR local, lógica correcta. no sim. funcional 2, iec 2, coh 3, clar 2/3, mant 2. 
+
+C3-5466: VAR local, código error `motor := (btnMarcha OR motor) AND btnParo;` sin NOT. funcional 0, iec 2, coh 1, clar 2, mant 2? Similar.
+
+Debo verificar códigos en orden de entrada. La lista de respuestas:
+1 C3-2896
+2 C3-6882
+3 C3-5764
+4 C3-5896
+5 C3-2206
+6 C3-8154
+7 C3-6261
+8 C3-3977
+9 C3-3323
+10 C3-8076
+11 C3-1695
+12 C3-2623
+13 C3-8055
+14 C3-2360
+15 C3-9536
+16 C3-2155
+17 C3-1446
+18 C3-8015
+19 C3-9667
+20 C3-1285
+21 C3-2752
+22 C3-4158
+23 C3-1088
+24 C3-5466
+
+Ahora debo puntuar cada criterio.
+
+En particular, para respuestas con funcional_fijo 3, solo just_func_iec una línea, porque funcional e iec? La salida requiere "just_func_iec": "una línea, o \"\" si las dos estaban fijadas". Las dos estaban fijadas solo si funcional_fijo no null? No, "si las dos estaban fijadas" significa funcional_fijo e iec_fijo no null? En nuestro caso iec_fijo es null para todas excepto? Revisar: todas respuestas funcional_fijo o null, iec_fijo null? En JSON, iec_fijo: null para todas. Entonces para las de funcional_fijo=3, funcional está fijada pero iec no. La just_func_iec no puede ser vacía porque iec no fijada. El formato: {"just_func_iec": "una línea, o \"\" si las dos estaban fijadas"}. Si funcional_fijo=3 pero iec_fijo=null, debo incluir just. Todas tienen iec_fijo null. Entonces ninguna just_func_iec vacía? A menos que funcional_fijo y iec_fijo null? Reglas: Si funcional_fijo o iec_fijo no son null, copia valor. Aquí funcional_fijo 3 no null, iec null. Copio funcional=3. La justificación abarca ambas? Necesito justificar iec. Entonces just_func_iec no vacía. 
+
+Para las no compiladas, ninguna no compila. Compilan todas.
+
+Puntuaciones de iec: Para programas que pasan 11 con VAR_INPUT/VAR_OUTPUT y T1 como TON directo T#10S: 3. Para programas con IF T1 IN TRUE/FALSE (aunque pasan): Iec 2. Para VAR local (interfaz no conforme): iec 2, si hay error de lógica no afecta iec. Podría justificar "VAR_LOCAL no cumple interfaz pedida" pero el criterio IEC no evalúa interfaz? Debo ser consistente. "Cumplimiento IEC 61131-3: 2: compila sin cambios; declaraciones y tipos correctos; 3: además idiomático." Los VAR local compilan, declaraciones y tipos correctos, aunque no cumple pedido. Podría dar iec=2. El error en lógica no es incumplimiento IEC. Todas 2.
+
+C3-8015: usa IF, TON. Compila. iec=2 por menos idiomático. C3-1285/2752: TON con IF y sin PT en segunda, doble instanciación. iec=2. C3-3977/9667/5466: iec=2. C3-2896/6882/2623/2155/1088: iec=2 (VAR local). Las de VAR local con lógica correcta no se les puede dar 3 porque no tienen VAR_INPUT/VAR_OUTPUT? La rúbrica IEC no exige VAR_INPUT/OUTPUT, solo declaraciones y tipos correctos. La tarea pide entradas/salidas. "POU adecuado" PROGRAM. Estándar compiler. Podría dar 2. 3 idiomático: un Program con VAR_INPUT/VAR_OUTPUT adecuado al problema es más idiomático que VAR local. Entonces 2.
+
+Ahora coherencia, claridad, mantenibilidad.
+
+Voy a crear 24 objetos. Necesito justificaciones breves.
+
+C3-2896: VAR local, lógica correcta con IF. funcional=2 (código correcto pero no conforme). iec=2. coherencia=3. claridad=2? Comentarios básicos, nombres. Tiene "// Lógica de control del motor", "Configuración y ejecución", "Control de la lámpara". Nombres descriptivos. Estructura básica. Claridad 2 o 3. Sin separar VAR_INPUT/OUTPUT. Doy 2. Mantenibilidad=1? Variables declaradas, PT inline no parametrizado, sin constantes. Es modificable con esfuerzo. 1. Podría 2 porque variables declaradas. La rúbrica 2: "parámetros como variables o constantes declaradas; cambios localizados." T#10S no está como constante, pero es valor mágico en llamada. Es un solo lugar. Mantenibilidad 1? "modificable con esfuerzo; constantes parcialmente parametrizadas." T#10S es parcialmente? Dado simple, 1 o 2. Como no hay constante, pero solo un valor. Docente cuidadoso: 1 si valores mágicos por todas partes? Hay un solo valor. 2 podría "cambios localizados" porque está en una línea. Para ser más estricto, doy 1. Para las que pasan con T#10S inline, también 2? Need consistency.
+
+Rúbrica mantenibilidad:
+- 0: valores mágicos por todas partes; imposible modificar sin reescribir.
+- 1: modificable con esfuerzo; constantes parcialmente parametrizadas.
+- 2: parámetros como variables o constantes declaradas; cambios localizados.
+- 3: además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica).
+
+Aquí todos usan T#10S literal y no definen constante. Ninguno usa FB reutilizable. Por tanto la mayoría merece 1 o 2. Las que declaran VAR_INPUT/OUTPUT y T#10S en un único lugar: cambios localizados, porque solo una línea. ¿Alcanza 2? "parámetros como variables o constantes declaradas" no hay constantes, pero "cambios localizados" sí. Podría 2. Para códigos correctos, doy 2. Para códigos con errores o reproducción duplicada, 1. Para VAR local correcto, 1 o 2. I'd give 1 because no VAR_INPUT/OUTPUT? No, mantenibilidad no se ve afectada por interfaz. Doy 2 a correctos, 1 a los con lógica errónea o IF confuso. Para C3-1285/2752, T#10S está en una llamada inicial, confuso, 1. Para C3-3977/9667/5466, T#10S en IF, error; doy 1 o 2? La lógica no correcta, modificable. 1.
+
+Para claridad estructural: 
+- Correctos con VAR_INPUT/VAR_OUTPUT y secciones comentadas: 3.
+- Correctos VAR local: 2 (estructura básica, nombres descriptivos). 
+- Error lógico: 2 si comentarios, 1? 
+Mantenibilidad: 
+- Correctos con VAR_INPUT/OUTPUT: 2 (no constantes, pero no mal). Para 3 no. 
+- Algunos podrían 2. 
+
+Necesito ser consistente y justificar.
+
+Vamos por ítem.
+
+1 C3-2896:
+funcional: 2. Just: "Interfaz no conforme (VAR local) pero la lógica leída es correcta."
+iec: 2. Just_func_iec: "Compila y usa tipos correctos; no usa VAR_INPUT/VAR_OUTPUT pedido." Esa línea sirve para iec y funcional? Just funcional ya no? Pueden dos en una. 
+coherencia: 3.
+claridad: 2.
+mantenibilidad: 1 o 2. Elegir 2? Tiene T#10S literal. "Cambio localizado aunque sin constantes." Doy 2.
+Just: "Lógica sin contradicciones, arranca/parada correctas." / "Nombres claros y comentarios, estructura plana." / "Sin constantes; tiempo fijo en una única ubicación."
+
+2 C3-6882:
+funcional=2, iec=2, coherencia=3, claridad=2, mantenibilidad=2. Similar.
+
+3 C3-5764:
+funcional=3 fijada. iec=3, coherencia=3, claridad=3, mantenibilidad=2.
+just_func_iec: "Pasa el harness; usa VAR_INPUT/VAR_OUTPUT y TON idiomático." 
+claridad 3.
+mant 2.
+
+4 C3-5896:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+5 C3-2206:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+6 C3-8154:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+7 C3-6261:
+funcional=3, iec=3, coh=3, clar=2? Comentarios "Serie=AND..." etc. Estructura con secciones. Doy 3 quizá. Para variar no. Mant 2. clar=3.
+
+8 C3-3977:
+funcional=0, iec=2, coherencia=1, claridad=2, mantenibilidad=1.
+Just func/iec: "No se pudo simular por VAR local; además falla lógica: omite NOT en btnParo." 
+iec: compila. 
+coh: "El paro NC se implementa invertido, contradice el comportamiento pedido." 
+clar: "Nombres y comentarios básicos; estructura simple pero no refleja el error." 
+mant: "Tiempo fijo inline y lógica en IF; difícil de corregir sin tocar condición."
+
+9 C3-3323:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+10 C3-8076:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+11 C3-1695:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+12 C3-2623:
+funcional=2, iec=2, coh=3, clar=2, mant=2.
+
+13 C3-8055:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+14 C3-2360:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+15 C3-9536:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+16 C3-2155:
+funcional=2, iec=2, coh=3, clar=2, mant=2.
+
+17 C3-1446:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+18 C3-8015:
+funcional=3, iec=2, coh=3, clar=2? Código IF motor, T1(IN:=TRUE/FALSE). Comentarios. Doy clar=3? Es claro. Mant=2. Clar 2? Maybe 2 because IF instead of direct assignment is less clean? But comments fine. I'll give 2. 
+just_func_iec: "Pasa el harness; TON estándar pero IF poco idiomático."
+coh=3: "Correcto ante arranque/paro/simultáneo." 
+clar=2: "Estructura clara aunque la llamada del temporizador es más verbosa." 
+mant=2: "Cambio localizado, sin constantes declaradas."
+
+19 C3-9667:
+funcional=0, iec=2, coh=1, clar=2, mant=1.
+same as 3977.
+
+20 C3-1285:
+funcional=0, iec=2, coherencia=0, claridad=2, mantenibilidad=1.
+just: "Falla encendido de lámpara; doble llamada TON con reset previo impide temporización."
+iec: "Compila con tipos correctos, pero patrón de doble llamada poco idiomático."
+coh: "Doble llamada con IN:=FALSE mientras Q es FALSE impide alcanzar el tiempo." 
+clar: "Nombres y comentarios, pero lógica confusa."
+mant: "Lógica confusa y T#10S inline; modificar requiere entender doble TON."
+
+21 C3-2752: igual.
+
+22 C3-4158:
+funcional=3, iec=3, coh=3, clar=3, mant=2.
+
+23 C3-1088:
+funcional=2, iec=2, coh=3, clar=2, mant=2.
+
+24 C3-5466:
+funcional=0, iec=2, coh=1, clar=2, mant=1.
+
+Debo asegurar que "funcional" no fijado, entre 0 y 2. Yes: C3-2896 2, C3-6882 2, C3-3977 0, C3-2623 2, C3-2155 2, C3-9667 0, C3-1285 0, C3-2752 0, C3-1088 2, C3-5466 0. 
+iec no fijado entre 1 y 3: all 2/3.
+
+Need just_func_iec for all. Keep en una línea.
+
+Question: "just_func_iec": "una línea, o \"\" si las dos estaban fijadas". En todos iec_fijo null, no vacía. Good.
+
+Potential issues: C3-3977 funcional maybe 1? Let's think: It compiles but cannot simulate due VAR local. Code has `motor := (btnMarcha OR motor) AND btnParo;` Missing NOT. In protocol, btnParo input is named "btnParo (BOOL de entrada)" and in Ladder contact NC. The harness protocol step 0: bP=F => expected motor F. With code, motor = (F OR F) AND F = F, passes. Step 1: bM=T, bP=F => motor = (T OR F) AND F = F, expected T, fails. So nominal arranque fails. funcional 0. Good.
+
+C3-9667 and C3-5466 same. 
+
+C3-1285/2752: Falla pasos 3 y 9. Let's analyze if functional 0 or 1. Rúbrica allows 0 if falla en caso nominal. Step1 motor true, lámpara false, passes. Step2 enclavamiento, passes. Step3 lámpara expected true, fails. Case nominal includes after 10 s lamp on. So 0. Some docentes could give 1 because partial works, but instruction says 0: no implementa lógica pedida (temporizador) o falla en caso nominal. The lámpara is central; failed nominal. 0.
+
+But one could argue 1: "funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." Does "caso nominal" mean only motor start/stop? The timer lamp is not a boundary case. If motor logic correct, but timer doesn't, it's core functionality. 0.
+
+Coherencia for C3-1285: "0: condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar." Here double call with `IF NOT T1.Q T1(IN:=FALSE, PT:=T#10S);` followed by T1(IN:=TRUE). If T1.Q false, first call resets timer, second starts? In CODESYS TON behavior: if IN FALSE then Q false and ET=0. Then second call IN TRUE starts timing from 0. Since first call resets before second every scan, timer ET never accumulates beyond scan time. So lamp never true. This is an unreachable/dead state. coh=0.
+
+For C3-3977/9667/5466: code has condition not contradictory? They implement NC as AND btnParo, which is wrong but doesn't create dead state. Coherencia = 1 because lógica mayormente coherente (the structure is coherent) with error. But it actually fails nominal, but coherencia isn't functional. The logic is internally consistent but wrong interpretation. There is no contradiction/dead state. 1.
+
+Mantenibilidad: For C3-3977, doy 1. It uses IF for timer, has T#10S inline. The lack of NOT is localized but a single condition. Could be 2? I gave 1. Fine.
+
+Now need final JSON exactly, no markdown, no text. Ensure valid JSON, 24 objects. Let's craft concise justifications.
+
+Let's list justifications per object.
+
+1:
+just_func_iec: "No se pudo simular por VAR local; el código ST de la lógica es correcto y compila."
+Actually just_func_iec combines both. For functional, I want to mention "compila y lógica correcta, pero interfaz no conforme". For iec, "compila, tipos correctos, sin VAR_INPUT/OUTPUT". Maybe "Compila; lógica correcta pero VAR local en vez de E/S pedidas." Good.
+
+2 similar: "Compila; lógica correcta pero declara E/S en VAR local."
+
+3: "Pasa banco y usa VAR_INPUT/OUTPUT, TON y T#10S idiomáticos."
+
+4: same.
+
+5: same.
+
+6: same.
+
+7: same.
+
+8: "Compila pero la lógica no es funcional: omite NOT en btnParo; usa VAR local en vez de E/S."
+
+9: same as 3.
+
+10: same.
+
+11: same.
+
+12: "Compila; lógica correcta pero VAR local no conforme para el harness."
+
+13: same.
+
+14: same.
+
+15: same.
+
+16: same.
+
+17: same.
+
+18: "Pasa banco; TON/BOOL correctos, pero usa IF en lugar de asignar IN:=motor."
+
+19: same as 8.
+
+20: "Compila, pero la doble llamada al TON impide que temporice; falla lámpara."
+
+21: same.
+
+22: same as 3.
+
+23: same as 12.
+
+24: same as 8.
+
+Need just_coherencia, just_claridad, just_mantenibilidad. One line each.
+
+Let's produce.
+
+Check "just_func_iec" for C3-5764: funcional fijada=3, iec no. It should mention iec. yes.
+
+We need only JSON, no markdown. I'll output as single line maybe. Ensure formatting.
+
+Let's create final.

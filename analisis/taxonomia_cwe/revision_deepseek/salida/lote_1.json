@@ -1,0 +1,67 @@
+[
+ {
+  "codigo": "J05",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "La fase 4 usa un temporizador TP (`tMezclar`); TP.Q es TRUE inmediatamente al iniciar, por lo que `IF tMezclar.Q THEN` pasa a fase 5 en el primer ciclo sin mezclar."
+ },
+ {
+  "codigo": "J15",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "La fase 4 asigna `mezclador := tMezcla.Q`; el TON no activa Q durante el plazo, así el mezclador queda apagado en los 120 s y al cumplirse se apaga/pasa de inmediato."
+ },
+ {
+  "codigo": "J49",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "En fase 4 `mezclador := tMezcla.Q; IF NOT tMezcla.Q THEN ...` sale a fase 5 en cuanto se entra, porque TON.Q es FALSE durante el tiempo de mezcla."
+ },
+ {
+  "codigo": "J03",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "El temporizador TON se rearma en el mismo ciclo (`timerRun := FALSE; ... timerRun := TRUE`) sin que el bloque vea IN=FALSE; tras vencer, Q sigue activo y los intentos saltan sin nuevo plazo."
+ },
+ {
+  "codigo": "J06",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Usa TP `tEspera`; TP.Q se activa inmediatamente al llamar con IN=TRUE, por lo que en el primer ciclo se evalúa como vencido/erróneo."
+ },
+ {
+  "codigo": "J11",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "`timer(IN := FALSE, PT := T#500MS)` se ejecuta en cada ciclo antes del CASE, reseteando el TON; nunca acumula 500 ms y no se produce el reintento."
+ },
+ {
+  "codigo": "J17",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Al vencer `tLimite.Q`, se vuelve a llamar `tLimite(IN:=TRUE...)` sin forzar IN=FALSE; el TON no se rearma y Q permanece activo, incrementando los intentos sin nuevo plazo."
+ },
+ {
+  "codigo": "J19",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "`resetTemp` se pone a TRUE al vencer, pero en el ciclo siguiente se borra antes de llamar a `temporizador`, de modo que el TON nunca ve IN=FALSE y no se rearma."
+ },
+ {
+  "codigo": "J23",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Usa TP `tEspera`; TP.Q se activa de inmediato, lo que en el primer ciclo del estado 1 consume el intento 1 y lo incrementa sin esperar 500 ms."
+ },
+ {
+  "codigo": "J35",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Al vencer `tTimeout.Q`, se invoca de nuevo `tTimeout(IN:=TRUE...)` sin dejar que el TON vea IN=FALSE; Q queda activo y los reintentos se acumulan en el mismo ciclo."
+ },
+ {
+  "codigo": "J43",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Usa TP `tEspera`; TP.Q se activa inmediatamente al iniciar, entonces el primer ciclo evalúa el intento como fallido y pasa a intento 2 sin respetar el plazo."
+ },
+ {
+  "codigo": "J45",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "`tiempoEspera(IN := FALSE, PT := T#500MS)` se ejecuta cada ciclo antes del CASE, reseteando el TON; el temporizador nunca retiene el tiempo y no llega a 500 ms."
+ },
+ {
+  "codigo": "J50",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Al vencer `timer.Q`, se llama `timer(IN:=TRUE...)` de nuevo sin forzar IN=FALSE; el TON no se rearma y Q permanece activo, saltando intentos sin plazo."
+ }
+]

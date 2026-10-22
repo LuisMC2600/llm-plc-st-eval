@@ -1,0 +1,209 @@
+{
+ "lote": 2,
+ "casos": [
+  {
+   "codigo": "J29",
+   "tarea": "B3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el conteo de piezas de una línea de producción. Cada vez que el sensor fotoeléctrico detecte una pieza (transición de FALSE a TRUE), la cuenta debe incrementarse en uno. Al llegar a 12 piezas debe activarse la salida de lote completo. Un botón de reset pone la cuenta en cero y desactiva la salida de lote. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Contador con variables de entrada sensorPieza, btnReset (BOOL) y salidas loteListo (BOOL) y cuenta (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primer flanco ascendente: cuenta 1 (funcion nominal)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Sensor sostenido en alto: no debe seguir contando"
+    },
+    {
+     "paso": 3,
+     "requisito": "Vuelta a bajo: la cuenta se conserva (no cuenta el flanco de bajada)"
+    },
+    {
+     "paso": 4,
+     "requisito": "10 flancos (11 piezas): el lote aun no se activa (preset menor que 12)"
+    },
+    {
+     "paso": 5,
+     "requisito": "1 flanco mas (12 piezas): el lote se activa (preset mayor que 12)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoeléctrico de pieza *)\n    btnReset : BOOL; (* Botón de reset *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Salida de lote completo *)\n    cuenta : INT; (* Contador de piezas *)\nEND_VAR\nVAR\n    sensorAnterior : BOOL; (* Estado anterior del sensor *)\nEND_VAR\n\n(* Almacenar el estado anterior del sensor *)\nsensorAnterior := sensorPieza;\n\n(* Incrementar la cuenta cuando el sensor detecta una pieza *)\nIF sensorPieza AND NOT sensorAnterior THEN\n    cuenta := cuenta + 1;\nEND_IF;\n\n(* Resetear el contador y la salida de lote *)\nIF btnReset THEN\n    cuenta := 0;\n    loteListo := FALSE;\nEND_IF;\n\n(* Activar la salida de lote completo cuando se llega a 12 piezas *)\nIF cuenta >= 12 THEN\n    loteListo := TRUE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J31",
+   "tarea": "B3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el conteo de piezas de una línea de producción. Cada vez que el sensor fotoeléctrico detecte una pieza (transición de FALSE a TRUE), la cuenta debe incrementarse en uno. Al llegar a 12 piezas debe activarse la salida de lote completo. Un botón de reset pone la cuenta en cero y desactiva la salida de lote. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Contador con variables de entrada sensorPieza, btnReset (BOOL) y salidas loteListo (BOOL) y cuenta (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primer flanco ascendente: cuenta 1 (funcion nominal)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Sensor sostenido en alto: no debe seguir contando"
+    },
+    {
+     "paso": 3,
+     "requisito": "Vuelta a bajo: la cuenta se conserva (no cuenta el flanco de bajada)"
+    },
+    {
+     "paso": 4,
+     "requisito": "10 flancos (11 piezas): el lote aun no se activa (preset menor que 12)"
+    },
+    {
+     "paso": 5,
+     "requisito": "1 flanco mas (12 piezas): el lote se activa (preset mayor que 12)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Sensor fotoeléctrico que detecta la pieza\n    btnReset : BOOL;    // Botón de reset para reiniciar el contador\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; // Salida que indica que se ha completado un lote\n    cuenta : INT;      // Contador de piezas\nEND_VAR\n\nVAR\n    sensorAnterior : BOOL; // Variable para almacenar el estado anterior del sensor\nEND_VAR\n\n// Inicialización del sensorAnterior con el valor actual del sensorPieza\nIF sensorPieza THEN\n    sensorAnterior := TRUE;\nELSE\n    sensorAnterior := FALSE;\nEND_IF\n\n// Lógica de conteo\nIF sensorPieza AND NOT sensorAnterior THEN\n    cuenta := cuenta + 1;\nEND_IF\n\n// Actualización del sensorAnterior\nsensorAnterior := sensorPieza;\n\n// Lógica para detectar el lote completo\nIF cuenta >= 12 THEN\n    loteListo := TRUE;\nELSE\n    loteListo := FALSE;\nEND_IF\n\n// Lógica de reset\nIF btnReset THEN\n    cuenta := 0;\n    loteListo := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J04",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; (* Señal del quemador: TRUE = encendido *)\nEND_VAR\nVAR_OUTPUT\n    ventilador : BOOL; (* Salida del ventilador de enfriamiento *)\nEND_VAR\nVAR\n    tPostMarcha : TON; (* Temporizador de post-marcha *)\nEND_VAR\n\n(* El temporizador arranca cuando el quemador se apaga *)\ntPostMarcha(IN := NOT quemadorOn, PT := T#30S);\n\n(* El ventilador funciona mientras el quemador este encendido\n   o mientras el temporizador de post-marcha no haya concluido *)\nventilador := quemadorOn OR NOT tPostMarcha.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J21",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; (* Señal del quemador: TRUE = encendido *)\nEND_VAR\n\nVAR_OUTPUT\n    ventilador : BOOL; (* Salida del ventilador: TRUE = funcionando *)\nEND_VAR\n\nVAR\n    tonPostApagado : TON;  (* Temporizador de retardo al apagado *)\nEND_VAR\n\n(*\n    Lógica:\n    - Si el quemador está encendido, el ventilador funciona y el temporizador se mantiene reseteado.\n    - Al apagarse el quemador, el temporizador comienza a contar 30 segundos.\n    - Cuando el temporizador completa los 30 segundos (Q = TRUE), el ventilador se detiene.\n*)\n\n(* Activar temporizador solo cuando el quemador está apagado *)\ntonPostApagado(\n    IN  := NOT quemadorOn,  (* Inicia cuenta cuando el quemador se apaga *)\n    PT  := T#30S            (* Tiempo de post-ventilación: 30 segundos   *)\n);\n\n(* El ventilador funciona si el quemador está ON,\n   o si el temporizador aún no ha completado los 30 s *)\nventilador := quemadorOn OR NOT tonPostApagado.Q;"
+  },
+  {
+   "codigo": "J26",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]"
+    },
+    {
+     "paso": 7,
+     "requisito": "Segundo post-enfriamiento: a los 29 s aun encendido (rearme a 30 s completos)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; (* Estado del quemador *)\nEND_VAR\nVAR_OUTPUT\n    ventilador : BOOL; (* Estado del ventilador *)\nEND_VAR\nVAR\n    tApagado : TP; (* Temporizador para el apagado *)\n    estadoVentilador : BOOL; (* Estado interno del ventilador *)\nEND_VAR\n\n(* Si el quemador está encendido, el ventilador también lo está *)\nIF quemadorOn THEN\n    estadoVentilador := TRUE;\n    tApagado(IN := FALSE); (* Reinicia el temporizador *)\nELSE\n    (* Si el quemador está apagado, el ventilador sigue encendido durante 30 segundos *)\n    tApagado(IN := TRUE, PT := T#30S);\n    estadoVentilador := tApagado.Q;\nEND_IF;\n\nventilador := estadoVentilador;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J30",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]"
+    },
+    {
+     "paso": 7,
+     "requisito": "Segundo post-enfriamiento: a los 29 s aun encendido (rearme a 30 s completos)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; (* Estado del quemador *)\nEND_VAR\nVAR_OUTPUT\n    ventilador : BOOL; (* Estado del ventilador *)\nEND_VAR\nVAR\n    tApagado : TP; (* Temporizador para el apagado *)\n    estadoVentilador : BOOL; (* Estado interno del ventilador *)\nEND_VAR\n\n(* Si el quemador está encendido, el ventilador también lo está *)\nIF quemadorOn THEN\n    estadoVentilador := TRUE;\n    tApagado(IN := FALSE); (* Reiniciar el temporizador *)\nELSE\n    (* Si el quemador está apagado, iniciar el temporizador *)\n    tApagado(IN := TRUE, PT := T#30S);\n    (* Mantener el ventilador encendido mientras el temporizador no haya expirado *)\n    estadoVentilador := tApagado.Q;\nEND_IF;\n\n(* Asignar el estado interno del ventilador a la salida *)\nventilador := estadoVentilador;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J33",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]"
+    },
+    {
+     "paso": 5,
+     "requisito": "Post-enfriamiento en curso (10 s): aun encendido"
+    },
+    {
+     "paso": 7,
+     "requisito": "Segundo post-enfriamiento: a los 29 s aun encendido (rearme a 30 s completos)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; // Indica si el quemador está encendido\nEND_VAR\n\nVAR_OUTPUT\n    ventilador : BOOL; // Controla el ventilador\nEND_VAR\n\nVAR\n    timer : TON; // Timer de retardo\n    timerDone : BOOL; // Indica si el timer ha terminado\nEND_VAR\n\n// Inicialización del timer\nIF NOT timerDone THEN\n    timer(IN := NOT quemadorOn, PT := T#30S);\n    timerDone := timer.Q;\nEND_IF;\n\n// Control del ventilador\nIF quemadorOn OR NOT timerDone THEN\n    ventilador := TRUE;\nELSE\n    ventilador := FALSE;\nEND_IF;"
+  },
+  {
+   "codigo": "J36",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; (* Señal del quemador: TRUE = encendido *)\nEND_VAR\nVAR_OUTPUT\n    ventilador : BOOL; (* Salida del ventilador de enfriamiento *)\nEND_VAR\nVAR\n    tPostMarcha : TON; (* Temporizador de post-marcha al apagar quemador *)\nEND_VAR\n\n(* Temporizador inicia cuando el quemador se apaga (flanco descendente) *)\n(* IN = NOT quemadorOn: empieza a contar en cuanto el quemador se detiene *)\ntPostMarcha(IN := NOT quemadorOn, PT := T#30S);\n\n(* El ventilador funciona mientras el quemador este encendido\n   o mientras el temporizador de post-marcha no haya concluido *)\nventilador := quemadorOn OR NOT tPostMarcha.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J37",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; (* Señal del quemador: TRUE = encendido *)\nEND_VAR\n\nVAR_OUTPUT\n    ventilador : BOOL; (* Salida del ventilador: TRUE = funcionando *)\nEND_VAR\n\nVAR\n    tonPostApagado : TON;  (* Temporizador de retardo al apagado *)\nEND_VAR\n\n(* -------------------------------------------------------\n   Lógica:\n   - Quemador ON  → ventilador ON, temporizador en reset.\n   - Quemador OFF → temporizador inicia 30 s; ventilador\n     permanece ON hasta que el temporizador expire.\n   ------------------------------------------------------- *)\n\n(* Activar temporizador solo cuando el quemador está apagado *)\ntonPostApagado(\n    IN  := NOT quemadorOn,  (* Cuenta mientras quemador esté OFF *)\n    PT  := T#30S            (* Tiempo de post-ventilación *)\n);\n\n(* El ventilador funciona si el quemador está ON\n   o si el temporizador aún no ha expirado *)\nventilador := quemadorOn OR NOT tonPostApagado.Q;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J39",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; (* Señal del quemador: TRUE = encendido *)\nEND_VAR\n\nVAR_OUTPUT\n    ventilador : BOOL; (* Salida del ventilador: TRUE = funcionando *)\nEND_VAR\n\nVAR\n    tonApagado : TON;  (* Temporizador de retardo al apagado *)\nEND_VAR\n\n(*\n    Lógica:\n    - Si el quemador está encendido, el ventilador funciona y el temporizador se mantiene reseteado.\n    - Al apagarse el quemador, el temporizador inicia el conteo de 30 s.\n    - Cuando el temporizador completa los 30 s (Q = TRUE), el ventilador se detiene.\n*)\n\n(* Activar temporizador solo cuando el quemador está apagado *)\ntonApagado(\n    IN := NOT quemadorOn,\n    PT := T#30S\n);\n\n(* El ventilador funciona si el quemador está encendido\n   O si el temporizador aún no ha completado los 30 s *)\nventilador := quemadorOn OR (NOT tonApagado.Q);\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J40",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]"
+    },
+    {
+     "paso": 5,
+     "requisito": "Post-enfriamiento en curso (10 s): aun encendido"
+    },
+    {
+     "paso": 7,
+     "requisito": "Segundo post-enfriamiento: a los 29 s aun encendido (rearme a 30 s completos)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; // Estado del quemador (TRUE si encendido, FALSE si apagado)\nEND_VAR\n\nVAR_OUTPUT\n    ventilador : BOOL; // Estado del ventilador (TRUE si encendido, FALSE si apagado)\nEND_VAR\n\nVAR\n    timer : TON; // Timer de retardo\n    timerDone : BOOL; // Bandera para indicar si el timer ha terminado\nEND_VAR\n\n// Inicialización del timer\nIF NOT timerDone THEN\n    timer(IN := NOT quemadorOn, PT := T#30S);\n    timerDone := timer.Q;\nEND_IF;\n\n// Control del ventilador\nIF quemadorOn OR (NOT quemadorOn AND NOT timerDone) THEN\n    ventilador := TRUE;\nELSE\n    ventilador := FALSE;\nEND_IF;"
+  },
+  {
+   "codigo": "J48",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]"
+    },
+    {
+     "paso": 7,
+     "requisito": "Segundo post-enfriamiento: a los 29 s aun encendido (rearme a 30 s completos)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; (* Estado del quemador *)\nEND_VAR\nVAR_OUTPUT\n    ventilador : BOOL; (* Estado del ventilador *)\nEND_VAR\nVAR\n    tApagado : TP; (* Temporizador para el apagado *)\nEND_VAR\n\n(* El ventilador funciona mientras el quemador está encendido *)\nIF quemadorOn THEN\n    ventilador := TRUE;\n    tApagado(IN := FALSE); (* Reinicia el temporizador *)\nELSE\n    (* Si el quemador está apagado, el ventilador sigue funcionando durante 30 segundos *)\n    tApagado(IN := TRUE, PT := T#30S);\n    ventilador := tApagado.Q;\nEND_IF\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}

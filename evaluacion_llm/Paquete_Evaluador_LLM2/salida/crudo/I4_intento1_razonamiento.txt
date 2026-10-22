@@ -1,0 +1,808 @@
+We need answer JSON list of 24 objects in same order. Need score. We must not use markdown. Need evaluate each.
+
+We need read task, protocol, responses. We need produce scores following rubric. Need be careful. Need maybe categorize each.
+
+We need final only JSON. We need ensure valid JSON, 24 objects. We'll process each response.
+
+We need understand protocol. Task I4 star-delta. Protocol steps:
+
+0: reposo btnMarcha false btnParo false tEspera 200ms. likely verify kM,kY,kD false.
+1: phase estrella evaluated before 8s transition: btnMarcha true, tEspera 7800ms. At end? It says paso 1 evaluated before 8 s, so after 7800ms maybe verify kM true, kY true, kD false. Also step 2: tEspera 500ms after transition: must be in triangle: kM true, kY false, kD true. Step 3: verify dead time measurement? tEspera 300ms after. Step 4: Paro: btnMarcha false btnParo true tEspera 200ms: all off. Step 5: rearranque: btnParo false btnMarcha true tEspera 200ms: must return to star, not jump to triangle. There are 6 steps 0-5.
+
+Need determine functionality for each.
+
+We have info resultado_codesys. Some compile no simulation due no inputs? Need read. "Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'FB_ESTRELLATRIANGULO')." Means they declared inputs as VAR not VAR_INPUT. Harness can't write. Functional_fijo null. We should assign functional 0,1,2 reading code, never 3 because not simulated. But likely code logic may be correct if integrated but interface nonconforming. Need score 0 if no implement? We'll read.
+
+Need score each: funcional, iec, coherencia, claridad, mantenibilidad. just lines.
+
+We need maybe copy functional_fijo if not null: For compile and passes all functional=3. For no compila functional=0 iec=0 fixed. For iec_fijo null when compiles: need assign 1-3.
+
+Need determine IEC compliance for each: if compiles and uses standard TON etc. But some use TP for T#8S, that might be extension? TP is standard IEC pulse timer? Actually IEC 61131-3 includes TP (pulse timer), TON, TOF. But for timing T#8S, TP behavior different but standard. Use comments // vs (* *): In ST comments can be // in CODESYS? Actually IEC 61131-3 ST comments are (* *), but CODESYS accepts // as extension? CODESYS accepts //. Some use // comments exclusively. Does that count as extension? Strict IEC only (* *) are standard? I recall IEC 61131-3 Structured Text comments are (* *) only. // is not in standard (CODESYS extension). Punctuation? The rubric says cumple IEC when compila: 1 if extensions outside standard; 2 if declarations/types correct; 3 if idiomatic. We may mark // as minor extension? But many programs use //. Need be consistent. We may not penalize heavily? The rubric: 1 if usa extensiones fuera del estándar. Some comments // widespread; CODESYS accepts, but technically not IEC 61131-3? However many tools accept //, but standard? I'd treat // comments as extension but minor? But if "compila sin cambios; declaraciones y tipos correctos" 2, "si además es idiomático" 3. Using // comments does not necessarily prohibit 2/3? But "usa extensiones fuera del estándar" => 1. Hmm. Need decide.
+
+But user explicitly says programs conforme IEC. In ST, except comments, they use standard TON, CASE etc. // is not standard. But most use //. If we mark all with // as 1, only those with (* *) get maybe 2/3. But then all many get 1. Could be too harsh. Maybe CODESYS accepts // as extension but common. The rubric's IEC includes whether uses extensions outside standard. // comments are extension but does not affect compile? It says 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. So yes if using // comments, maybe IEC=1. But then many responses. Need maybe differentiate: If only // comments, maybe as minor extension still 2? We need maybe consistent with general. The "iec_fijo" null for all compiles. We need assign 1-3.
+
+Let's think as evaluator: We care about IEC compliance. Many code uses VAR_INPUT/VAR_OUTPUT correctly. Some use comments (* *), some //. Some use END_FUNCTION_BLOCK? That's invalid? In ST function block doesn't need END_FUNCTION_BLOCK; code with END_FUNCTION_BLOCK might still compile? Some posted with END_FUNCTION_BLOCK in "codigo_st"? CODESYS? A FB in CODESYS does not use END_FUNCTION_BLOCK. I4-7007 has END_FUNCTION_BLOCK yet "Compila sola"? Maybe accepted as text? Actually CODESYS may parse? Hmm. We only have resultado. "Compila sola" for I4-7007 yes, but no sim. Actually includes END_FUNCTION_BLOCK maybe accepted as extension? We won't worry.
+
+Need score not too time. Need read each of 24 and score.
+
+Let's list responses with codes, result, our scores.
+
+I4-2611: compiles passes all, funcional=3 fixed. Need iec. Code uses TON standard, CASE, comments (* *). Interlock additional. Declaraciones correctas. Idiomatic? Uses eEstado INT with CASE, TON. Yes IEC=3. Coherencia: strong state machine, paro priority, resets timers. Maybe issue? tEstrella IN true in state 2 to maintain Q active. This avoids reset but TON with IN true remains Q true after PT. Fine. Additional interlock if kY AND kD. Robust. Coherencia 3. Claridad: nice comments, sections. 3 maybe but maybe not modular? It's a single FB, appropriate. Comments explaining. Could 3. Mantenibilidad: constants times repeated? Uses T#8S and T#100MS inline but also maybe values magic? Times are declared inline not parameters. It has state machine with duplicated assignments. Maintainability 2 maybe because changes localized? There are repeated times. But as per nível, not parameters. I'd give 2. Could 3 if state enum with constants? no constants ints magic. 2.
+
+I4-7007: Compiles but no simulate: interface nonconforming (VAR not VAR_INPUT). functional null. Need read code. It uses VAR with btnMarcha etc. Logic: if btnParo off; ELSIF btnMarcha then CASE; ELSE all off. This means if btnMarcha released after state 3, btnMarcha true held? Actually in step 5 rearranque they set btnMarcha true after paro; okay. But if btnMarcha false in state 1/2/3? ELSE all off state 0. That effectively stops if march is not held. But typical start button can be pulse. Harness step 1 sets btnMarcha true continuously during 7.8s; step2 remains true? In protocol: Step 1 btnMarcha TRUE, tEspera 7800. They do not set false after. Step 2 tEspera 500 (btnMarcha remains true). Step 4 paro sets false then true later. So if harness holds march true in states until paro, the logic may work. But no sim due interface. Since btnMarcha is internal, harness cannot write; functionally code seems nominal works if signals somehow set maybe. But "si compila pero no se pudo simular (interfaz no conforme): funcional 0,1 o 2 leyendo el código; nunca 3." Since code doesn't declare VAR_INPUT, that's a failure of interface. But reading code: logic likely works in nominal and most boundaries? However there are no timers initialized in VAR? It calls timer every scan at top? Let's inspect:
+```
+VAR btnMarcha... kM:=FALSE... estado...
+timerEstrella(IN:=FALSE, PT:=T#8S);
+timerMuerto(IN:=FALSE, PT:=T#100MS);
+IF btnParo THEN ... ELSIF btnMarcha THEN CASE ...
+```
+The top unconditional init each scan with IN FALSE? Then later in CASE call timerEstrella(IN:=TRUE) without PT (preserves last PT from T#8S? TON instance retains last PT from prior call, likely yes). This double call in same scan is problematic? TON input ET is updated on each call. Initially top call with IN false maybe resets, then if state 0 and btnMarcha, calls timerStar(IN true) no PT using old PT T#8S, okay. But when state 1, top call in false first resets Q, then later case state 1? Wait state after previous scan is 1. At scanning, top timerEstrella(IN:=FALSE) with PT T#8S resets/clears. Then IF btnParo? false, ELSIF btnMarcha true -> CASE estado 1: calls timerEstrella(IN:=TRUE); but without PT maybe uses T#8S but calling with IN true on same scan after IN false might start over, so Q likely never reaches Q because each scan top resets before increment. Actually in CODESYS TON update once per scan? It updates IN/PT each time called maybe can be called multiple times. If calling with IN false then true same scan, the resulting INV? Could maybe calculate ET based on false then true? It may still work or not. But no sim because interface. The code may be functionally flawed due calling timers twice? Need maybe assign 1. But clearly interface nonconforming so never 3. They also have ELSE when no btnMarcha: all off and state 0. This means if btnMarcha is not continuously held, it stops. For a direct start, maybe signal should be maintained? The task says "Al pulsar btnMarcha se activan..." Could be pulse (falling?) Usually pulsador can be momentary; with seals. But harness holds true. Not necessarily problematic. But they declared internal, no VAR_INPUT so harness can't write. Functional maybe 1? Because nominal maybe if manually in simulation with forcing? But code can't be simulated with harness. The rubric says 0 if no implementa lógica pedida or fails nominal. This doesn't implement interface? It does but wrong declarations. Could be 1 (nonconforming but logic partly). We'll choose funcional=1 maybe. Need think later. I'd assign functional 1 for I4-7007/I4-1547? They declared all VAR. Code includes ELSE all off when no button. That could fail if btnMarcha is pulse? Hmm. But maybe in actual declaration, btnMarcha not input cannot be controlled by harness; the FB could be instantiated but harness can't write it. That is a functional failure for simulation; but code logic maybe correct under direct assignment. Puntúa lo que el código es. It lacks required VAR_INPUT, so not implementing specified interface. But it does implement logic. 1.
+
+IEC: compiles but uses // comments (extension). Declarations and types valid (VAR instead of VAR_INPUT maybe not type, interface). If using // could be 1. But if not counting comments, it's 2. Need maybe assign 2 for all compiles with standard TON and correct declarations, despite //? But some have other non-standard? Hmm. Need create consistent. I might assign IEC 2 to most with TON, standard constructs, but maybe 1 to those using //? Let's determine later.
+
+I4-5661: Compiles. Falla pasos 1,3. Uses TP timers. Let's inspect: 
+```
+IF btnParo THEN ... ELSIF btnMarcha THEN CASE ...
+0: kM TRUE kY TRUE tEstrella(TP) state1
+1: IF tEstrella.Q THEN kY FALSE tMuerto(IN:=TRUE) state2
+2: IF tMuerto.Q THEN kD TRUE state3
+3: kY FALSE
+```
+TP timer: pulse timer, Q true for PT duration after rising edge IN; after PT, Q false even if IN remains true. For tEstrella, at start IN true, Q true for 8s then false; state 1 detects if tEstrella.Q? Wait in state 1: it calls? Actually it doesn't call tEstrella in state 1; in state 0 tEstrella(IN:=TRUE, PT:=T#8S), then state1, but no call to tEstrella in state1. In CODESYS TP function block requires call every scan with IN/PT to update. If not called in state1, Q remains maybe from last call? Typically FBD/ST call each cycle. The code only calls in state 0; in state 1 it checks Q without calling. If not called, Q may retain true maybe indefinitely? However in CODESYS, TP FB instance may retain internal state but not update; if not called, Q remains. The initial call at state0 with IN true, but then no updates, so Q probably remains true forever. Then state1 immediately sees tEstrella.Q true next scan, transitions to state2 prematurely. So step1 (before 8s) maybe kY false? Let's analyze with harness: At step 0 no march. Step1 sets march true at scan. State0 sets kM/kY true, calls tEstrella(TP). Next scan state1: checks tEstrella.Q maybe true? If TP with IN true sets Q true immediately; with no further calls it remains true. So immediately goes to state2, kY false, tMuerto true. In state2 it calls tMuerto maybe no call? It calls in state1 only once? Actually state1 if tEstrella.Q transitions: kY false; tMuerto(IN:=TRUE, PT:=T#100MS); estado 2. State2 checks tMuerto.Q without calling; from initial call maybe TP pulse Q true immediately and remains. Thus next scan state2 sees true, kD true, estado 3. So it will enter triangle within few scans, likely around <100ms. Thus step1 fails (not star at 7.8s), step3 maybe dead time? Step2 expects triangle perhaps maybe okay; step3 measures dead time, likely near 0, so fail. step4 paro works. step5? After paro state0, rearranque: should star. But code will again immediate skip to triangle perhaps; step5 maybe harness step5 only tEspera 200ms after march true, before 8s; it should star. But code may already triangle by 200ms? It will be in triangle, so step5? The result says fails step1,3 only, not step5. Wait if code immediate to triangle, step5 would also fail. But result says step5 passes? Hmm maybe my TP behavior wrong. Let's read CODESYS TP: Q is TRUE until PT elapsed after rising edge. If called only in state0, then when state changes to 1 (next scan) the code doesn't call timer, but instance may still have Q calculated from previous call? In CODESYS, an FB instance call updates internal state. If not called, the output Q holds last value. At state0 call at T0: IN true, TP Q true. It remains true indefinitely if not called. So state1 will see true at next scan. It will transition. Then state2 sees tMuerto.Q? tMuerto was called in state1 transition with IN true, so Q true. State2 next scan sees true. So triangle by maybe 3 scans? Result step2 passes (triangle), step3 likely fail due deadTime <100ms, but step5 maybe should fail. Maybe result could be unreliable? We need trust result: it "Falla 2 de 6 pasos (pasos 1,3)". Maybe step5? It says passes. Could be because at Step5 rearranque tEspera 200ms, maybe if triangle already on, then step1? Hmm.
+
+Let's use provided result as ground truth. So functional not fixed. Need score 0,1,2 no 3. It fails step1 (star before 8s) and step3 (dead time). That indicates it does not maintain star for 8s nor dead time 100ms, but passes paro/rearranque maybe. This is serious: nominal timing case fails. Functional=0 or 1? Rubric: 0: no implementa lógica pedida o falla en el caso nominal. This fails in the nominal sequence (phase star before 8s) because uses TP without periodic and/or maybe. However it does move to triangle? but if it skips star, it's incorrect. I'd assign 0 or 1. Since it does implement outputs and some transitions, but fails 2 of 6 including step1 nominal; maybe 1 if works partially? Rubric 1: funciona en el caso nominal pero falla en casos límite. Here falla en nominal (step1). So 0. But maybe no, it does start and reach triangle; but the sequence is wrong. "falla en el caso nominal" yes, star not maintained. So funcional=0. Need maybe for all compile but fail steps: if fails step1/3 likely 0 or 1 depending severity. I'd assign 0 for I4-5661. But note "Compila. Falla 2 de 6 pasos (pasos 1,3)." Step1 is phase star before 8s, step3 dead-time confirm. Does it pass step0,2,4,5? Weird. Could maybe still pass step1? Wait result says fails step1. So no star at 7.8. That's a major failure. 0.
+
+IEC: uses TP instead of TON. TP is standard but not idiomatic for this use. Types correct. It compiles. Since uses standard TP but wrong timing semantics; not extension. Could be 2. Maybe if remarks // comment extension, 1. I need decide policy.
+
+I4-1792: passes all fixed 3. Need iec, etc. Code uses TON, state machine, comments (* *), explicit reset. IEC=3. Coherencia 3. Claridad 3. Mantenibilidad 2 maybe 3? It uses state constants as comments but eEstado INT with magic 0-3. It has times inline. Could score 2. But it has clear sections and comments why. For maintainability maybe 2 because not parameterized. But "3 además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)" It doesn't have parameters for times, but state machine no duplication? times repeated maybe. 2.
+
+I4-7740: compiles, fails pasos 2,3,4. Let's inspect. Code:
+```
+CASE estado OF
+0: IF btnMarcha THEN kM true kY true timerEstrella(IN:=TRUE) estado1 END_IF
+1: IF timerEstrella.Q THEN kY false timerMuerto(IN:=TRUE) estado2 END_IF
+2: IF timerMuerto.Q THEN kD true estado3 END_IF
+3: IF btnParo THEN kM false kY false kD false estado0 END_IF
+END_CASE
+```
+They never handle btnParo in states 0-2, only state 3. So step4 "btnParo in any moment" maybe at step4 btnMarcha false btnParo true. At step4, if estado is 3 (triangle) then paro works; result says fails step4? Wait step4 paro maybe from triangle? Protocol step4 after step3, state should be triangle. If code is in state3, then btnParo should turn off. But result says fails step4 too. Maybe because btnParo only checked in state3, so if it is in state2? But at step3 it maybe tripped? Hmm result: fails steps 2,3,4. It passes step1, so star on at 7.8. Step2 expects triangle; likely fails because state? Let's simulate: At start step1 march true. State0 sets kM/kY true, timerStar true, estado1. Wait `timerEstrella(IN:=TRUE)` no PT, but previous init at top? There is top init before CASE: timerEstrella(IN:=FALSE, PT:=T#8S); every scan. Again double call issue maybe. But result says step1 passes, meaning timer did work? Maybe calling with IN true after false with PT maybe okay? Actually in CODESYS, the last call before END_FUNCTION? The top initialization timers happen before CASE. But in each scan, they call timer FALSE then in state1 call it TRUE? They don't call in state1. Wait in state1 they only check `IF timerEstrella.Q THEN`. They don't call timerEstrella in state1. So after state0 call `timerEstrella(IN:=TRUE)` from previous scan and state1 next scan no call? Actually top `timerEstrella(IN:=FALSE)` is executed every scan before CASE. So in state1 scan 1: top resets, then no true call; so Q false, won't transition. State1 scan 2: same; timer never accumulates. Wait until maybe? The top call resets every scan with IN false; no call IN true after transitioning, so it won't ever Q. Thus it would be stuck in state1 forever. But result says step1 passes (kY still true at 7.8) indeed true, but step2 fails because no triangle. Step3 fails maybe dead time no transition. Step4? If stuck state1, paro only in state3 so step4 fails. Step5? Rearranque after step4? They said fails pasos 2,3,4; passes step5? Strange if stuck state1 then step5 expects star, and it is star; so passes. Yes. So functional failure: won't transition to triangle due timer call missing. That's major nominal failure. Funcional=0.
+
+IEC: uses TON, // comments. Could be 2/1. Coherencia: timer reset each scan and paro not global, states stuck; serious. 0 or 1. I'd give 1 maybe some coherence but obvious dead/no transition. But if no transition from star to delta due missing timer update, that's a logic contradiction? Actually they call timer at top false every scan, then never true in state1, so Q never true. So dead transition. Coherencia 0 maybe. But code is mostly coherent except paro only in state3. It's contradictory/due variables no timer update. Could 1. Rubric 0: conditions contradictory, variables sin inicializar con efecto, or estados muertos que impiden operar. There are dead transitions/paro not in all states. So 0. Claridad: names okay, comments simple. It has estructura but comments absent why, no sections. 1 maybe. Mantenibilidad: hardcoded times, but variable names okay. 1. 
+
+I4-3109: fails pasos 2,3,5. Code similar to previous:
+```
+IF btnParo THEN all off estado0
+ELSIF btnMarcha THEN CASE ...
+ELSE tEstrella(IN:=FALSE); tMuerto(IN:=FALSE);
+END_IF
+```
+State0 sets kM/kY true, tEstrella true. State1 if timer.Q then kY false tMuerto true state2. State2 if timer.Q then kD true state3. State3 no action. Similar top? It does not call timerEstrella in state1 except transition? In state1, no `tEstrella(IN:=TRUE)` call. But initially state0 called timerEstrella(IN:=TRUE, PT:=T#8S). Then state1 only checks Q, does not call. In CODESYS TON if not called, Q remains maybe from initial? Wait TON with IN false? At state0 initial call with IN true, Q false until PT. After transitioning state1, if not calling the timer at all in state1, its output may be stuck at last value? In CODESYS, FB outputs hold last value. It does not increment because not called. Thus Q will remain false because last call to TON (when state0) was IN true; Q computed but at that first call elapsed immediate, Q false. Next scan, state1, timer not called. Q holds false. It never accumalates. So it never transitions. Result step1 passes (star on), step2 fails triangle, step3 fails? Step5 weird? Step5 expects star; if stuck star it passes. Step4 paro? It handles paro globally, so pass. So result fails 2,3,5? Step5 maybe after step4 paro, all off, then step5 march true. It should return to star. Since code stuck in state? Wait after paro it sets state0. Step5 march true, state0 sets kM/kY true, timer false? It calls tEstrella(IN:=TRUE, PT:=T#8S), state1. So star on at 200ms, should pass. But result says step5 fails. Why? Maybe because else branch no btnMarcha? At step5 march true yes. It calls `tEstrella(IN:=TRUE)` state0 then state1. But due no call in state1, timer stays maybe false. Star on yes, step5 pass. Hmm result says fails paso 5. Maybe because after step4 paro, tEstrella not reset? But step4 sets estado0 and maybe outputs false, not resets timers. In step5, at state0 call `tEstrella(IN:=TRUE, PT:=T#8S)`. If previous timer Q maybe? In code when state1 stuck, tEstrella Q maybe false; then paro no reset. Not issue. So why step5 fail? Maybe because `ELSIF btnMarcha` depends on buttons? In step5 `btnParo := FALSE; btnMarcha := TRUE;` so elsif. It should enter state0. Hmm.
+
+Need trust result. We don't need exact simulation. It fails 3 including rearranque. It indicates after paro/rearm maybe some state/timer not reset causing issue. functional 0 or 1? It fails step2 (triangle), step3, step5. Nominal case transit to triangle fails. So 0. Maybe I'd give 0.
+
+Could assign functional 0 for all that fail step2/3 due no transition. Yes.
+
+I4-4531 passes all fixed 3. Code uses bool run memory, TON, latch with paro priority. kY = bRun AND NOT tonStar.Q AND NOT kD; tDeadTime IN = tonStar.Q AND NOT kY. It ensures dead time? Let's analyze: At start, bRun true, tonStar counts 8s. kY true until tonStar.Q true. When tonStar.Q true at 8s, kY false immediately, tDeadTime IN := tonStar.Q AND NOT kY = true. After 100ms, tDeadTime.Q true. Then kD := bRun AND tDeadTime.Q AND NOT kY. Potential issue: when tonStar.Q true and kY false, tDeadTime starts. kD false until Q. However tonStar remains true for entire run. At state after tDeadTime.Q true, kD true and kY false due NOT tonStar.Q. Good. No simult. On paro bRun false, all off. On rearranque bRun true, tonStar reset? TON with IN false during paro (since bRun false) resets Q and ET. Yes. Good. IEC: standard TON, comments //? This code uses // comments, but uses idiomatic boolean/logic rather than CASE. IEC=3? Declarations correct, standard. Comments // are CODESYS extension but not severe. I might still give 3 if code idiomático, despite //. Need consistent.
+
+Coherencia: robust with mutual interlock. 3. Claridad: comments and sections, 3 maybe. Mantenibilidad: times inline, not parameterized; but simple logic, no duplication. 2. Could 3 maybe because times PT call as constants in one place? Actually tStar PT inline, tDeadTime inline. It's parameter not constant. For "parámetros como variables o constantes declaradas; cambios localizados" — they are localized to timer call, so changes localized. 2 or 3. Extensible? no parameters input. I'd give 2.
+
+I4-6607: fails pasos 2,3,5. Code: similar:
+```
+IF btnParo THEN all off estado0
+ELSE CASE
+0: IF btnMarcha THEN kM true kY true tEstrella(IN:=TRUE,PT:=T#8S) estado1 END_IF
+1: IF tEstrella.Q THEN kY false tMuerto(IN:=TRUE,PT:=T#100MS) estado2 END_IF
+2: IF tMuerto.Q THEN kD true estado3 END_IF
+3: (* no action*)
+END_CASE
+```
+Again does not call tEstrella/tMuerto after entering state1/2. It may not transition. Paro global. It fails step2,3,5. Funcional=0. IEC standard TON, comments (* *), uses VAR_INPUT. But structure? Could 2. Coherencia: timer not updated states, dead transitions; 0 or 1. I'd give 1 maybe because otherwise normal? There are dead transitions. Rubric 0 if dead states impede operation. It does impede. 0. Claridad 1 maybe.
+
+I4-6264: fails pasos 2,3,5. Code almost same but in state3 `IF NOT btnMarcha THEN off estado0`. Still lacks timer calls in state1/2. Functional 0. Coherencia 0. IEC 2. Claridad 1. Mant 1.
+
+I4-2405 passes all fixed 3. Similar to I4-4531 (latch). Code comments (* *), TON. IEC=3. Coherencia: robust. Claridad: 3 maybe. Mantenibilidad: 2. They have note safe. Same as 2644/4147.
+
+I4-2644 passes all fixed 3. Similar. IEC 3, coh 3, clarity 3, mant 2.
+
+I4-1547: compile no simulate due VAR not VAR_INPUT. Similar to I4-7007. Need score. Code: VAR all, top timer calls false each scan. Logic:
+```
+IF btnParo THEN off
+ELSIF btnMarcha THEN CASE
+0: kM true kY true timerEstrella(IN:=TRUE) estado1
+1: IF timerEstrella.Q THEN kY false timerEstrella(IN:=FALSE); timerMuerto(IN:=TRUE); estado2
+2: IF timerMuerto.Q THEN kD true timerMuerto(IN:=FALSE); estado3
+3: no action
+ELSE all off estado0
+```
+Again top unconditional resets timers each scan before CASE; in state1 they do not call timerEstrella(IN:=TRUE), so Q won't progress? Actually in state0 it calls timerEstrella(IN:=TRUE) after top false, so first scan (state0) Q false. Next scan state1, top false resets, then state1 checks Q false. Since no true call, never accumulates. So stuck star. But no sim due interface. Functional maybe 0? It also has interface nonconforming. If simulated, would not transition. But we need read. It likely fails nominal. So funcional=0 or 1. Since no sim but code clearly stuck in star, no triangle. But if top call is false each scan, yes no progress. But wait maybe CODESYS TON instance call at top false with PT preserves ET? When called with IN false, ET resets to T#0s. Then state1 doesn't call true; Q remains false. Yes. So code fails nominal. funcional=0. However maybe the intention to reset timers at top is wrong. I'd assign 0. IEC: uses //, standard TON, wrong input declarations but compiles. Maybe 2. Coherencia: timer reset issue, but logic otherwise. 1 or 0? It has all off else state0, but maintains? It's coherent except timers not accumulating. It's a logic bug. 1 maybe. Claridad: names descriptive, comments simple. 1 or 2. It has comments. 1. Mant 1.
+
+I4-6164: no compila fixed functional=0 iec=0. Need score other three. Code has CONST after VAR_INPUT/VAR_OUTPUT/VAR? In CODESYS, VAR_CONSTANT syntax? They put CONST ... END_CONST which is invalid in ST? Probably compile errors. But we read. It uses TP timers. Logic: Paro off; elsif marcha. Cases using constants. State0 sets kM/kY true, tEstrella(TP), estado. State1 if TP.Q then kY false tMuerto true state2; state2 if tMuerto.Q then kD true; State3 kD true. If kY and kD then kY false. Comments. Coherencia: They intended state constants, but compile invalid. Logic issues: TP as before not called in state1 maybe. If compiled, likely immediate transition issue (like I4-5661) due TP not called. But also no reset on state0? It does not turn all off in state0? In state0 only state initial, if not btnMarcha, outputs not assigned? kM etc not initialized outputs? Maybe bad. Coherencia 0 or 1. It has comments. Claridad: names ok, but invalid placement. 1. Mant: constants attempted but invalid. 1.
+
+I4-8729: compiles, fails pasos 2,3. Code:
+```
+CASE state OF
+0: IF btnMarcha THEN kM TRUE kY TRUE timerStar(IN:=TRUE) state1 END_IF
+   IF btnParo THEN all off state0 END_IF
+1: IF timerStar.Q THEN kY FALSE timerStar(IN:=FALSE); deadTime(IN:=TRUE) state2 END_IF
+   IF btnParo THEN all off state0 END_IF
+2: IF deadTime.Q THEN kD TRUE deadTime(IN:=FALSE); state3 END_IF
+   IF btnParo THEN all off state0 END_IF
+3: IF btnParo THEN all off state0 END_IF
+END_CASE
+```
+Here top init timers before CASE each scan false. Specifically:
+```
+timerStar(IN:=FALSE, PT:=T#8S);
+timerDelta(IN:=FALSE, PT:=T#100MS);
+deadTime(IN:=FALSE, PT:=T#100MS);
+```
+Then state machine. Again top false resets; in state0 if march calls timerStar(IN:=TRUE) no PT? It initially had PT T#8S top. So same issue. In state1 doesn't call timerStar(IN:=TRUE), only checks Q; top resets before, Q never true. So won't transition. Result fails paso 2,3 but passes 1,4,5? It will stay star, pass step1 and step5; paro in all states passes step4. Step2 triangle fails, step3 missing. This matches. Funcional=0.
+
+IEC: uses TON, //, correct VAR_INPUT. 2 or 1. Coherencia: timer reset bugs and dead transition; 0 or 1. I'd give 0 because no transition. Claridad: okay comments; 1. Mant: hardcoded times, but maybe all timers at top centralizing PT; still times not parameter. 1.
+
+I4-6563 passes all fixed 3. Code:
+```
+kM := (btnMarcha OR kM) AND NOT btnParo;
+tEstrella(IN:=kM, PT:=T#8S);
+tMuerto(IN:=tEstrella.Q, PT:=T#100MS);
+kY := kM AND NOT tEstrella.Q AND NOT kD;
+kD := kM AND tMuerto.Q AND NOT kY;
+```
+Similar but no bRun variable. Latch kM. Good. IEC: standard TON, comments (* *), idiomatic. IEC=3. Coherencia: robust. 3. Claridad: comments, sections. 3. Mant: times inline but localized. 2.
+
+I4-4147 passes all fixed 3. Similar to 2405. Comments (* *), TON. IEC 3. Coh 3. Clar 3. Mant 2.
+
+I4-3062 compiles, fails pasos 1,3. Code:
+```
+IF btnMarcha AND estado=0 THEN estado1 kM true kY true tEstrella(TP,true,T#8S)
+ELSIF btnParo THEN estado0 all off
+END_IF
+IF estado=1 AND tEstrella.Q THEN estado2 kY false tMuerto(TP,true,T#100MS)
+END_IF
+IF estado=2 AND tMuerto.Q THEN estado3 kD true
+END_IF
+IF kY AND kD THEN kY:=FALSE; kD:=FALSE;
+END_IF
+```
+Uses TP but calls only at transition? Similar to 5661. TP Q true immediately; maybe after state1 next scan, does not call tEstrella? Actually in state1 no call to tEstrella in IF; only transition when estado0 calls TP. If TP not called, Q holds true. So it will immediately transition to state2. Then state2 no call to tMuerto; Q holds true from state1 transition call; immediate transition to state3. So no star 8s/dead time. Fails step1,3. Step2 triangle pass? maybe. Functional=0 or 1. Nominal failure. 0. IEC: TP standard, comments (* *). Correct declarations. 2 maybe. Coherencia: timers not called in active states; dead? But it operates fast. 1. Claridad: comments good. 2 maybe. Mant 1.
+
+I4-2763 compiles, fails paso 5 only. Code:
+```
+IF btnParo THEN eEstado:=0; tEstrella.IN:=FALSE; tMuerto.IN:=FALSE; END_IF
+CASE eEstado OF
+0: off; IF btnMarcha AND NOT btnParo THEN eEstado:=1; END_IF
+1: kM TRUE kY TRUE kD FALSE; tEstrella(IN:=TRUE,PT:=T#8S); IF tEstrella.Q THEN tEstrella.IN:=FALSE; eEstado:=2; END_IF
+2: kM TRUE kY FALSE kD FALSE; tMuerto(IN:=TRUE,PT:=T#100MS); IF tMuerto.Q THEN tMuerto.IN:=FALSE; eEstado:=3; END_IF
+3: kM TRUE kY FALSE kD TRUE
+ELSE eEstado:=0
+END_CASE
+IF kY AND kD THEN off reset
+```
+This seems mostly correct. Why fails step5 only? Need analyze. Step5: after paro at step4, btnMarcha false btnParo true. In code, when btnParo TRUE at step4, eEstado=0, tEstrella.IN=FALSE, tMuerto.IN=FALSE. Then CASE eEstado 0: off. But note `tEstrella.IN := FALSE;` direct assignment to TON input before call? In CODESYS, FB inputs can be assigned? They call `tEstrella(IN:=TRUE, PT:=T#8S)` in state1 later. But direct `tEstrella.IN := FALSE` might be allowed? It sets input variable of FB instance, but on next call it might be overwritten? Maybe.
+
+Step5: btnParo FALSE, btnMarcha TRUE. Before CASE, IF btnParo false. CASE eEstado 0. In state0, it sets outputs off; IF btnMarcha AND NOT btnParo THEN eEstado:=1. So at next scan state1. tEstrella(IN:=TRUE,PT:=T#8S) start. It should stay star. But result fails step5. Maybe because after step4, `tEstrella.IN := FALSE; tMuerto.IN := FALSE` but TON not called in paro. When entering state1, tEstrella call works. Should pass. Why fail? Maybe harness step5 expects star at 200ms, but code in step5 might still in state? Let's think carefully.
+
+At step3 state3 triangle. Step4 btnMarcha FALSE, btnParo TRUE. In scan of step4:
+- IF btnParo THEN eEstado:=0; tEstrella.IN:=FALSE; tMuerto.IN:=FALSE; END_IF;
+- CASE eEstado (0) off; IF btnMarcha AND NOT btnParo -> false because btnParo true. So outputs off.
+At later part after CASE:
+- IF kY AND kD THEN ... not.
+Scan step4 ok.
+Step5: btnParo := FALSE; btnMarcha := TRUE. 
+Next scan:
+- IF btnParo false.
+- CASE eEstado 0: off (outputs off); IF btnMarcha AND NOT btnParo THEN eEstado:=1. At end of scan, outputs off! State becomes 1. It does not set outputs true in state0. Then next scan state1 sets kM/main/star true, starts timer. The harness step5 tEspera := T#200MS. It likely waits 200ms and checks after that. There will be a scan delay (maybe 4-10ms) before outputs become true. At 200ms, outputs definitely true. So why fail? Maybe step5 requires "return to star, not jump to triangle", and code passes. But result says fails. Could be because after step4, `tEstrella.IN := FALSE` and `tMuerto.IN := FALSE` but TON states not reset? But more likely due direct assignment to `tEstrella.IN` not being valid? It compiles.
+
+Maybe issue: The harness at paso 5 after rearranque expects kM and kY TRUE at 200ms. There is one-cycle delay at state0, but 200ms >> cycle. Should be true. Unless input btnMarcha in step5 set true after btnParo false, but state remained 0? No.
+
+Maybe the code has initial eEstado uninitialized (INT; no :=0). CODESYS initializes INT to 0 by default? Usually yes. But maybe not? It may be 0. Yet at first step0 it passes.
+
+Why fails step5 only? Could relate to tEstrella/tMuerto TON resetting. When btnParo pressed, it sets `tEstrella.IN := FALSE; tMuerto.IN := FALSE;` But TON FB internal state maybe if IN input directly assigned false but FB not called, internal ET may retain old elapsed time? When called again in state1 with IN true and PT T#8S, TON may continue from previous ET instead of restart. TON ET resets when IN is false and FB is called; but in paro they set IN false but do not call FB? Actually they do not call `tEstrella(IN:=FALSE, PT:=T#8S)` in state0? In state0 they only assign outputs and maybe not call timers. They direct assign tEstrella.IN := FALSE; but not call. The TON ET is updated on function block invocation, not on direct input assignment? It may not reset ET. In CODESYS, you can write to FB input variables? Maybe if you write to tEstrella.IN outside call, but internal state not updated until call. In state1, they call `tEstrella(IN:=TRUE, PT:=T#8S)`, and TON sees IN true with previous ET still at T#8s? Actually TON's internal state includes ET. After previous triangle phase, tEstrella.Q true? Wait in state3, do they call tEstrella? In code, for state3 they do not call tEstrella. Only in state0? They only call tEstrella in state1. In state1, when tEstrella.Q true, they do `tEstrella.IN := FALSE; eEstado:=2;` but do not call tEstrella after assigning. Then in state2/3 they don't call tEstrella. So when TON got Q true at end of state1, they set IN false input variable, but not call; internal Q may remain true, ET maybe. At paso5 rearranque, TON prior state maybe ET=8s. When calling again in state1 with IN false? Let's simulate more.
+
+The issue with ST TON: calling `tEstrella(IN:=TRUE, PT:=T#8S)` updates. In `tEstrella.Q` true, it sets `tEstrella.IN := FALSE; eEstado:=2;` This direct assignment maybe modifies input for subsequent? In CODESYS, writing to FB input variable outside call is allowed if persistent? Then in state2/3 no calls, so ton continues? At later step5 when state becomes 1, call `tEstrella(IN:=TRUE, PT:=T#8S)` may not reset because no call with IN false happened? It might, though direct assignment IN false but since not called, the FB internal state might see IN false on next call? Actually TON call implementation reads IN, PT and internal ET. If direct assignment to IN false changes the input variable, then next call with IN true maybe the FB first sees IN changed from false to true? But internal algorithm may detect rising and reset ET? Maybe not because no call was made while IN false. I'm not 100% but likely it doesn't detect rising if no call in between. It may evaluate ET based on internal state and current IN, could continue. If IN was false at previous call (but previous call never called), hmm.
+
+Harness paso5 seems related. It sets rearranque and expects star, not jump to triangle. The code may jump directly because tEstrella.Q stays true from before; in state1, after 1 scan, `IF tEstrella.Q` true immediately, so eEstado goes to 2, kY false. In step5 at 200ms, it might be in triangle, failing. So yes, Q from previous cycle not reset because TON not called with IN false in state0/paro. The code needs call timer with false to reset. They attempted `tEstrella.IN := FALSE` but not call. This is a functional bug in reset after paro. That's why fails only step5. Nominal first start works: tEstrella fresh, Q false. Paro not tested until after triangle, then restart failing. So functional? It passes steps 0-4 but fails step5 (rearranque). It fails a limit/sequence case of fail. Rubric: 2 correct in nominal and majority of limits; fallas menores sin riesgo. This is maybe 2? It failed rearranque, which is important but no safety? Could be "falta en casos límite evidentes (rearranque)" 1. Need decide. It passed first start, triangle, dead time, paro. Only rearranque fails. Is that "caso límite evidente"? The sequence of fallo is rearranque. It's a required behavior: rearranque must return to star. It fails due timer reset. That's a significant edge case. Could score 1 as functional (falls in case límite evidente). But given it passes 5 of 6 including main sequence and paro, maybe 2 "fallas menores sin riesgo"? The instruction: 2 correct in nominal and most límite; fallas menores sin riesgo. Failing rearranque can be considered safety/operational; risk of starting in triangle after quick restart? Actually after paro, if not reset timer, it may skip star on restart, closing kD while motor maybe not ok. Could be risky. But assigned as an edge case. Hmm. The protocol paso5 is specifically rearranque. I'd give functional=1 maybe, because fails an otherwise critical restart case. However score should differentiate from programs failing main transition. They passed 5/6. Rubric 1: "funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." Actually here it includes reset/rearranque. So 1 fits: nominal works, but reset fails. But it also passes paro step, but not reset timer after paro. Fails rearranque. So functional=1. Good.
+
+IEC: code uses TON, comments (* *), but also uses direct assignment to `tEstrella.IN := FALSE` which is not idiomatic? It compiles; you could assign FB input variables. Standard? FB input variables are accessible but writeable? In IEC, VAR_INPUT within FB can be read, not written? I think VAR_INPUT is read-only outside? Inside FB, VAR_INPUT can be assigned? Actually for FB instance, accessing input externally is possible? In ST, you can assign `tEstrella.IN := FALSE`? Maybe that's non-standard? The compiler accepted. But should call `tEstrella(IN := FALSE, PT := T#8S)` idiomatically. We could assign IEC=2. Coherencia: It has direct input resetting but bug after paro. Also global paro sets eEstado :=0 but not reset TON via call. There's potential stuck Q. Coherencia 1 maybe because there is a reset bug. But code structure coherent. I'd give 1 maybe or 2? Rubric 1: lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave. The reset issue has effect grave (fails paso5). Rubric 0: conditions contradictory/estados muertos que impiden operar. It doesn't impede all; it fails restart. Maybe 1. Claridad: comments and case, 3? It has good structure but maybe comment in state2 says kD aún cerrado? Actually state2 comment says "kD aún cerrado" but kD false, should be "abierto" or "aún no cerrado" not closed. But overall clear. 2 maybe. Mant: times inline, no constants. 1? It has state machine, maybe 2. We'll settle.
+
+I4-8365 passes all fixed 3. Similar latch. IEC? Comments (* *), TON. IEC=3. Coherencia 3. Claridad 3. Mant 2.
+
+I4-2920 passes all fixed 3. Similar. IEC=3? Comments (* *). Yes. Coh 3. Clar 3. Mant 2.
+
+I4-7806 fails pasos 2,3,5. Code similar to I4-6607 but comments //, VAR_OUTPUT initialized.
+```
+IF btnParo all off
+ELSE CASE
+0: IF btnMarcha THEN kM true kY true timerEstrella(IN:=TRUE,PT:=T#8S) estado1 END_IF
+1: IF timerEstrella.Q THEN kY false timerEstrella(IN:=FALSE); timerMuerto(IN:=TRUE,PT:=T#100MS) estado2 END_IF
+2: IF timerMuerto.Q THEN timerMuerto(IN:=FALSE); kD true estado3 END_IF
+3: no action
+END_CASE
+```
+No timer call in state1/2, so stuck star. Fails step2,3,5? Wait fails step5? If stuck star, step5 passes? But result says fails 5. Hmm maybe same as prior. We'll trust. Functional=0. IEC: comments //, TON, correct. 2. Coherencia: timer not updated; dead transition. 0/1. I'd give 0 maybe because main transition dead. Claridad 1. Mant 1.
+
+I4-7176 no compila fixed func 0 iec0. Code similar to 6164 with CONST invalid. Logic similar. Need score other. It has comments //. Coherencia: compile invalid; but logic: 
+```
+IF NOT btnParo THEN CASE estado
+ESTADO_INICIAL: off; IF btnMarcha THEN state1, kM true kY true timerEstrella(IN:=TRUE,PT:=T#8S)
+ESTADO_MARCHA: IF timerEstrella.Q THEN state2, kY false timerMuerto...
+...
+ELSE paro...
+```
+It does call timers in state0? It calls timerEstrella in initial state. But in ESTADO_MARCHA does not call timerEstrella with IN true, only checks Q; so timer would not progress? Actually top no reset; similar. So maybe stuck. Coherencia 0/1. I'd give 0 because no reset and compile invalid. Claridad: names okay, comments. 1. Mant: attempted constants but invalid, 1.
+
+I4-8454 passes all fixed 3. Similar latch. IEC? comments (* *). Yes. Coh3. Clar3. Mant2.
+
+I4-1208 passes all fixed 3. Similar latch but no bRun; kM is output used as memory. Comments //? It uses //, standard TON. IEC maybe 3? It uses kM output in expression (read output) allowed? In IEC, VAR_OUTPUT can be read in FB body? Yes. Comments // maybe extension. But if we give IEC 3 for similar earlier with //? Need consistent.
+
+Now need produce JSON. Need decide precise scores for each.
+
+We need maybe generate all scores with justifications. The "just_func_iec" field: "una línea, o \"\" si las dos estaban fijadas". If funcional and iec both fijas? For no compila both fixed, then just_func_iec "". For pass all functional fixed but iec null, no, just_func_iec should be a line because one was not fixed? The instruction says just_func_iec: "una línea, o \"\" si las dos estaban fijadas". So for pass all functional fixed (3) and iec null, we include a one-line justification for iec? Since funcional fijo, iec no. For no compile both fixed, just_func_iec "". For compile but funcional not fixed and iec null, just_func_iec one line explaining both our functional/iec maybe. For compile no sim, both null, one line. For pass all, one line.
+
+Need maybe keep justifications concise, in Spanish, one line.
+
+Let's determine scores systematically.
+
+I need ensure no violation: when funcional no fixed, must be 0-2. When iec no fixed, must be 1-3. For pass all functional fixed 3. For no compila func 0, iec 0 fixed.
+
+Now, let's decide functional scores for each:
+
+1 I4-2611: fixed 3.
+
+2 I4-7007: no sim, interface VAR not VAR_INPUT. Code logic top reset bug, likely stuck star? Wait I4-7007 has no top reset? It does top timer false each scan, but in state0 calls timerEstrella(IN:=TRUE) after top false. State1 only checks Q, doesn't call true. So timer won't progress. But maybe in state0 they also call timerEstrella(IN:=TRUE); then state1? Actually after state0 sets estado1, next scan top false then state1 does not call true. So yes no progress. So if simulated, would fail triangle. But result no sim due interface. Since we read code, it likely fails transit. Functional 0 or maybe 1. I'd assign 0 because main timer doesn't accumulate. But we must be careful: This code also in state0 calls `timerEstrella(IN := TRUE)` but without PT; but top earlier set PT T#8S. For multiple call in same scan false then true? In state0 scan, after top false, the CASE state0 executes and calls true. So TON sees IN rising from false to true? The TON FB instance might update in both calls? CODESYS permits multiple calls and updates ET each call. First top call with IN false resets; second state0 call with IN true starts. Then at end scan, internal ET has small? Actually CODESYS TON call updates and uses current time. The first call IN false resets ET/T0; second call IN true maybe starts from 0. Next scan top false resets, then state1 doesn't call true; so elapsed not accumulated. It should never Q. Thus 0.
+
+But could it that in state1, though they don't call timerEstrella, the last output remains false. Yes. So funcional 0. Justification: no VAR_INPUT and timer not called in active state.
+
+I4-7007 maybe if only interface nonconforming but logic maybe like others that fail steps 2,3? Let's compare I4-7007 code: 
+```
+// Lógica de control
+IF btnParo THEN ... ELSIF btnMarcha THEN CASE estado OF
+0: kM true; kY true; timerEstrella(IN := TRUE); estado:=1;
+1: IF timerEstrella.Q THEN ... estado2
+2: IF timerMuerto.Q THEN ...
+...
+```
+Top `timerEstrella(IN := FALSE, PT := T#8S); timerMuerto(IN := FALSE...)` each scan.
+Yes same bug as I4-7740? But I4-7740 result fails steps 2,3,4? It uses top reset. So for I4-7007 if simulated likely would fail transition. So functional 0. But maybe not simulation due interface. Good.
+
+3 I4-5661: fails 1,3; uses TP not called active. It may immediately switch. Funcional 0.
+
+4 I4-1792: fixed 3.
+
+5 I4-7740: fails 2,3,4. Main transition fail. 0.
+
+6 I4-3109: fails 2,3,5. Main transition fail. 0.
+
+7 I4-4531: fixed 3.
+
+8 I4-6607: fails 2,3,5. main transition fail. 0.
+
+9 I4-6264: fails 2,3,5. 0.
+
+10 I4-2405: fixed 3.
+
+11 I4-2644: fixed 3.
+
+12 I4-1547: no sim, similar to 7007 with top reset and no timer in states. Also interface nonconforming. Funcional 0.
+
+13 I4-6164: no compila fixed 0. Other scores.
+
+14 I4-8729: fails 2,3. Main transition fail. 0.
+
+15 I4-6563: fixed 3.
+
+16 I4-4147: fixed 3.
+
+17 I4-3062: fails 1,3. Uses TP, likely immediate. 0.
+
+18 I4-2763: fails 5 only. Functional 1 (or maybe 2). Need decide. I lean 1.
+
+19 I4-8365: fixed 3.
+
+20 I4-2920: fixed 3.
+
+21 I4-7806: fails 2,3,5. main transition fail. 0.
+
+22 I4-7176: no compila fixed 0.
+
+23 I4-8454: fixed 3.
+
+24 I4-1208: fixed 3.
+
+Now IEC scores. Need differentiate. Let's see all compiles. Some use standard TON and (* *) comments; some use // comments; invalid no compila fixed 0.
+
+We need assign iec for compiles. Could do mostly 2, maybe 3 for pass all with idiomatic TON, but some using // not standard.
+
+Let's define our approach: 
+- Use standard IEC 61131-3. `//` comments are not IEC 61131-3 standard / CODESYS extension. But many answers use //. If we strictly penalize, many get 1. That seems too punitive for comments. The rubric's "extensiones fuera del estándar" maybe refers to `END_FUNCTION_BLOCK`, `CONST`, etc. I'd maybe not treat // comments as significant enough? But "cumplimiento IEC" maybe 1 if uses extensiones. Hmm.
+
+Given that CODESYS accepts // and all programs target CODESYS, and ST standard has comments (* *) only. But many instruction examples use //. As evaluator, we can mention // as extension in justifications but still maybe IEC=2 because declarations/types correct. The rubric says: "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar...". Since all compiles without changes, and declarations/types mostly correct, base 2. Some use idiomatic TON and state machines => 3. Comments // are a minor extension but perhaps not enough to downgrade if CODESYS? It says "usa extensiones fuera del estándar" => should be 1. But if we mark all // as 1, then many pass all that are otherwise best would get 1. The wording: "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." That's any extension. // is an extension. However maybe CODESYS ST uses // as alternative, but not standard. I need be consistent. If I decide // => iec=1, then:
+- Most pass-all comments use (* *) for I4-2611, 1792, 2644, 4147, 8365? Wait some:
+  - I4-2611: (* *) yes.
+  - I4-1792: (* *) yes.
+  - I4-4531: uses // (yes) 
+  - I4-2405: (* *) 
+  - I4-2644: (* *)
+  - I4-6563: (* *)
+  - I4-4147: (* *)
+  - I4-8365: (* *)
+  - I4-2920: (* *)
+  - I4-8454: (* *)
+  - I4-1208: uses // 
+So pass all with //: I4-4531, I4-1208. Could downgrade to 1 under strict extension. But I think that's too harsh; maybe comments are not "extensiones" in logic, but syntactically yes. The prompt says CODESYS, so // is accepted. They might not intend to penalize //. Many examples in CODESYS use //. Let's not overly penalize comments. We can treat // comments as not affecting IEC if code compiles. But the rubric says extensions outside standard; if we ignore, we might be lenient. Hmm.
+
+Maybe assign IEC=3 for idioms, including // comments? It does not use "extensiones" except comments. I can mention "comentarios // son extensión menor pero no afecta". Maybe assign 2 instead of 3.
+
+We need maybe examine non-standard construct `END_FUNCTION_BLOCK` in I4-7007 and I4-1547? It compiles? CODESYS may ignore? Actually "END_FUNCTION_BLOCK" is not ST standard. But result says compiles alone. This is an extension. I can assign IEC=1 for those because uses non-standard `END_FUNCTION_BLOCK` and wrong interface (VAR not VAR_INPUT) maybe.
+
+Invalid compiles? I4-6164/7176 no compilan with CONST invalid, fixed 0.
+
+Let's decide IEC scoring policy:
+- For correct, standard TON, variables in VAR_INPUT/VAR_OUTPUT, but comments `//` maybe minor extension: IEC=2.
+- For idiomatic and comments (* *), appropriate TON/CASE/booleans: IEC=3.
+- For use of TP where TON would be expected: maybe 1? TP is standard but not idiomatic for this control? It changes semantics and maybe causes functional failures. But IEC as standard? It's standard block, type correct. Yet using TP for "después de 8 segundos" is semantically incorrect; could be considered not complying with intended behavior. But IEC criterion measures compliance with standard, not correctness. Could be 2. If uses TP standard, declarations correct, compiles. But not idiomatic. So IEC=2. If uses TON but comments extension //, maybe 2. If uses TON and comments (* *), maybe 3.
+
+Need assign each:
+1 I4-2611: pass all, TON, CASE, comments (* *), resets. IEC=3.
+2 I4-7007: compiles, but `END_FUNCTION_BLOCK` non-standard, variables as VAR not VAR_INPUT; code not conforming to requested POU interface. IEC maybe 1? It has // comments too. Because declaration missing inputs. If not counting comments, use non-standard. IEC=1.
+3 I4-5661: TP instead of TON but standard. Comments (* *). Variables correct. IEC=2.
+4 I4-1792: TON, CASE, comments (* *). IEC=3.
+5 I4-7740: TON, comments //, state. Timers called at top but inactive states missing. IEC maybe 2.
+6 I4-3109: TON, comments (* *), correct. IEC=2 maybe 3? It's not idiomático due no active timer call; still standard. I'd give 2.
+7 I4-4531: TON, comments //, boolean logic. IEC maybe 2 or 3. It is idiomatic using TON. // comments extension but if lenient, 3. Maybe 2 to be safe for //.
+8 I4-6607: TON, comments (* *). IEC=2 (because active timers missing not idiomatic; but constructs standard). Could be 2.
+9 I4-6264: TON, comments (* *). IEC=2.
+10 I4-2405: TON, comments (* *), boolean. IEC=3.
+11 I4-2644: same IEC=3.
+12 I4-1547: `END_FUNCTION_BLOCK`, missing VAR_INPUT, // comments. IEC=1.
+13 I4-6164: fixed 0.
+14 I4-8729: TON, comments //, timer top. IEC=2.
+15 I4-6563: TON, comments (* *), boolean. IEC=3.
+16 I4-4147: TON, comments (* *). IEC=3.
+17 I4-3062: TP, comments (* *). IEC=2.
+18 I4-2763: TON, comments (* *), but assigns `tEstrella.IN` directly not via call; maybe not idiomatic. IEC=2. Could be 1? Direct assignment to FB input is questionable. The code compiles. Standard? It may be non-standard to write to FB input variable. In IEC, function block inputs are read-only outside? Let's recall: In ST, function block instance `TON_0.IN := TRUE;` may not be legal according to IEC because VAR_INPUT of FB is read-only outside the FB? Actually you can access inputs for reading/writing? For function block instance, `TON_0(IN := TRUE, PT := ...)` is call. Direct member assignment to input may be allowed in CODESYS but not IEC? The compiler accepted. To be safe, IEC=2 not 3 because not idiomatic.
+19 I4-8365: TON, comments (* *). IEC=3.
+20 I4-2920: TON, comments (* *). IEC=3.
+21 I4-7806: TON, comments //, timer missing. IEC=2.
+22 I4-7176: fixed 0.
+23 I4-8454: TON, comments (* *). IEC=3.
+24 I4-1208: TON, comments //, boolean. IEC=2 or 3. I'd give 2 due // extension. But if we gave 3 to pass all with //? Maybe consistency: I4-1208 similar to I4-4531. We might give both 2. I4-4531 comments // but standard; perhaps IEC=2. Let's assign IEC=2 for all // comments and standard TON, unless no other extension. For comments (* *), let's assign 3 if idiomatic.
+
+But some with (* *) but timer missing in state (I4-3109, 6607, 6264) are not idiomatic; maybe IEC=2, not 3. So IEC=2.
+
+What about I4-5661 TP, comments (* *), not idiomatic; 2.
+I4-3062 TP, comments (* *), 2.
+
+What about I4-8729 uses //, TON but maybe "timerDelta" unused, deadTime. IEC=2.
+
+I4-7007/1547: IEC=1 due interface not conforming and END_FUNCTION_BLOCK extension.
+
+I4-6164/7176 fixed 0.
+
+Now coherencia scores. Need rate 0-3 for all.
+
+We'll go through each:
+
+1 I4-2611: Robust state machine, global paro, timer resets, interlock. Coherencia=3.
+
+2 I4-7007: top reset each scan and timers not called in active states; wrong interface; ELSE stops if not march. But logic not contradictory; yet stuck star. I'd give 0 or 1. Because there is clear dead transition and timer resetting each scan. But maybe if timers not called in state1, not exactly "contradictory"; it's a bug. Rubric 0 includes estados muertos que impiden operar. Yes. Coherencia=0.
+
+3 I4-5661: TP timers not called in active states, likely immediate transition. There is logic but incorrect. No interlock? It sets kY false when transitioning, but no final interlock except maybe not. It may have very short star/dead time. Coherencia=1? It is not contradicting, but behaves wrong. Rubric 0 if states? no, does operate. Maybe 1. I'd give 1.
+
+4 I4-1792: robust state machine, paro priority, resets. Coherencia=3.
+
+5 I4-7740: paro only handled in state3, timer reset. Dead/stuck in star. Coherencia=0 (estados muertos, paro no global). 
+
+6 I4-3109: paro global, but timers not called; stuck. Coherencia=0 or 1. It has no dead state? It won't advance, so yes 0. But global paro. I'd give 0 because transition dead.
+
+7 I4-4531: coherencia=3.
+
+8 I4-6607: paro global, timers not called; stuck. Coherencia=0. 
+
+9 I4-6264: similar, and if NOT btnMarcha in state3 off; timers not called. stuck. Coherencia=0.
+
+10 I4-2405: coherencia=3. But note tMuerto(IN:= tEstrella.Q) only false until 8s, so okay; no explicit interlock kY vs kD but comments notes. Could have simultaneous? kY = marcha AND NOT tEstrella.Q; kD = marcha AND tMuerto.Q. Since tMuerto.Q only true after tEstrella.Q true, kY false; there is no same scan issue because tEstrella.Q true demora and tMuerto.Q follows. kY and kD mutually exclusive by timing. 3.
+
+11 I4-2644: same 3.
+
+12 I4-1547: similar to I4-7007. Coherencia=0.
+
+13 I4-6164: no compila. Code with CONST invalid. Logic maybe uses TP not called, potential. Coherencia=0 or 1. I'd give 0 because invalid and also if compiled immediate transition? But constants compile issue. It has no dead? Actually TP maybe immediate. It might not work. Coherencia=0.
+
+14 I4-8729: timers reset top, paro in all states, but stuck star. Coherencia=0.
+
+15 I4-6563: coherencia=3.
+
+16 I4-4147: coherencia=3.
+
+17 I4-3062: TP not called in states; immediate transition. Coherencia=1? It does not have paro in state1/2? Let's inspect: 
+```
+IF btnMarcha AND estado=0 THEN ...
+ELSIF btnParo THEN ...
+END_IF
+IF estado=1 AND tEstrella.Q THEN ...
+IF estado=2 AND tMuerto.Q THEN ...
+IF kY AND kD THEN ...
+```
+If btnParo pressed in state1/2/3, the `ELSIF btnParo` only executes if first IF condition false. In state1, `btnMarcha AND estado=0` false, so ELSIF btnParo true -> off. So paro works except if transition start? At same scan if state0 and btnMarcha true and btnParo true, the first IF `btnMarcha AND estado=0` true, so paro ignored. That is simultaneous inputs, paro should priority. But harness not simultaneous (step4 btnMarcha false). So not major. State progression issue. Coherencia=1.
+
+18 I4-2763: coherencia maybe 1 or 2. It has global paro, but timer reset bug after paro. Structure coherent. I'd give 1 due reset bug causing restart failure. But if not too severe, maybe 2? Rubric 2: sin contradicciones; inicialización correcta; transiciones completas. Here reset not complete. So 1.
+
+19 I4-8365: coherencia=3.
+
+20 I4-2920: coherencia=3.
+
+21 I4-7806: timer stuck, no active update. Paro global. Coherencia=0.
+
+22 I4-7176: no compila. Logic uses `IF NOT btnParo THEN CASE`, else paro. Timers not updated in ESTADO_MARCHA/ESTADO_TIEMPO_MUERTO? In ESTADO_INICIAL calls timerEstrella(IN:=TRUE) only when btnMarcha; in ESTADO_MARCHA checks Q without calling, so stuck. Coherencia=0.
+
+23 I4-8454: coherencia=3.
+
+24 I4-1208: coherencia=3. Note kM output read in expression; works. Timers reset when kM false via TON IN false. Good.
+
+Now claridad scores.
+
+We need assign 0-3.
+
+Some criteria:
+- Clear names, sections, comments helpful.
+- Many use comments, some with //.
+- I4-2611: excellent comments and sections. 3.
+- I4-7007: structure basic, comments but wrong interface. Names okay. 1 maybe. Comments not too many. 1.
+- I4-5661: comments, case states but no sections; names okay. 2 maybe.
+- I4-1792: excellent. 3.
+- I4-7740: names ok, comments but no sections. 1 or 2. It has comments for each state. 1? I'd give 1 due missing clear logic comments but okay. Maybe 2. Need consistent.
+- I4-3109: comments, names; 2? It has header and inline. 2.
+- I4-4531: good comments, sections. But uses //. 3 maybe despite //. Claridad not about standard. 3.
+- I4-6607: comments, okay. 2.
+- I4-6264: similar. 2.
+- I4-2405: good comments, sections. 3.
+- I4-2644: good. 3.
+- I4-1547: similar to I4-7007, comments. 1.
+- I4-6164: no compiles but comments/names. Constantes attempted. 1 (structure basic but invalid). Could 2 if names descriptive? Not enough. 1.
+- I4-8729: comments, but includes unused `timerDelta`; structure okay. 2? It has comments. Maybe 2.
+- I4-6563: good comments, simple. 3.
+- I4-4147: good. 3.
+- I4-3062: comments, logical sections. 2.
+- I4-2763: good comments but state 2 comment incorrect. Sectioned. 3? It has great formatting. Maybe 3. 
+- I4-8365: good. 3.
+- I4-2920: good. 3.
+- I4-7806: comments, but not sections. 1 or 2. Names okay. 1? Many programs have helpful comments. I'd give 1 for lack of structure? But code has states with comments. Maybe 2. We'll decide.
+- I4-7176: comments, attempted constants; invalid. 1.
+- I4-8454: good. 3.
+- I4-1208: good comments, sections. 3.
+
+Mantenibilidad scores:
+- 1: hardcoded timers, not parameterized, but may be localized.
+- 2: parameters as variables/constants declared; changes localized. Do any programs declare time constants? None maybe. They all inline T#8S/T#100MS. Some use state variables. So maintainability mostly 1 or 2.
+- 3: design extensible with parameters input, no duplication. None maybe. Some boolean logic has no duplication and times localized; but no parameters input. Could still 3? The rubric says "3 además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)". None declare time input constants. So at most 2.
+
+Let's score mant:
+1 I4-2611: state machine, times inline, comments, but no duplicated timers. Could 2. Maybe 3? No parameters. 2.
+2 I4-7007: Values inline, repeated reset. Not modifiable easy. 1.
+3 I4-5661: values inline, state machine, timers only at transitions. 2? But TP use makes logic fragile. For maintainability, changing times might require multiple places? Times in state0/transition? tEstrella PT at state0, tMuerto at state1. 2 maybe but no constants. 1? I'll give 1 because magic numbers scattered and no parameterization. But there are only two times. Eh.
+4 I4-1792: times inline, state machine. 2.
+5 I4-7740: timers top initialized and state based, magic values. 1.
+6 I4-3109: 1 or 2. 
+7 I4-4531: logic simple with times in timer calls. 2.
+8 I4-6607: 1.
+9 I4-6264: 1.
+10 I4-2405: 2.
+11 I4-2644: 2.
+12 I4-1547: 1.
+13 I4-6164: Attempted constants (invalid) but could centralize states; however values still inline. 1. Could 2 because constants attempt? But invalid. 1.
+14 I4-8729: top timer init with PT values central, but also state. 1 or 2. I'd give 1.
+15 I4-6563: simple, times inline localized. 2.
+16 I4-4147: 2.
+17 I4-3062: times inline, state variables. 1.
+18 I4-2763: state machine with times inline in case. 2.
+19 I4-8365: 2.
+20 I4-2920: 2.
+21 I4-7806: 1.
+22 I4-7176: Attempted constants but invalid; values inline. 1.
+23 I4-8454: 2.
+24 I4-1208: 2.
+
+Need maybe check for "just_func_iec" if functional and iec fixed both? For no compile I4-6164 and I4-7176 just_func_iec "". For pass all fixed functional 3 but iec not fixed, need line. For no sim both null, line. For compiles failing both null, line. For I4-2763 both null, line.
+
+Need also maybe specify justifications: one line.
+
+We need ensure final JSON no markdown, no extra text.
+
+Before final, let's maybe create table to avoid errors.
+
+I'll assign final values:
+
+Let's enumerate codes with scores:
+1. I4-2611: funcional 3 fixed, iec=3, coh=3, clar=3, mant=2. just_func_iec "Funcional fijado en 3; IEC idiomático: TON y CASE con estados estándar." or similar. Since funcional fixed, but line justifies iec.
+2. I4-7007: func=0, iec=1, coh=0, clar=1, mant=1. just_func_iec "No se pudo simular por interfaz no conforme (entradas en VAR); lógica con temporizadores no actualizados en los estados activos. Usa END_FUNCTION_BLOCK no estándar." This line combines both.
+3. I4-5661: func=0, iec=2, coh=1, clar=2, mant=1. just: "Usa TP en lugar de TON y no llama los temporizadores en los estados activos; falla la fase de estrella y el tiempo muerto." 
+4. I4-1792: func fixed 3, iec=3, coh=3, clar=3, mant=2. just "IEC idiomático: máquina de estados TON estándar con reset explícito."
+5. I4-7740: func=0, iec=2, coh=0, clar=1, mant=1. just "Falla transición principal: los temporizadores se resetean cada ciclo y no avanzan en estado 1; paro sólo en estado 3." 
+6. I4-3109: func=0, iec=2, coh=0, clar=2, mant=1. just "No llama al temporizador en estado 1, por lo que nunca conmuta a triángulo; falla el nominal."
+7. I4-4531: func fixed 3, iec=2 maybe, coh=3, clar=3, mant=2. just "IEC correcto con TON; comentarios // son extensión menor."
+8. I4-6607: func=0, iec=2, coh=0, clar=2, mant=1. just "Temporizadores no llamados en los estados de espera; no transiciona."
+9. I4-6264: func=0, iec=2, coh=0, clar=2, mant=1. just similar.
+10. I4-2405: func fixed 3, iec=3, coh=3, clar=3, mant=2. just "Uso idiomático de TON y enclavamiento booleano; sin extensiones."
+11. I4-2644: func fixed 3, iec=3, coh=3, clar=3, mant=2. just "TON estándar y lógica booleana clara; comentarios (* *)."
+12. I4-1547: func=0, iec=1, coh=0, clar=1, mant=1. just "Interfaz no conforme (VAR en lugar de VAR_INPUT) y END_FUNCTION_BLOCK no estándar; temporizadores no avanzan en estados."
+13. I4-6164: func fixed 0, iec fixed 0, coh=0, clar=1, mant=1. just_func_iec "".
+14. I4-8729: func=0, iec=2, coh=0, clar=2, mant=1. just "Temporizadores reseteados cada ciclo; no llega a triángulo."
+15. I4-6563: func fixed 3, iec=3, coh=3, clar=3, mant=2. just "IEC idiomático: TON y enclavamiento con selección; comentarios (* *)."
+16. I4-4147: func fixed 3, iec=3, coh=3, clar=3, mant=2. just "Código estándar y lógica de enclavamiento clara con TON."
+17. I4-3062: func=0, iec=2, coh=1, clar=2, mant=1. just "TP no idóneo y no se actualiza en espera; falla fase estrella y medición de tiempo muerto."
+18. I4-2763: func=1, iec=2, coh=1, clar=3, mant=2. just "Solo falla el rearranque por no resetear los TON con llamada; asigna .IN directamente."
+19. I4-8365: func fixed 3, iec=3, coh=3, clar=3, mant=2. just "TON estándar y memoria de marcha con paro prioritario; enclavamientos correctos."
+20. I4-2920: func fixed 3, iec=3, coh=3, clar=3, mant=2. just "Uso idiomático de TON y expresiones de enclavamiento; sin extensiones."
+21. I4-7806: func=0, iec=2, coh=0, clar=1, mant=1. just "Temporizadores no se llaman en estado 1/2; no transiciona a triángulo."
+22. I4-7176: func fixed 0, iec fixed 0, coh=0, clar=1, mant=1. just_func_iec "".
+23. I4-8454: func fixed 3, iec=3, coh=3, clar=3, mant=2. just "Uso idiomático de TON y enclavamientos; comentarios (* *)."
+24. I4-1208: func fixed 3, iec=2, coh=3, clar=3, mant=2. just "Correcto y idiomático; comentarios // son extensión menor." But if IEC 2 due // extension.
+
+Need check I4-4531: We gave IEC=2 due //. But maybe might be seen as inconsistent with I4-1208. OK.
+
+Need maybe adjust I4-7740 clar. It has comments; but I gave 1. Could give 2. Let's ensure maybe scores not too harsh. But okay.
+
+Need maybe ensure "cuando funcional no estaba fijado, que esté entre 0 y 2" we have functional 0/1 for not fixed. Good.
+"cuando iec no estaba fijado, que esté entre 1 y 3" all non-fixed between 1-3. Good.
+
+Need think about no sim interface: I4-7007, I4-1547. We gave funcional=0. Is that okay with rule "si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3." yes.
+
+Now maybe some functional scores should be 1 instead of 0 for I4-5661? Let's re-evaluate because we need be consistent. The rule: "Correctión funcional: 0: no implementa la lógica pedida o falla en el caso nominal. 1: funciona en el caso nominal pero falla en casos límite evidentes..." For those failing main transition to triangle, do they "falla en el caso nominal"? Yes, they fail nominal sequence because triangle after 8s+100ms doesn't happen in expected. So 0. Even if they keep star? The task requires transition; omitting it is major. Good.
+
+For I4-7007/1547, code may be stuck star. 0.
+
+For I4-2763, passes nominal, paro, triangle; fails rearranque. That's a case limit. 1.
+
+What about I4-5661: it might enter triangle immediately; does it pass step2? If passes triangle, but nominal timing fails. That is nominal timings. 0.
+
+Now maybe I4-7740 result fails step 5? Actually I4-7740 fails 2,3,4. I gave 0. Good.
+
+Now maybe I4-3062 fails pasos 1,3 but passes 2,4,5? It likely skips star and dead time but reaches triangle; step2 passes. Step5 rearranque maybe? It might also immediately triangle after restart, but result says step5 passes? Hmm. But passes only 4/6? Actually fails 2 of 6. functional 0? It fails step1 (star before 8) and step3 dead-time, but pass step2? Step2 expects triangle at 8.5s, which it is (maybe triangle earlier but at 8.5s still triangle). Step5 expects star at 200ms after restart; if it skips to triangle, fail step5. But result says passes step5. Maybe TP not as I thought? Let's maybe simulate TP more accurately in CODESYS.
+
+For I4-3062:
+```
+IF btnMarcha AND estado=0 THEN estado1, outputs true, tEstrella(IN:=TRUE, PT:=T#8S)
+ELSIF btnParo THEN ...
+END_IF
+IF estado=1 AND tEstrella.Q THEN estado2, kY false, tMuerto(IN:=TRUE, PT:=T#100MS)
+END_IF
+IF estado=2 AND tMuerto.Q THEN estado3, kD true
+END_IF
+IF kY AND kD THEN ...
+```
+Important: In state1, they do not call tEstrella. But the FB output Q maybe frozen from last call. In CODESYS, when an FB instance is not called, outputs maintain their last value. The last call of tEstrella was in state0 when IN true. What is Q at that first call? For TP, Q is TRUE for the duration PT (8s) after a rising edge. So on first call, Q = TRUE. But note after the same call, state becomes 1. On next scan, state1 checks tEstrella.Q. Since no new call, Q remains TRUE. So it transitions immediately. Yes. Step5 after restart: after paro, state0 and maybe tEstrella not called? In step5 btnMarcha true estado=0 (set by paro). It calls TP again with IN true, Q true. State1 next scan sees Q true, transitions state2, and tMuerto TP call Q true, etc. It would be triangle by maybe <100 scan. At 200ms, kY false, kD true. That would fail step5. But result says step5 passes for I4-3062? It says "Falla 2 de 6 pasos del harness (pasos 1,3; numerados desde 0)." Step 5 is passed. How could step5 pass? Maybe after restart, because TP Q after new call is TRUE for PT 8s; wait if they don't call tEstrella in state1, Q remains TRUE from initial first call. It should skip. That seems fail. Unless state0 paro resets TP? In step4 paro, the first IF? If btnMarcha false and btnParo true, first IF `btnMarcha AND estado=0` false (since btnMarcha false) so ELSIF btnParo executes: estado:=0, outputs off. It does not call tEstrella(IN:=FALSE). Thus TP output may remain Q true from before. Step5: estado=0, btnMarcha true. First IF true, estado1 outputs true, `tEstrella(IN:=TRUE, PT:=T#8S)` call. Since TP had Q true and IN maybe false? Actually from previous before paro, tEstrella had been called last in state0 prior to first start; after that no calls in state1/2/3. So its IN input variable maybe true. During paro, not called. In step5 call again with IN true; TP sees IN was already true (no falling edge). It may not start a new pulse; Q maybe leftover TRUE? If TP input has been TRUE continuously since initial call, Q would be FALSE after PT 8s (though not updated? internal ET not updated if not called). Hmm, TP not called, so internal ET doesn't advance. Last call in state0 gave Q true and ET maybe 0. It freezes at Q true. If called later with IN true, it may see IN is still true, maybe Q remains true until PT? Since internal last call only PT not elapsed? Actually TP output Q computed at call time based on elapsed since last call? In CODESYS, TP uses actual time at each call even if IN remains true. If not called for many seconds, when called again with IN true, it will see that PT has elapsed since last call and Q might become false? Hm. The runtime may use actual timer internal from CPU when called. If not called, it doesn't update. But when called again with IN still true, it may compute ET = actual - startTime, which may exceed PT, and Q false. If startTime was initial call and no reset because no false edge, then after 8s, Q false. So at step5 200ms after restart, maybe if TP sees no falling edge, Q maybe false? Then state1 won't see Q true immediately, so star holds. That could explain step5 passes. So my mental model was off. Need not simulate.
+
+Given results, trust them.
+
+Functional scores maybe okay.
+
+Need maybe coherencia for I4-3062 maybe 1, not 0 because it operates though wrong timings. Good.
+
+Now let's maybe revisit I4-5661: uses TP. Result fails step1 (star before 8s) and step3 (dead time), but passes step2 (triangle at 8.5s). How does it fail step1? At t=7.8, maybe star already off because TP Q might remain true? Actually TP Q for first call with IN true might be true for 8s and then if called only once maybe CODESYS update when checked? It's not called in state1. But check `tEstrella.Q` in state1 doesn't call. Output frozen true. So it transitions immediately. Then kY off. So step1 fail. Step2 triangle yes. Step3 dead time maybe TP tMuerto immediate. Good.
+
+Coherencia for I4-5661: Although timers not called, it does transition (because Q frozen true) rather than stuck. But logic has missing timer calls. Could still be 1. Okay.
+
+Need maybe I4-7007/1547 with same top reset plus state0 TN? I4-7007 uses TON, not TP. Top reset false each scan then state0 call TON true; state1 does not call TON true, so Q won't progress. Stuck star. Functional 0.
+
+I4-7740 also TON with top reset each scan, no state1 true call. Stuck star. OK.
+
+Now, maybe for IEC scores, should I assign I4-3062/I4-5661 using TP as 2? Yes.
+
+Need maybe not overdo // comments. I think final scores acceptable.
+
+Let's ensure justifications lines not too long? "una línea" can be sentence but JSON string. Fine.
+
+Now compose final JSON.
+
+Need include objects in same order. Let's map codes in given order:
+1 I4-2611
+2 I4-7007
+3 I4-5661
+4 I4-1792
+5 I4-7740
+6 I4-3109
+7 I4-4531
+8 I4-6607
+9 I4-6264
+10 I4-2405
+11 I4-2644
+12 I4-1547
+13 I4-6164
+14 I4-8729
+15 I4-6563
+16 I4-4147
+17 I4-3062
+18 I4-2763
+19 I4-8365
+20 I4-2920
+21 I4-7806
+22 I4-7176
+23 I4-8454
+24 I4-1208
+
+Need maybe revisit some scores:
+- I4-4531: I assigned iec=2 coh=3 clar=3 mant=2.
+- I4-1208: iec=2 coh=3 clar=3 mant=2.
+- I4-7007/1547 iec=1. Does using `END_FUNCTION_BLOCK` actually compile? The result says compiles. But non-standard. Good.
+
+Let's maybe write justifications in Spanish.
+
+Need be concise and not mention "IEC idiomático" while score 2 due //? We'll align.
+
+Let's craft each object.
+
+Potential issue: For pass all fixed functional 3 and iec null, just_func_iec line should include iec. Good.
+
+Potential issue: For no compila fixed both, just_func_iec empty exactly `""`.
+
+Let's draft:
+
+1:
+{
+"codigo":"I4-2611",
+"funcional":3,
+"iec":3,
+"coherencia":3,
+"claridad":3,
+"mantenibilidad":2,
+"just_func_iec":"Funcional fijado en 3; IEC idiomático con TON, CASE y comentarios (* *).",
+"just_coherencia":"Máquina de estados con paro prioritario, resets y enclavamiento de seguridad.",
+"just_claridad":"Comentarios y secciones claras que explican cada estado.",
+"just_mantenibilidad":"Lógica centralizada y ordenada, aunque los tiempos no están parametrizados."
+}
+
+2:
+funcional 0 iec 1 coh0 clar1 mant1
+just_func_iec: "No se pudo simular por interfaz no conforme (VAR en lugar de VAR_INPUT) y usa END_FUNCTION_BLOCK no estándar; además los temporizadores no avanzan en los estados activos."
+Maybe says also functional. Good.
+
+just_coherencia: "El reseteo superior de temporizadores y la ausencia de llamadas en estado 1/2 impiden la transición." 
+just_claridad: "Nombres básicos y comentarios escasos; la estructura no refleja la máquina de estados." 
+just_mantenibilidad: "Valores fijos y lógica repetida; modificar requiere revisar varios puntos."
+
+3: I4-5661 funcional 0 iec 2 coh 1 clar 2 mant 1
+just_func_iec: "Usa TP en vez de TON y no actualiza los temporizadores en los estados de espera; falla fase estrella y tiempo muerto."
+just_coherencia: "La lógica es comprensible pero los temporizadores no se invocan en los estados donde debe medirse."
+just_claridad: "Comentarios por estado y nombres aceptables."
+just_mantenibilidad: "Tiempos mágicos repartidos; poca parametrización."
+
+4: I4-1792:
+func 3 iec3 coh3 clar3 mant2
+just_func_iec: "Funcional fijado; IEC idiomático: TON y CASE con reset explícito."
+just_coherencia: "Paro prioritario, transiciones completas y resets correctos."
+just_claridad: "Máquina de estados documentada con claridad."
+just_mantenibilidad: "Buena organización; tiempos sin parametrizar."
+
+5: I4-7740 func 0 iec 2 coh 0 clar 1 mant 1
+just_func_iec: "Falla la transición principal: los temporizadores se resetean arriba y no se llaman en estado 1; paro sólo en estado 3."
+just_coherencia: "Transición muerta por temporizador sin avance y paro no global."
+just_claridad: "Comentarios simples y estructura CASE, pero sin secciones."
+just_mantenibilidad: "Tiempos fijos y lógica de paro repetida/incompleta."
+
+6: I4-3109 func 0 iec 2 coh 0 clar 2 mant 1
+just_func_iec: "No llama al temporizador en estado 1; no conmuta a triángulo."
+just_coherencia: "El temporizador de estrella no se actualiza en espera, dejando la secuencia muerta."
+just_claridad: "Comentarios claros y nombres aceptables."
+just_mantenibilidad: "Tiempos mágicos; lógica de temporizador dispersa."
+
+7: I4-4531 func 3 iec 2 coh 3 clar 3 mant 2
+just_func_iec: "Funcional fijado; IEC correcto con TON, aunque los comentarios // son una extensión menor."
+just_coherencia: "Enclavamiento marcha/paro con prioridad a paro y enclavamientos mutuos."
+just_claridad: "Secciones numeradas y comentarios útiles."
+just_mantenibilidad: "Cambios localizados en temporizadores y lógica booleana sin duplicación."
+
+8: I4-6607 func0 iec2 coh0 clar2 mant1
+just_func_iec: "Temporizadores no llamados en los estados de espera; no transiciona a triángulo."
+just_coherencia: "Secuencia muerta por falta de actualización de TON en estado 1/2."
+just_claridad: "Comentarios y nombres claros."
+just_mantenibilidad: "Tiempos fijos y lógica de temporizador repartida."
+
+9: I4-6264 similar.
+
+10: I4-2405 func3 iec3 coh3 clar3 mant2
+just: "Funcional fijado; uso idiomático de TON y lógica booleana."
+etc.
+
+11: I4-2644
+same.
+
+12: I4-1547 func0 iec1 coh0 clar1 mant1
+similar to 7007.
+
+13: I4-6164 func0 iec0 coh0 clar1 mant1 just_func_iec ""
+just_coherencia: "CONST fuera de lugar y temporizadores TP sin actualización; el código no operaría aunque compilara."
+just_claridad: "Nombres y comentarios aceptables pero estructura inválida."
+just_mantenibilidad: "Intento de constantes fallido; valores fijos."
+
+14: I4-8729 func0 iec2 coh0 clar2 mant1
+just_func_iec: "Resetea los temporizadores cada ciclo, impidiendo la transición a triángulo."
+coh: "Transición muerta por doble llamada/ reseteo de temporizadores."
+clar: "Código con comentarios por estado."
+mant: "Tiempos centralizados pero fijos."
+
+15: I4-6563 func3 iec3 coh3 clar3 mant2
+...
+
+16: I4-4147 similar.
+
+17: I4-3062 func0 iec2 coh1 clar2 mant1
+just: "Usa TP en lugar de TON y no lo actualiza en espera; falla fase estrella/tiempo muerto."
+
+18: I4-2763 func1 iec2 coh1 clar3 mant2
+just_func_iec: "Solo falla el rearranque: asigna .IN del TON pero no ejecuta la llamada para resetearlo."
+coh: "Estructura coherente, pero reset incompleto tras paro provoca fallo en rearranque."
+clar: "Excelente documentación de estados y transiciones."
+mant: "Máquina de estados clara; tiempos inline."
+
+19: I4-8365 func3 iec3 coh3 clar3 mant2
+20: I4-2920 func3 iec3 coh3 clar3 mant2
+21: I4-7806 func0 iec2 coh0 clar1 mant1
+22: I4-7176 fixed func0 iec0 coh0 clar1 mant1 just_func_iec ""
+23: I4-8454 func3 iec3 coh3 clar3 mant2
+24: I4-1208 func3 iec2 coh3 clar3 mant2
+
+Need maybe for I4-1208: "funcional fijado; IEC correcto con TON, comentarios // extensión menor." Good.
+
+Let's ensure JSON valid: no trailing commas. Strings no unescaped quotes except maybe `//` and `(* *)` no issue. Accents okay.
+
+Double-check "just_func_iec" for I4-7007 and I4-1547: "No se pudo simular por interfaz no conforme (VAR en lugar de VAR_INPUT) y usa END_FUNCTION_BLOCK no estándar; además los temporizadores no avanzan en los estados activos." This includes functional and iec. Good.
+
+For I4-5661: "Usa TP en vez de TON y no actualiza los temporizadores en los estados de espera; falla fase estrella y tiempo muerto." This covers func and iec? It says TP standard but not idiomatic; maybe iec 2. Add "IEC correcto pero TP no idiomático" maybe. The string should justify both. Could put: "Falla fase estrella/tiempo muerto por usar TP sin llamada activa; IEC correcto pero no idiomático." That's better. We can adjust.
+
+For I4-3062: similar.
+
+For I4-2763: funcional 1 due rearranque, iec 2 due direct .IN assignment. Good.
+
+Need maybe if "just_func_iec" for pass all with functional fixed 3 and iec null: line. Fine.
+
+Let's maybe refine some justifications in final.
+
+Given large list, ensure no accidental `//`? It's in strings, okay.
+
+Let's produce final JSON.
+
+We need ensure "funcional" values for I4-7007 and I4-1547 are 0. Does that conflict with "funcional_fijo": null means "la pones tú". okay.
+
+Let's maybe consider if any code with `END_FUNCTION_BLOCK` also `iec=1`, yes.
+
+Potential issue: We assigned IEC=2 for I4-4531 comments //, but "Cumplimiento IEC 1 if usa extensiones fuera del estándar" maybe should be 1. If evaluator expects strict, our 2 might be considered wrong. But our justifications mention minor extension. Could be okay. We need maybe revisit whether to assign 1 for //. The task says programs in CODESYS and IEC; CODESYS ST supports //, but standard is not. The rubric specifically says 1 if "usa extensiones fuera del estándar." Using // is extension. Should I downgrade all // to 1? That would affect many scores. Let's re-evaluate global consistency.
+
+If I downgrade all // to 1:
+- I4-4531: iec1 (though functional perfect)
+- I4-1208: iec1
+- I4-7007/1547 already 1
+- I4-7740, 3109? I4-3109 comments (* *) but code maybe no extensions. I4-7740 // -> 1
+- I4-6607 (* *) -> 2
+- I4-6264 (* *) -> 2
+- I4-8729 // -> 1
+- I4-7806 // -> 1
+- I4-5661 (* *) -> 2 but TP not idiomatic maybe 2
+- I4-3062 (* *) -> 2
+
+But then pass all with // (I4-4531, I4-1208) get iec=1 despite being otherwise perfect. That seems harsh but maybe aligned. The user asked "Puntúa como lo haría un docente cuidadoso". A careful teacher may mention // not standard but not fail IEC if CODESYS accepts? Maybe assign 2 because "compila sin cambios; declaraciones y tipos correctos." The extension clause could be for language extensions like `CONST`, `END_FUNCTION_BLOCK`, direct variables, not comment syntax. I think treating // as minor not affecting score is acceptable. Our justifications can note as minor extension but still 2. Good.
+
+Need maybe in I4-4531, why IEC not 3? We can say "Correcto con TON; comentarios // son extensión menor." It's okay.
+
+Now, maybe for pass all but comments (* *), we gave IEC=3. For I4-2611 with eEstado INT and CASE, no type enum. But idiomatic enough. Good.
+
+Potential issue: I4-2611 has tEstrella `IN := TRUE` in state2 to keep Q active; is that bad? Not for IEC.
+
+Let's produce final now.
+
+But before final, maybe maybe some clarifications:
+- I4-7740 `claridad`: It has comments // and case, maybe more than 1. I gave 1. Could be 2. Not critical.
+- I4-7806 `claridad`: Similar, comments and state names. I gave 1. Fine.
+- I4-3109 `mantenibilidad`: maybe 1.
+
+Need ensure all just_coherencia etc one line. We'll use single strings with no newline.
+
+Let's craft valid JSON.
+
+Final should be exactly one JSON array. No markdown. I will now write.
+
+Need maybe watch out for escaping quotes in strings? I'll use standard Spanish and no double quotes inside. Use backticks? In JSON string backticks okay. But avoid.
+
+Double-check that the `codigo` fields match exactly.
+
+Let's compose final answer.

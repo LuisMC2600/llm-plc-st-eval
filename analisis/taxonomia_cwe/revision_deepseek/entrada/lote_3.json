@@ -1,0 +1,257 @@
+{
+ "lote": 3,
+ "casos": [
+  {
+   "codigo": "J51",
+   "tarea": "B8",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el registro de aperturas de una puerta de seguridad. Cada apertura (transición de FALSE a TRUE de la señal puertaAbierta) debe incrementar el número de aperturas en uno; mantener la puerta abierta no debe seguir contando. Al acumular 5 o más aperturas debe activarse la salida de aviso. La entrada reset pone el registro en cero y desactiva el aviso. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Puerta con variables de entrada puertaAbierta, reset (BOOL) y salidas aviso (BOOL) y nAperturas (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primer flanco: 1 apertura (funcion nominal)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Puerta sostenida abierta: no debe seguir contando"
+    },
+    {
+     "paso": 3,
+     "requisito": "Puerta cerrada: la cuenta se conserva"
+    },
+    {
+     "paso": 4,
+     "requisito": "4 aperturas: aviso apagado (umbral)"
+    },
+    {
+     "paso": 5,
+     "requisito": "5 aperturas: aviso activo (umbral mayor o igual a 5)"
+    },
+    {
+     "paso": 6,
+     "requisito": "6 aperturas: aviso activo y cuenta sin saturar"
+    },
+    {
+     "paso": 8,
+     "requisito": "Tras soltar el reset vuelve a contar"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; // Entrada que indica si la puerta está abierta\n    reset : BOOL; // Entrada para resetear el contador de aperturas\nEND_VAR\n\nVAR_OUTPUT\n    aviso : BOOL; // Salida que indica si se han acumulado 5 o más aperturas\n    nAperturas : INT; // Salida que muestra el número de aperturas\nEND_VAR\n\nVAR\n    puertaAbiertaAnterior : BOOL; // Variable para almacenar el estado anterior de puertaAbierta\nEND_VAR\n\n// Inicialización de variables\nIF NOT puertaAbiertaAnterior THEN\n    puertaAbiertaAnterior := puertaAbierta;\nEND_IF\n\n// Lógica de reset\nIF reset THEN\n    nAperturas := 0;\n    aviso := FALSE;\nEND_IF\n\n// Contador de aperturas\nIF puertaAbierta AND NOT puertaAbiertaAnterior THEN\n    nAperturas := nAperturas + 1;\nEND_IF\n\n// Actualización del estado anterior de puertaAbierta\npuertaAbiertaAnterior := puertaAbierta;\n\n// Lógica de aviso\nIF nAperturas >= 5 THEN\n    aviso := TRUE;\nELSE\n    aviso := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J07",
+   "tarea": "C7",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: convierte a Structured Text el siguiente segmento de un programa en Ladder Diagram (IEC 61131-3), preservando exactamente su comportamiento. Descripción del segmento: Rama 1: el contacto normalmente abierto sensorPieza alimenta la entrada de conteo CU de un contador ascendente CTU llamado C1, cuyo valor preestablecido PV es 12; el contacto normalmente abierto btnReset alimenta la entrada RESET de ese mismo contador. Rama 2: el contacto normalmente abierto de C1.Q alimenta la bobina loteListo. Rama 3: el valor actual C1.CV se transfiere a la variable cuenta. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Contador con variables de entrada sensorPieza, btnReset (BOOL) y salidas loteListo (BOOL) y cuenta (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primer flanco ascendente: cuenta 1 (funcion nominal)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Sensor sostenido en alto: no debe seguir contando"
+    },
+    {
+     "paso": 3,
+     "requisito": "Vuelta a bajo: la cuenta se conserva (no cuenta el flanco de bajada)"
+    },
+    {
+     "paso": 4,
+     "requisito": "10 flancos (11 piezas): el lote aun no se activa (preset menor que 12)"
+    },
+    {
+     "paso": 5,
+     "requisito": "1 flanco mas (12 piezas): el lote se activa (preset mayor que 12)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Contacto normalmente abierto sensor de pieza\n    btnReset : BOOL; // Contacto normalmente abierto botón de reset\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; // Bobina que indica que el lote está listo\n    cuenta : INT; // Variable que almacena el valor actual del contador\nEND_VAR\n\nVAR\n    C1 : CTU; // Contador ascendente\nEND_VAR\n\n// Configuración del contador ascendente\nC1.PV := 12; // Valor preestablecido del contador\n\n// Rama 1: Conteo de piezas\nIF sensorPieza THEN\n    C1.CU := TRUE; // Alimenta la entrada de conteo\nELSE\n    C1.CU := FALSE;\nEND_IF;\n\n// Rama 2: Reset del contador\nIF btnReset THEN\n    C1.RESET := TRUE; // Alimenta la entrada de reset\nELSE\n    C1.RESET := FALSE;\nEND_IF;\n\n// Rama 3: Transferencia del valor del contador a la variable cuenta\ncuenta := C1.CV; // Transfiere el valor actual del contador a la variable cuenta\n\n// Rama 4: Control de la bobina loteListo\nIF C1.Q THEN\n    loteListo := TRUE; // Activa la bobina si el contador alcanza el valor preestablecido\nELSE\n    loteListo := FALSE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J22",
+   "tarea": "I1",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un semáforo vehicular cíclico: verde 20 segundos, amarillo 4 segundos, rojo 15 segundos, repitiendo la secuencia indefinidamente mientras la entrada habilitado esté activa. Si habilitado se desactiva, el semáforo debe pasar a amarillo intermitente (1 segundo encendido, 1 segundo apagado) con las demás luces apagadas; al habilitarse de nuevo, la secuencia reinicia en verde. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Semaforo con variable de entrada habilitado (BOOL) y salidas luzV, luzA, luzR (BOOL). Usa los tiempos T#20S, T#4S, T#15S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 7,
+     "requisito": "Deshabilitado estando en rojo: amarillo intermitente 1 s/1 s medido con verde y rojo vigilados: mezcla TEMPORIZACION y SECUENCIA"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Semaforo\nVAR_INPUT\n    habilitado : BOOL; (* Habilita la secuencia normal del semaforo *)\nEND_VAR\nVAR_OUTPUT\n    luzV : BOOL; (* Luz verde *)\n    luzA : BOOL; (* Luz amarilla *)\n    luzR : BOOL; (* Luz roja *)\nEND_VAR\nVAR\n    estado     : INT;  (* Estado de la secuencia: 0=Verde, 1=Amarillo, 2=Rojo *)\n    tFase      : TON; (* Temporizador de cada fase de la secuencia normal *)\n    tBlink     : TP;  (* Temporizador de pulso para amarillo intermitente *)\n    blink      : BOOL; (* Estado actual del parpadeo amarillo *)\n    prevHab    : BOOL; (* Valor anterior de habilitado para detectar flancos *)\nEND_VAR\n\nIF habilitado THEN\n    (* --- Secuencia normal: Verde -> Amarillo -> Rojo -> (repite) --- *)\n\n    (* Al detectar flanco ascendente de habilitado, reiniciar en verde *)\n    IF NOT prevHab THEN\n        estado := 0;\n        tFase(IN := FALSE, PT := T#20S); (* Reset del temporizador *)\n    END_IF;\n\n    CASE estado OF\n\n        0: (* VERDE: 20 segundos *)\n            tFase(IN := TRUE, PT := T#20S);\n            luzV := TRUE;\n            luzA := FALSE;\n            luzR := FALSE;\n            IF tFase.Q THEN\n                tFase(IN := FALSE, PT := T#20S); (* Reset *)\n                estado := 1;\n            END_IF;\n\n        1: (* AMARILLO: 4 segundos *)\n            tFase(IN := TRUE, PT := T#4S);\n            luzV := FALSE;\n            luzA := TRUE;\n            luzR := FALSE;\n            IF tFase.Q THEN\n                tFase(IN := FALSE, PT := T#4S); (* Reset *)\n                estado := 2;\n            END_IF;\n\n        2: (* ROJO: 15 segundos *)\n            tFase(IN := TRUE, PT := T#15S);\n            luzV := FALSE;\n            luzA := FALSE;\n            luzR := TRUE;\n            IF tFase.Q THEN\n                tFase(IN := FALSE, PT := T#15S); (* Reset *)\n                estado := 0; (* Reinicia ciclo en verde *)\n            END_IF;\n\n        ELSE\n            estado := 0; (* Estado invalido: volver a verde *)\n\n    END_CASE;\n\n    (* Asegurar que el temporizador de parpadeo quede inactivo *)\n    tBlink(IN := FALSE, PT := T#1S);\n    blink := FALSE;\n\nELSE\n    (* --- Modo inhabilitado: amarillo intermitente 1s ON / 1s OFF --- *)\n\n    (* Apagar verde y rojo *)\n    luzV := FALSE;\n    luzR := FALSE;\n\n    (* Asegurar que el temporizador de secuencia quede inactivo *)\n    tFase(IN := FALSE, PT := T#20S);\n\n    (* Generar pulso de 1 segundo repetitivo para el parpadeo *)\n    tBlink(IN := NOT tBlink.Q, PT := T#1S);\n\n    (* El pulso activo indica amarillo encendido *)\n    luzA := tBlink.Q;\n\nEND_IF;\n\n(* Guardar estado actual de habilitado para deteccion de flanco en proximo ciclo *)\nprevHab := habilitado;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J32",
+   "tarea": "I1",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un semáforo vehicular cíclico: verde 20 segundos, amarillo 4 segundos, rojo 15 segundos, repitiendo la secuencia indefinidamente mientras la entrada habilitado esté activa. Si habilitado se desactiva, el semáforo debe pasar a amarillo intermitente (1 segundo encendido, 1 segundo apagado) con las demás luces apagadas; al habilitarse de nuevo, la secuencia reinicia en verde. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Semaforo con variable de entrada habilitado (BOOL) y salidas luzV, luzA, luzR (BOOL). Usa los tiempos T#20S, T#4S, T#15S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 7,
+     "requisito": "Deshabilitado estando en rojo: amarillo intermitente 1 s/1 s medido con verde y rojo vigilados: mezcla TEMPORIZACION y SECUENCIA"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Semaforo\nVAR_INPUT\n    habilitado : BOOL; (* Habilita la secuencia normal del semaforo *)\nEND_VAR\nVAR_OUTPUT\n    luzV : BOOL; (* Luz verde *)\n    luzA : BOOL; (* Luz amarilla *)\n    luzR : BOOL; (* Luz roja *)\nEND_VAR\nVAR\n    estado     : INT;  (* Estado de la secuencia: 0=verde, 1=amarillo, 2=rojo *)\n    tFase      : TON; (* Temporizador de cada fase normal *)\n    tBlink     : TP;  (* Temporizador de pulso para amarillo intermitente *)\n    bBlinkTrig : BOOL; (* Flanco para relanzar el pulso intermitente *)\nEND_VAR\n\nIF habilitado THEN\n    (* --- Secuencia normal: verde -> amarillo -> rojo -> verde --- *)\n\n    CASE estado OF\n\n        0: (* VERDE 20 s *)\n            luzV := TRUE;\n            luzA := FALSE;\n            luzR := FALSE;\n            tFase(IN := TRUE, PT := T#20S);\n            IF tFase.Q THEN\n                tFase(IN := FALSE, PT := T#20S); (* Resetea temporizador *)\n                estado := 1;\n            END_IF;\n\n        1: (* AMARILLO 4 s *)\n            luzV := FALSE;\n            luzA := TRUE;\n            luzR := FALSE;\n            tFase(IN := TRUE, PT := T#4S);\n            IF tFase.Q THEN\n                tFase(IN := FALSE, PT := T#4S);\n                estado := 2;\n            END_IF;\n\n        2: (* ROJO 15 s *)\n            luzV := FALSE;\n            luzA := FALSE;\n            luzR := TRUE;\n            tFase(IN := TRUE, PT := T#15S);\n            IF tFase.Q THEN\n                tFase(IN := FALSE, PT := T#15S);\n                estado := 0; (* Reinicia ciclo *)\n            END_IF;\n\n        ELSE\n            estado := 0; (* Estado invalido: vuelve a verde *)\n\n    END_CASE;\n\n    (* Asegura que el temporizador de blink quede inactivo *)\n    bBlinkTrig := FALSE;\n    tBlink(IN := FALSE, PT := T#1S);\n\nELSE\n    (* --- Modo inhabilitado: amarillo intermitente 1 s ON / 1 s OFF --- *)\n    luzV := FALSE;\n    luzR := FALSE;\n\n    (* Relanza el pulso cada vez que expira *)\n    tBlink(IN := bBlinkTrig, PT := T#1S);\n\n    IF NOT tBlink.Q AND NOT bBlinkTrig THEN\n        (* Pulso inactivo y no disparado: lanzar nuevo pulso *)\n        bBlinkTrig := TRUE;\n    END_IF;\n\n    IF tBlink.Q THEN\n        (* Pulso expirado: apagar disparo para permitir nuevo ciclo *)\n        bBlinkTrig := FALSE;\n    END_IF;\n\n    luzA := tBlink.Q; (* Amarillo encendido durante el pulso activo *)\n\n    (* Al rehabilitar, reinicia la secuencia en verde *)\n    tFase(IN := FALSE, PT := T#20S);\n    estado := 0;\n\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J38",
+   "tarea": "I1",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un semáforo vehicular cíclico: verde 20 segundos, amarillo 4 segundos, rojo 15 segundos, repitiendo la secuencia indefinidamente mientras la entrada habilitado esté activa. Si habilitado se desactiva, el semáforo debe pasar a amarillo intermitente (1 segundo encendido, 1 segundo apagado) con las demás luces apagadas; al habilitarse de nuevo, la secuencia reinicia en verde. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Semaforo con variable de entrada habilitado (BOOL) y salidas luzV, luzA, luzR (BOOL). Usa los tiempos T#20S, T#4S, T#15S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 7,
+     "requisito": "Deshabilitado estando en rojo: amarillo intermitente 1 s/1 s medido con verde y rojo vigilados: mezcla TEMPORIZACION y SECUENCIA"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Semaforo\nVAR_INPUT\n    habilitado : BOOL; (* Habilitacion del semaforo *)\nEND_VAR\nVAR_OUTPUT\n    luzV : BOOL; (* Luz verde *)\n    luzA : BOOL; (* Luz amarilla *)\n    luzR : BOOL; (* Luz roja *)\nEND_VAR\nVAR\n    tCiclo : TON; (* Temporizador para el ciclo del semaforo *)\n    tIntermitente : TON; (* Temporizador para el amarillo intermitente *)\n    estado : INT; (* Estado del semaforo *)\nEND_VAR\n\n(* Inicializacion de variables *)\nIF NOT habilitado THEN\n    (* Modo amarillo intermitente *)\n    tIntermitente(IN := TRUE, PT := T#1S);\n    luzV := FALSE;\n    luzR := FALSE;\n    luzA := tIntermitente.Q;\n    tCiclo(IN := FALSE);\n    estado := 0; (* Reiniciar estado al habilitar de nuevo *)\nELSE\n    (* Modo ciclo normal del semaforo *)\n    tIntermitente(IN := FALSE);\n    CASE estado OF\n        0: (* Luz verde *)\n            luzV := TRUE;\n            luzA := FALSE;\n            luzR := FALSE;\n            tCiclo(IN := TRUE, PT := T#20S);\n            IF tCiclo.Q THEN\n                estado := 1;\n                tCiclo(IN := FALSE);\n            END_IF\n        1: (* Luz amarilla *)\n            luzV := FALSE;\n            luzA := TRUE;\n            luzR := FALSE;\n            tCiclo(IN := TRUE, PT := T#4S);\n            IF tCiclo.Q THEN\n                estado := 2;\n                tCiclo(IN := FALSE);\n            END_IF\n        2: (* Luz roja *)\n            luzV := FALSE;\n            luzA := FALSE;\n            luzR := TRUE;\n            tCiclo(IN := TRUE, PT := T#15S);\n            IF tCiclo.Q THEN\n                estado := 0;\n                tCiclo(IN := FALSE);\n            END_IF\n    END_CASE\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J44",
+   "tarea": "I1",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un semáforo vehicular cíclico: verde 20 segundos, amarillo 4 segundos, rojo 15 segundos, repitiendo la secuencia indefinidamente mientras la entrada habilitado esté activa. Si habilitado se desactiva, el semáforo debe pasar a amarillo intermitente (1 segundo encendido, 1 segundo apagado) con las demás luces apagadas; al habilitarse de nuevo, la secuencia reinicia en verde. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Semaforo con variable de entrada habilitado (BOOL) y salidas luzV, luzA, luzR (BOOL). Usa los tiempos T#20S, T#4S, T#15S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 7,
+     "requisito": "Deshabilitado estando en rojo: amarillo intermitente 1 s/1 s medido con verde y rojo vigilados: mezcla TEMPORIZACION y SECUENCIA"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Semaforo\nVAR_INPUT\n    habilitado : BOOL; (* Habilitacion del semaforo *)\nEND_VAR\nVAR_OUTPUT\n    luzV : BOOL; (* Luz verde *)\n    luzA : BOOL; (* Luz amarilla *)\n    luzR : BOOL; (* Luz roja *)\nEND_VAR\nVAR\n    estado      : INT;  (* Estado de la secuencia: 0=Verde, 1=Amarillo, 2=Rojo *)\n    tFase       : TON;  (* Temporizador de fase normal *)\n    tParpadeo   : TP;   (* Temporizador de pulso para amarillo intermitente *)\n    bParpadeoOn : BOOL; (* Bandera de ciclo de parpadeo activo *)\nEND_VAR\n\nIF NOT habilitado THEN\n    (* --- Modo inhabilitado: amarillo intermitente 1s ON / 1s OFF --- *)\n    estado := 0;        (* Reinicio de estado para cuando se habilite de nuevo *)\n    tFase(IN := FALSE, PT := T#20S); (* Resetea temporizador de fase *)\n\n    (* Genera el parpadeo usando TP: cada vez que Q baja, relanza el pulso *)\n    tParpadeo(IN := NOT tParpadeo.Q AND NOT bParpadeoOn, PT := T#1S);\n\n    (* Alterna entre encendido y apagado cada segundo *)\n    IF tParpadeo.Q THEN\n        bParpadeoOn := NOT bParpadeoOn;\n    END_IF;\n\n    luzV := FALSE;\n    luzA := bParpadeoOn; (* Amarillo parpadea *)\n    luzR := FALSE;\n\nELSE\n    (* --- Modo habilitado: secuencia Verde -> Amarillo -> Rojo --- *)\n    tParpadeo(IN := FALSE, PT := T#1S); (* Resetea temporizador de parpadeo *)\n    bParpadeoOn := FALSE;\n\n    CASE estado OF\n\n        0: (* Verde durante 20 segundos *)\n            luzV := TRUE;\n            luzA := FALSE;\n            luzR := FALSE;\n            tFase(IN := TRUE, PT := T#20S);\n            IF tFase.Q THEN\n                tFase(IN := FALSE, PT := T#20S); (* Resetea temporizador *)\n                estado := 1;\n            END_IF;\n\n        1: (* Amarillo durante 4 segundos *)\n            luzV := FALSE;\n            luzA := TRUE;\n            luzR := FALSE;\n            tFase(IN := TRUE, PT := T#4S);\n            IF tFase.Q THEN\n                tFase(IN := FALSE, PT := T#4S); (* Resetea temporizador *)\n                estado := 2;\n            END_IF;\n\n        2: (* Rojo durante 15 segundos *)\n            luzV := FALSE;\n            luzA := FALSE;\n            luzR := TRUE;\n            tFase(IN := TRUE, PT := T#15S);\n            IF tFase.Q THEN\n                tFase(IN := FALSE, PT := T#15S); (* Resetea temporizador *)\n                estado := 0; (* Reinicia la secuencia en verde *)\n            END_IF;\n\n        ELSE\n            estado := 0; (* Estado invalido: vuelve a verde *)\n\n    END_CASE;\n\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J09",
+   "tarea": "I2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un proceso de llenado por etapas. En reposo, al pulsar btnInicio se abre la válvula de llenado (vLlenado) hasta que se active nivelAlto; después funciona el motor de mezcla (motorMezcla) durante 60 segundos; después se abre la válvula de descarga (vDescarga) hasta que se active nivelBajo; finalmente el proceso vuelve a reposo. El botón btnParo detiene el proceso en cualquier etapa, lleva todas las salidas a estado seguro (desactivadas) y regresa el proceso a reposo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Llenado con variables de entrada nivelAlto, nivelBajo, btnInicio, btnParo (BOOL) y salidas vLlenado, motorMezcla, vDescarga (BOOL). Usa el tiempo T#60S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues: mezcla SECUENCIA y TEMPORIZACION [v2]"
+    },
+    {
+     "paso": 3,
+     "requisito": "~59.5 s de mezcla: aun no termina"
+    },
+    {
+     "paso": 4,
+     "requisito": "~60.5 s: ya descarga"
+    },
+    {
+     "paso": 5,
+     "requisito": "Nivel bajo: vuelve a reposo"
+    },
+    {
+     "paso": 9,
+     "requisito": "Entra en mezcla en el segundo ciclo"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Llenado\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\n    nivelBajo : BOOL; (* Sensor de nivel bajo *)\n    btnInicio : BOOL; (* Botón de inicio del proceso *)\n    btnParo : BOOL;   (* Botón de paro del proceso *)\nEND_VAR\nVAR_OUTPUT\n    vLlenado : BOOL;  (* Válvula de llenado *)\n    motorMezcla : BOOL; (* Motor de mezcla *)\n    vDescarga : BOOL; (* Válvula de descarga *)\nEND_VAR\nVAR\n    estado : INT := 0; (* Estado del proceso: 0 = reposo, 1 = llenado, 2 = mezcla, 3 = descarga *)\n    tMezcla : TON;     (* Temporizador para el motor de mezcla *)\nEND_VAR\n\n(* Control del proceso de llenado por etapas *)\nIF btnParo THEN\n    (* Parar el proceso y llevar a estado seguro *)\n    estado := 0;\n    vLlenado := FALSE;\n    motorMezcla := FALSE;\n    vDescarga := FALSE;\nELSIF btnInicio THEN\n    CASE estado OF\n        0: (* Estado de reposo *)\n            IF btnInicio THEN\n                estado := 1; (* Iniciar llenado *)\n            END_IF;\n        1: (* Estado de llenado *)\n            vLlenado := TRUE;\n            IF nivelAlto THEN\n                vLlenado := FALSE;\n                estado := 2; (* Pasar a mezcla *)\n                tMezcla(IN := TRUE, PT := T#60S);\n            END_IF;\n        2: (* Estado de mezcla *)\n            motorMezcla := tMezcla.Q;\n            IF NOT tMezcla.Q THEN\n                estado := 3; (* Pasar a descarga *)\n            END_IF;\n        3: (* Estado de descarga *)\n            vDescarga := TRUE;\n            IF nivelBajo THEN\n                vDescarga := FALSE;\n                estado := 0; (* Volver a reposo *)\n            END_IF;\n    END_CASE;\nEND_IF;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J10",
+   "tarea": "I2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un proceso de llenado por etapas. En reposo, al pulsar btnInicio se abre la válvula de llenado (vLlenado) hasta que se active nivelAlto; después funciona el motor de mezcla (motorMezcla) durante 60 segundos; después se abre la válvula de descarga (vDescarga) hasta que se active nivelBajo; finalmente el proceso vuelve a reposo. El botón btnParo detiene el proceso en cualquier etapa, lleva todas las salidas a estado seguro (desactivadas) y regresa el proceso a reposo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Llenado con variables de entrada nivelAlto, nivelBajo, btnInicio, btnParo (BOOL) y salidas vLlenado, motorMezcla, vDescarga (BOOL). Usa el tiempo T#60S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues: mezcla SECUENCIA y TEMPORIZACION [v2]"
+    },
+    {
+     "paso": 3,
+     "requisito": "~59.5 s de mezcla: aun no termina"
+    },
+    {
+     "paso": 9,
+     "requisito": "Entra en mezcla en el segundo ciclo"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Llenado\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\n    nivelBajo : BOOL; (* Sensor de nivel bajo *)\n    btnInicio : BOOL; (* Botón de inicio del proceso *)\n    btnParo : BOOL;   (* Botón de paro del proceso *)\nEND_VAR\nVAR_OUTPUT\n    vLlenado : BOOL;  (* Válvula de llenado *)\n    motorMezcla : BOOL; (* Motor de mezcla *)\n    vDescarga : BOOL; (* Válvula de descarga *)\nEND_VAR\nVAR\n    estado : INT := 0; (* Estado del proceso *)\n    tMezcla : TON;     (* Temporizador para el motor de mezcla *)\nEND_VAR\n\n(* Lógica de control del proceso de llenado por etapas *)\nCASE estado OF\n    0: (* Estado de reposo *)\n        vLlenado := FALSE;\n        motorMezcla := FALSE;\n        vDescarga := FALSE;\n        IF btnInicio THEN\n            estado := 1; (* Iniciar llenado *)\n        END_IF\n\n    1: (* Estado de llenado *)\n        vLlenado := TRUE;\n        IF nivelAlto THEN\n            vLlenado := FALSE;\n            estado := 2; (* Iniciar mezcla *)\n            tMezcla(IN := TRUE, PT := T#60S);\n        END_IF\n\n    2: (* Estado de mezcla *)\n        motorMezcla := tMezcla.Q;\n        IF NOT tMezcla.Q THEN\n            estado := 3; (* Iniciar descarga *)\n        END_IF\n\n    3: (* Estado de descarga *)\n        vDescarga := TRUE;\n        IF nivelBajo THEN\n            vDescarga := FALSE;\n            estado := 0; (* Volver a reposo *)\n        END_IF\nEND_CASE\n\n(* Lógica de paro de emergencia *)\nIF btnParo THEN\n    vLlenado := FALSE;\n    motorMezcla := FALSE;\n    vDescarga := FALSE;\n    estado := 0; (* Volver a reposo *)\n    tMezcla(IN := FALSE);\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J20",
+   "tarea": "I2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un proceso de llenado por etapas. En reposo, al pulsar btnInicio se abre la válvula de llenado (vLlenado) hasta que se active nivelAlto; después funciona el motor de mezcla (motorMezcla) durante 60 segundos; después se abre la válvula de descarga (vDescarga) hasta que se active nivelBajo; finalmente el proceso vuelve a reposo. El botón btnParo detiene el proceso en cualquier etapa, lleva todas las salidas a estado seguro (desactivadas) y regresa el proceso a reposo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Llenado con variables de entrada nivelAlto, nivelBajo, btnInicio, btnParo (BOOL) y salidas vLlenado, motorMezcla, vDescarga (BOOL). Usa el tiempo T#60S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues: mezcla SECUENCIA y TEMPORIZACION [v2]"
+    },
+    {
+     "paso": 3,
+     "requisito": "~59.5 s de mezcla: aun no termina"
+    },
+    {
+     "paso": 4,
+     "requisito": "~60.5 s: ya descarga"
+    },
+    {
+     "paso": 9,
+     "requisito": "Entra en mezcla en el segundo ciclo"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Llenado\nVAR_INPUT\n    nivelAlto : BOOL;    // Sensor de nivel alto\n    nivelBajo : BOOL;    // Sensor de nivel bajo\n    btnInicio : BOOL;    // Botón de inicio\n    btnParo   : BOOL;    // Botón de paro\nEND_VAR\n\nVAR_OUTPUT\n    vLlenado   : BOOL;   // Válvula de llenado\n    motorMezcla: BOOL;   // Motor de mezcla\n    vDescarga  : BOOL;   // Válvula de descarga\nEND_VAR\n\nVAR\n    estado     : INT;    // Estado del proceso\n    timerMezcla: TON;    // Temporizador para el motor de mezcla\nEND_VAR\n\n// Estados del proceso\n// 0: Reposo\n// 1: Llenado\n// 2: Mezcla\n// 3: Descarga\n\n// Inicialización del bloque\nIF NOT btnInicio THEN\n    estado := 0;\nEND_IF\n\n// Lógica de control del proceso\nCASE estado OF\n    0: // Reposo\n        vLlenado := FALSE;\n        motorMezcla := FALSE;\n        vDescarga := FALSE;\n        IF btnInicio THEN\n            estado := 1;\n        END_IF\n\n    1: // Llenado\n        vLlenado := TRUE;\n        IF nivelAlto THEN\n            vLlenado := FALSE;\n            estado := 2;\n            timerMezcla(IN := TRUE, PT := T#60S);\n        END_IF\n\n    2: // Mezcla\n        motorMezcla := TRUE;\n        timerMezcla(IN := TRUE);\n        IF timerMezcla.Q THEN\n            motorMezcla := FALSE;\n            estado := 3;\n        END_IF\n\n    3: // Descarga\n        vDescarga := TRUE;\n        IF nivelBajo THEN\n            vDescarga := FALSE;\n            estado := 0;\n        END_IF\nEND_CASE\n\n// Lógica de paro de emergencia\nIF btnParo THEN\n    vLlenado := FALSE;\n    motorMezcla := FALSE;\n    vDescarga := FALSE;\n    estado := 0;\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J25",
+   "tarea": "I2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un proceso de llenado por etapas. En reposo, al pulsar btnInicio se abre la válvula de llenado (vLlenado) hasta que se active nivelAlto; después funciona el motor de mezcla (motorMezcla) durante 60 segundos; después se abre la válvula de descarga (vDescarga) hasta que se active nivelBajo; finalmente el proceso vuelve a reposo. El botón btnParo detiene el proceso en cualquier etapa, lleva todas las salidas a estado seguro (desactivadas) y regresa el proceso a reposo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Llenado con variables de entrada nivelAlto, nivelBajo, btnInicio, btnParo (BOOL) y salidas vLlenado, motorMezcla, vDescarga (BOOL). Usa el tiempo T#60S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues: mezcla SECUENCIA y TEMPORIZACION [v2]"
+    },
+    {
+     "paso": 3,
+     "requisito": "~59.5 s de mezcla: aun no termina"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Llenado\nVAR_INPUT\n    nivelAlto : BOOL; (* Nivel alto detectado *)\n    nivelBajo : BOOL; (* Nivel bajo detectado *)\n    btnInicio : BOOL; (* Botón de inicio *)\n    btnParo : BOOL; (* Botón de paro *)\nEND_VAR\nVAR_OUTPUT\n    vLlenado : BOOL; (* Válvula de llenado *)\n    motorMezcla : BOOL; (* Motor de mezcla *)\n    vDescarga : BOOL; (* Válvula de descarga *)\nEND_VAR\nVAR\n    estado : INT := 0; (* Estado actual del proceso *)\n    tMezcla : TP; (* Temporizador para el motor de mezcla *)\nEND_VAR\n\n(* Botón de paro detiene el proceso y regresa a reposo *)\nIF btnParo THEN\n    estado := 0;\n    vLlenado := FALSE;\n    motorMezcla := FALSE;\n    vDescarga := FALSE;\nEND_IF\n\n(* Máquina de estados para el proceso de llenado *)\nCASE estado OF\n    0: (* Reposo *)\n        IF btnInicio THEN\n            estado := 1;\n            vLlenado := TRUE;\n        END_IF\n    1: (* Llenado *)\n        IF nivelAlto THEN\n            estado := 2;\n            vLlenado := FALSE;\n            tMezcla(IN := TRUE, PT := T#60S);\n            motorMezcla := TRUE;\n        END_IF\n    2: (* Mezcla *)\n        IF tMezcla.Q THEN\n            estado := 3;\n            motorMezcla := FALSE;\n            vDescarga := TRUE;\n        END_IF\n    3: (* Descarga *)\n        IF nivelBajo THEN\n            estado := 0;\n            vDescarga := FALSE;\n        END_IF\nEND_CASE\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J34",
+   "tarea": "I2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un proceso de llenado por etapas. En reposo, al pulsar btnInicio se abre la válvula de llenado (vLlenado) hasta que se active nivelAlto; después funciona el motor de mezcla (motorMezcla) durante 60 segundos; después se abre la válvula de descarga (vDescarga) hasta que se active nivelBajo; finalmente el proceso vuelve a reposo. El botón btnParo detiene el proceso en cualquier etapa, lleva todas las salidas a estado seguro (desactivadas) y regresa el proceso a reposo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Llenado con variables de entrada nivelAlto, nivelBajo, btnInicio, btnParo (BOOL) y salidas vLlenado, motorMezcla, vDescarga (BOOL). Usa el tiempo T#60S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues: mezcla SECUENCIA y TEMPORIZACION [v2]"
+    },
+    {
+     "paso": 3,
+     "requisito": "~59.5 s de mezcla: aun no termina"
+    },
+    {
+     "paso": 4,
+     "requisito": "~60.5 s: ya descarga"
+    },
+    {
+     "paso": 5,
+     "requisito": "Nivel bajo: vuelve a reposo"
+    },
+    {
+     "paso": 6,
+     "requisito": "Nuevo ciclo (funcion nominal)"
+    },
+    {
+     "paso": 9,
+     "requisito": "Entra en mezcla en el segundo ciclo"
+    },
+    {
+     "paso": 11,
+     "requisito": "Tras el paro permanece en reposo sin rearrancar solo"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Llenado\nVAR_INPUT\n    nivelAlto : BOOL; (* Nivel alto detectado *)\n    nivelBajo : BOOL; (* Nivel bajo detectado *)\n    btnInicio : BOOL; (* Botón de inicio *)\n    btnParo : BOOL; (* Botón de paro *)\nEND_VAR\nVAR_OUTPUT\n    vLlenado : BOOL; (* Válvula de llenado *)\n    motorMezcla : BOOL; (* Motor de mezcla *)\n    vDescarga : BOOL; (* Válvula de descarga *)\nEND_VAR\nVAR\n    estado : INT := 0; (* Estado actual del proceso *)\n    tMezcla : TP; (* Temporizador para el motor de mezcla *)\nEND_VAR\n\n(* Estado 0: Reposo *)\nIF btnInicio AND NOT btnParo AND estado = 0 THEN\n    estado := 1;\n    vLlenado := TRUE;\nEND_IF\n\n(* Estado 1: Llenado *)\nIF nivelAlto THEN\n    estado := 2;\n    vLlenado := FALSE;\n    motorMezcla := TRUE;\n    tMezcla(IN := TRUE, PT := T#60S);\nEND_IF\n\n(* Estado 2: Mezcla *)\nIF tMezcla.Q THEN\n    estado := 3;\n    motorMezcla := FALSE;\n    vDescarga := TRUE;\nEND_IF\n\n(* Estado 3: Descarga *)\nIF nivelBajo THEN\n    estado := 0;\n    vDescarga := FALSE;\nEND_IF\n\n(* Botón de paro *)\nIF btnParo THEN\n    estado := 0;\n    vLlenado := FALSE;\n    motorMezcla := FALSE;\n    vDescarga := FALSE;\n    tMezcla(IN := FALSE);\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J41",
+   "tarea": "I2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un proceso de llenado por etapas. En reposo, al pulsar btnInicio se abre la válvula de llenado (vLlenado) hasta que se active nivelAlto; después funciona el motor de mezcla (motorMezcla) durante 60 segundos; después se abre la válvula de descarga (vDescarga) hasta que se active nivelBajo; finalmente el proceso vuelve a reposo. El botón btnParo detiene el proceso en cualquier etapa, lleva todas las salidas a estado seguro (desactivadas) y regresa el proceso a reposo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Llenado con variables de entrada nivelAlto, nivelBajo, btnInicio, btnParo (BOOL) y salidas vLlenado, motorMezcla, vDescarga (BOOL). Usa el tiempo T#60S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues: mezcla SECUENCIA y TEMPORIZACION [v2]"
+    },
+    {
+     "paso": 3,
+     "requisito": "~59.5 s de mezcla: aun no termina"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Llenado\nVAR_INPUT\n    nivelAlto : BOOL; (* Nivel alto detectado *)\n    nivelBajo : BOOL; (* Nivel bajo detectado *)\n    btnInicio : BOOL; (* Botón de inicio *)\n    btnParo : BOOL; (* Botón de paro *)\nEND_VAR\nVAR_OUTPUT\n    vLlenado : BOOL; (* Válvula de llenado *)\n    motorMezcla : BOOL; (* Motor de mezcla *)\n    vDescarga : BOOL; (* Válvula de descarga *)\nEND_VAR\nVAR\n    estado : INT := 0; (* Estado actual del proceso *)\n    tMezcla : TP; (* Temporizador para el motor de mezcla *)\nEND_VAR\n\n(* Botón de paro detiene el proceso *)\nIF btnParo THEN\n    estado := 0;\n    vLlenado := FALSE;\n    motorMezcla := FALSE;\n    vDescarga := FALSE;\nEND_IF\n\n(* Máquina de estados *)\nCASE estado OF\n    0: (* Reposo *)\n        IF btnInicio THEN\n            estado := 1;\n            vLlenado := TRUE;\n        END_IF\n    1: (* Llenado *)\n        IF nivelAlto THEN\n            estado := 2;\n            vLlenado := FALSE;\n            tMezcla(IN := TRUE, PT := T#60S);\n            motorMezcla := TRUE;\n        END_IF\n    2: (* Mezcla *)\n        IF tMezcla.Q THEN\n            estado := 3;\n            motorMezcla := FALSE;\n            vDescarga := TRUE;\n        END_IF\n    3: (* Descarga *)\n        IF nivelBajo THEN\n            estado := 0;\n            vDescarga := FALSE;\n        END_IF\nEND_CASE\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}

@@ -1,0 +1,821 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B6 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>B6 — Baliza intermitente (Basico)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja B6 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa una baliza de alarma. Mientras la condición de alarma esté activa, la lámpara debe parpadear con un ciclo de 1 segundo encendida y 1 segundo apagada. Sin alarma, la lámpara permanece apagada. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Baliza con variable de entrada alarma (BOOL) y salida lampara (BOOL). Usa tiempos T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_B6.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea B6 (baliza intermitente)
+    ---------------------------------------------------------------------------
+    Aplica la enmienda 1 de ENMIENDAS_HARNESSES.md: NO se muestrea la lampara,
+    se MIDE la duracion de cada intervalo ON y OFF completo. Muestrear cada
+    1,1 s no discrimina, porque una implementacion de 1,5 s / 1,5 s produce el
+    mismo patron de alternancia que la correcta.
+
+    El primer intervalo se descarta por parcial: depende de en que momento se
+    activo la alarma. Se exige 1 s +/- 150 ms en al menos dos intervalos ON y
+    dos OFF completos.
+
+    Ciclo de MainTask: 4 a 10 ms (enmienda 3).
+
+    USO: crear este PROGRAM junto al FUNCTION_BLOCK de la respuesta a evaluar y
+    ejecutar en modo Simulacion. Al terminar, leer &#x27;veredicto&#x27;: 1 = supera,
+    2 = falla. &#x27;resultado&#x27; indica el paso.
+
+    ---------------------------------------------------------------------------
+    CORRECCION DEL 2026-09-09 (enmienda 6). Validado con validar_harness_B6.py.
+    La version anterior daba veredicto 1 a una implementacion que SEGUIA
+    PARPADEANDO despues de retirarse la alarma.
+
+    Causa: el paso 2 esperaba 200 ms y comprobaba la lampara en un unico
+    instante. Como la salida defectuosa es periodica, que se la sorprenda
+    encendida o apagada depende de la fase en ese instante; en la simulacion
+    caia sistematicamente en un tramo apagado y el defecto pasaba como bueno.
+    Es exactamente el fallo de muestreo que la enmienda 1 corrigio para el
+    paso 1, sin corregirse tambien en los pasos de reposo.
+
+    Correccion, con la misma logica de la enmienda 4: la condicion se evalua en
+    CADA scan y queda ENCLAVADA, y la ventana del paso 2 pasa de 200 ms a
+    2,5 s, mas de dos periodos nominales completos. Asi cualquier parpadeo
+    indebido con semiperiodo por debajo de ~2,5 s queda registrado.
+
+    Se unifica ademas la medida de intervalos con el metodo adoptado en la
+    enmienda 5 para I4: diferencia de dos lecturas de un cronometro libre, en
+    lugar de reiniciar un temporizador con un ciclo de retraso. Con la
+    tolerancia de +/- 150 ms el sesgo anterior no llegaba a ser un defecto
+    (medía ~980 ms en vez de 1000 ms con ciclo de 20 ms), pero no hay razon
+    para conservar un sesgo conocido.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reposo inicial: sin alarma, la lampara debe estar apagada *)
+            alarma  := FALSE;
+            tEspera := T#200MS;
+        1:  (* Alarma activa: ventana de observacion del parpadeo *)
+            alarma  := TRUE;
+            tEspera := T#7S;
+        2:  (* Alarma retirada: debe apagarse y PERMANECER apagada *)
+            alarma  := FALSE;
+            tEspera := T_REPOSO;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#B6-4934">B6-4934</a><a href="#B6-2374">B6-2374</a><a href="#B6-5301">B6-5301</a><a href="#B6-5850">B6-5850</a><a href="#B6-8282">B6-8282</a><a href="#B6-1513">B6-1513</a><a href="#B6-5704">B6-5704</a><a href="#B6-2528">B6-2528</a><a href="#B6-6083">B6-6083</a><a href="#B6-8430">B6-8430</a><a href="#B6-6488">B6-6488</a><a href="#B6-9731">B6-9731</a><a href="#B6-2737">B6-2737</a><a href="#B6-7900">B6-7900</a><a href="#B6-3083">B6-3083</a><a href="#B6-2545">B6-2545</a><a href="#B6-7904">B6-7904</a><a href="#B6-5267">B6-5267</a><a href="#B6-2365">B6-2365</a><a href="#B6-3667">B6-3667</a><a href="#B6-7194">B6-7194</a><a href="#B6-1976">B6-1976</a><a href="#B6-9476">B6-9476</a><a href="#B6-1094">B6-1094</a></div>
+<div class="caja resp" id="B6-4934"><div class="cod"><h3>B6-4934</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; // Variable de entrada que indica si hay una condición de alarma
+END_VAR
+
+VAR_OUTPUT
+    lampara : BOOL; // Variable de salida que controla el estado de la lámpara
+END_VAR
+
+VAR
+    temporizador : TON; // Temporizador para controlar el parpadeo
+    estado_parpadeo : BOOL; // Estado interno para alternar el parpadeo
+END_VAR
+
+// Inicialización del temporizador
+temporizador(IN := estado_parpadeo, PT := T#1S);
+
+IF alarma THEN
+    // Si hay alarma, activar el temporizador
+    temporizador(IN := NOT temporizador.Q);
+    
+    // Alternar el estado de parpadeo cuando el temporizador termina
+    IF temporizador.Q THEN
+        estado_parpadeo := NOT estado_parpadeo;
+    END_IF;
+    
+    // La lámpara sigue el estado de parpadeo
+    lampara := estado_parpadeo;
+ELSE
+    // Si no hay alarma, apagar la lámpara y reiniciar el temporizador
+    lampara := FALSE;
+    estado_parpadeo := FALSE;
+    temporizador(IN := FALSE);
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-2374"><div class="cod"><h3>B6-2374</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; // Variable de entrada que indica si hay una condición de alarma
+END_VAR
+
+VAR_OUTPUT
+    lampara : BOOL; // Variable de salida que controla el estado de la lámpara
+END_VAR
+
+VAR
+    temporizador : TON; // Temporizador para controlar el parpadeo
+    estado_parpadeo : BOOL; // Estado interno para el parpadeo
+END_VAR
+
+// Inicialización del temporizador
+temporizador(IN := estado_parpadeo, PT := T#1S);
+
+// Lógica de control de la baliza
+IF alarma THEN
+    temporizador(IN := NOT temporizador.Q); // Alterna el estado del temporizador
+    estado_parpadeo := temporizador.Q; // Actualiza el estado de parpadeo
+    lampara := estado_parpadeo; // La lámpara sigue el estado de parpadeo
+ELSE
+    temporizador(IN := FALSE); // Resetea el temporizador si no hay alarma
+    estado_parpadeo := FALSE; // Asegura que el estado de parpadeo esté apagado
+    lampara := FALSE; // Apaga la lámpara si no hay alarma
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-5301"><div class="cod"><h3>B6-5301</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condicion de alarma activa *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lampara de baliza *)
+END_VAR
+VAR
+    tOn  : TON; (* Temporizador fase encendida *)
+    tOff : TON; (* Temporizador fase apagada *)
+    parpadeo : BOOL; (* Estado interno de parpadeo *)
+END_VAR
+
+(* Sin alarma: lampara apagada y temporizadores reiniciados *)
+IF NOT alarma THEN
+    parpadeo := FALSE;
+    tOn(IN := FALSE, PT := T#1S);
+    tOff(IN := FALSE, PT := T#1S);
+ELSE
+    (* Fase encendida: activa tOn mientras parpadeo=TRUE *)
+    tOn(IN := parpadeo, PT := T#1S);
+
+    (* Fase apagada: activa tOff cuando tOn ha completado *)
+    tOff(IN := tOn.Q, PT := T#1S);
+
+    (* Al completar tOff, reinicia tOn para el siguiente ciclo *)
+    IF tOff.Q THEN
+        tOn(IN := FALSE, PT := T#1S);  (* Reinicia tOn *)
+        tOff(IN := FALSE, PT := T#1S); (* Reinicia tOff *)
+        parpadeo := TRUE;
+    END_IF;
+
+    (* Arranca el primer ciclo *)
+    IF NOT parpadeo AND NOT tOn.Q AND NOT tOff.Q THEN
+        parpadeo := TRUE;
+    END_IF;
+END_IF;
+
+(* La lampara sigue el estado de parpadeo durante la fase encendida *)
+lampara := alarma AND parpadeo AND NOT tOn.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-5850"><div class="cod"><h3>B6-5850</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condicion de alarma *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lampara de la baliza *)
+END_VAR
+VAR
+    tonOn : TON; (* Temporizador de fase encendida *)
+    tonOff : TON; (* Temporizador de fase apagada *)
+END_VAR
+
+(* Generador de pulsos: alterna entre temporizadores cada 1 segundo *)
+tonOn(IN := alarma AND NOT tonOff.Q, PT := T#1S);
+tonOff(IN := tonOn.Q, PT := T#1S);
+
+(* La lampara enciende inmediatamente con la alarma y parpadea 1s ON / 1s OFF *)
+lampara := alarma AND NOT tonOn.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-8282"><div class="cod"><h3>B6-8282</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condición de alarma activa *)
+END_VAR
+
+VAR_OUTPUT
+    lampara : BOOL; (* Salida de la lámpara de baliza *)
+END_VAR
+
+VAR
+    tonEncendida : TON; (* Temporizador para tiempo encendida *)
+    tonApagada   : TON; (* Temporizador para tiempo apagada *)
+    estadoLuz    : BOOL; (* Estado interno del parpadeo: TRUE=encendida *)
+END_VAR
+
+(* ─────────────────────────────────────────────
+   Lógica principal
+   ───────────────────────────────────────────── *)
+
+IF NOT alarma THEN
+    (* Sin alarma: apagar lámpara y resetear todo *)
+    lampara      := FALSE;
+    estadoLuz    := FALSE;
+    tonEncendida(IN := FALSE, PT := T#1S);
+    tonApagada  (IN := FALSE, PT := T#1S);
+
+ELSE
+    (* Con alarma: alternar entre encendida y apagada *)
+
+    IF estadoLuz THEN
+        (* Fase encendida: esperar 1 s y luego pasar a apagada *)
+        tonApagada  (IN := FALSE, PT := T#1S); (* Mantener apagado el otro TON *)
+        tonEncendida(IN := TRUE,  PT := T#1S);
+
+        IF tonEncendida.Q THEN
+            (* Tiempo encendida cumplido → cambiar a fase apagada *)
+            estadoLuz := FALSE;
+            tonEncendida(IN := FALSE, PT := T#1S); (* Reset *)
+        END_IF;
+
+    ELSE
+        (* Fase apagada: esperar 1 s y luego pasar a encendida *)
+        tonEncendida(IN := FALSE, PT := T#1S); (* Mantener apagado el otro TON *)
+        tonApagada  (IN := TRUE,  PT := T#1S);
+
+        IF tonApagada.Q THEN
+            (* Tiempo apagada cumplido → cambiar a fase encendida *)
+            estadoLuz := TRUE;
+            tonApagada(IN := FALSE, PT := T#1S); (* Reset *)
+        END_IF;
+
+    END_IF;
+
+    (* La salida refleja el estado interno del parpadeo *)
+    lampara := estadoLuz;
+
+END_IF;</pre></div>
+<div class="caja resp" id="B6-1513"><div class="cod"><h3>B6-1513</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condición de alarma *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lámpara de la baliza *)
+END_VAR
+VAR
+    tParpadeo : TP; (* Temporizador para el parpadeo *)
+    estado : BOOL; (* Estado actual de la lámpara *)
+END_VAR
+
+(* Inicialización del temporizador *)
+IF alarma THEN
+    tParpadeo(IN := TRUE, PT := T#1S);
+    estado := NOT estado; (* Cambia el estado de la lámpara *)
+ELSE
+    tParpadeo(IN := FALSE);
+    estado := FALSE; (* Apaga la lámpara *)
+END_IF;
+
+(* Asigna el estado de la lámpara *)
+lampara := estado AND alarma;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-5704"><div class="cod"><h3>B6-5704</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condicion de alarma *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lámpara de la baliza *)
+END_VAR
+VAR
+    tParpadeo : TP; (* Temporizador para el parpadeo *)
+    estado : BOOL; (* Estado actual de la lámpara *)
+END_VAR
+
+(* Inicialización del temporizador *)
+IF alarma THEN
+    tParpadeo(IN := TRUE, PT := T#1S);
+    estado := tParpadeo.Q;
+    lampara := estado;
+ELSE
+    lampara := FALSE;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-2528"><div class="cod"><h3>B6-2528</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condicion de alarma activa *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lampara de baliza *)
+END_VAR
+VAR
+    tOn  : TON; (* Temporizador fase encendida *)
+    tOff : TON; (* Temporizador fase apagada *)
+    parpadeo : BOOL; (* Estado interno de parpadeo *)
+END_VAR
+
+(* Sin alarma: lampara apagada y temporizadores reiniciados *)
+IF NOT alarma THEN
+    parpadeo := FALSE;
+    tOn(IN := FALSE, PT := T#1S);
+    tOff(IN := FALSE, PT := T#1S);
+ELSE
+    (* Fase encendida: activa tOn mientras parpadeo=TRUE *)
+    tOn(IN := parpadeo, PT := T#1S);
+    (* Fase apagada: activa tOff cuando tOn ha completado *)
+    tOff(IN := tOn.Q, PT := T#1S);
+
+    (* Al completar fase apagada, reinicia tOn para nuevo ciclo *)
+    IF tOff.Q THEN
+        tOn(IN := FALSE, PT := T#1S);  (* Reinicia tOn *)
+        tOff(IN := FALSE, PT := T#1S); (* Reinicia tOff *)
+        parpadeo := TRUE;
+    END_IF;
+
+    (* Arranca el primer ciclo *)
+    IF NOT parpadeo AND NOT tOn.Q AND NOT tOff.Q THEN
+        parpadeo := TRUE;
+    END_IF;
+END_IF;
+
+(* La lampara sigue el estado de parpadeo mientras tOn no haya terminado *)
+lampara := alarma AND parpadeo AND NOT tOn.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-6083"><div class="cod"><h3>B6-6083</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; // Variable de entrada que indica si hay una alarma
+END_VAR
+
+VAR_OUTPUT
+    lampara : BOOL; // Variable de salida que controla el estado de la lámpara
+END_VAR
+
+VAR
+    timer : TON; // Timer de conteo hacia arriba
+    estado : BOOL; // Estado actual de la lámpara (encendida/apagada)
+END_VAR
+
+// Inicialización del timer
+IF timer.Q = FALSE THEN
+    timer(IN := TRUE, PT := T#1S);
+END_IF;
+
+// Lógica de la baliza
+IF alarma THEN
+    // Si hay alarma, la lámpara parpadea
+    lampara := estado;
+    IF timer.Q THEN
+        // Cambia el estado de la lámpara al final del ciclo de 1 segundo
+        estado := NOT estado;
+        timer(IN := FALSE); // Reinicia el timer
+        timer(IN := TRUE); // Reinicia el timer
+    END_IF;
+ELSE
+    // Si no hay alarma, la lámpara permanece apagada
+    lampara := FALSE;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-8430"><div class="cod"><h3>B6-8430</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL;  // Variable de entrada que indica si hay una alarma
+END_VAR
+
+VAR_OUTPUT
+    lampara : BOOL;  // Variable de salida que controla el estado de la lámpara
+END_VAR
+
+VAR
+    timer : TON;  // Timer de conteo hacia arriba
+    estado : BOOL;  // Variable para controlar el estado de parpadeo
+END_VAR
+
+// Inicialización del timer
+IF timer.Q = FALSE THEN
+    timer(IN := TRUE, PT := T#1S);
+END_IF;
+
+// Logica de parpadeo
+IF alarma THEN
+    lampara := estado;
+    IF timer.Q THEN
+        estado := NOT estado;  // Cambia el estado de la lámpara
+        timer(IN := FALSE);  // Reinicia el timer
+        timer(IN := TRUE);  // Reinicia el timer
+    END_IF;
+ELSE
+    lampara := FALSE;  // Apaga la lámpara si no hay alarma
+END_IF;</pre></div>
+<div class="caja resp" id="B6-6488"><div class="cod"><h3>B6-6488</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condición de alarma *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lámpara de la baliza *)
+END_VAR
+VAR
+    tParpadeo : TON; (* Temporizador de parpadeo *)
+    estadoParpadeo : BOOL; (* Estado interno de parpadeo *)
+END_VAR
+
+(* Temporizador de parpadeo con ciclo de 1s encendido y 1s apagado *)
+tParpadeo(IN := alarma AND NOT tParpadeo.Q, PT := T#1S);
+
+(* Alterna el estado de parpadeo cada segundo mientras la alarma está activa *)
+IF tParpadeo.Q THEN
+    estadoParpadeo := NOT estadoParpadeo;
+    tParpadeo(IN := FALSE); (* Reinicia el temporizador *)
+END_IF
+
+(* La lámpara parpadea si hay alarma, permanece apagada si no *)
+lampara := alarma AND estadoParpadeo;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-9731"><div class="cod"><h3>B6-9731</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condición de alarma *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lámpara de la baliza *)
+END_VAR
+VAR
+    tParpadeo : TP; (* Temporizador para el parpadeo *)
+    estado : BOOL; (* Estado actual de la lámpara *)
+END_VAR
+
+(* Inicialización del temporizador *)
+IF alarma THEN
+    tParpadeo(IN := TRUE, PT := T#1S);
+    estado := tParpadeo.Q;
+    lampara := estado;
+ELSE
+    lampara := FALSE;
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-2737"><div class="cod"><h3>B6-2737</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; // Condicion de activacion de la alarma
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; // Salida hacia la baliza luminosa
+END_VAR
+VAR
+    ton_Encendido : TON; // Temporizador para el tiempo en estado encendido
+    ton_Apagado : TON;   // Temporizador para el tiempo en estado apagado
+END_VAR
+
+// Generador de ciclo: ton_Encendido se activa con la alarma y se reinicia con ton_Apagado
+ton_Encendido(IN := alarma AND NOT ton_Apagado.Q, PT := T#1S);
+
+// ton_Apagado comienza a contar cuando ton_Encendido alcanza 1 segundo
+ton_Apagado(IN := ton_Encendido.Q, PT := T#1S);
+
+// La lampara se enciende si hay alarma, y se apaga durante el ciclo de ton_Apagado
+lampara := alarma AND NOT ton_Encendido.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-7900"><div class="cod"><h3>B6-7900</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condicion de alarma activa *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lampara de baliza *)
+END_VAR
+VAR
+    tOn  : TON; (* Temporizador fase encendida *)
+    tOff : TON; (* Temporizador fase apagada *)
+    parpadeo : BOOL; (* Estado interno de parpadeo *)
+END_VAR
+
+(* Sin alarma: lampara apagada y temporizadores reiniciados *)
+IF NOT alarma THEN
+    parpadeo := FALSE;
+    tOn(IN := FALSE, PT := T#1S);
+    tOff(IN := FALSE, PT := T#1S);
+ELSE
+    (* Fase encendida: activa tOn mientras parpadeo=TRUE *)
+    tOn(IN := parpadeo, PT := T#1S);
+
+    (* Fase apagada: activa tOff cuando tOn ha completado *)
+    tOff(IN := tOn.Q, PT := T#1S);
+
+    (* Al completar tOff vuelve a fase encendida *)
+    IF tOff.Q THEN
+        parpadeo := FALSE; (* Reinicia para re-disparar tOn *)
+    END_IF;
+
+    (* Inicia ciclo: si ninguno esta corriendo, arranca fase encendida *)
+    IF NOT tOn.IN AND NOT tOff.IN THEN
+        parpadeo := TRUE;
+    END_IF;
+END_IF;
+
+(* La lampara sigue el estado de parpadeo interno *)
+lampara := parpadeo AND alarma;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-3083"><div class="cod"><h3>B6-3083</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condición de alarma activa *)
+END_VAR
+
+VAR_OUTPUT
+    lampara : BOOL; (* Salida hacia la lámpara de baliza *)
+END_VAR
+
+VAR
+    tonEncendido  : TON; (* Temporizador para tiempo encendida *)
+    tonApagado    : TON; (* Temporizador para tiempo apagada *)
+    estadoLampara : BOOL := FALSE; (* Estado interno del parpadeo *)
+END_VAR
+
+(* -------------------------------------------------------
+   Lógica de baliza de alarma
+   - Sin alarma: lámpara apagada, temporizadores reseteados
+   - Con alarma:  parpadeo 1s ON / 1s OFF
+   ------------------------------------------------------- *)
+
+IF NOT alarma THEN
+    (* Sin alarma: apagar lámpara y resetear todo *)
+    estadoLampara := FALSE;
+    tonEncendido(IN := FALSE, PT := T#1S);
+    tonApagado(IN := FALSE, PT := T#1S);
+
+ELSE
+    (* Con alarma: máquina de estados de parpadeo *)
+
+    IF NOT estadoLampara THEN
+        (* Fase APAGADA: esperar 1 segundo *)
+        tonEncendido(IN := FALSE, PT := T#1S); (* Mantener reseteado *)
+        tonApagado(IN := TRUE,  PT := T#1S);
+
+        IF tonApagado.Q THEN
+            (* Tiempo apagada cumplido: pasar a fase encendida *)
+            estadoLampara := TRUE;
+            tonApagado(IN := FALSE, PT := T#1S); (* Resetear temporizador *)
+        END_IF;
+
+    ELSE
+        (* Fase ENCENDIDA: esperar 1 segundo *)
+        tonApagado(IN := FALSE, PT := T#1S);  (* Mantener reseteado *)
+        tonEncendido(IN := TRUE,  PT := T#1S);
+
+        IF tonEncendido.Q THEN
+            (* Tiempo encendida cumplido: pasar a fase apagada *)
+            estadoLampara := FALSE;
+            tonEncendido(IN := FALSE, PT := T#1S); (* Resetear temporizador *)
+        END_IF;
+
+    END_IF;
+
+END_IF;
+
+(* Asignar estado interno a la salida *)
+lampara := estadoLampara AND alarma;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-2545"><div class="cod"><h3>B6-2545</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; // Variable de entrada que indica si hay una alarma
+END_VAR
+
+VAR_OUTPUT
+    lampara : BOOL; // Variable de salida que controla el estado de la lámpara
+END_VAR
+
+VAR
+    estado : BOOL := FALSE; // Variable interna para controlar el estado de parpadeo
+    timer : TON; // Timer para controlar el ciclo de parpadeo
+END_VAR
+
+// Configuración del timer para un ciclo de 1 segundo
+timer(IN := TRUE, PT := T#1S);
+
+// Lógica para controlar el estado de la lámpara
+IF alarma THEN
+    // Si hay alarma, la lámpara parpadea
+    lampara := estado;
+    // Cambiar el estado de la lámpara al final del ciclo del timer
+    IF timer.Q THEN
+        estado := NOT estado;
+        timer(IN := FALSE); // Reiniciar el timer
+    END_IF
+ELSE
+    // Si no hay alarma, la lámpara permanece apagada
+    lampara := FALSE;
+END_IF</pre></div>
+<div class="caja resp" id="B6-7904"><div class="cod"><h3>B6-7904</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condición de activación de la alarma *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Estado de la baliza luminosa *)
+END_VAR
+VAR
+    tonEncendido : TON; (* Temporizador para el ciclo de encendido *)
+    tonApagado : TON;   (* Temporizador para el ciclo de apagado *)
+END_VAR
+
+(* El primer temporizador cuenta 1s mientras la alarma esté activa y el segundo no haya terminado *)
+tonEncendido(IN := alarma AND NOT tonApagado.Q, PT := T#1S);
+
+(* El segundo temporizador cuenta 1s después de que el primero termina *)
+tonApagado(IN := tonEncendido.Q, PT := T#1S);
+
+(* La lámpara se enciende inmediatamente con la alarma y se apaga al terminar el primer tiempo *)
+lampara := alarma AND NOT tonEncendido.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-5267"><div class="cod"><h3>B6-5267</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condicion de alarma *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lampara de la baliza *)
+END_VAR
+VAR
+    tEncendido : TON; (* Temporizador de fase encendida *)
+    tApagado : TON; (* Temporizador de fase apagada *)
+END_VAR
+
+(* Ciclo de parpadeo: 1s encendido, 1s apagado mientras la alarma este activa *)
+tEncendido(IN := alarma AND NOT tApagado.Q, PT := T#1S);
+tApagado(IN := tEncendido.Q, PT := T#1S);
+
+(* La lampara enciende inmediatamente con la alarma y alterna su estado cada segundo *)
+lampara := alarma AND NOT tEncendido.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-2365"><div class="cod"><h3>B6-2365</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condición de alarma activa *)
+END_VAR
+
+VAR_OUTPUT
+    lampara : BOOL; (* Salida hacia la lámpara de baliza *)
+END_VAR
+
+VAR
+    tonEncendido  : TON; (* Temporizador para tiempo encendida *)
+    tonApagado    : TON; (* Temporizador para tiempo apagada *)
+    estadoLampara : BOOL := FALSE; (* Estado interno del parpadeo *)
+END_VAR
+
+(* -------------------------------------------------------
+   Lógica de baliza de alarma
+   - Sin alarma : lámpara apagada, temporizadores reseteados
+   - Con alarma : parpadeo 1s ON / 1s OFF
+   ------------------------------------------------------- *)
+
+IF NOT alarma THEN
+    (* Sin alarma: apagar lámpara y resetear todo *)
+    estadoLampara := FALSE;
+    tonEncendido(IN := FALSE, PT := T#1S);
+    tonApagado(IN := FALSE, PT := T#1S);
+
+ELSE
+    (* Con alarma: gestionar ciclo de parpadeo *)
+
+    IF NOT estadoLampara THEN
+        (* Fase APAGADA: esperar 1 segundo *)
+        tonEncendido(IN := FALSE, PT := T#1S); (* Mantener reseteado *)
+        tonApagado(IN := TRUE,  PT := T#1S);
+
+        IF tonApagado.Q THEN
+            (* Tiempo apagada cumplido: pasar a fase encendida *)
+            estadoLampara := TRUE;
+            tonApagado(IN := FALSE, PT := T#1S); (* Resetear temporizador *)
+        END_IF;
+
+    ELSE
+        (* Fase ENCENDIDA: esperar 1 segundo *)
+        tonApagado(IN := FALSE, PT := T#1S);  (* Mantener reseteado *)
+        tonEncendido(IN := TRUE,  PT := T#1S);
+
+        IF tonEncendido.Q THEN
+            (* Tiempo encendida cumplido: pasar a fase apagada *)
+            estadoLampara := FALSE;
+            tonEncendido(IN := FALSE, PT := T#1S); (* Resetear temporizador *)
+        END_IF;
+
+    END_IF;
+
+END_IF;
+
+(* Asignar estado interno a la salida *)
+lampara := estadoLampara;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-3667"><div class="cod"><h3>B6-3667</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; // Condición de alarma activa
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; // Salida hacia la baliza luminosa
+END_VAR
+VAR
+    Timer_ON : TON; // Temporizador para el tiempo de encendido (1s)
+    Timer_OFF : TON; // Temporizador para el tiempo de apagado (1s)
+END_VAR
+
+// Temporizador que cuenta el tiempo que la lámpara permanece encendida
+Timer_ON(IN := alarma AND NOT Timer_OFF.Q, PT := T#1S);
+
+// Temporizador que cuenta el tiempo que la lámpara permanece apagada
+Timer_OFF(IN := Timer_ON.Q, PT := T#1S);
+
+// La lámpara enciende inmediatamente con la alarma y alterna su estado cada segundo
+lampara := alarma AND NOT Timer_ON.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-7194"><div class="cod"><h3>B6-7194</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condicion de alarma *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lampara de la baliza *)
+END_VAR
+VAR
+    tOn : TON; (* Temporizador de fase encendida *)
+    tOff : TON; (* Temporizador de fase apagada *)
+END_VAR
+
+(* Generador de intermitencia: 1s ON y 1s OFF mientras la alarma este activa *)
+tOn(IN := alarma AND NOT tOff.Q, PT := T#1S);
+tOff(IN := tOn.Q, PT := T#1S);
+
+(* La lampara se enciende inmediatamente con la alarma y alterna su estado *)
+lampara := alarma AND NOT tOn.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-1976"><div class="cod"><h3>B6-1976</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condición de alarma *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lámpara de la baliza *)
+END_VAR
+VAR
+    tParpadeo : TON; (* Temporizador de parpadeo *)
+    estadoParpadeo : BOOL; (* Estado interno para el parpadeo *)
+END_VAR
+
+(* Temporizador de parpadeo de 1 segundo *)
+tParpadeo(IN := alarma AND NOT tParpadeo.Q, PT := T#1S);
+
+(* Alterna el estado de la lámpara cada segundo mientras hay alarma *)
+IF tParpadeo.Q THEN
+    estadoParpadeo := NOT estadoParpadeo;
+    tParpadeo(IN := FALSE); (* Reinicia el temporizador *)
+END_IF
+
+(* La lámpara parpadea si hay alarma, de lo contrario está apagada *)
+lampara := alarma AND estadoParpadeo;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-9476"><div class="cod"><h3>B6-9476</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; // Entrada que indica si hay una condición de alarma
+END_VAR
+
+VAR_OUTPUT
+    lampara : BOOL; // Salida que controla el estado de la lámpara
+END_VAR
+
+VAR
+    timerBlink : TON; // Temporizador para el parpadeo de la lámpara
+    estadoParpadeo : BOOL; // Estado interno para el parpadeo
+END_VAR
+
+// Inicialización del temporizador
+timerBlink(IN := estadoParpadeo, PT := T#1S);
+
+// Lógica de control de la baliza
+IF alarma THEN
+    // Si hay alarma, alternar el estado de parpadeo cada segundo
+    IF timerBlink.Q THEN
+        estadoParpadeo := NOT estadoParpadeo;
+        timerBlink(IN := FALSE); // Reiniciar el temporizador
+    ELSE
+        timerBlink(IN := TRUE); // Activar el temporizador
+    END_IF;
+    lampara := estadoParpadeo; // Actualizar el estado de la lámpara
+ELSE
+    // Si no hay alarma, la lámpara está apagada
+    lampara := FALSE;
+    estadoParpadeo := FALSE; // Reiniciar el estado de parpadeo
+    timerBlink(IN := FALSE); // Asegurarse de que el temporizador esté desactivado
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B6-1094"><div class="cod"><h3>B6-1094</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 3 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Baliza
+VAR_INPUT
+    alarma : BOOL; (* Condición de alarma *)
+END_VAR
+VAR_OUTPUT
+    lampara : BOOL; (* Lámpara de la baliza *)
+END_VAR
+VAR
+    tParpadeo : TON; (* Temporizador de parpadeo *)
+    estadoParpadeo : BOOL; (* Estado interno para el parpadeo *)
+END_VAR
+
+(* Temporizador para controlar el parpadeo de la lámpara *)
+tParpadeo(IN := alarma AND NOT tParpadeo.Q, PT := T#1S);
+
+(* Alterna el estado de la lámpara cada segundo mientras la alarma está activa *)
+IF alarma THEN
+    IF tParpadeo.Q THEN
+        estadoParpadeo := NOT estadoParpadeo;
+        tParpadeo(IN := FALSE); (* Reinicia el temporizador *)
+    END_IF;
+    lampara := estadoParpadeo;
+ELSE
+    lampara := FALSE; (* Lámpara apagada si no hay alarma *)
+    estadoParpadeo := FALSE; (* Reinicia el estado de parpadeo *)
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

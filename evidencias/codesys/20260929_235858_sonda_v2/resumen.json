@@ -1,0 +1,10 @@
+﻿{
+    "perfil":  "CODESYS V3.5 SP22 Patch 3",
+    "codesys":  "C:\\Program Files\\CODESYS 3.5.22.30\\CODESYS\\Common\\CODESYS.exe",
+    "duracion_s":  23.3,
+    "sha256_plantilla_antes":  "119B6A663B32E0ABEC287A55E8E9F5523B48AC8E4DB47AE449F0F5511690D8DF",
+    "fecha":  "20260929_235858",
+    "codigo_salida":  0,
+    "sha256_plantilla_despues":  "119B6A663B32E0ABEC287A55E8E9F5523B48AC8E4DB47AE449F0F5511690D8DF",
+    "argumentos":  "--profile=\"CODESYS V3.5 SP22 Patch 3\" --runscript=\"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22_v2.py\" --noUI"
+}

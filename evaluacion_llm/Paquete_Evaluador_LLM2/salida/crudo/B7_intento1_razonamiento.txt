@@ -1,0 +1,487 @@
+Necesito responder únicamente con JSON. Debo puntuar 24 respuestas. Necesito analizar cada una. Ya tengo datos. Tarea B7 selector bomba. Protocolo 10 pasos. Muchas compilan/pasan todos -> funcional 3 fijo. Otras PROGRAM compilan pero no se pudo simular: declara entradas donde harness no puede escribirlas. Para esas funcional no fijo, iec no fijo. Necesito puntuar.
+
+Debo ser consistente.
+
+Reglas fijas:
+- Si funcional_fijo o iec_fijo no son null, copiar exactamente.
+- Si no compila: funcional=0, iec=0 fijados. Aquí ninguno no compila.
+- Si pasa todos: funcional=3 fijado.
+- Si compila pero no se pudo simular (interfaz no conforme): funcional 0,1 o2 leyendo código; nunca3.
+- Cumplimiento IEC cuando compila: 1 extensiones fuera estándar; 2 declaraciones y tipos correctos; 3 idiomático.
+- Puntuar código.
+
+Entrada 24 codigos. Muchas respuestas con funcional_fijo=3 y iec null. Debo decidir iec (1-3). Para FUNCTION o FB correctos. IEC criteria: 3 si compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados). Para esta lógica simple, función es adecuada para lógica combinacional, FB también aceptable por salida bomba. PROGRAM con VAR interno es menos adecuado, interfaz no conforme. Necesito otorgar IEC. Dado el estándar IEC 61131-3, todos compilan. En cuanto a POU idóneo: una FUNCTION es más idiomática para salida combinacional sin memoria; un FUNCTION_BLOCK es aceptable, sobre todo porque enunciado permitía. Para funcional probado pasa todos fijado 3. iec: ¿3 solo si idiomático? Yo diría FUNCTION pure combinational => 3. FUNCTION_BLOCK no es inadecuado, es una POU permitida, pero para simple lógica sin estado tal vez 2. Las respuestas FB usan IF y output; son correctas. ¿Idiomatic? Podría considerarse 2. Necesito diferenciar.
+
+Protocolo prueba es para FB generada? Dice VARIANTE: FUNCTION_BLOCK, pero harness admite FB. El enunciado decía elige POU y llámala SelBomba, si FB/PROGRAM nombra salida bomba. Para FB, es adecuado si quiere salida bomba. No es malo. La función no tiene salida con nombre, pero retorna BOOL; es quizá más correcta para lógica combinacional. Ambos compilan. El criterio IEC 3: "compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)". POU adecuado: function es la elección más adecuada; function block quizá no "inadecuado" porque se pidió posible. En la tarea se pide POU a elección; FB es correcto y nombra salida. La rúbrica: 2 compila sin cambios; declaraciones y tipos correctos. 3 además idiomático. Para FB sin estado, no es idiomático quizá. Pero el harness está generado para FB para validar implementaciones; pero no significa que sea la mejor. Sin embargo función vs FB: en IEC, function block would imply memory? But function block can have state; using it for combinational logic is acceptable but function better. Debo puntuar.
+
+También PROGRAM con VAR variables internas (B7-4839, B7-2340, B7-4620, B7-6425). Compila sola, falla simulación por interfaz no conforme. Espec: "Debe recibir las entradas modoAuto, btnManual, nivelBajo (BOOL) y entregar estado bomba; si eliges FB o PROGRAM, nombra salida bomba." PROGRAM con VAR no declara entradas. Es una interfaz incorrecta. Funcional? Debe ser 0-2, nunca 3. Podemos inferir que si harness no puede escribir, no se puede probar. No podemos saber si la lógica es correcta? La lógica es correcta claramente. Sin embargo regla: "Si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3." Debemos evaluar si implementa la lógica pedida. A pesar de no simular, la lógica es combinacional correcta. La interfaz no conforme es defecto funcional mayor porque no recibe entradas. En sistema real, un PROGRAM con VAR no son entradas; no se pueden escribir desde E/S. La bomba no funciona en caso nominal (modoAuto análogo interno no conectado? En CODESYS, PROGRAM variables son accesibles? Pueden ser escritas en línea, pero no forman entradas de POU; si se instancia, variables internas no son entradas externas. Para simulación no pudo. Cumplimiento del enunciado requiere recibir entradas. Por tanto funcional yo calificaría 1: lógica correcta si las variables se forzaran manualmente, pero no expone entradas, falla como POU. Podría ser 0 si consideramos "no implementa la lógica pedida" porque no tiene entradas. La rúbrica funcional 0: "no implementa la lógica pedida o falla en el caso nominal." Aquí sí implementa lógica, pero no la encapsula con entradas. Falla en el caso nominal? El caso nominal de una POU no se puede simular; si se usara en lógica, variables internas no son entradas, no se pueden conectar. Es un fallo de interfaz. Yo daría 1: funciona nominal si se tratan como variables forzadas, pero falla interfaz. O 0? La regla dice compila pero no se pudo simular (interfaz no conforme): funcional 0,1 o2. Necesito consistente entre las 4 PROGRAM. Debería darles quizá 1 a todos. La lógica es correcta y simple; no hay flancos. No es justo 0. Interfaz no conforme es grave. 1.
+
+IEC para estos PROGRAM: compilan sin cambios, declaraciones y tipos correctos. Extensión no usan. Pero "POU adecuado"? PROGRAM con VAR no es como entradas; declaraciones var no cumplen recepción de entradas. IEC criterion: 2 si declaraciones y tipos correctos. 3 si idiomático. Aquí variable "entrada" en VAR sin VAR_INPUT no es idiomático; un PROGRAM como POU para función combinacional no es el más adecuado (función sería). Sin embargo POU a elección; PROGRAM no forzosamente inadecuado, pero declarar entradas en VAR es mal IEC. ¿Es "usan extensiones fuera estándar"? No. ¿Compila sin cambios? Sí. Declaraciones y tipos correctos? VAR con BOOL es vállido. Pero no son entradas; no es error de sintaxis. Para estándar, los PROGRAM pueden tener VAR, pero para recibir entradas se usan VAR_INPUT? En PROGRAM, no suele tener VAR_INPUT? En CODESYS sí puede tener VAR_INPUT, pero estándar? IEC 61131-3 POU: PROGRAM can have VAR_INPUT etc. Aquí no cumple. Yo puntuaría iec 1? Rúbrica: 1 si compila solo tras correcciones menores, o usa extensiones fuera del estándar. No es exactamente eso, pero si las variables de entrada están mal declaradas, debería corregirse para cumplir; son correcciones. 2 si compila sin cambios; declaraciones y tipos correctos. Aunque las variables "modoAuto" etc están en VAR correctamente, no hay error de tipo. ¿Puedo dar 2? El criterio iec evalúa cumplimiento estándar y declaraciones. "PROGRAM con VAR" es sintácticamente correcto, tipos correctos. La semántica de interfaz no cumple el enunciado, no el estándar. Sin embargo una variable normal no se puede forzar como entrada desde harness, pero sigue siendo IEC. Podría ser 2. ¿Cuándo dar 1? Extensiones fuera estándar. No hay. Para programas no conformes, iec no fijado, podemos dar 2.
+
+La rúbrica IEC 3: "usa construcciones idiomáticas del estándar (POU adecuado...)" Un PROGRAM no es adecuado porque la tarea pide entradas/salida y PROGRAMA con VAR no es modular. Para los que pasan y son FUNCTION, podría dar 3. Para FB, quizá 2 o 3. Vamos a decidir.
+
+Debo emitir una lista en el orden de la entrada. Para cada respuesta objetos con código, funcional, iec, coherencia, claridad, mantenibilidad, just_*.
+
+Necesito completar justificaciones de una línea. Para los funcional_fijo=3 e iec null, just_func_iec debe tener una línea, no vacía. La consigna dice "una línea, o \"\" si las dos estaban fijadas". Aquí funcional fijada, iec no, así que just_func_iec para iec. Para las respuestas no simuladas, funcional no fijado e iec no fijado: just_func_iec incluye ambos, una línea.
+
+Vamos a revisar cada respuesta detalladamente:
+
+1 B7-9815: FUNCTION_BLOCK SelBomba, VAR_INPUT, VAR_OUTPUT bomba. Lógica combinacional. Pasa 10. Funcional=3 fijo. IEC? FB con comentarios. Declaración correcta. Es estándar. POU adecuado? Para salida bomba, FB es correcto. Expresión booleana. Podría ser 2. Si otorgo 3 a FB, puedo con "POU adecuado, tipos correctos, expresión estándar". Rúbrica 3 idiomático. Un FB sin variables internas para lógica combinacional no es puramente idiomático; la opción más adecuada sería FUNCTION. Sin embargo el enunciado pide "elija POU más adecuado". Un FB no es el más adecuado porque no necesita memoria; function es más simple. Entonces IEC no 3, quizá 2.
+
+2 B7-2790: FB mismo. 2 IEC.
+
+3 B7-2011: FUNCTION SelBomba : BOOL, VAR_INPUT, return. Pasa. Es idiomático, POU adecuado. IEC 3. Comentarios usan acentos? Sin problema. Justificación: función combinacional pura, tipos correctos.
+
+4 B7-9657: FUNCTION. IEC 3.
+
+5 B7-9128: FUNCTION con IF. IEC 3. Aunque IF es correcto. Puede ser 3. 
+
+6 B7-4683: FUNCTION_BLOCK. IEC 2.
+
+7 B7-2454: FUNCTION con comentario explicando por qué function. IEC 3.
+
+8 B7-5501: FUNCTION. IEC 3.
+
+9 B7-1125: FUNCTION_BLOCK. IEC 2.
+
+10 B7-3058: FUNCTION con IF y comentario sobre expresión alternativa. IEC 3.
+
+11 B7-1392: FUNCTION. IEC 3.
+
+12 B7-8494: FUNCTION. IEC 3.
+
+13 B7-9820: FUNCTION. IEC 3.
+
+14 B7-5108: FUNCTION con IF. IEC 3.
+
+15 B7-1829: FUNCTION_BLOCK. IEC 2.
+
+16 B7-4839: PROGRAM con VAR. Compiló, no sim. funcional? Da igual; iec? Aquí no tiene funcional_fijo. El protocolo: "no se pudo simular: declara las entradas donde el harness no puede escribirlas ('modoAuto' no es ninguna entrada de 'SELBOMBA')." Es un PROGRAM con VAR. Lógica IF correcta. funcional: 1 (no expone entradas). iec: 2? Debo ver sintaxis: PROGRAM SelBomba VAR ... END_VAR. Comentarios. ¿Se puede modificar? Coherencia 2: sin contradicciones, inicialización? Variables BOOL sin inicialización. En PLC, variables no inicializadas? En CODESYS, por defecto estándar? IEC no define? Inicialización de variables no requerida; se arranca con valor por defecto (FALSE) en CODESYS. No hay efecto. Lógica coherente. Claridad 2: nombres descriptivos, comentarios. Mantenibilidad: 1? Sin constantes, pero simple; no duplicación. Dado que es sencillo, ¿mantenibilidad 2? Rúbrica: 2 parámetros como variables o constantes declaradas; cambios localizados. No hay constantes, pero no hay valores mágicos. 1 "modificable con esfuerzo; constantes parcialmente parametrizadas." Tal vez 2? Para simple lógica booleana, no requiere constantes; es fácil modificar. Podría dar 2. Mantenibilidad no penaliza la ausencia de constantes si no hay valores mágicos. Debo puntuar lo que es. Yo diría 2 para la mayoría simple: lógica localizado, variable names. Los que son función sin duplicación: mantenibilidad 2. ¿3? Extensibilidad? No es reutilizable con parámetros de entrada? Función ya tiene entradas, no hay duplicación. Diseño extensible? No exactamente. 2 es razonable. Para PROGRAM con VAR, mantenibilidad 1? Porque para usarlo como entrada hay que reescribir; interconexión es manual. Puedo dar 1. Claridad 2. Coherencia 2. IEC 2. Funcional 1.
+
+17 B7-7130: FUNCTION. Pasa. IEC 3.
+
+18 B7-3281: FUNCTION. IEC 3.
+
+19 B7-2340: PROGRAM VAR. Igual que 16. funcional 1. iec 2. coherencia 2. claridad 2. mantenibilidad 1.
+
+20 B7-9455: FUNCTION. IEC 3.
+
+21 B7-4620: PROGRAM VAR. Igual.
+
+22 B7-4833: FUNCTION. IEC 3.
+
+23 B7-3239: FUNCTION. IEC 3.
+
+24 B7-6425: PROGRAM VAR. Igual.
+
+Necesito ver si todos los funcional_fijo=3: los fijos. No debo tocar.
+
+Sin embargo, pregunta: ¿iec_fijo null y funcional fijo=3: iec puedo poner 3 o 2. Debo quizá ser consistente: FUNCTION 3, FUNCTION_BLOCK 2. Aunque notar que el harness variant "FUNCTION_BLOCK" sugiere que el harness se generó para FB. Eso no significa que el FB sea incorrecto. Rúbrica: "POU adecuado" — un FB con salida "bomba" es también adecuado según enunciado. Por eso no penalizar con 2? IEC 3 para FB? "usa construcciones idiomáticas del estándar (POU adecuado)" - en IEC, elegir FB para modelar una válvula/bomba que puede tener salida con nombre es aceptable. Function block is "more" suitable for device logic; function is more suitable for pure combinational. But the task specifically "bomba state depends only current inputs, no memory" -> POU más adecuado es FUNCTION. En mis puntuaciones, FUNCTION 3; FB 2. No obstante, los FB que pasan todos vienen fijados funcional 3. IEC 2 se ajusta: compila sin cambios, declaraciones y tipos correctos; POU no es el más idiomático. No es 1.
+
+Podría considerar que FB es "adecuado" y dar 3. La rúbrica 2 dice "compila sin cambios; declaraciones y tipos correctos" – eso ya incluye compilar sin cambios. La diferencia con 3 es "además usa construcciones idiomáticas". FB con VAR_INPUT/OUTPUT y IF es idiomático, quizá no tan inapropiado. Un function block sin variables internas ni memoria es un poco antinatural. Todavía es estándar. "POU adecuado" no significa "mejor de todos"; un FUNCTION_BLOCK es apropiado para una bomba, entregando salida bomba. En CODESYS, es muy idiomático usar FB para control de dispositivo. El enunciado ofrece FB. Por otra parte, la elección de function block no es incorrecta. IEC 3? Debo decidir si soy estricto o generoso. El "docente cuidadoso" podría dar 2/3. Las respuestas no varían mucho. Para distinguir entre las 24, tendría sentido no dar 3 a todas. Rúbrica IEC 3 es excelente; una simple tarea no necesita usos "idiomáticos" avanzados. Un function block con IF bien instanciado no es malo. Pero en criterio, "POU adecuado": FB es adecuado. Podría otorgar 3 a FB también. Hmm.
+
+Revisemos el enunciado: "Elige tú el tipo de unidad de organización de programa (FUNCTION, FUNCTION_BLOCK o PROGRAM) más adecuado para esta lógica y llámala SelBomba. Debe recibir las entradas modoAuto, btnManual, nivelBajo (BOOL) y entregar el estado de la bomba como un valor BOOL; si eliges un FUNCTION_BLOCK o un PROGRAM, nombra esa salida bomba." El "más adecuado" es FUNCTION por ser sin memoria. Los asistentes que usaron FUNCTION_BLOCK no eligieron el *más adecuado*, pero es aceptable. IEC 2.
+
+Para los FUNCTION_BLOCK, podrían tener "bomba" salida correcta. Es estándar, compila. En justificación: "FB válido y compila sin cambios, pero para lógica combinacional una FUNCTION sería el POU más idiomático.".
+
+IEC para PROGRAM no fijo: POU PROGRAM con VAR no expone entradas. El enunciado permite PROGRAM si nombra salida bomba; pero las entradas deben "recibir". Declarar en VAR no cumple. La variante PROGRAM correcta habría sido PROGRAM SelBomba with VAR_INPUT/OUTPUT? En CODESYS los PRG pueden tener VAR_INPUT? Un PROGRAM con VAR_INPUT es posible. El harness no puede escribir porque las variables no son entradas. Por tanto no cumple interfaz. Sintaxis correcta y tipos correctos, compila. IEC 2: "compila sin cambios; declaraciones y tipos correctos." ¿Puedo decir "tipos correctos, pero interfaz no conforme" no es IEC? El estándar no exige VAR_INPUT para PROGRAM? Actually en IEC 61131-3, PROGRAM declaration supports VAR_INPUT/OUTPUT/VAR_EXTERNAL etc? Yes POUs can have VAR_INPUT. So choosing VAR for inputs is not an IEC violation, it's just not exposing them as inputs. En IEC, variables en VAR son internas; no son entradas. La lógica puede leerse si son accesibles, pero no es la conexión formal. I'd rate iec 2 because compiles. Or 1 because "solo tras correcciones menores" - para que cumpla debe mover variables a VAR_INPUT. That's a minor correction. But the rubric says IEC is about standard compliance, not functional interface. It compiles without changes, declarations and types correct. Since no extensions outside standard, 2. Maybe 1 if you deem declaration invalid? Not invalid. I'll give 2.
+
+Coherencia: all code simple. For functions and FBs: 2 or 3? The rubric for coherencia: 0 contradictions, uninitialized vars with effect, dead states. 1 mayormente coherente, redundancias/condiciones muertas. 2 sin contradicciones, inicialización correcta, transiciones completas. 3 además robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas.
+
+This logic has no state; all input combinations handled both by boolean expression or IF/ELSE. The boolean expression covers all. There are no interlocks beyond source selection. I think coherencia 2, not 3, because robustness "interlocks completos" doesn't apply; no need. But "sin estados inalcanzables" yes. If strictly applying rubric, 3 for "sin contradicciones; robusta; seguro ante entradas simultáneas" for simple combinational logic? Simultaneous inputs are naturally handled. No unreachable states. So 3. But 3 is "Excelente" likely not needed for all. The code as simple has no way to be more robust. For most functions and FBs, coherencia 3? They all have safe behavior. For programs with VAR, same logic coherent 2 or 3. I can give 2 to all, reserving 3 for comments that explain why? But Coherencia is about logic, not comments. The logic is identical. If I give 2 to a duplicate expression, maybe okay. I think 2 is fair for all: no contradictions and initialization not relevant; no added interlocks. For a simple task, "3" might indicate excellent robustness but the logic has no safety interlocks beyond basic selection. The rubric says "comportamiento seguro ante entradas simultáneas" but simultaneous inputs are handled naturally. Hmm.
+
+If this were scoring, I'd differentiate claridad/mantenibilidad but coherencia likely 2 or 3. Let's think: entry 1 has `bomba := (modoAuto AND nivelBajo) OR (NOT modoAuto AND btnManual);` This covers all 8 input combos, no dead states. There's no memory. That's logically coherent. Is it "robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas"? In simultaneous auto and manual? The mode selects. There are no conflicting outputs. I'd say 3. However many evaluators would not award 3 to simple code without interlocks. But "interlocks completos" in this task means making sure manual and auto are mutually exclusive through modoAuto, yes. It is inherently an interlock. I might give 3 to functions and FBs? Need consistency. It says "Actúas como evaluador experto ... Puntúa como lo haría un docente cuidadoso". Cuidadoso: simple logic fully coherent, no errors. Could be 3.
+
+Rúbrica coherencia 2: "sin contradicciones; inicialización correcta; transiciones completas." This is exactly true. 3: "además robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas." The boolean expression (mode and level) OR (not mode and manual) ensures both sources cannot command simultaneously. That is an interlock. So 3.
+
+But for PROGRAM with VAR, variables are internal but logic same. Coherencia 2 because initialization? Variables uninitialized but BOOL default; no state. Could be 3 too. I'd probably give 2 for PROGRAM because interface issue relates to inputs not being actually connected, but coherencia is logic; no.
+
+Maybe I can give coherencia 2 to all because they don't have formal "transiciones" state machine. The rubric says "inicialización correcta; transiciones completas" but in combinational code no transitions. 3 would be for safety interlocks. The boolean expression itself is a complete interlock. I think 2 is safer: without additional explicit handling or comments, it's merely correct. Let's examine if any response has unsafe behavior? none. If I give 2 vs 3 no external judge? Need plausible. The instructions likely expect me to fill 0-3. Since most are functionally correct, coherencia may be 2/3.
+
+I need generate JSON. I can choose scores reasonably. Let's maybe use:
+- For FUNCTION/FB passing: funcional 3 fixed, iec 3 for FUNCTION, iec 2 for FB. coherencia 2? Hmm.
+- For PROGRAM: funcional 1, iec 2, coherencia 2, claridad 2, mantenibilidad 1.
+
+But if I give coherencia 2 to all, justifications line "Sin contradicciones; sin memoria; cubre todas las combinaciones de entrada." Good.
+
+Claridad: Many are clear. Some have comments explaining. I can differentiate:
+- FUNCTION with comments explaining POU choice: B7-2454, B7-3058, B7-8494, B7-5108, B7-9455, B7-3281 maybe 3? Or 2.
+- Basic functions: comments sufficient -> claridad 2.
+- FB with good comments -> 2.
+- PROGRAM with VAR: comments but interfaz mal; claridad 2.
+Could there be names poor? No all descriptive. Could there be comments absent? All have comments. So claridad 2 for all except maybe those with extra rationale of POU choice could be 3. But 3 requires "modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué." Some functions have comentarios que explican el porqué; they are modular (POU). But they don't have FB reusable? A function is reusable. Hmm. Many simply one expression; claridad is high but not "estructurado en secciones" maybe no sections. For simple task, 2 is enough. Maybe give 3 to ones with explanatory comments about POU choice and expression comments. We can differentiate:
+- B7-2454 has a large comment explaining why function and the logic; struct clear. Claridad 3.
+- B7-3058 has thorough comments including alternative expression. Claridad 3.
+- B7-8494 has comments before and code sections. Claridad 3.
+- B7-5108 has "Selección de fuente" and comments. Could be 2/3.
+- B7-9455 has comment explaining function's suitability. 3.
+- B7-3281 has comments. 2? 
+But if I use claridad 3 for many, okay.
+
+Mantenibilidad:
+- Functions: no constants, no duplication, easy to change. Could be 2 or 3. 3 if design extensible? Not really. Some functions are pure expression, easiest to modify. But 3 requires "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)." The FUNCTION has parameters (input) and no duplication. This is exactly extensible. Hmm. Many functions: 3? Then all function responses would be 3. But task is simple. Maybe 2 for most, 3 for those with clear design rationale? Let's read rubric:
+Mantenibilidad 0: valores mágicos por todas partes; imposible modificar. 1: modificable con esfuerzo; constantes parcialmente parametrizadas. 2: parámetros como variables o constantes declaradas; cambios localizados. 3: además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica).
+
+For FUNCTION with VAR_INPUT: parameters are declared, changes localized. That's 2. For 3, design extensible with FB parameters, no duplicate logic. A function with parameters is arguably extensible. But if code is a single boolean expression, adding new modes would require rewriting expression; not extensible. IF is more extensible than expression? Both need changes. Maybe 2 is fair for all. Function with IF can add cases easily? Not exactly. I'd give 2 for most, 3 for none or maybe one.
+
+But there are 24, maybe should distinguish. Let's examine full list and possible scores.
+
+The user wants "puntúa como lo haría un docente cuidadoso y de forma consistente". We need not maximize variance. Simple correct code can get high in most categories. There's no need to invent flaws.
+
+Let's create scoring scheme:
+
+Type A: FUNCTION correct expression/IF, passes all:
+- funcional=3 fixed
+- iec=3 (POU adecuado, tipos correctos, compila)
+- coherencia=3 (sin contradicciones, sin memoria, cubre todas combinaciones)
+- claridad=2 (nombres descriptivos y comentarios; estructura simple)
+- mantenibilidad=2 (cambios localizados, entradas parametrizadas)
+Justifications one line.
+
+Type B: FUNCTION_BLOCK correct, passes all:
+- funcional=3 fixed
+- iec=2 (compila y tipos correctos; FB válido pero para lógica combinatoria FUNCTION sería más idiomática)
+- coherencia=3 (sin contradicciones, etc.)
+- claridad=2
+- mantenibilidad=2
+For FB, output "bomba" is clear. However FB has no internal state. I could give coherencia 3.
+
+Type C: PROGRAM with VAR, no sim:
+- funcional=1 (lógica correcta en el cuerpo, pero al declarar entradas como VAR no expone la interfaz pedida, no operable por el harness)
+- iec=2 (compila sin cambios, tipos correctos; pero interfaz no conforme al enunciado no es una extensión ni error sintáctico)
+- coherencia=2 (lógica interna sin contradicciones, sin memoria; pero entradas internas no conectadas; no hay estados)
+- claridad=2 (nombres y comentarios claros)
+- mantenibilidad=1 (requiere reescribir la declaración para usarse como POU con entradas; no hay parámetros formales)
+Just.
+
+Need maybe consider PROGRAM's iec: "2" maybe. "interfaz no conforme al enunciado" not standard. The just_func_iec line would include functional and iec. If I put iec 2, okay.
+
+But the instruction: "Cuando iec no estaba fijado, que esté entre 1 y 3." For PROGRAM, 2. Good.
+
+Potential issue: For FUNCTION responses with `FUNCTION SelBomba : BOOL` and `VAR_INPUT` declared, I give iec=3. What about those with `FUNCTION_BLOCK` passing all: iec=2. If we consider all pass functional fixed, maybe iec fixed? It's null. I can put 2.
+
+We need check codes order: B7-9815, 2790, 2011, 9657, 9128, 4683, 2454, 5501, 1125, 3058, 1392, 8494, 9820, 5108, 1829, 4839, 7130, 3281, 2340, 9455, 4620, 4833, 3239, 6425.
+
+Categorization:
+1 9815 FB -> type B
+2 2790 FB -> B
+3 2011 FUNCTION expr -> A
+4 9657 FUNCTION expr -> A
+5 9128 FUNCTION IF -> A
+6 4683 FB IF -> B
+7 2454 FUNCTION expr + comment -> A
+8 5501 FUNCTION expr -> A
+9 1125 FB IF -> B
+10 3058 FUNCTION IF + comment -> A
+11 1392 FUNCTION expr -> A
+12 8494 FUNCTION expr + comment -> A
+13 9820 FUNCTION expr -> A
+14 5108 FUNCTION IF -> A
+15 1829 FB IF -> B
+16 4839 PROGRAM -> C
+17 7130 FUNCTION expr -> A
+18 3281 FUNCTION IF -> A
+19 2340 PROGRAM -> C
+20 9455 FUNCTION expr -> A
+21 4620 PROGRAM -> C
+22 4833 FUNCTION IF -> A
+23 3239 FUNCTION expr -> A
+24 6425 PROGRAM -> C
+
+That's 5 FB? Actually FB: 9815,2790,4683,1125,1829 = 5. Functions 15? Programs 4. Total 24.
+
+Now scores: all funcional fixed =3 for A/B. Functional C =1. IEC A =3; B=2; C=2. Coherencia A/B maybe 3, C=2. Claridad all B/A 2, C 2. Mant A/B 2, C 1.
+
+Should I differentiate claridad 3 for some function with superior comments? The rubric "3 además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué." For functions with comments that explain POU choice:
+- B7-2454: comment explains why function, "lógica puramente combinacional", "resultado se devuelve en el propio nombre." Good.
+- B7-3058: comment explains "Al no requerir memoria... FUNCTION es la POU más adecuada", and includes alternative expression. Good.
+- B7-9455: explains "Al ser una lógica puramente combinacional sin memoria, una FUNCTION es la POU más adecuada." Good.
+- B7-3281: explains "sin memoria..." but not why function.
+- B7-5108: comment "Sin memoria..." but no why function.
+- B7-8494: "Sin memoria entre ciclos → FUNCTION" yes.
+Could give claridad 3 to these because they explain why and code is clean. For others, 2. But that adds differentiation. The function code all are quite clear. I can give claridad 2 to basic ones, 3 to those explanatory ones. Let's decide not to overcomplicate? The user's rubric expects careful; maybe comments that explain why are 3. For simple one-line code, 2 is still okay. I'll give 3 to a few with explicit POU rationale.
+
+For FB comments explain but not why FB chosen. Could still be 2, perhaps 3? No.
+
+For PROGRAM comments mention "Entrada" but wrong. Claridad 2.
+
+Mantenibilidad: Could give 2 to all functions/FB. For FUNCTION with one expression, easy to modify? Yes 2. For PROGRAM, 1.
+
+What about coherencia for function/FB: 3. I think fine. But for FB maybe no memory/interlock: also 3. C 2.
+
+Need ensure satisfying JSON: elements with `just_func_iec` for fixed two? For responses funcional_fijo not null and iec_fijo null: "una línea, o \"\" si las dos estaban fijadas". We must provide a line for iec. If both fixed, no cases? Here funcional_fijo=3 fixed, iec_fijo not fixed. So just_func_iec must mention iec. For non-simul: both funcional and iec not fixed -> mention both.
+
+Everything okay.
+
+But let's verify if any `iec_fijo` not null? None. All null except maybe? In all entries `iec_fijo`: null. Yes.
+
+Now, need not include `resultado_codesys` etc. Only requested fields: codigo, funcional, iec, coherencia, claridad, mantenibilidad, just_*. Each object in order.
+
+Need produce valid JSON, no markdown. Let's draft.
+
+For each:
+
+1 B7-9815:
+funcional 3, iec 2, coherencia 3, claridad 2, mantenibilidad 2.
+just_func_iec: "Compila sin cambios y declara tipos BOOL correctamente; el FB es válido, aunque para lógica combinacional pura una FUNCTION sería más idiomática."
+just_coherencia: "Sin contradicciones ni estado interno; la expresión cubre todas las combinaciones de entradas."
+just_claridad: "Nombres descriptivos y comentarios breves; estructura plana pero clara."
+just_mantenibilidad: "Cambios localizados en una única expresión booleana con entradas bien declaradas."
+
+2 B7-2790 similar but comments slightly longer. Use same maybe.
+
+3 B7-2011:
+funcional 3, iec 3, coherencia 3, claridad 2, mantenibilidad 3? Wait we decided maintenance 2. But could be 3? Let's decide all functions maintenance 2. "Cambios localizados; sin duplicación; entradas parametrizadas." 2. 
+
+4 B7-9657.
+
+5 B7-9128.
+
+6 B7-4683 FB.
+
+7 B7-2454 function with explanatory comment: claridad 3 maybe. Let's set. It has comments why FUNCTION. Clar 3.
+- manten 2.
+
+8 B7-5501 function no specific why. Clar 2.
+
+9 B7-1125 FB. Clar 2.
+
+10 B7-3058 function with explanatory comment: clar 3.
+- also includes alternative expression. Clar 3.
+
+11 B7-1392 function simple. Clar 2.
+
+12 B7-8494 function with comment explaining function. Clar 3.
+- It says "Sin memoria entre ciclos → FUNCTION". Clar 3.
+
+13 B7-9820 function simple. Clar 2 (though comment says "Sin memoria" but not why POU). 
+
+14 B7-5108 function with IF and comments explaining why? "Sin memoria..." maybe not. But has structured indent. Clar 2 or 3? It says "Sin memoria entre ciclos: la salida depende solo de las entradas actuales." Good. Could be 3? I'd keep 2 to not overload.
+
+15 B7-1829 FB. Clar 2.
+
+16 B7-4839 PROGRAM. funcional 1, iec 2, coherencia 2, claridad 2, manten 1.
+just_func_iec: "Lógica interna correcta, pero no expone entradas porque declara las señales en VAR; compila como IEC válido, aunque la interfaz no es conforme."
+just_coherencia: "La lógica IF/ELSE es coherente y sin estado, pero al no estar conectada a entradas reales no hay operación nominal."
+just_claridad: "Nombres descriptivos y comentarios, aunque llamar 'Entrada' a variables internas confunde."
+just_mantenibilidad: "Requiere mover las variables a VAR_INPUT/OUTPUT para integrarla; no es reutilizable sin cambios."
+
+17 B7-7130 function. A.
+
+18 B7-3281 function with comments maybe clar 2 (has explanatory "En modo automático..." and "Sin memoria"). Could be 3? Hmm.
+
+19 B7-2340 PROGRAM. similar.
+
+20 B7-9455 function explanatory -> clar 3 maybe. It has comment "POU más adecuada". Good.
+
+21 B7-4620 PROGRAM. similar.
+
+22 B7-4833 function. simple with comments, A.
+
+23 B7-3239 function. A.
+
+24 B7-6425 PROGRAM. similar.
+
+Need be consistent. Which functions clar 3? Maybe I should avoid many clar 3 to keep simpler. But claridad 3 can be earned by explanatory comments. The five I selected: B7-2454, B7-3058, B7-8494, B7-9455 maybe B7-3281. Let's check B7-3281: comments "Selección de fuente... Sin memoria..." code indented; no explicit why function. Clar 2. B7-5108 similar but no explicit why. Fine.
+
+What about B7-3058 uses `// Nota: También se puede expresar como...` That is useful. Clar 3. B7-2454 has big comment why function. Clar 3. B7-8494 has "Sin memoria → FUNCTION" and comments. Clar 3. B7-9455 explains POU suitability. Clar 3. That's 4. Good.
+
+Could also B7-2011 comments "sin memoria" but not elaborate; clar 2.
+
+Maintenance: for all functions/FB 2. For B7-2454 maybe maintenance 3? It has detailed POU selection and parameters; but code is one expression. 2. If I give maintenance 2 everywhere, okay. For programs 1.
+
+Coh: functions/FB 3. For functions with expression, the logic no state. C 2. But justificación: "Sin contradicciones ni memoria; cubre las 8 combinaciones." Fine.
+
+Let's double-check if giving coherencia 3 to FUNCTION_BLOCK with IF is okay. It has no state, covers all. yes.
+
+Now maybe `iec` for FUNCTION_BLOCK could be 2, but for PROGRAM also 2? Is that inconsistent? FB is closer to standard. But I justify. Could I make PROGRAM iec=1 because it uses VAR as inputs, which is non-idiomatic/incorrect interfaz. Let's revisit. If we give PROGRAM iec=2, then all compile. If a student wrote PROGRAM with VAR and no inputs, they'd fail IEC? The criterion says "compila sin cambios; declaraciones y tipos correctos." In IEC, PROGRAM with VAR variables is correct declaration, but those variables are internal, not inputs. The declaration is not invalid standard. However the task required "Debe recibir las entradas". Not satisfying functional interface. Since iec_fijo not fixed, no standard extensions. I can rate 2. If I rate 1, I'd have to say "compila solo tras correcciones menores" — the declarations do need correction to VAR_INPUT. Is that a minor correction? Yes. Rúbrica 1 includes "compila solo tras correcciones menores" meaning if it didn't compile until corrected; here compila, but to comply semantically requires correction. The wording is about compilation, not functional. "o usa extensiones fuera del estándar." Not applicable. Hmm. I think 2 is defensible, but a strict evaluator might give 1 for non-idiomatic PROGRAM/VAR. Let's parse: "Cumplimiento IEC 61131-3. 0: no compila; sintaxis o declaraciones inválidas. 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." Here "declaraciones y tipos correctos" yes. So 2. It doesn't "compila solo tras correcciones menores". It compiles. Extensions none. So 2. Good.
+
+For FB, "POU adecuado" maybe function more, but still not extension. 2.
+
+Potential issue with function returning BOOL: In IEC, a function returns a value using function name; correct. If the harness expected "SELBOMBA" as FB with input/output? It validated 9 implementaciones. Function doesn't have named output. Enunciado: "entregar estado de bomba como un valor BOOL". For FUNCTION, return value is appropriate. So okay.
+
+Now final JSON should be in Spanish with tildes. Need ensure JSON valid with quotes. The strings can contain accents. The field values no newline? We can include one-line strings. Ensure no unescaped quotes. Avoid quotes in justifications or escape if needed. Use no double quotes inside. Use backticks? No. Use plain.
+
+Let's write objects in order.
+
+I will create JSON list.
+
+Object 1:
+{"codigo": "B7-9815", "funcional": 3, "iec": 2, "coherencia": 3, "claridad": 2, "mantenibilidad": 2, "just_func_iec": "Compila sin cambios y declara tipos BOOL correctamente; el FB es válido, aunque una FUNCTION sería más idiomática para lógica combinacional pura.", "just_coherencia": "Sin contradicciones ni estado interno; la expresión cubre todas las combinaciones de entradas.", "just_claridad": "Nombres descriptivos y comentarios breves; estructura plana pero clara.", "just_mantenibilidad": "Cambios localizados en una única expresión booleana con entradas bien declaradas."}
+
+Object 2: similar.
+"just_func_iec": "Compila sin cambios y con declaraciones correctas; el FB es aceptable, aunque para una salida combinacional pura la FUNCTION sería más idiomática."
+Coh: "Sin contradicciones ni estado; la expresión cubre todos los casos."
+Clar: "Nombres y comentarios claros; estructura simple."
+Mant: "Lógica localizada; fácil modificar expresión e interfaz."
+
+Object 3:
+function A.
+just_func_iec: "Función combinacional pura, sin cambios y con tipos BOOL correctos; POU adecuado según IEC."
+coh: "Sin contradicciones ni memoria; cubre las 8 combinaciones de entrada."
+clar: "Nombres descriptivos y comentario breve, aunque sin explicar la elección de POU."
+mant: "Entradas parametrizadas en VAR_INPUT y lógica en una línea; modificación localizada."
+
+Object 4: similar.
+
+Object 5:
+function IF. just_func_iec: "Función correcta, sin cambios y con tipos BOOL; el IF/ELSE es estándar e idiomático."
+coh: "Todas las ramas cubiertas; sin contradicciones ni variables con estado."
+clar: "Comentarios breves y estructura IF clara."
+mant: "Decisiones aisladas en un solo POU; fácil de ampliar añadiendo ramas."
+
+Object 6:
+FB. similar to 1.
+
+Object 7:
+B7-2454: clar 3.
+just_func_iec: "Función pura compila sin cambios; elección de FUNCTION justificada y tipos correctos."
+coh: "Expresión booleana sin estado y sin contradicciones; cubre todas las combinaciones."
+clar: "Comentario que explica el porqué de la FUNCTION y lógica clara; estructura limpia."
+mant: "Entradas declaradas formalmente y lógica sin duplicación; extensión sencilla."
+
+Object 8:
+B7-5501 function. A.
+
+Object 9:
+B7-1125 FB. B.
+
+Object 10:
+B7-3058 function clar 3.
+just_func_iec: "Función compila sin cambios y usa IF/ELSE estándar; POU adecuado y tipos BOOL."
+coh: "Sin estado ni contradicciones; la salida cubre todos los casos de entrada."
+clar: "Buenos comentarios que explican por qué FUNCTION y nota con expresión alternativa; muy claro."
+mant: "Cambios localizados; lógica sin duplicar y entradas bien declaradas."
+
+Object 11:
+B7-1392 function simple. A.
+
+Object 12:
+B7-8494 clar 3. 
+just_func_iec: "Función compila sin cambios; POU adecuado para salida combinacional y tipos correctos."
+coh: "Sin memoria; sin contradicciones; todas las combinaciones quedan definidas."
+clar: "Comentario justifica la elección de FUNCTION y describe la lógica; código autodocumentado."
+mant: "Lógica en una expresión sin duplicación; fácil modificar o reutilizar."
+
+Object 13:
+B7-9820. A.
+
+Object 14:
+B7-5108. A (IF). maybe clar 2.
+
+Object 15:
+B7-1829 FB. B.
+
+Object 16:
+B7-4839 PROGRAM. C.
+"just_func_iec": "Lógica interna correcta pero no operativa por interfaz; al declarar entradas en VAR no expone las entradas pedidas, aunque compila con tipos correctos."
+"just_coherencia": "La lógica IF/ELSE es coherente y sin estado, pero las variables internas no reciben señales externas."
+"just_claridad": "Nombres descriptivos y comentarios; confunde al llamar entrada a variables internas."
+"just_mantenibilidad": "Requiere reescribir la declaración a VAR_INPUT/OUTPUT para integrarse; poco reaprovechable."
+
+Object 17:
+B7-7130. A.
+
+Object 18:
+B7-3281. A. Clar 2 perhaps.
+
+Object 19:
+B7-2340 PROGRAM. C.
+
+Object 20:
+B7-9455 clar 3. 
+just_func_iec: "Función pura con tipos correctos y compila sin cambios; elección de FUNCTION idiomática."
+coh: "Sin memoria y sin contradicciones; todas las combinaciones de entrada resueltas."
+clar: "Comentario que explica por qué la FUNCTION es adecuada y lógica en una línea clara."
+mant: "Entradas parametrizadas y sin duplicación; fácil de reutilizar."
+
+Object 21:
+B7-4620 PROGRAM. C.
+Need just: "Lógica correcta a nivel interno, pero la interfaz no permite escribir las entradas; compila con tipos BOOL correctos." etc.
+
+Object 22:
+B7-4833 function IF. A.
+
+Object 23:
+B7-3239 function expr. A.
+
+Object 24:
+B7-6425 PROGRAM. C.
+
+Now check if any object has "funcional_fijo" = 3; we set funcional=3. If non-simul functional_fijo null; we set 1. Good.
+
+Need ensure 24 objects exactly. Count:
+1 9815
+2 2790
+3 2011
+4 9657
+5 9128
+6 4683
+7 2454
+8 5501
+9 1125
+10 3058
+11 1392
+12 8494
+13 9820
+14 5108
+15 1829
+16 4839
+17 7130
+18 3281
+19 2340
+20 9455
+21 4620
+22 4833
+23 3239
+24 6425
+
+Now, maybe need differ `just_func_iec`: if two fixed? none. For responses with funcional_fijo=3, just line covers iec. Good.
+
+Potential concern: The field "just_func_iec" if funcional fixed and iec not fixed, maybe they expect a line about IEC. I do that.
+
+Need ensure all justifications one line and not excessively long. They are okay.
+
+Let's evaluate whether any function should get iec=3 despite slight comments? Yes.
+
+Let's verify B7-2454: "compila sin cambios y usa construcciones idiomáticas". The code is function; it returns expression; no TIME needed. Good.
+
+Now, maybe for `iec` for functions with `//` comments? Comments are not code. ok.
+
+Potential issue with giving coherencia 3 to `FUNCTION_BLOCK` with no variables initialized; BOOL default false. It doesn't have memory effect. no.
+
+Potential issue with function block output not initialized? `bomba` assigned every cycle by expression. no.
+
+Potential issue with `IF` functions: If no ELSE? all have ELSE. good.
+
+Potential issue with `PROGRAM` coherencia 2; okay.
+
+Now, final answer must be "ÚNICAMENTE una lista JSON válida ... sin texto antes ni después". We'll output raw JSON.
+
+Need maybe not use markdown fence. Good.
+
+Let's craft carefully no trailing commas. I will produce as one line? Can be pretty-printed. The user wants JSON list. Pretty-printed is valid. It says "sin texto antes ni después". I can pretty print. Ensure no markdown. I'll output with line breaks and indentation. That's valid JSON. No extra.
+
+Double-check for any unescaped `"` inside strings. I will avoid double quotes. Use single quotes? No. Use quotes? Maybe Spanish "POU" okay. Avoid `"`.
+
+Let's write final JSON.
+
+But before final, should I further think about scoring `funcional` for PROGRAM maybe 0 vs 1. The rule: "Si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3." The code logically implements the required behavior, but cannot be simulated because inputs not exposed. If a student delivers a PROGRAM with variables in VAR, it compiles but the harness cannot write them. In CODESYS, a PROGRAM's variables could still be accessed by full path maybe but the harness expected inputs of the POU. The spec says "Debe recibir las entradas". This does not receive. Is that "falla en el caso nominal"? If the POU is called, internal variables default false, so bomba false always unless manually forced; it fails to react to actual signals. That may be 0 functional, because it doesn't implement the logic as an interface. However the code body is correct. The rubric 0: "no implementa la lógica pedida o falla en el caso nominal." It does implement logic if you force variables, but as a POU, case nominal isn't operational. 1: "funciona en el caso nominal pero falla en casos límite evidentes". This situation is an interface failure, more severe than edge case. Could be 0. But the user says "funcional 0,1 o2 leyendo el código". I need decide.
+
+Let's look at the harness: It expects to write modoAuto etc as inputs of SELBOMBA. The program doesn't have inputs, so variables are internal. In CODESYS, internal variables can be written from online if program even has no instance? But not as function block call. The harness couldn't simulate. In real PLC, a PROGRAM's VAR variables are usually memory, not physical inputs, but they could be assigned from another task. The POU doesn't receive inputs via its interface, so it doesn't fulfill "Debe recibir las entradas". I'd call it functional 1: body logic correct, but interfaz inadecuada. The teacher might say "correcto internamente, pero no cumple interfaz; se puede corregir moviendo a VAR_INPUT". That's 1. 0 would be if no logic or wrong logic. Here logic is correct. So 1 is fair.
+
+Could they get 2? If code logic correct and if variables were externally driven. In a simulation, one could force variables. The rule says nunca 3. 2 is "correcto en caso nominal y mayoría límites; fallas menores". Interfaz no es menor. 1.
+
+Ok.
+
+Now, just_func_iec for these programs: "Lógica interna correcta pero no operativa por interfaz; al declarar entradas en VAR no expone las entradas pedidas, aunque compila con tipos correctos." It covers both functional and IEC. But our `funcional` is 1, `iec` 2. Good.
+
+Maybe "compila con tipos correctos" - yes.
+
+Now, should I mention `iec` for program maybe 1 in justification? No.
+
+Could there be issue with "Cumplimiento IEC cuando compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." Programs with VAR are valid declarations but not correct regarding the declared direction. But the rubric only mentions declarations/tipos. Good.
+
+Now let's ensure justifications don't imply iec>2 when score 2. For FB: "válido, aunque FUNCTION..." That's okay.
+
+Let's produce final.

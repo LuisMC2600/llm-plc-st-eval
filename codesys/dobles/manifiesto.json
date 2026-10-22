@@ -1,0 +1,1178 @@
+[
+  {
+    "tarea": "B1",
+    "doble": "Correcta",
+    "archivo": "B1/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B1",
+    "doble": "SinEnclavamiento",
+    "archivo": "B1/02_SinEnclavamiento.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "B1",
+    "doble": "RearranqueTrasEmergencia",
+    "archivo": "B1/03_RearranqueTrasEmergencia.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "B1",
+    "doble": "EmergenciaNoDomina",
+    "archivo": "B1/04_EmergenciaNoDomina.st",
+    "esperado": 2,
+    "paso_esperado": 5
+  },
+  {
+    "tarea": "B1",
+    "doble": "ParoInvertido",
+    "archivo": "B1/05_ParoInvertido.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B2",
+    "doble": "Correcta",
+    "archivo": "B2/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B2",
+    "doble": "TofEnVezDeTon",
+    "archivo": "B2/02_TofEnVezDeTon.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B2",
+    "doble": "PresetCorto",
+    "archivo": "B2/03_PresetCorto.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B2",
+    "doble": "SinCierreInmediato",
+    "archivo": "B2/04_SinCierreInmediato.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "B2",
+    "doble": "UnSoloDisparo",
+    "archivo": "B2/05_UnSoloDisparo.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "B3",
+    "doble": "Correcta",
+    "archivo": "B3/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B3",
+    "doble": "CuentaPorNivel",
+    "archivo": "B3/02_CuentaPorNivel.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "B3",
+    "doble": "PresetIncorrecto",
+    "archivo": "B3/03_PresetIncorrecto.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "B3",
+    "doble": "ResetIncompleto",
+    "archivo": "B3/04_ResetIncompleto.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "B4",
+    "doble": "Correcta",
+    "archivo": "B4/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B4",
+    "doble": "SinEnclavamiento",
+    "archivo": "B4/02_SinEnclavamiento.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "B4",
+    "doble": "InversionDirecta",
+    "archivo": "B4/03_InversionDirecta.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "B4",
+    "doble": "SinInterlock",
+    "archivo": "B4/04_SinInterlock.st",
+    "esperado": 2,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B4",
+    "doble": "CarreraDeInterlock",
+    "archivo": "B4/05_CarreraDeInterlock.st",
+    "esperado": 2,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B5",
+    "doble": "Correcta",
+    "archivo": "B5/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B5",
+    "doble": "TiempoCorto",
+    "archivo": "B5/02_TiempoCorto.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "B5",
+    "doble": "TiempoLargo",
+    "archivo": "B5/03_TiempoLargo.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "B5",
+    "doble": "SinRetardo",
+    "archivo": "B5/04_SinRetardo.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "B5",
+    "doble": "TonEnVezDeTof",
+    "archivo": "B5/05_TonEnVezDeTof.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B5",
+    "doble": "SinRearme",
+    "archivo": "B5/06_SinRearme.st",
+    "esperado": 2,
+    "paso_esperado": 5
+  },
+  {
+    "tarea": "B5",
+    "doble": "RearmeCorto",
+    "archivo": "B5/07_RearmeCorto.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "B6",
+    "doble": "CorrectaInicioOFF",
+    "archivo": "B6/01_CorrectaInicioOFF.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B6",
+    "doble": "CorrectaInicioON",
+    "archivo": "B6/02_CorrectaInicioON.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B6",
+    "doble": "Periodo1500",
+    "archivo": "B6/03_Periodo1500.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B6",
+    "doble": "Periodo500",
+    "archivo": "B6/04_Periodo500.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B6",
+    "doble": "Asimetrico",
+    "archivo": "B6/05_Asimetrico.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B6",
+    "doble": "SiempreEncendida",
+    "archivo": "B6/06_SiempreEncendida.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B6",
+    "doble": "NoApagaSinAlarma",
+    "archivo": "B6/07_NoApagaSinAlarma.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "I1",
+    "doble": "Correcta",
+    "archivo": "I1/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "I1",
+    "doble": "TiemposCambiados",
+    "archivo": "I1/02_TiemposCambiados.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "I1",
+    "doble": "ParpadeoLento",
+    "archivo": "I1/03_ParpadeoLento.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "I1",
+    "doble": "SinIntermitente",
+    "archivo": "I1/04_SinIntermitente.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "I1",
+    "doble": "IntermitenteConRojo",
+    "archivo": "I1/05_IntermitenteConRojo.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "I1",
+    "doble": "IntermitenteConRojoFaseInversa",
+    "archivo": "I1/06_IntermitenteConRojoFaseInversa.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "I1",
+    "doble": "NoReinicia",
+    "archivo": "I1/07_NoReinicia.st",
+    "esperado": 2,
+    "paso_esperado": 8
+  },
+  {
+    "tarea": "I2",
+    "doble": "Correcta",
+    "archivo": "I2/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "I2",
+    "doble": "MezclaCorta",
+    "archivo": "I2/02_MezclaCorta.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "I2",
+    "doble": "SaltaMezcla",
+    "archivo": "I2/03_SaltaMezcla.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "I2",
+    "doble": "ParoNoSeguro",
+    "archivo": "I2/04_ParoNoSeguro.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "I2",
+    "doble": "ParoSoloEnLlenado",
+    "archivo": "I2/05_ParoSoloEnLlenado.st",
+    "esperado": 2,
+    "paso_esperado": 10
+  },
+  {
+    "tarea": "I2",
+    "doble": "NoRearranca",
+    "archivo": "I2/06_NoRearranca.st",
+    "esperado": 2,
+    "paso_esperado": 8
+  },
+  {
+    "tarea": "I3",
+    "doble": "Correcta",
+    "archivo": "I3/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "I3",
+    "doble": "AckIncondicional",
+    "archivo": "I3/02_AckIncondicional.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "I3",
+    "doble": "SinRetencion",
+    "archivo": "I3/03_SinRetencion.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "I3",
+    "doble": "PrioridadInvertida",
+    "archivo": "I3/04_PrioridadInvertida.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "I3",
+    "doble": "SirenaSoloConCausa",
+    "archivo": "I3/05_SirenaSoloConCausa.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "I4",
+    "doble": "Correcta",
+    "archivo": "I4/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "I4",
+    "doble": "Solapamiento",
+    "archivo": "I4/02_Solapamiento.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "I4",
+    "doble": "SinTiempoMuerto",
+    "archivo": "I4/03_SinTiempoMuerto.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "I4",
+    "doble": "TemporizadorSinRearme",
+    "archivo": "I4/04_TemporizadorSinRearme.st",
+    "esperado": 2,
+    "paso_esperado": 5
+  },
+  {
+    "tarea": "I4",
+    "doble": "ParoNoApagaKM",
+    "archivo": "I4/05_ParoNoApagaKM.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "I5",
+    "doble": "Correcta",
+    "archivo": "I5/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "I5",
+    "doble": "CuentaPorNivel",
+    "archivo": "I5/02_CuentaPorNivel.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "I5",
+    "doble": "SinRetardo",
+    "archivo": "I5/03_SinRetardo.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "I5",
+    "doble": "RetardoCorto",
+    "archivo": "I5/04_RetardoCorto.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "I5",
+    "doble": "PulsoLargo",
+    "archivo": "I5/05_PulsoLargo.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "I5",
+    "doble": "DesviaTodo",
+    "archivo": "I5/06_DesviaTodo.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "I6",
+    "doble": "Correcta",
+    "archivo": "I6/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "I6",
+    "doble": "AlarmaNoApagaEnfriador",
+    "archivo": "I6/02_AlarmaNoApagaEnfriador.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "I6",
+    "doble": "SinHisteresis",
+    "archivo": "I6/03_SinHisteresis.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "I6",
+    "doble": "DivisionEntera",
+    "archivo": "I6/04_DivisionEntera.st",
+    "esperado": 2,
+    "paso_esperado": 0
+  },
+  {
+    "tarea": "I6",
+    "doble": "RangoSoloSuperior",
+    "archivo": "I6/05_RangoSoloSuperior.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "I6",
+    "doble": "AlarmaEnclavada",
+    "archivo": "I6/06_AlarmaEnclavada.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "B7",
+    "doble": "Correcta",
+    "archivo": "B7/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B7",
+    "doble": "CorrectaFB",
+    "archivo": "B7/02_CorrectaFB.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B7",
+    "doble": "CorrectaPRG",
+    "archivo": "B7/03_CorrectaPRG.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B7",
+    "doble": "ModoInvertido",
+    "archivo": "B7/04_ModoInvertido.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B7",
+    "doble": "OrSimple",
+    "archivo": "B7/05_OrSimple.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "B7",
+    "doble": "NivelInvertido",
+    "archivo": "B7/06_NivelInvertido.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "B7",
+    "doble": "BotonTambienEnAuto",
+    "archivo": "B7/07_BotonTambienEnAuto.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "B7",
+    "doble": "MemoriaEnAuto",
+    "archivo": "B7/08_MemoriaEnAuto.st",
+    "esperado": 2,
+    "paso_esperado": 5
+  },
+  {
+    "tarea": "B7",
+    "doble": "TelerruptorManual",
+    "archivo": "B7/09_TelerruptorManual.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "B8",
+    "doble": "Correcta",
+    "archivo": "B8/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "B8",
+    "doble": "CuentaPorNivel",
+    "archivo": "B8/02_CuentaPorNivel.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B8",
+    "doble": "CuentaFlancoBajada",
+    "archivo": "B8/03_CuentaFlancoBajada.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "B8",
+    "doble": "UmbralCuatro",
+    "archivo": "B8/04_UmbralCuatro.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "B8",
+    "doble": "UmbralSeis",
+    "archivo": "B8/05_UmbralSeis.st",
+    "esperado": 2,
+    "paso_esperado": 5
+  },
+  {
+    "tarea": "B8",
+    "doble": "AvisoSoloEnCinco",
+    "archivo": "B8/06_AvisoSoloEnCinco.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "B8",
+    "doble": "SaturaEnCinco",
+    "archivo": "B8/07_SaturaEnCinco.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "B8",
+    "doble": "ResetNoApagaAviso",
+    "archivo": "B8/08_ResetNoApagaAviso.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "B8",
+    "doble": "ResetSoloAviso",
+    "archivo": "B8/09_ResetSoloAviso.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "I7",
+    "doble": "Correcta",
+    "archivo": "I7/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "I7",
+    "doble": "ReferenciaC4",
+    "archivo": "I7/02_ReferenciaC4.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "I7",
+    "doble": "SinAlternancia",
+    "archivo": "I7/03_SinAlternancia.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "I7",
+    "doble": "PrimeraEsB2",
+    "archivo": "I7/04_PrimeraEsB2.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "I7",
+    "doble": "AmbasArrancan",
+    "archivo": "I7/05_AmbasArrancan.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "I7",
+    "doble": "SinRespaldo",
+    "archivo": "I7/06_SinRespaldo.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "I7",
+    "doble": "RespaldoEnclavado",
+    "archivo": "I7/07_RespaldoEnclavado.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "I7",
+    "doble": "AlarmaPorRespaldo",
+    "archivo": "I7/08_AlarmaPorRespaldo.st",
+    "esperado": 2,
+    "paso_esperado": 8
+  },
+  {
+    "tarea": "I7",
+    "doble": "RespaldoConFalla",
+    "archivo": "I7/09_RespaldoConFalla.st",
+    "esperado": 2,
+    "paso_esperado": 9
+  },
+  {
+    "tarea": "I7",
+    "doble": "AlarmaSinDemanda",
+    "archivo": "I7/10_AlarmaSinDemanda.st",
+    "esperado": 2,
+    "paso_esperado": 10
+  },
+  {
+    "tarea": "I8",
+    "doble": "Correcta",
+    "archivo": "I8/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "I8",
+    "doble": "SinTemporizacionAceite",
+    "archivo": "I8/02_SinTemporizacionAceite.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "I8",
+    "doble": "RearranqueAutomatico",
+    "archivo": "I8/03_RearranqueAutomatico.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "I8",
+    "doble": "MarchaPrioritaria",
+    "archivo": "I8/04_MarchaPrioritaria.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "I8",
+    "doble": "ArrancaPorNivel",
+    "archivo": "I8/05_ArrancaPorNivel.st",
+    "esperado": 2,
+    "paso_esperado": 8
+  },
+  {
+    "tarea": "I8",
+    "doble": "CausaPrioridadInvertida",
+    "archivo": "I8/06_CausaPrioridadInvertida.st",
+    "esperado": 2,
+    "paso_esperado": 0
+  },
+  {
+    "tarea": "I8",
+    "doble": "AceiteNoContinuo",
+    "archivo": "I8/07_AceiteNoContinuo.st",
+    "esperado": 2,
+    "paso_esperado": 12
+  },
+  {
+    "tarea": "I8",
+    "doble": "PeticionMemorizada",
+    "archivo": "I8/08_PeticionMemorizada.st",
+    "esperado": 2,
+    "paso_esperado": 14
+  },
+  {
+    "tarea": "C3",
+    "doble": "Correcta",
+    "archivo": "C3/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "C3",
+    "doble": "ParoComoNA",
+    "archivo": "C3/02_ParoComoNA.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "C3",
+    "doble": "SinEnclavamiento",
+    "archivo": "C3/03_SinEnclavamiento.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "C3",
+    "doble": "MarchaPrioritaria",
+    "archivo": "C3/04_MarchaPrioritaria.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "C3",
+    "doble": "LamparaSinTemporizar",
+    "archivo": "C3/05_LamparaSinTemporizar.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "C3",
+    "doble": "TiempoCinco",
+    "archivo": "C3/06_TiempoCinco.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "C3",
+    "doble": "TemporizadorRetenido",
+    "archivo": "C3/07_TemporizadorRetenido.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "A3",
+    "doble": "Correcta",
+    "archivo": "A3/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "A3",
+    "doble": "PlazoCorto",
+    "archivo": "A3/02_PlazoCorto.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "A3",
+    "doble": "PlazoLargo",
+    "archivo": "A3/03_PlazoLargo.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "A3",
+    "doble": "PlazoNoSeReinicia",
+    "archivo": "A3/04_PlazoNoSeReinicia.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "A3",
+    "doble": "IntentosSeBorran",
+    "archivo": "A3/05_IntentosSeBorran.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "A3",
+    "doble": "OkNoSeBorra",
+    "archivo": "A3/06_OkNoSeBorra.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "A3",
+    "doble": "SinEco",
+    "archivo": "A3/07_SinEco.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "A3",
+    "doble": "ReiniciaPorTxReq",
+    "archivo": "A3/08_ReiniciaPorTxReq.st",
+    "esperado": 2,
+    "paso_esperado": 8
+  },
+  {
+    "tarea": "A3",
+    "doble": "CuatroIntentos",
+    "archivo": "A3/09_CuatroIntentos.st",
+    "esperado": 2,
+    "paso_esperado": 10
+  },
+  {
+    "tarea": "A2",
+    "doble": "Correcta",
+    "archivo": "A2/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "A2",
+    "doble": "AbortEnReposo",
+    "archivo": "A2/02_AbortEnReposo.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "A2",
+    "doble": "InicioNoIgnorado",
+    "archivo": "A2/03_InicioNoIgnorado.st",
+    "esperado": 2,
+    "paso_esperado": 5
+  },
+  {
+    "tarea": "A2",
+    "doble": "UmbralEstricto",
+    "archivo": "A2/04_UmbralEstricto.st",
+    "esperado": 2,
+    "paso_esperado": 8
+  },
+  {
+    "tarea": "A2",
+    "doble": "MezclaCorta",
+    "archivo": "A2/05_MezclaCorta.st",
+    "esperado": 2,
+    "paso_esperado": 9
+  },
+  {
+    "tarea": "A2",
+    "doble": "MezclaLarga",
+    "archivo": "A2/06_MezclaLarga.st",
+    "esperado": 2,
+    "paso_esperado": 10
+  },
+  {
+    "tarea": "A2",
+    "doble": "AbortSiempreReposo",
+    "archivo": "A2/07_AbortSiempreReposo.st",
+    "esperado": 2,
+    "paso_esperado": 13
+  },
+  {
+    "tarea": "A2",
+    "doble": "AbortNoCierraCalentador",
+    "archivo": "A2/08_AbortNoCierraCalentador.st",
+    "esperado": 2,
+    "paso_esperado": 21
+  },
+  {
+    "tarea": "A2",
+    "doble": "AbortEnDescargaDetiene",
+    "archivo": "A2/09_AbortEnDescargaDetiene.st",
+    "esperado": 2,
+    "paso_esperado": 13
+  },
+  {
+    "tarea": "A4",
+    "doble": "Correcta",
+    "archivo": "A4/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "A4",
+    "doble": "SubidaRapida",
+    "archivo": "A4/02_SubidaRapida.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "A4",
+    "doble": "BajadaLenta",
+    "archivo": "A4/03_BajadaLenta.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "A4",
+    "doble": "ParoLento",
+    "archivo": "A4/04_ParoLento.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "A4",
+    "doble": "ParoInstantaneo",
+    "archivo": "A4/05_ParoInstantaneo.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "A4",
+    "doble": "ParoNoMantiene",
+    "archivo": "A4/06_ParoNoMantiene.st",
+    "esperado": 2,
+    "paso_esperado": 8
+  },
+  {
+    "tarea": "A4",
+    "doble": "Sobrepaso",
+    "archivo": "A4/07_Sobrepaso.st",
+    "esperado": 2,
+    "paso_esperado": 0
+  },
+  {
+    "tarea": "A4",
+    "doble": "CicloEnMs",
+    "archivo": "A4/08_CicloEnMs.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "A5",
+    "doble": "Correcta",
+    "archivo": "A5/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "A5",
+    "doble": "CorrectaAcumDespues",
+    "archivo": "A5/02_CorrectaAcumDespues.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "A5",
+    "doble": "IndiceInicialCero",
+    "archivo": "A5/03_IndiceInicialCero.st",
+    "esperado": 2,
+    "paso_esperado": 0
+  },
+  {
+    "tarea": "A5",
+    "doble": "CuentaPorNivel",
+    "archivo": "A5/04_CuentaPorNivel.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "A5",
+    "doble": "MarcaSinAcumular",
+    "archivo": "A5/05_MarcaSinAcumular.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "A5",
+    "doble": "PrimeroEnPosicion1",
+    "archivo": "A5/06_PrimeroEnPosicion1.st",
+    "esperado": 2,
+    "paso_esperado": 0
+  },
+  {
+    "tarea": "A5",
+    "doble": "SinSobrescritura",
+    "archivo": "A5/07_SinSobrescritura.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "A5",
+    "doble": "NEventosSinTope",
+    "archivo": "A5/08_NEventosSinTope.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "A5",
+    "doble": "VueltaAPosicion1",
+    "archivo": "A5/09_VueltaAPosicion1.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "A6",
+    "doble": "Correcta",
+    "archivo": "A6/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "A6",
+    "doble": "ArrancaEnAuto",
+    "archivo": "A6/02_ArrancaEnAuto.st",
+    "esperado": 2,
+    "paso_esperado": 0
+  },
+  {
+    "tarea": "A6",
+    "doble": "CambioSinSeguro",
+    "archivo": "A6/03_CambioSinSeguro.st",
+    "esperado": 2,
+    "paso_esperado": 0
+  },
+  {
+    "tarea": "A6",
+    "doble": "CambioSoloPorFlancoDeSelector",
+    "archivo": "A6/04_CambioSoloPorFlancoDeSelector.st",
+    "esperado": 2,
+    "paso_esperado": 2
+  },
+  {
+    "tarea": "A6",
+    "doble": "AceptaFueraDeRango",
+    "archivo": "A6/05_AceptaFueraDeRango.st",
+    "esperado": 2,
+    "paso_esperado": 3
+  },
+  {
+    "tarea": "A6",
+    "doble": "MantenimientoSigueManual",
+    "archivo": "A6/06_MantenimientoSigueManual.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "A6",
+    "doble": "ForzadoNoRetiene",
+    "archivo": "A6/07_ForzadoNoRetiene.st",
+    "esperado": 2,
+    "paso_esperado": 7
+  },
+  {
+    "tarea": "A6",
+    "doble": "IdxSinValidar",
+    "archivo": "A6/08_IdxSinValidar.st",
+    "esperado": 2,
+    "paso_esperado": 8
+  },
+  {
+    "tarea": "A6",
+    "doble": "SeguroNoAnula",
+    "archivo": "A6/09_SeguroNoAnula.st",
+    "esperado": 2,
+    "paso_esperado": 11
+  },
+  {
+    "tarea": "A6",
+    "doble": "SalirNoAnula",
+    "archivo": "A6/10_SalirNoAnula.st",
+    "esperado": 2,
+    "paso_esperado": 15
+  },
+  {
+    "tarea": "A1",
+    "doble": "Correcta",
+    "archivo": "A1/01_Correcta.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "A1",
+    "doble": "CorrectaIntegralPrevia",
+    "archivo": "A1/02_CorrectaIntegralPrevia.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "A1",
+    "doble": "CorrectaTrapezoidal",
+    "archivo": "A1/03_CorrectaTrapezoidal.st",
+    "esperado": 1,
+    "paso_esperado": null
+  },
+  {
+    "tarea": "A1",
+    "doble": "SignoInvertido",
+    "archivo": "A1/04_SignoInvertido.st",
+    "esperado": 2,
+    "paso_esperado": 0
+  },
+  {
+    "tarea": "A1",
+    "doble": "SinSaturacion",
+    "archivo": "A1/05_SinSaturacion.st",
+    "esperado": 2,
+    "paso_esperado": 1
+  },
+  {
+    "tarea": "A1",
+    "doble": "TiCeroIntegra",
+    "archivo": "A1/06_TiCeroIntegra.st",
+    "esperado": 2,
+    "paso_esperado": 0
+  },
+  {
+    "tarea": "A1",
+    "doble": "IntegralSinDt",
+    "archivo": "A1/07_IntegralSinDt.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "A1",
+    "doble": "CicloEnMs",
+    "archivo": "A1/08_CicloEnMs.st",
+    "esperado": 2,
+    "paso_esperado": 4
+  },
+  {
+    "tarea": "A1",
+    "doble": "SinDerivada",
+    "archivo": "A1/09_SinDerivada.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "A1",
+    "doble": "DerivadaSobrePV",
+    "archivo": "A1/10_DerivadaSobrePV.st",
+    "esperado": 2,
+    "paso_esperado": 6
+  },
+  {
+    "tarea": "A1",
+    "doble": "SinAntiWindup",
+    "archivo": "A1/11_SinAntiWindup.st",
+    "esperado": 2,
+    "paso_esperado": 8
+  },
+  {
+    "tarea": "A1",
+    "doble": "AntiWindupSoloAlto",
+    "archivo": "A1/12_AntiWindupSoloAlto.st",
+    "esperado": 2,
+    "paso_esperado": 10
+  }
+]

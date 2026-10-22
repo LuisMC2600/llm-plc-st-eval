@@ -1,0 +1,23 @@
+modelo,tarea,estrategia,ejec,paso_primario,categoria_mapa_v2,categoria_codigo,coincide,observacion
+claude-sonnet-4-6,A6,zero_shot,ejec_2,6.0,SECUENCIA,SECUENCIA,1,Al entrar en mantenimiento no apaga los actuadores; solo los apaga al salir del modo 2 (accion en el momento equivocado)
+claude-sonnet-4-6,I7,few_shot,ejec_2,1.0,INICIALIZACION,INICIALIZACION,1,principal1 arranca en TRUE y se conmuta en el primer flanco de demanda: la primera demanda la atiende bomba2
+gpt-4o-2024-08-06,A2,zero_shot,ejec_2,1.0,SECUENCIA,SEGURIDAD,0,Abort en reposo con producto pasa a descarga (fase 5) en lugar de no tener efecto: respuesta al aborto de receta incorrecta
+gpt-4o-2024-08-06,B1,few_shot,ejec_2,6.0,SEGURIDAD,SEGURIDAD,1,"Liberada la emergencia con la marcha pulsada, el latch se activa de nuevo: rearranque automatico"
+gpt-4o-2024-08-06,B5,few_shot,ejec_2,2.0,TEMPORIZACION,TEMPORIZACION,1,Retardo a la desconexion emulado con TON sobre NOT quemadorOn: el ventilador se apaga al apagar el quemador y se enciende 30 s despues
+gpt-4o-2024-08-06,B6,zero_shot,ejec_2,1.0,TEMPORIZACION,TEMPORIZACION,1,Intermitencia mal construida: el TON se invoca dos veces por ciclo con entradas distintas; los intervalos no son de 1 s
+gpt-4o-2024-08-06,I2,few_shot,ejec_2,4.0,TEMPORIZACION,TEMPORIZACION,1,tMezcla solo se invoca en el ciclo de la transicion a mezcla: nunca vence y no pasa a descarga
+gpt-4o-2024-08-06,I4,few_shot,ejec_2,2.0,TEMPORIZACION,TEMPORIZACION,1,tEstrella solo se invoca en el ciclo de la marcha: nunca vence y no pasa a triangulo
+gpt-4o-2024-08-06,I7,zero_shot,ejec_1,1.0,INICIALIZACION,INICIALIZACION,1,principal se fija en TRUE en reposo y se conmuta en el flanco de demanda: la primera demanda la atiende bomba2
+gpt-4o-2024-08-06,I8,few_shot,ejec_3,1.0,TEMPORIZACION,SEGURIDAD,0,causaBloqueo usa la senal cruda pOilOk y no el permisivo temporizado: reporta 0 con aceite aun sin 3 s (frontera con temporizacion)
+qwen2.5-coder_14b,A5,few_shot,ejec_2,0.0,INICIALIZACION,INICIALIZACION,1,indice queda en el valor por defecto 0 sin eventos (el -1 solo existe en la variable interna)
+qwen2.5-coder_14b,B2,few_shot,ejec_2,1.0,TEMPORIZACION,TEMPORIZACION,1,TP usado como retardo a la conexion: la valvula abre al instante durante 5 s
+qwen2.5-coder_14b,B4,few_shot,ejec_2,3.0,SEGURIDAD,SEGURIDAD,1,Permite pasar de adelante a reversa sin pasar por paro
+qwen2.5-coder_14b,B5,zero_shot,ejec_3,2.0,TEMPORIZACION,TEMPORIZACION,1,"El ventilador sigue a timer.Q, que es FALSE al apagar el quemador: no hay post-enfriamiento de 30 s"
+qwen2.5-coder_14b,B6,few_shot,ejec_2,1.0,TEMPORIZACION,TEMPORIZACION,1,"estado se invierte en cada ciclo: la lampara parpadea al periodo del ciclo, no a 1 s"
+qwen2.5-coder_14b,C3,few_shot,ejec_2,3.0,TEMPORIZACION,TEMPORIZACION,1,T1 se invoca con IN := FALSE en cada ciclo antes de IN := TRUE: se reinicia siempre y la lampara nunca enciende
+qwen2.5-coder_14b,I1,few_shot,ejec_2,2.0,TEMPORIZACION,TEMPORIZACION,1,TP usado como plazo de cada luz: la salida se activa al instante y la transicion ocurre de inmediato
+qwen2.5-coder_14b,I2,zero_shot,ejec_1,4.0,TEMPORIZACION,TEMPORIZACION,1,timerMezcla solo se invoca en el ciclo de la transicion: nunca vence
+qwen2.5-coder_14b,I3,few_shot,ejec_3,2.0,SECUENCIA,SECUENCIA,1,Sin retencion: retAlm sigue a la causa y el ACK la borra aunque la causa siga presente
+qwen2.5-coder_14b,I4,zero_shot,ejec_2,2.0,TEMPORIZACION,TEMPORIZACION,1,Los temporizadores se invocan con IN := FALSE al inicio de cada ciclo: se reinician siempre y no pasa a triangulo
+qwen2.5-coder_14b,I7,few_shot,ejec_3,9.0,SEGURIDAD,SEGURIDAD,1,Con ambas bombas en falla almFalla queda en FALSE (NOT falla2): no se senaliza la falla de equipo
+qwen2.5-coder_14b,I8,few_shot,ejec_2,1.0,TEMPORIZACION,SEGURIDAD,0,causaBloqueo usa la senal cruda pOilOk y no el permisivo temporizado (frontera con temporizacion)

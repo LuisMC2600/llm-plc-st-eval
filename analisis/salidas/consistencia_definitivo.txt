@@ -1,0 +1,29 @@
+
+===== CRITERIO 2 (compila): resultado de las 3 ejecuciones por celda (50 celdas por modelo) =====
+  modelo                        3/3    2/3    1/3    0/3 | celdas unanimes        | si acierta alguna vez, acierta las 3
+  gemini-3.1-pro-preview         46      2      1      1 |  47/ 50 =  94.0 % |  46/ 49 =  93.9 % [83.5; 97.9]
+  claude-sonnet-4-6              41      6      1      2 |  43/ 50 =  86.0 % |  41/ 48 =  85.4 % [72.8; 92.8]
+  gpt-4o-2024-08-06              39      0      2      9 |  48/ 50 =  96.0 % |  39/ 41 =  95.1 % [83.9; 98.7]
+  qwen2.5-coder_14b              37      3      3      7 |  44/ 50 =  88.0 % |  37/ 43 =  86.0 % [72.7; 93.4]
+  TODOS                         163     11      7     19 | 182/200 =  91.0 % | 163/181 =  90.1 % [84.8; 93.6]
+
+===== CRITERIO 1 (pasa el harness): resultado de las 3 ejecuciones por celda (50 celdas por modelo) =====
+  modelo                        3/3    2/3    1/3    0/3 | celdas unanimes        | si acierta alguna vez, acierta las 3
+  gemini-3.1-pro-preview         44      4      1      1 |  45/ 50 =  90.0 % |  44/ 49 =  89.8 % [78.2; 95.6]
+  claude-sonnet-4-6              30     10      4      6 |  36/ 50 =  72.0 % |  30/ 44 =  68.2 % [53.4; 80.0]
+  gpt-4o-2024-08-06              12      7      4     27 |  39/ 50 =  78.0 % |  12/ 23 =  52.2 % [33.0; 70.8]
+  qwen2.5-coder_14b               8      7      4     31 |  39/ 50 =  78.0 % |   8/ 19 =  42.1 % [23.1; 63.7]
+  TODOS                          94     28     13     65 | 159/200 =  79.5 % |  94/135 =  69.6 % [61.4; 76.8]
+
+===== Criterio 1: celdas con resultado mixto (1/3 o 2/3) =====
+  gemini-3.1-pro-preview      5: A1-F(1/3) A3-F(2/3) A4-Z(2/3) B3-F(2/3) B4-Z(2/3)
+  claude-sonnet-4-6          14: A1-Z(2/3) A2-F(2/3) A2-Z(2/3) A3-Z(2/3) A4-Z(2/3) A5-Z(1/3) B1-F(2/3) B5-F(1/3) B6-F(2/3) C7-Z(2/3) I2-Z(2/3) I4-Z(2/3) I5-Z(1/3) I7-Z(1/3)
+  gpt-4o-2024-08-06          11: A2-F(1/3) A2-Z(2/3) B1-Z(1/3) B2-Z(2/3) B3-Z(2/3) B4-Z(2/3) B7-Z(2/3) C3-F(1/3) I1-F(2/3) I7-F(2/3) I8-F(1/3)
+  qwen2.5-coder_14b          11: B1-Z(1/3) B2-Z(2/3) B3-F(2/3) B3-Z(2/3) B4-Z(1/3) B8-Z(2/3) C3-F(1/3) C7-Z(2/3) C8-Z(2/3) I3-F(1/3) I6-F(2/3)
+
+===== Texto de la respuesta: respuestas distintas entre las 3 ejecuciones (60 celdas por modelo) =====
+  modelo                      3 iguales  2 iguales 3 distintas
+  gemini-3.1-pro-preview              0          0         60
+  claude-sonnet-4-6                   0          1         59
+  gpt-4o-2024-08-06                   0          1         59
+  qwen2.5-coder_14b                   0          4         56

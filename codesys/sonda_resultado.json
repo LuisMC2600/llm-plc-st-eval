@@ -1,0 +1,252 @@
+[
+  {
+    "estado": "INFO", 
+    "detalle": "python=CODESYS.exe | plantilla=C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\Plantilla_Simulacion.project | existe=True", 
+    "paso": "entorno"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "abort_autocheck, abortable, aborting, background_loading_of_libraries_finished, clear_messages, commands, delay, executable_filename, execute_on_primary_thread, exit, factories, get_message_categories, get_message_category_description, get_message_objects, get_messages, log_prompt_details, process_messageloop, process_script_prompts, progress_absolute, progress_start, progress_step, prompt_answers, prompt_handling, script_prompt_handling, trace, ui, ui_present, write_message", 
+    "paso": "dir(system)"
+  }, 
+  {
+    "estado": "FALLA", 
+    "detalle": "AttributeError: 'SystemImpl' object has no attribute 'get_script_args'", 
+    "traza": "Traceback (most recent call last):\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22.py\", line 42, in paso\n    r = funcion(*args)\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22.py\", line 90, in <lambda$1>\n    paso(\"system.get_script_args\", lambda: system.get_script_args())\nAttributeError: 'SystemImpl' object has no attribute 'get_script_args'\n", 
+    "seg": 0.17999999999999999, 
+    "paso": "system.get_script_args"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "['C:\\\\Users\\\\LUIS C\\\\Downloads\\\\1 Trabajo de Grado\\\\llm-plc-st-eval\\\\codesys\\\\sonda_scripting_sp22.py']", 
+    "seg": 0.0, 
+    "paso": "sys.argv"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptProject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006C [Project(Project=0, stPath=C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\", 
+    "seg": 3.04, 
+    "paso": "projects.open(plantilla)"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "", 
+    "paso": "dir(proyecto)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006D [ScriptObject{ScriptRecipeManContainer, NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObj", 
+    "seg": 0.040000000000000001, 
+    "paso": "proyecto.active_application"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "", 
+    "paso": "dir(app)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006E [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, ", 
+    "seg": 0.29999999999999999, 
+    "paso": "app.create_pou(FB, PouType.FunctionBlock)"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "", 
+    "paso": "dir(pou_fb)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.20999999999999999, 
+    "paso": "fb.textual_declaration.replace"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "fb.textual_implementation.replace"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006F [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, ", 
+    "seg": 0.01, 
+    "paso": "app.create_pou(PRG, PouType.Program)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "prg.textual_declaration.replace"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "prg.textual_implementation.replace"
+  }, 
+  {
+    "estado": "FALLA", 
+    "detalle": "TypeError: expected Nullable[Guid], got str", 
+    "traza": "Traceback (most recent call last):\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22.py\", line 42, in paso\n    r = funcion(*args)\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22.py\", line 119, in <lambda$14>\n    lambda: app.create_pou(\"FUN_Sonda\", PouType.Function, \"BOOL\"))\nTypeError: expected Nullable[Guid], got str\n", 
+    "seg": 0.01, 
+    "paso": "app.create_pou(FUNCTION, PouType.Function, return_type)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x0000000000000070 [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, ", 
+    "seg": 0.02, 
+    "paso": "app.create_dut(ST_Sonda, DutType.Structure)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x0000000000000071 [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, ", 
+    "seg": 0.02, 
+    "paso": "app.find('Task Configuration', True)[0]"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x0000000000000072 [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, ", 
+    "seg": 0.01, 
+    "paso": "app.find('MainTask', True)[0]"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "", 
+    "paso": "dir(MainTask)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.089999999999999997, 
+    "paso": "MainTask.interval = 10 (ms)"
+  }, 
+  {
+    "estado": "FALLA", 
+    "detalle": "NameError: global name 'TimeUnit' is not defined", 
+    "traza": "Traceback (most recent call last):\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22.py\", line 42, in paso\n    r = funcion(*args)\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22.py\", line 129, in <lambda$19>\n    paso(\"MainTask.interval_unit = TimeUnit.ms\", lambda: setattr(tarea, \"interval_unit\", TimeUnit.ms))\nNameError: global name 'TimeUnit' is not defined\n", 
+    "seg": 0.0, 
+    "paso": "MainTask.interval_unit = TimeUnit.ms"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "MainTask.interval = 't#10ms' (alternativa)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "'t#10ms'", 
+    "seg": 0.0, 
+    "paso": "leer MainTask.interval"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptDriverProjects.ScriptPouObjectList object at 0x0000000000000073 [_3S.CoDeSys.ScriptDriverProjects.ScriptPouObjectList]>", 
+    "seg": 0.01, 
+    "paso": "MainTask.pous"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "GetEnumerator, add, insert, remove, replace", 
+    "paso": "dir(MainTask.pous)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "MainTask.pous.add('PRG_Sonda')"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 1.6299999999999999, 
+    "paso": "app.build()"
+  }, 
+  {
+    "estado": "FALLA", 
+    "detalle": "AttributeError: 'ScriptProject' object has no attribute 'build'", 
+    "traza": "Traceback (most recent call last):\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22.py\", line 42, in paso\n    r = funcion(*args)\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22.py\", line 139, in <lambda$25>\n    paso(\"proyecto.build() (alternativa)\", lambda: proyecto.build())\nAttributeError: 'ScriptProject' object has no attribute 'build'\n", 
+    "seg": 0.0, 
+    "paso": "proyecto.build() (alternativa)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.65000000000000002, 
+    "paso": "app.generate_code()"
+  }, 
+  {
+    "estado": "FALLA", 
+    "detalle": "TypeError: expected Guid, got Severity", 
+    "traza": "Traceback (most recent call last):\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22.py\", line 42, in paso\n    r = funcion(*args)\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22.py\", line 141, in <lambda$27>\n    paso(\"system.get_messages(Severity.Error)\", lambda: [str(m) for m in system.get_messages(Severity.Error)])\nTypeError: expected Guid, got Severity\n", 
+    "seg": 0.0, 
+    "paso": "system.get_messages(Severity.Error)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "[]", 
+    "seg": 0.01, 
+    "paso": "system.get_message_objects()"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x0000000000000074 [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, ", 
+    "seg": 0.0, 
+    "paso": "proyecto.find('Device', True)[0]"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "", 
+    "paso": "dir(device)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.089999999999999997, 
+    "paso": "device.set_simulation_mode(True)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "True", 
+    "seg": 0.0, 
+    "paso": "device.get_simulation_mode()"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptDriverOnline.OnlineApplication object at 0x0000000000000075 [_3S.CoDeSys.ScriptDriverOnline.OnlineApplication]>", 
+    "seg": 0.01, 
+    "paso": "online.create_online_application(app)"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "Dispose, application, application_state, create_boot_application, force_prepared_values, get_forced_expressions, get_online_device, get_prepared_expressions, get_prepared_value, is_logged_in, login, logout, operation_state, read_value, read_values, reset, set_prepared_value, set_unforce_value, source_download, start, stop, timeout, unforce_all_values, write_prepared_values", 
+    "paso": "dir(online_app)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 1.3799999999999999, 
+    "paso": "online_app.login(OnlineChangeOption.Try, True)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.040000000000000001, 
+    "paso": "online_app.start()"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 3.0, 
+    "paso": "system.delay(3000)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "'DINT#285'", 
+    "seg": 0.040000000000000001, 
+    "paso": "online_app.read_value('PRG_Sonda.ciclos')"
+  }, 
+  {
+    "estado": "FALLA", 
+    "detalle": 

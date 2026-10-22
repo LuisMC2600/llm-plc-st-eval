@@ -1,0 +1,225 @@
+Necesito responder solo con lista JSON. Debo clasificar cada caso. Necesito analizar cada código ST y fallos.
+
+Hay que mapear categorías exactas. Vamos uno por uno.
+
+Caso J29: contador de piezas con flanco. Código:
+
+FUNCTION_BLOCK FB_Contador
+VAR_INPUT sensorPieza, btnReset...
+VAR_OUTPUT loteListo, cuenta
+VAR sensorAnterior: BOOL;
+END_VAR
+
+(* Almacenar el estado anterior del sensor *)
+sensorAnterior := sensorPieza;
+
+(* Incrementar la cuenta cuando el sensor detecta una pieza *)
+IF sensorPieza AND NOT sensorAnterior THEN
+    cuenta := cuenta + 1;
+END_IF;
+...
+END_FUNCTION_BLOCK
+
+Primer requisito fallido: "Primer flanco ascendente: cuenta 1". Problema: sensorAnterior se asigna sensorPieza antes de detectar flanco, por lo tanto el flanco nunca se detecta. Categoría FLANCO (memoria del estado anterior actualizada en el orden equivocado). Justificación: asigna sensorAnterior antes de evaluar, perdiendo el estado previo; la condición nunca ve transición.
+
+J31: contador similar.
+
+Código:
+// Inicialización del sensorAnterior con el valor actual del sensorPieza
+IF sensorPieza THEN sensorAnterior := TRUE; ELSE sensorAnterior := FALSE; END_IF
+// Lógica de conteo
+IF sensorPieza AND NOT sensorAnterior THEN cuenta := cuenta + 1; END_IF
+// Actualización del sensorAnterior
+sensorAnterior := sensorPieza;
+...
+Primer fallo: primer flanco ascendente cuenta 1. Acá igual: inicializan sensorAnterior al valor actual, luego detectan flanco con NOT sensorAnterior (nunca true), luego actualizan. No cuenta. Categoría FLANCO. Justificación: actualiza sensorAnterior con valor actual antes de evaluar el flanco, impidiendo detectar transición.
+
+J04: ventilador B5. Código:
+VAR tPostMarcha : TON;
+tPostMarcha(IN := NOT quemadorOn, PT := T#30S);
+ventilador := quemadorOn OR NOT tPostMarcha.Q;
+FIN
+
+Falla paso 0: Reposo al arranque: ventilador apagado si quemador nunca encendió. Con TON, IN = NOT quemadorOn. Si quemadorOn FALSE al arranque, IN TRUE, TON comienza a contar. Q inicial FALSE, NOT Q TRUE => ventilador TRUE. Por lo tanto en reposo arranque ventilador encendido. Categoría TEMPORIZACION. Justificación: usa TON con IN = NOT quemadorOn; en arranque con quemador apagado el temporizador aún no expira y NOT Q enciende el ventilador; es temporizador equivocado / construcción incorrecta retardo a desconexión. La categoría TEMPORIZACION.
+
+J21: similar a J04. TON, IN NOT quemadorOn, ventilador := quemadorOn OR NOT tonPostApagado.Q. Falla reposo. Categoría TEMPORIZACION.
+
+J26: ventilador con TP. Código:
+VAR tApagado : TP; estadoVentilador : BOOL;
+IF quemadorOn THEN
+    estadoVentilador := TRUE;
+    tApagado(IN := FALSE); (* Reinicia el temporizador *)
+ELSE
+    tApagado(IN := TRUE, PT := T#30S);
+    estadoVentilador := tApagado.Q;
+END_IF;
+ventilador := estadoVentilador;
+
+Fallos: paso 0 reposo al arranque ventilador apagado si quemador nunca encendido; paso 7 segundo post-enfriamiento a 29s aún encendido (rearme a 30s completos).
+
+Analicemos arranque con quemadorOn FALSE: ELSE, tApagado(IN:=TRUE, PT:=30s). TP con IN TRUE inicia pulso Q TRUE en arranque, estadoVentilador TRUE. Por lo tanto ventilador encendido en reposo. Categoría puede TEMPORIZACION o INICIALIZACION? El fallo paso 0 dice "mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]". La categoría principal podría TEMPORIZACION. Porque usa TP: en arranque sin quemador encendido, TP se activa y Q TRUE, encendiendo ventilador. Para segundo post-enfriamiento: TP es temporizador de pulso, no rearma de la forma esperada; al apagarse quemador se inicia TP, Q es TRUE durante 30s. Si segundo ciclo con quemador ON? Está en tApagado IN FALSE para reiniciar, pero TP no se reinicia quizá? En IF quemadorOn THEN tApagado(IN:=FALSE); luego ELSE tApagado(IN:=TRUE). El TP con IN FALSE no se reinicia? Debería? El requisito "rearme a 30s completos": fallo en segundo post-enfriamiento a 29s aún encendido. Causa tipo de temporizador equivocado (TP en lugar de TON? En realidad para retardo a desconexión se usa TON con IN = quemadorOn? Hmm). Pero categoría TEMPORIZACION.
+
+J30: idéntico a J26 con comentarios. Fallos paso 0 y 7. Categoría TEMPORIZACION.
+
+J33: ventilador con TON y timerDone extraño:
+VAR timer : TON; timerDone : BOOL;
+IF NOT timerDone THEN
+    timer(IN := NOT quemadorOn, PT := T#30S);
+    timerDone := timer.Q;
+END_IF;
+IF quemadorOn OR NOT timerDone THEN
+    ventilador := TRUE;
+ELSE
+    ventilador := FALSE;
+END_IF;
+
+Fallos: paso 0 reposo al arranque, paso 5 post-enfriamiento en curso (10s) aún encendido, paso 7 segundo post-enfriamiento a 29s aún encendido.
+
+Analicemos. Al arranque: timerDone FALSE -> entramos, timer(IN:=NOT quemadorOn). Si quemadorOn FALSE, IN TRUE, timer.Q inicial FALSE, timerDone FALSE. Luego IF quemadorOn OR NOT timerDone => TRUE, ventilador TRUE. Fallo reposo. Además por timerDone se congela? Luego timerDone := timer.Q; en arranque Q FALSE. En siguiente ciclo timerDone sigue FALSE, ejecuta timer; en cada ciclo timer se llama con IN TRUE, TON acumula. Al pasar 30s Q TRUE, timerDone TRUE; luego deja de llamar timer. En post-enfriamiento 10s, timerDone sigue FALSE (porque Q false aun), ventilador OR NOT timerDone TRUE. OK ventilador encendido. Pero requisito dice falla paso 5? El código en post-enfriamiento con quemador apagado y timer aún no expira: timer se llama cada ciclo; ventilador TRUE por NOT timerDone? Debería estar encendido. ¿Por qué falla? Quizá hay un problema con la condición IF NOT timerDone: una vez timerDone false, sí. No veo por qué falla post-enfriamiento a 10s. Tal vez el banco de pruebas detecta que en reposo arranque falla? El paso 0 ya es fallido, así que primer paso fallido es 0. La clasificación debe ser causa raíz del primer paso fallido. La categoría podría ser TEMPORIZACION o INICIALIZACION? El problema de arranque es ventilador encendido por no tener en cuenta que quemador nunca encendió. Este es de temporización: arranque con temporizador TON iniciado con NOT quemadorOn; uso de NOT t... En este código se usa temporizador TON y timerDone para congelar, pero al inicio timerDone FALSE permite ventilador ON por NOT timerDone. Es construcción de retardo a desconexión incorrecta. Categoría TEMPORIZACION. No INICIALIZACION? El enunciado del paso 0 dice "mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]". La categoría permitida incluye TEMPORIZACION. Prefiero TEMPORIZACION. Justificación: al arranque con quemador apagado, timerDone está FALSE y NOT timerDone activa ventilador, sin memoria de que quemador nunca estuvo encendido.
+
+J36: igual J04. TEMPORIZACION.
+
+J37: igual J04. TEMPORIZACION.
+
+J39: igual J21. TEMPORIZACION.
+
+J40: ventilador con TON y timerDone:
+VAR timer : TON; timerDone : BOOL;
+IF NOT timerDone THEN
+    timer(IN := NOT quemadorOn, PT := T#30S);
+    timerDone := timer.Q;
+END_IF;
+IF quemadorOn OR (NOT quemadorOn AND NOT timerDone) THEN
+    ventilador := TRUE;
+ELSE
+    ventilador := FALSE;
+END_IF;
+Fallos: paso 0 reposo, paso 5 post-enf 10s aún encendido, paso 7 segundo post-enfriamiento 29s aún encendido.
+
+Analicemos arranque: timerDone FALSE, timer(IN:=NOT quemadorOn) con quemadorOn FALSE -> IN TRUE. timer.Q false, timerDone false. Luego IF quemadorOn OR (NOT quemadorOn AND NOT timerDone) => TRUE. ventilador TRUE. Fallo reposo. En post-enfriamiento 10s: timerDone false, timer sigue llamándose. ventilador TRUE. ¿Por qué falla paso 5? No entiendo. Quizá el banco de pruebas tiene valores de timer? Si timer es TON, con IN TRUE constante, Q se vuelve TRUE después de 30s. A los 10s, NOT timerDone es TRUE, ventilador TRUE. Debería pasar. Tal vez hay un bug en el código: timerDone := timer.Q; dentro IF NOT timerDone, una vez timer.Q TRUE, timerDone TRUE y deja de llamar timer. En segundo post-enfriamiento: Si primer ciclo de apagado expiró, timerDone TRUE. Luego si quemadorOn vuelve a TRUE, código: timerDone TRUE, IF NOT timerDone false, no llama timer. Luego IF quemadorOn OR (...) => TRUE, ventilador ON. Al apagarse de nuevo, timerDone sigue TRUE, no se llama timer, IF quemadorOn OR (NOT quemadorOn AND NOT timerDone) => FALSE? quemadorOn false, NOT timerDone false, entonces ventilador FALSE inmediatamente. Por eso falla segundo post-enfriamiento: no rearma. Pero el primer fallido es paso 0, así que categoría TEMPORIZACION.
+
+J48: similar J26/J30:
+VAR tApagado : TP;
+IF quemadorOn THEN
+    ventilador := TRUE;
+    tApagado(IN := FALSE); (* Reinicia el temporizador *)
+ELSE
+    tApagado(IN := TRUE, PT := T#30S);
+    ventilador := tApagado.Q;
+END_IF
+Fallos: paso 0, paso 7. Categoría TEMPORIZACION. Justificación: TP se activa en reposo con quemador apagado y Q inicial enciende ventilador; además no rearma correctamente para segundo post-enfriamiento.
+
+Necesito responder en JSON array con codigo, categoria, justificacion. Debe ser exactamente una categoría principal. Para J29 y J31, FLANCO. Para los demás TEMPORIZACION.
+
+Revisar que no haya casos de SECUENCIA? No.
+
+Debo redactar justificaciones breves. El usuario pide "una o dos frases que señalen la línea o construcción del código que causa el fallo". Usar español.
+
+Posible inconveniente: J40 y J33 fallos incluyen paso 5, pero primer paso fallido es 0. Categoría TEMPORIZACION. En justificación mencionar la construcción `IF NOT timerDone` / `NOT timerDone` que mantiene ventilador en TRUE al arranque con quemador apagado.
+
+Revisar J33: ¿hay que categorizar como INICIALIZACION? El fallo paso 0 dice "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]". La categoría “INICIALIZACION” se define: "estado o valor de arranque incorrecto en el primer ciclo, o efecto incorrecto de una orden de reinicio." El problema es que al primer ciclo `timerDone` se inicializa en FALSE y la lógica `NOT timerDone` enciende el ventilador. Eso es un valor de arranque incorrecto. Sin embargo también es por la construcción de retardo a desconexión. La instrucción: "Asigna a cada caso UNA categoría principal: la causa raíz que explica el primer paso fallido." Para J33 el primer fallido es el reposo al arranque. La causa raíz es la lógica de temporización / retardo a desconexión mal construida (TON arrancado con quemador apagado y timerDone falso). PERO el requisito dice "mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion)". ¿Cuál elegir? Las categorías permitidas: TEMPORIZACION incluye "retardo a la desconexión mal emulado, temporizador no invocado en cada ciclo, reiniciado en cada ciclo o sin rearme entre operaciones". INICIALIZACION incluye "estado o valor de arranque incorrecto en el primer ciclo". Para J04/J21/J36/J37/J39 el fallo es arranque con ventilador encendido por TON. ¿Es INICIALIZACION? Podría decirse que no hay estado inicial para detectar que no debe arrancar; pero la causa es el temporizador. La categoría TEMPORIZACION es la más apropiada porque el temporizador TON está mal configurado: `IN := NOT quemadorOn` al arranque inicia la temporización y `NOT Q` enciende la salida; es retardo a la desconexión mal emulado. Para J26/J30/J48 con TP, también tipo de temporizador equivocado. Para J33/J40 con timerDone, también es retardo a la desconexión mal emulado y sin rearme. Por lo tanto TEMPORIZACION para todos los de ventilador.
+
+Comprobar J29 y J31: Categoría FLANCO. Definición: "conteo o disparo por nivel en lugar de por flanco, memoria del estado anterior actualizada en el orden equivocado..." Exactamente.
+
+Ahora redactar JSON.
+
+Los casos en orden:
+J29
+J31
+J04
+J21
+J26
+J30
+J33
+J36
+J37
+J39
+J40
+J48
+
+12 casos.
+
+Necesito generar JSON con objetos: codigo, categoria, justificacion.
+
+Debo asegurar comillas, sin comentarios extras. Usar texto en español.
+
+Posibles justificaciones:
+
+J29: "La línea `sensorAnterior := sensorPieza;` se ejecuta antes de evaluar el flanco, por lo que `sensorAnterior` ya es igual a `sensorPieza` y `NOT sensorAnterior` nunca detecta la transición."
+
+J31: "El bloque inicializa `sensorAnterior` con el valor actual de `sensorPieza` antes del IF, de modo que la condición `sensorPieza AND NOT sensorAnterior` nunca es verdadera en el primer flanco."
+
+J04: "Usa TON con IN := NOT quemadorOn; al arrancar con quemador apagado, TON empieza a contar y `NOT tPostMarcha.Q` mantiene ventilador activo. Es un retardo a la desconexión mal emulado."
+
+J21: "Igual que J04: el TON activado por `NOT quemadorOn` provoca `NOT tonPostApagado.Q` verdadero en reposo y enciende el ventilador al arranque."
+
+J26: "Con TP, en el arranque con quemador apagado se ejecuta `tApagado(IN:=TRUE)` y `tApagado.Q` es TRUE, encendiendo ventilador; además TP no rearma para el segundo post-enfriamiento."
+
+J30: "Igual que J26: TP se activa en reposo y su Q inicial TRUE enciende el ventilador sin quemador previo."
+
+J33: "El temporizador TON se inicia con `NOT quemadorOn` y `timerDone` empieza en FALSE; la condición `NOT timerDone` enciende el ventilador en reposo y no rearma correctamente entre ciclos."
+
+J36: "TON con IN := NOT quemadorOn; en reposo con quemador apagado el temporizador aún no expira y `NOT tPostMarcha.Q` mantiene ventilador encendido."
+
+J37: "TON con IN := NOT quemadorOn; en reposo con quemador apagado `NOT tonPostApagado.Q` activa la salida desde el primer ciclo."
+
+J39: "TON con IN := NOT quemadorOn; con quemador apagado al arranque, `NOT tonApagado.Q` es TRUE y enciende el ventilador."
+
+J40: "El timerDone inicial FALSE y `timer(IN:=NOT quemadorOn)` con quemador apagado hacen que `NOT timerDone` encienda el ventilador en reposo; además no rearma para segundo post-enfriamiento."
+
+J48: "TP se activa en el arranque con quemador apagado: `tApagado(IN:=TRUE)` produce `Q` TRUE y enciende el ventilador, y no rearma correctamente el segundo ciclo."
+
+Posible ajuste para J33: "Se inicia TON con `NOT quemadorOn` y `timerDone` en FALSE; la salida usa `NOT timerDone`, lo que enciende el ventilador en reposo. Además la bandera no se reinicia para un segundo post-enfriamiento." Eso está bien.
+
+Revisar J40: `timerDone` empieza FALSE; if NOT timerDone then timer(...); timerDone := timer.Q; endif; IF quemadorOn OR (NOT quemadorOn AND NOT timerDone) THEN ventilador TRUE. En reposo: quemadorOn false, NOT timerDone true => Vent TRUE. Eso es exactamente. La justificación puede ser: "La condición `NOT timerDone` en reposo (timerDone FALSE) enciende el ventilador sin que el quemador haya estado encendido; es temporización/arranque incorrecto." Mantendré TEMPORIZACION.
+
+¿Algunas justificaciones deben mencionar "primer paso fallido"? No necesario.
+
+Debo verificar si J33 y J40 son de categoría TEMPORIZACION o INICIALIZACION. El usuario pide categoría principal que explica el primer paso fallido. El primer paso fallido en J33 y J40 es "Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion)". La construcción no guarda estado de quemador encendido previo. Yo elegiré TEMPORIZACION porque la causa raíz es el temporizador y su rearme. Podría ser INICIALIZACION si consideramos que `timerDone` inicia en FALSE y `NOT timerDone` enciende la salida. En CODESYS un VAR BOOL no inicializado es FALSE (por defecto). La lógica `NOT timerDone` es un error de temporización, no solo de valor inicial. En otros casos J04/J21 no tienen variable de estado, es claramente temporizador. Las categorías permitidas: "TEMPORIZACION: retardos, pulsos, intermitencias o plazos que no cumplen el tiempo especificado: tipo de temporizador equivocado, retardo a la desconexión mal emulado, temporizador no invocado en cada ciclo, reiniciado en cada ciclo o sin rearme entre operaciones." Para J33/J40, el temporizador no se rearma y `timerDone` se queda TRUE, causando fallo en segundo post-enfriamiento. El primer fallido es reposo, pero se debe al retardo a la desconexión mal emulado. Por lo tanto TEMPORIZACION.
+
+Revisar si J26/J30/J48 podrían ser FLANCO? No.
+
+Ahora genero JSON. Asegurar que es una lista JSON válida.
+
+Voy a redactar con exactitud.
+
+Comenzaré:
+
+[
+  {
+    "codigo": "J29",
+    "categoria": "FLANCO",
+    "justificacion": "La línea 'sensorAnterior := sensorPieza;' se ejecuta antes de evaluar 'sensorPieza AND NOT sensorAnterior', por lo que el flanco ascendente nunca se detecta."
+  },
+  ...
+]
+
+Para J04: "El TON se arranca con IN := NOT quemadorOn; en arranque con quemador apagado, Q es FALSE y NOT Q activa ventilador, emulando mal el retardo a la desconexión." Good.
+
+J21: "Misma construcción con TON y NOT Q: en reposo el ventilador queda encendido desde el primer ciclo."
+
+J26: "Usa TP; al arrancar con quemador apagado se ejecuta el ELSE y TON? No, TP. `tApagado.Q` es TRUE al iniciar el pulso, encendiendo ventilador."
+
+J30: similar.
+
+J33: "Al arrancar con quemador apagado, `timerDone` es FALSE y `IF quemadorOn OR NOT timerDone` enciende el ventilador; el temporizador no rearma entre post-enfriamientos."
+
+J36: "TON con IN := NOT quemadorOn; en reposo con quemador apagado `NOT tPostMarcha.Q` es TRUE y enciende el ventilador."
+
+J37: similar.
+
+J39: similar.
+
+J40: "Al arranque, `timerDone` FALSE y `(NOT quemadorOn AND NOT timerDone)` activa ventilador; la bandera no se reinicia para segundo post-enfriamiento."
+
+J48: "Con TP, al arrancar con quemador apagado se activa `tApagado(IN:=TRUE)` y `Q` TRUE enciende ventilador; además no rearma entre post-enfriamientos."
+
+Debo usar "post-enfriamiento" o "post-enfriamiento"? Sin tilde? Post-enfriamiento no existe, es postenfriamiento. Puedo escribir "post-enfriamiento" como en el texto original.
+
+Asegurar que "justificacion" no sea muy larga. Una o dos frases.
+
+No incluir mayúsculas en categorías? Según categorías permitidas exactas: TEMPORIZACION, SECUENCIA, SEGURIDAD, INICIALIZACION, FLANCO, CALCULO. Uso mayúsculas.
+
+Ahora, el usuario pide "Responde SOLO con una lista JSON". Entonces debo devolver solo el JSON. Sin markdown? Dice "con esta forma exacta", probablemente sin bloque de código. Solo texto JSON.
+
+Voy a generar.

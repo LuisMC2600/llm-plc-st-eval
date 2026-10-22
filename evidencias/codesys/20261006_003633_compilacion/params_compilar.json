@@ -1,0 +1,6 @@
+{
+    "carpeta_codigo":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\processed_definitivo",
+    "plantilla":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\Plantilla_Simulacion.project",
+    "limite":  0,
+    "salida_csv":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\results_codesys\\compilacion_definitivo_v2.csv"
+}

@@ -1,0 +1,586 @@
+Necesito responder solo con JSON válido de 24 objetos, siguiendo rúbrica y reglas. Debo evaluar cada respuesta. Ya tengo datos. Necesito calcular puntuaciones.
+
+Debo analizar cada una. Importante: funcional_fijo viene fijado en 3 para las que pasan todos los pasos. Para falla 1 paso funcional_fijo null, debo asignar 0-2. No compila: funcional=0 iec=0 fijados. iec_fijo null en respuestas compiladas. Debo calificar iec 1-3 según estándar. Otros criterios 0-3.
+
+Debo mantener consistencia.
+
+Lista de respuestas con códigos:
+1 I6-6450 pasa. funcional 3 fijado. iec null. código: usa INT_TO_REAL, comments. bien.
+2 I6-3905 pasa. similar.
+3 I6-1333 pasa. pero usa rawTemp / 276.48, que es división entera? En CODESYS? rawTemp INT / REAL literal? 276.48 es REAL, así que convierte rawTemp a REAL? IEC: operador / con INT y REAL? El tipo de literal 276.48 REAL, INT_TO_REAL implícito? Probablemente ok compila y pasa. Mantiene variables previas. Nota: usa comment //, compiló. Tiene variables tempCPrev no usada? tempCPrev unused. EnfriadorPrev actualizado al final. Funcional correcto. iec quizá 2/3. El código usa IF fuera rango, tempC := 0, etc. La histéresis usa enfriadorPrev, es idiomático? Podría ser 2. 
+4 I6-1644 no compila. funcional 0 iec 0 fijos. codigo usa REAL(rawTemp) no estándar -> error. Puntuaciones coherencia etc? El código tiene lógica aparente aunque falla. `enfriador := enfriador;` no mantiene estado? En ST, una variable de salida BOOL no es retentiva si no es VAR? En FUNCTION_BLOCK output no es persistente? En CODESYS es variable estática que guarda valor entre ciclos, en realidad `enfriador:=enfriador;` no cambia y mantiene el valor si está en VAR_OUTPUT? El FB tiene instancia, outputs son memoria. Aunque no compila. La conversión REAL(rawTemp) inválida en IEC (funcional 0). Para coherencia: hay variables sin `tempC_prev` declarada pero no usada. La lógica de alarma desactiva enfriador, conversión fallaría si compilase. Mantiene estado? `enfriador := enfriador` no asigna? es no-op; pero un FB output puede retener valor entre ciclos? Depende de implementación. Lahistéresis sin variable anterior tal vez sí funciona porque salida mantiene. No penalizar por no compilar? Se leen código para coherencia claridad mantenibilidad. Debo puntuar 0-3. La claridad: nombres descriptivos, comentarios, estructura. Es relativamente claro pero conversión inválida. Mantenibilidad: constantes? No, números mágicos. 
+5 I6-4554 pasa. usa comentarios, bloques. Bien.
+6 I6-4640 pasa.
+7 I6-5227 pasa. usa variables no constantes (VAR normal) para parámetros, no VAR CONSTANT. Usa conversión `(rawTemp - rawMin) * ...` con rawTemp INT, rawMin INT, tempMax REAL? La expresión `(rawTemp - rawMin) * (tempMax - tempMin) / (rawMax - rawMin) + tempMin`: INT * REAL -> REAL, dividido INT -> REAL. Compila y pasa. IEC OK. 
+8 I6-1990 pasa. similar con IF fuera rango.
+9 I6-8944 pasa.
+10 I6-2466 pasa. Tiene VAR CONSTANT y lógica. Al final no muestra END_FUNCTION_BLOCK? En el extracto termina con `END_IF;` y luego no hay `END_FUNCTION_BLOCK`. Pero resultado dice compila y pasa, quizá truncated? El código en JSON: después END_IF; no veo END_FUNCTION_BLOCK. Tal vez falta en el texto? Reviso: "END_IF;" sin END_FUNCTION_BLOCK. CODESYS compila? En ST, FUNCTION_BLOCK debe terminar con END_FUNCTION_BLOCK. El resultado dice compila. Puede que el extracto esté incompleto, pero quizá CODESYS no requiere? No, IEC requiere. Pero resultado es factual. No penalizar. 
+11 I6-7405 pasa.
+12 I6-4763 pasa con RETURN. 
+13 I6-2631 no compila, usa REAL().
+14 I6-5219 pasa. Usa rawTemp * 100.0 / 27648.0 sin conversión explícita; compila, tipo INT*REAL -> REAL. Tiene variables tempCPrev no usada, enfriadorPrev para histéresis. Sin embargo, la lógica de alarma: if rawTemp in range calcula tempC, almSensor false; else tempC 0, almSensor true; luego control enfriador con histéresis con enfriadorPrev y actualiza. Para fuera de rango, la lógica posterior IF tempC >=80 else <=75 else enfriadorPrev. Si rawTemp=-1, tempC=0, enfriador:=FALSE. Si rawTemp=27649, tempC=0.0, enfriador := FALSE (por <=75). Así alarma apaga. Bueno. 
+15 I6-8502 pasa.
+16 I6-1774 no compila, usa CONST en lugar de VAR CONSTANT? Error: se esperaba ';' SCALE_FACTOR. 
+17 I6-7940 pasa.
+18 I6-9872 no compila, usa REAL().
+19 I6-7606 pasa con VAR CONSTANT. 
+20 I6-9273 pasa. usa rawTemp / 276.48. Dividir INT entre REAL. Bien. Tiene variables tempCPrev sin usar y enfriadorPrev. 
+21 I6-9365 no compila, usa REAL().
+22 I6-4205 no compila, usa REAL().
+23 I6-1860 compila falla paso 3. funcional_fijo null, iec_fijo null. Código: no apaga enfriador en alarma. Por eso falla paso 3 (fuera rango con enfriador encendido). Debo asignar funcional 1 o 2 según rúbrica. Falla solo paso 3 (fuera de rango no apaga enfriador). Caso nominal? nominal no está claro: la tarea incluye fallo. Falla un límite evidente (paro por alarma). Rúbrica: 1 funciona caso nominal pero falla casos límite evidentes; 2 correcto en nominal y mayoría límites, fallas menores sin riesgo. Este falla desactivar enfriador en fallo, riesgo. Yo diría funcional 1. Aunque los pasos de histéresis y rango parecen correctos, falla en condición de seguridad. Asignar 1. 
+24 I6-9306 pasa.
+
+Necesito puntuar cada uno. Debo generar JSON con campos: codigo, funcional, iec, coherencia, claridad, mantenibilidad, just_func_iec, just_coherencia, just_claridad, just_mantenibilidad.
+
+funcional: para los que compilan y pasan, 3 fijado. Para no compilan 0 fijado. Para I6-1860: asigna 1. 
+iec: no compilan 0 fijado. Compilan: debo elegir 1/2/3. Debo inspeccionar cada uno para cumplimiento IEC. Generalmente todos compilados usan funcionalidad correcta. ¿Usan extensiones fuera del estándar? Algunos usan `INT_TO_REAL` que es estándar IEC. Algunos usan `REAL(rawTemp)` que no compila, ya fijados. Compilados: I6-5219 y I6-9273 usan `rawTemp * 100.0 / 27648.0` sin conversión explícita, lo cual es permitido por CODESYS? IEC define conversión implícita de INT a REAL en expresión mixta? Creo que IEC 61131-3 no permite conversión implícita de INT a REAL en general? Muchos dialectos no. CODESYS es bastante permisivo. Según estándar estricto, la conversión explícita debería usarse. Pero el resultado compila. `iec` cuando compila: 1 si extensiones fuera del estándar; 2 si declaraciones y tipos correctos; 3 además idiomático. Las que usan INT_TO_REAL son idiomáticas. Las que usan división entera/real implícita podrían ser extensión (CODESYS), así que iec 1 quizá. Quiero ser consistente. Sin embargo, el estándar IEC 61131-3 realmente permite conversión implícita de tipos numéricos? Necesito conocer. En ST, operaciones aritméticas permiten tipos enteros y reales; el resultado de una operación con operandos de tipos diferentes se convierte al tipo más abarcador. Creo que IEC 61131-3 define conversión aritmética implícita (INT -> REAL en operación mixta). CODESYS lo acepta. Entonces no necesariamente extensión. El estándar tiene funciones de conversión explícitas, pero también hay conversión implícita? Veamos: En IEC 61131-3, para operadores aritméticos, los operandos deben ser del mismo tipo; sin embargo, en muchos sistemas, se permite conversión implícita a REAL. No estoy 100%. El uso de `rawTemp / 276.48` es común y compila. Para iec, puedo dar 2: declaraciones y tipos correctos. Para 3, debe ser idiomático; prefiero 3 para los que usan bloques estándar (aunque aquí no TON). La tarea no requiere TON. Las constantes y fórmulas con INT_TO_REAL podrían ser 3.
+
+Necesito asignar iec razonable. Para todos compilados:
+- I6-6450: usa INT_TO_REAL, constantes literales. Correcto e idiomático. iec 3? No hay POU adicional. Podría dar 3.
+- I6-3905: similar, iec 3.
+- I6-1333: usa conversión implícita con división `rawTemp / 276.48`. Use `//` comments y variables internas. No usa `INT_TO_REAL`. Aunque la división por REAL es implícita. Podría ser 2. (tipos correctos, sin extensiones? ok). 
+- I6-4554: INT_TO_REAL. iec 3.
+- I6-4640: INT_TO_REAL. iec 3.
+- I6-5227: usa expresión `(rawTemp - rawMin) * (tempMax - tempMin) / (rawMax - rawMin) + tempMin`; mezcla INT y REAL. En IEC podría ser correcto. Sin embargo no usa INT_TO_REAL, y los parámetros son VAR no CONSTANT, pero no extensiones. iec 2 o 3. Yo diría 2 (tipos correctos, no idiomático? Para escalado, la fórmula con diferencias y reales es idiomática también; sin conversión explícita de rawMax/rawMin? Es operación mixta, el estándar tal vez lo permite). La forma idiomática podría usar INT_TO_REAL. Daré 2 para los que usan mezcla implícita y 3 para INT_TO_REAL explícito.
+- I6-1990: usa `(rawTemp - rawMin) * (tempMax - tempMin) / (rawMax - rawMin) + tempMin`, sin INT_TO_REAL. Igual 2.
+- I6-8944: INT_TO_REAL. iec 3.
+- I6-2466: usa VAR CONSTANT y INT_TO_REAL. iec 3.
+- I6-7405: INT_TO_REAL. iec 3.
+- I6-4763: VAR CONSTANT y INT_TO_REAL, RETURN. iec 3.
+- I6-5219: usa `rawTemp * 100.0 / 27648.0` sin INT_TO_REAL. iec 2.
+- I6-8502: INT_TO_REAL. iec 3.
+- I6-7940: INT_TO_REAL. iec 3.
+- I6-7606: VAR CONSTANT y INT_TO_REAL. iec 3.
+- I6-9273: usa `rawTemp / 276.48` sin INT_TO_REAL. iec 2.
+- I6-9306: VAR CONSTANT y INT_TO_REAL. iec 3.
+- I6-1860: usa mezcla implícita. iec? Compila. `tempC := (rawTemp - rawTempMin) * (tempMax - tempMin) / (rawTempMax - rawTempMin) + tempMin;` INT*REAL -> REAL / INT -> REAL? El resultado puede estar correcto. No hay INT_TO_REAL. iec 2 probablemente.
+
+Algunos usan `//` comentarios, permitido en IEC 61131-3? El estándar usa `(* *)`, y `//` no es estándar? CODESYS soporta `//`, pero estrictamente IEC 61131-3 no define `//` como comentario? En la versión 3? Yo creo que IEC 61131-3 solo usa `(* *)`, pero muchas implementaciones aceptan `//`. Si un código compila con `//`, no es una extensión fuera del estándar? Es una extensión de CODESYS. La rúbrica iec 1: "usa extensiones fuera del estándar". Entonces los que usan `//` podrían ser iec 1 si queremos estrictos. Pero la tarea pedía "conforme a IEC 61131-3", y CODESYS acepta. Evaluador docente: penalizar `//` como comentario no estándar? En realidad IEC 61131-3 (edición 2 y 3) permite `//`? Déjame recordar. IEC 61131-3 ST comment: las dos formas `(* *)` y `//`? Creo que sí: "comments may be started with (* and ended with *), or // for line comments"? No estoy seguro. La versión 2013 incluye `//`? Muchas fuentes dicen que ST soporta `(* ... *)` y no `//`. CODESYS soporta `//`. No quiero ser excesivamente estricto. Puntúo iec 2/3 basado en tipado.
+
+Mejor no bajar a 1 por `//`.
+
+Ahora coherencia, claridad, mantenibilidad.
+
+Debo puntuar 0-3 para cada.
+
+Analicemos una por una.
+
+1. I6-6450:
+Code: FUNCTION_BLOCK FB_Temperatura. VAR_INPUT rawTemp INT. VAR_OUTPUT tempC REAL, enfriador BOOL, almSensor BOOL. Var no internas.
+Logic:
+`tempC := (INT_TO_REAL(rawTemp) / 27648.0) * 100.0;`
+`almSensor := (rawTemp < 0) OR (rawTemp > 27648);`
+`IF almSensor THEN enfriador := FALSE; ELSIF tempC >= 80.0 THEN enfriador := TRUE; ELSIF tempC <= 75.0 THEN enfriador := FALSE; END_IF;`
+Histeresis: conserva estado en banda, porque no asigna en ELSE. Sin embargo, cuando almSensor TRUE, tempC escalado con rawTemp fuera de rango produce valor tempC >100 o <0, pero alarma desactiva. Luego ELSIF no evalúa si almSensor, asigna FALSE. Bien. Comentarios breves. Coherencia: sin variables redundantes, condiciones completas. Inicialización de enfriador? En FB al inicio de instancia, outputs se inicializan a FALSE si no especificado? En CODESYS, salidas de FB son retenidas, no se inicializan automáticamente? En el arranque, probablemente FALSE. La lógica es correcta. Coherencia 3? Es robusta, interlocks completos. Aunque si tempC justo 75.0 - 80.0 con enfriador inicial? No importa. Doy 3.
+Claridad: nombres descriptivos, secciones con comentarios. Estructuración básica. No hay separación entre lógica y E/S más allá del FB. Doy 2 o 3. Comentarios útiles explicando. Sin modularización adicional. Doy 2 (porque no explicaciones del porqué? Tiene comentarios de lo que hace. La rúbrica 3 requiere modularización adecuada, separación lógica/E/S. Aquí no hay; pero es un FB único. Doy 2).
+Mantenibilidad: parámetros no como variables o constantes: umbrales 80,75,27648,100 todos mágicos. Sin constante. Doy 1. Aunque es modificable, valores mágicos. No 0 porque no todo es reescritura. Doy 1.
+
+2. I6-3905:
+Similar. 
+`almSensor := ...`
+`tempC := INT_TO_REAL(rawTemp) * 100.0 / 27648.0;`
+IF almSensor then FALSE; ELSIF >=80 TRUE; ELSIF <=75 FALSE.
+Coherencia 3. Claridad 2. Mantenibilidad 1.
+
+3. I6-1333:
+Code:
+VAR_INPUT rawTemp INT
+VAR_OUTPUT tempC REAL, enfriador BOOL, almSensor BOOL
+VAR tempCPrev REAL; enfriadorPrev BOOL;
+IF rawTemp<0 OR rawTemp>27648 THEN tempC:=0.0; almSensor:=TRUE; enfriador:=FALSE;
+ELSE tempC:= rawTemp / 276.48; almSensor:=FALSE;
+    IF tempC >=80 THEN enfriador:=TRUE; ELSIF tempC <=75 THEN enfriador:=FALSE; ELSE enfriador:=enfriadorPrev; END_IF
+END_IF
+enfriadorPrev := enfriador;
+Tiene `tempCPrev` declarada no usada. `enfriadorPrev` se usa para histéresis. Funcional correcto. Coherencia: tempCPrev muerta sin efecto. Eso es una redundancia/condición muerta. `else enfriador := enfriadorPrev` es correcto, no condición muerta. Hay variable sin usar, inicialización? `enfriadorPrev` FALSE por defecto. Lógica robusta. Pero la variable muerta `tempCPrev` penaliza levemente. Coherencia 2 (sin contradicciones, pero variable redundante sin efecto). Claridad: nombres descriptivos, comentarios. Tiene variable `tempCPrev` no usada y `enfriadorPrev` al final. Doy 2. Mantenibilidad: valores mágicos (80,75,276.48), no parámetros. Doy 1.
+
+4. I6-1644 (no compila):
+Código:
+FUNCTION_BLOCK...
+VAR tempC_prev : REAL;
+tempC := (REAL(rawTemp) * 100.0) / 27648.0; // REAL() inválido
+IF rawTemp<0 ... THEN almSensor TRUE; enfriador FALSE
+ELSE almSensor FALSE; IF tempC >=80 THEN TRUE; ELSIF <=75 THEN FALSE; ELSE enfriador := enfriador; END_IF
+END_IF
+END_FUNCTION_BLOCK
+Dado no compila: funcional 0, iec 0 fijos. Coherencia: La lógica aparente es coherente excepto `enfriador := enfriador` no-op que en algunos contextos no mantiene? En un FB output no volátil, la asignación no-op no cambia el valor, pero si el output no retiene? IEC dice outputs se comportan como variables, retienen. Hay variable `tempC_prev` sin uso. Condiciones no contradictorias. La conversión inválida es problema sintáctico, ya penalizado. Coherencia: hay redundancias (tempC_prev, `enfriador := enfriador`); no hay inicialización de `enfriador` a FALSE. Yo daría 2? La lógica es mayormente coherente, con redundancias. rúbrica coherencia 1: "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." Exactamente. Doy 1. Claridad: nombres descriptivos, comentarios, estructura básica. Doy 2. Mantenibilidad: valores mágicos. Doy 1.
+
+5. I6-4554:
+IF rawTemp <0 OR >27648 THEN almSensor TRUE ELSE FALSE. tempC := (INT_TO_REAL(rawTemp)/27648.0)*100.0. IF almSensor THEN enfriador FALSE; ELSIF tempC>=80 TRUE; ELSIF tempC<=75 FALSE; END_IF. Nota. Igual a I6-6450. Coherencia 3. Claridad 2/3? Tiene secciones numeradas y comentarios explicando. Claridad 3? Quizá 2 por monobloque. Rúbrica 3 pide modularización. Doy 2 o 3? "nombres descriptivos, secciones ordenadas, comentarios útiles" -> 2. 3 si además modularización. No hay. 2. Mantenibilidad 1 (valores mágicos). 
+6. I6-4640: similar. Coherencia 3, claridad 2, mantenibilidad 1. Tiene comentarios buenos. 
+7. I6-5227:
+VAR tempMin, tempMax, rawMin, rawMax, thresholds (variables)
+tempC := (rawTemp - rawMin) * (tempMax - tempMin) / (rawMax - rawMin) + tempMin;
+Control de enfriador:
+IF tempC >= tempThresholdHigh THEN TRUE; ELSIF tempC <= tempThresholdLow THEN FALSE; END_IF;
+Alarma:
+IF rawTemp < rawMin OR rawTemp > rawMax THEN almSensor TRUE; enfriador FALSE; ELSE almSensor FALSE; END_IF;
+Coherencia: orden: primero control de enfriador y luego alarma. Si rawTemp fuera de rango, tempC se escaló fuera de rango (puede ser >100 o <0), luego control del enfriador: si tempC>=80 TRUE/si no <=75 FALSE. Luego alarma desactiva enfriador. Entonces para fuera de rango al final apaga. Para rawTemp=-1, tempC = -0.0036 -> <=75 FALSE; alarma apaga. Para rawTemp=27649, tempC=100.0036 -> >=80 TRUE, luego alarma apaga. Eso produce pulso de enfriador por un ciclo? En ST, la ejecución es secuencial: durante el mismo ciclo, alarma apaga antes de que se lea salida. El harness lee después de ejecutar FB, así que no observa. Aún así, el orden es extraño: la lógica de alarma está después de control y pisa. Es coherente. Sin embargo, hay un parpadeo potencial si el harness lee entre instrucciones? No en ciclo. No es contradictorio. Pero la alarma debe desactivarse en el mismo ciclo. OK. El control no usa interlocks. Puede pasar. Coherencia 2? La lógica es correcta funcional. Hay variables parámetros en VAR no constante, pero no es incoherente. `tempMin`/max etc inicializadas. Sin estados muertos. Doy 3? El orden de alarma después de enfriador no es ideal robustez? Para seguridad, el apagado se aplica al final. Es robusto. Sin contradicciones. Doy 3. Claridad: nombres claros, secciones ordenadas con comentarios. Uso de variables de umbral. Doy 2/3. Mantenibilidad: parámetros como variables (no constantes) pero centralizados. Rúbrica 2: parámetros como variables o constantes declaradas; cambios localizados. Doy 2. 
+8. I6-1990:
+IF fuera rango -> almSensor, tempC 0, enfriador false. ELSE almSensor false; tempC formula; IF histéresis. Similar I6-1990. Parámetros variables. Coherencia 3. Claridad 2. Mantenibilidad 2 (parámetros centralizados). 
+9. I6-8944:
+IF rawTemp <0... almSensor TRUE ELSE FALSE. tempC := (INT_TO_REAL(rawTemp)/27648.0)*100.0; IF almSensor THEN enfriador false ELSE IF histéresis. Similar. Coherencia 3. Claridad 2/3? comentarios. Mantenibilidad 1 (magic). 
+10. I6-2466:
+VAR CONSTANT RAW_MIN, RAW_MAX, TEMP_MIN, TEMP_MAX, HYST_ON, HYST_OFF.
+Lógica: IF fuera rango -> almSensor, enfriador FALSE, tempC 0. ELSE almSensor FALSE, tempC formula con INT_TO_REAL(rawTemp) * (TEMP_MAX - TEMP_MIN) / INT_TO_REAL(RAW_MAX - RAW_MIN) [nota: formula no suma TEMP_MIN? TEMP_MIN 0; ok. Para 27648 -> 100.0]
+Control histéresis. Excelente. Coherencia 3. Claridad 3? No modularization, but comentarios estructurados. rúbrica 3 pide modularización adecuada, separación lógica/E/S. No hay pero constantes. Doy 2 o 3. La estructura de un solo FB con constantes es apropiada. No hay FB reutilizable. Doy 2 en claridad. Mantenibilidad 3: constantes parametrizadas, extensible. Doy 3. Por qué no claridad 3? Aunque es muy claro, la rúbrica pide modularización. Doy 2.
+11. I6-7405:
+Similar a 6450. Coherencia 3. Claridad 2. Mantenibilidad 1.
+12. I6-4763:
+VAR CONSTANT. IF fuera rango -> alarma true, enfriador false, tempC 0, RETURN. ELSE almSensor false; escalado; histéresis. Muy claro. Coherencia 3. Claridad 3? Tiene secciones de comentarios. No modularización, pero estructura con RETURN temprano. Doy 2/3. Mantenibilidad 3. Para claridad, podríamos dar 3 porque comentarios explican porqué, separación dentro de bloques. La rúbrica 3 incluye modularización; pero no hay módulos separados. Tal vez 2. Mantenibilidad 3. 
+13. I6-2631 (no compila):
+Código similar a 1644 con REAL(rawTemp). No compila. Funcional 0, iec 0. Coherencia: variable tempC_prev no usada; `enfriador := enfriador;` en ELSE; lógica aparente. Mayormente coherente con redundancias. Doy 1. Claridad 2. Mantenibilidad 1.
+14. I6-5219:
+VAR tempCPrev, enfriadorPrev. IF rango -> tempC := rawTemp * 100.0 / 27648.0; almSensor FALSE; ELSE tempC 0; almSensor TRUE; END_IF. Luego control histéresis con `enfriador := enfriadorPrev` en ELSE. Luego actualiza `enfriadorPrev := enfriador`. `tempCPrev` no usada. Coherencia: variable muerta tempCPrev, redundancia. Sin contradicciones. Lógica de histéresis con variable previa. Inicialización `enfriadorPrev` se actualiza al final. En fuera de rango superior rawTemp 27649: tempC 0.0 -> if tempC>=80? no; elsif <=75 -> enfriador := FALSE. Bien. alarma true. En paso 3 (fuera de rango con enfriador encendido), tempC 0, apaga. Luego actualiza prev. En paso 4 rawTemp 20736 tempC 75.0 -> enfriador <=75 false, actualiza. OK. Coherencia quizá 3? No hay contradicción. Variable tempCPrev no usada sin efecto grave. La rúbrica 1 tiene redundancias sin efecto grave, 2 sin contradicciones. Doy 2. Claridad 2. Mantenibilidad 1 (magic). 
+15. I6-8502:
+Similar a 8944/4554. Coherencia 3, claro 2, mantenibilidad 1.
+16. I6-1774 (no compila):
+Código: VAR tempC_prev. CONST SCALE_FACTOR... inválido en CODESYS. `tempC := rawTemp * SCALE_FACTOR` (INT * REAL). Lógica histéresis y alarma. No compila. Coherencia: variable tempC_prev no usada; `enfriador := enfriador` en ELSE; lógica mayormente coherente con redundancias. Doy 1. Claridad: intenta constante, comentarios. Doy 2. Mantenibilidad: intenta SCALE_FACTOR, pero no compila. Doy 1 o 2? Aunque el intento es bueno, no funciona. rúbrica mantenibilidad 2 parámetros como constantes declaradas. Aquí constantes mal declaradas, pero la lógica está parametrizada parcialmente. Doy 1. Porque no compila. 
+17. I6-7940:
+Similar 4640. Coherencia 3, claro 2, mantenibilidad 1.
+18. I6-9872 (no compila):
+Similar no compila. variable tempC_prev no usada. `enfriador := enfriador` en ELSE. Coherencia 1, claridad 2, mantenibilidad 1.
+19. I6-7606:
+VAR CONSTANT RAW_MIN, RAW_MAX, TEMP_MIN, TEMP_MAX, HYST_HIGH, HYST_LOW.
+IF fuera rango -> alarma, false, tempC 0. ELSE alarma false; tempC := (INT_TO_REAL(rawTemp) / INT_TO_REAL(RAW_MAX)) * (TEMP_MAX - TEMP_MIN) + TEMP_MIN; control histéresis. Muy bueno. Coherencia 3. Claridad 2/3? comentarios. Mantenibilidad 3. Doy claridad 2. 
+20. I6-9273:
+Similar I6-1333 con `//`. VAR tempCPrev, enfriadorPrev. `tempC := rawTemp / 276.48;` en rango; control histéresis con enfriadorPrev. Actualiza prev. tempCPrev no usada. Coherencia 2. Claridad 2. Mantenibilidad 1. 
+21. I6-9365 (no compila):
+Similar no compila. Coherencia 1, claridad 2, mantenibilidad 1.
+22. I6-4205 (no compila):
+Similar no compila. Coherencia 1, claridad 2, mantenibilidad 1.
+23. I6-1860 (compila falla paso 3):
+Tiene VAR tempMin, tempMax, rawTempMin, rawTempMax, histeresis.
+`tempC := (rawTemp - rawTempMin) * (tempMax - tempMin) / (rawTempMax - rawTempMin) + tempMin;`
+`almSensor := (rawTemp < rawTempMin) OR (rawTemp > rawTempMax);`
+`IF tempC >= 80.0 THEN enfriador := TRUE; ELSIF tempC <= 75.0 THEN enfriador := FALSE; END_IF;`
+No desactiva enfriador con alarma. Falla paso 3. funcional: 1 (caso nominal histéresis ok, falla caso límite de seguridad). 
+iec: compila. Usa mezcla implícita. Doy 2.
+Coherencia: no hay contradicción, pero omite interlock de alarma (peligroso). Inicialización OK. Variables `histeresis` no usada. Doy 2? La lógica es coherente en sí, sin estados muertos. `histeresis` declarada no usada es redundancia sin efecto. La falta de interlock no es incoherencia, es omisión funcional. Podría dar 2. Claridad: nombres descriptivos, secciones con comentarios, variables. Doy 2 o 3. mantenibilidad: parámetros centralizados, aunque `histeresis` no usada. Doy 2. 
+24. I6-9306:
+VAR CONSTANT RAW_MIN, RAW_MAX, TEMP_MAX, HIS_ON, HIS_OFF.
+IF fuera rango -> alarma, enfriador false, tempC 0. ELSE alarma false; tempC := (INT_TO_REAL(rawTemp) / INT_TO_REAL(RAW_MAX)) * TEMP_MAX; control histéresis con HIS_ON/OFF. Muy bien. Coherencia 3, claridad 2/3, mantenibilidad 3.
+
+Necesito asegurar que los valores fijados se copian.
+
+Reviso entradas:
+
+1 I6-6450: funcional_fijo 3. iec_fijo null. just_func_iec debe ser una línea. Para funcional/iec, si funcional fijado e iec no, just_func_iec debe explicar iec? la instrucción: "just_func_iec": "una línea, o \"\" si las dos estaban fijadas". Si funcional fijado e iec no, dar justificación de iec. Puedo incluir "funcional fijado; iec: usa INT_TO_REAL estándar." etc.
+
+2 I6-3905 similar.
+
+3 I6-1333: funcional fijado 3, iec no.
+
+4 no compila: funcional 0 iec 0 fijos. just_func_iec "" porque las dos fijadas.
+
+5 compila pasa: funcional fijado 3, iec no.
+
+6...
+
+7...
+
+8...
+
+9...
+
+10...
+
+11...
+
+12...
+
+13 no compila.
+
+14 pasa.
+
+15 pasa.
+
+16 no compila.
+
+17 pasa.
+
+18 no compila.
+
+19 pasa.
+
+20 pasa.
+
+21 no compila.
+
+22 no compila.
+
+23 compila falla, funcional_fijo null iec_fijo null: debo asignar ambos. just_func_iec debe justificar funcional e iec.
+
+24 pasa.
+
+Necesito escribir 24 objetos con todos los campos. 
+
+Debo decidir puntuaciones exactas. Hago una tabla:
+
+Indice, codigo, funcional, iec, coher, clar, mant
+1 I6-6450: func 3, iec 3, coh 3, clar 2, mant 1.
+2 I6-3905: func 3, iec 3, coh 3, clar 2, mant 1.
+3 I6-1333: func 3, iec 2, coh 2, clar 2, mant 1.
+4 I6-1644: func 0, iec 0, coh 1, clar 2, mant 1.
+5 I6-4554: func 3, iec 3, coh 3, clar 2, mant 1.
+6 I6-4640: func 3, iec 3, coh 3, clar 2, mant 1.
+7 I6-5227: func 3, iec 2, coh 3, clar 2, mant 2.
+8 I6-1990: func 3, iec 2, coh 3, clar 2, mant 2.
+9 I6-8944: func 3, iec 3, coh 3, clar 2, mant 1.
+10 I6-2466: func 3, iec 3, coh 3, clar 2, mant 3.
+11 I6-7405: func 3, iec 3, coh 3, clar 2, mant 1.
+12 I6-4763: func 3, iec 3, coh 3, clar 2, mant 3.
+13 I6-2631: func 0, iec 0, coh 1, clar 2, mant 1.
+14 I6-5219: func 3, iec 2, coh 2, clar 2, mant 1.
+15 I6-8502: func 3, iec 3, coh 3, clar 2, mant 1.
+16 I6-1774: func 0, iec 0, coh 1, clar 2, mant 1.
+17 I6-7940: func 3, iec 3, coh 3, clar 2, mant 1.
+18 I6-9872: func 0, iec 0, coh 1, clar 2, mant 1.
+19 I6-7606: func 3, iec 3, coh 3, clar 2, mant 3.
+20 I6-9273: func 3, iec 2, coh 2, clar 2, mant 1.
+21 I6-9365: func 0, iec 0, coh 1, clar 2, mant 1.
+22 I6-4205: func 0, iec 0, coh 1, clar 2, mant 1.
+23 I6-1860: func 1, iec 2, coh 2, clar 2, mant 2.
+24 I6-9306: func 3, iec 3, coh 3, clar 2, mant 3.
+
+Reviso coherencia para I6-5227: si la alarma desactiva enfriador al final, la señal de control temporal puede ser TRUE durante un ciclo. En términos de lógica secuencial, es correcta porque las salidas se evalúan al final. Pero en la rúbrica de coherencia, "comportamiento seguro ante entradas simultáneas" - si rawTemp fuera de rango y tempC calculado >80, asigna TRUE y luego FALSE; no es inseguro porque al final queda FALSE. La coherencia 3.
+
+I6-1990 coherencia 3.
+
+I6-2466 coherencia 3, claridad 2, mant 3.
+I6-4763 coherencia 3, claridad 2, mant 3.
+I6-7606 coherencia 3, claridad 2, mant 3.
+I6-9306 coherencia 3, claridad 2, mant 3.
+
+Para claridad, ¿debería dar 3 a algunos con constante y secciones? La rúbrica 3: "además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué." Todos son un FB reutilizable (FB_Temperatura) que separa lógica y E/S: el FB en sí es la encapsulación. Podría otorgar 3 a varios. La tarea pedía un FUNCTION_BLOCK, por lo que el FB es la modularización adecuada. Entonces tal vez claridad 3 para los que tienen constantes y comentarios del porqué. La distinción entre 2 y 3 es subjetiva. Para mantener consistencia, puedo dar 3 a los que tienen comentarios extensos explicando porqué y estructura clara. Revisemos:
+- I6-2466: comentarios en bloques, explica fórmulas y porqué. FB encapsula. Aunque no separa internamente en FB adicional, es suficiente. Claridad 3 sí.
+- I6-4763: similar, comentarios extensos. Claridad 3.
+- I6-7606: similar. Claridad 3.
+- I6-9306: similar. Claridad 3.
+- I6-5227: variables y comentarios breves, no porqué. Claridad 2.
+- I6-1990: comentarios simples, variables. Claridad 2.
+- I6-6450: comentarios breves. Claridad 2.
+- I6-3905: igual.
+- I6-4554: notas, secciones. Tal vez claridad 3? Tiene "1. Evaluación", "2. Acondicionamiento", "3. Control" y nota que explica histéresis. Comentarios útiles, porqué. Doy claridad 3? Usa nada de constantes. La rúbrica de claridad no exige constantes. Podría dar 3 a los que explican porqué. Veo I6-6450: comentarios breves, no secciones. 2. I6-4554: secciones numeradas, nota porqué. Doy 3. I6-8944: secciones numeradas y nota porqué. 3. I6-8502: secciones numeradas. 3. I6-4640: comentarios útiles, no secciones numeradas pero explicación. 2. I6-7405: comentarios breves en IF. 2. I6-7940: comentarios en bloques. 2. I6-3905: comentarios en declaraciones y pasos. 2.
+
+Debo decidir una política. Para no inflar demasiado, utilicé 2 en la mayoría. Rúbrica 3 incluye "modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué". El FB es exactamente una POU que separa lógica y E/S. Si el código hace eso y comenta el porqué, es 3. Muchos cumple. Sin embargo, la rúbrica dice "además modularización adecuada (FB reutilizable, separación entre lógica y E/S)" - dado que la tarea pide FUNCTION_BLOCK, todos lo cumplen implícitamente. Entonces para distinguir 2 y 3: 2 = nombres descriptivos, secciones ordenadas, comentarios útiles; 3 = además modularización adecuada y comentarios del porqué. Como todos son FB, y algunos tienen comentarios porqué. Doy 3 a quienes tienen comentarios porqué y secciones. Podría dar 3 a varios. Mantenibilidad y claridad 3 en los que tienen constantes. Revisemos cuáles merecen claridad 3: 
+- I6-6450: comentarios porqué? "Valor crudo del sensor", "Evaluacion de alarma por limites", "Control del enfriador con histeresis y bloqueo por alarma". Explica qué no porqué. Claridad 2.
+- I6-3905: similar. 2.
+- I6-1333: comentarios en declaraciones y lógica, no secciones. 2.
+- I6-1644: comentarios en cada paso, no secciones. 2.
+- I6-4554: secciones numeradas y nota porqué. 3.
+- I6-4640: comentarios en bloque "Apagar enfriador por seguridad", "Escalar", "Control". Explica qué. 2.
+- I6-5227: secciones con comentarios, no porqué. 2.
+- I6-1990: secciones con comentarios. 2.
+- I6-8944: secciones numeradas, nota porqué. 3.
+- I6-2466: secciones numeradas, comentarios extensos con porqué. 3.
+- I6-7405: comentarios breves, no secciones. 2.
+- I6-4763: secciones numeradas, porqué. 3.
+- I6-2631: no compila, claridad 2.
+- I6-5219: comentarios, no secciones. 2.
+- I6-8502: secciones numeradas, nota porqué. 3.
+- I6-1774: no compila; intenta secciones, constantes; claridad 2.
+- I6-7940: comentarios breves. 2.
+- I6-9872: comentarios. 2.
+- I6-7606: secciones numeradas, porqué. 3.
+- I6-9273: comentarios, no secciones. 2.
+- I6-9365: comentarios. 2.
+- I6-4205: comentarios. 2.
+- I6-1860: secciones simples, variables; claridad 2.
+- I6-9306: secciones numeradas, porqué. 3.
+
+¿Aceptaría claridad 3 para I6-4554, 8944, 8502? Aunque no tengan constantes, la claridad se refiere estructura y comentarios. OK. 
+
+Mantenibilidad para los que tienen constantes centralizadas: 3 para los que usan VAR CONSTANT (indices 10,12,19,24). I6-5227 y I6-1990 usan VAR normales para parámetros, no constantes, pero centralizadas. Rúbrica 2: "parámetros como variables o constantes declaradas; cambios localizados." Eso es 2. Para 3: "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)" Algunos tienen constantes VAR CONSTANT pero no parámetros de entrada. Aún así, es diseño extensible? Puede ser 3 porque las constantes se pueden cambiar localmente. I6-2466, 4763, 7606, 9306: VAR CONSTANT con todos los umbrales. Doy 3. I6-5227/1990: usan VAR normal, no constantes; podrían dar 3? La rúbrica 2 pide parámetros como variables o constantes declaradas. Eso exactamente. 3 requiere parámetros de entrada del FB, sin duplicación. Ninguno tiene parámetros de entrada (excepto rawTemp), pero no para umbrales. Doy 2.
+
+Claridad de I6-2466 ya 3.
+
+Mantenibilidad de I6-6450 etc 1, porque valores mágicos. I6-8944 etc 1. I6-1333 1. I6-5219 1. I6-9273 1. I6-1860 2 (variables centralizadas, no constantes). I6-1644 1.
+
+Reviso I6-1860:
+VARIABLES: tempMin, tempMax, rawTempMin, rawTempMax, histeresis. `histeresis` no usada. Mantenibilidad: parámetros centralizados, pero con variable `histeresis` sin uso. Doy 2. 
+Coherencia 2 por variable no usada y omisión de interlock (aunque omisión funcional). Doy 2.
+Claridad 2: nombres y secciones, pero comentarios no extensos. correcto.
+Iec 2: usa conversión implícita, no estándar idiomático. 
+
+Ahora justificaciones: debo redactar una línea para cada.
+
+Para funcional fijado e iec no: just_func_iec: "Funcional fijado; iec: usa INT_TO_REAL estándar." o "Funcional fijado; iec: tipos correctos con conversión implícita." Para no compila: just_func_iec "".
+
+Just_coherencia, just_claridad, just_mantenibilidad en una línea.
+
+Hay que ser consistente. 
+
+Genero JSON.
+
+Reviso que no haya markdown.
+
+Antes de final, verificar cantidad 24 y códigos iguales. Los listo en orden.
+
+Asegurar para `funcional_fijo` en I6-1860 era null. Asigno 1. En el JSON debe decir "funcional": 1. 
+Para no compila: funcional 0, iec 0 (vienen fijados). 
+Para pasa todos: funcional 3. 
+
+¿Puedo poner just_func_iec vacío para no compila? "si las dos estaban fijadas" sí. 
+Para compilados con funcional fijado y iec no, just_func_iec una línea. 
+Para I6-1860: funcional no fijado, iec no fijado: just_func_iec justifica ambos.
+
+Ahora reviso si hay algún código con `iec_fijo` no null? No, todos null excepto no compila? Los no compila tienen iec_fijo 0 fijo. En JSON de entrada cuando no compila, "iec_fijo": 0. Así que para no compila fijado. 
+
+Detalle: el JSON original tiene `"funcional_fijo": 3, "iec_fijo": null`. Para no compila `"funcional_fijo": 0, "iec_fijo": 0`. OK.
+
+Calidad de justificaciones: una línea.
+
+Escribo los objetos:
+
+1:
+just_func_iec: "Funcional fijado; iec: usa INT_TO_REAL y tipos correctos, idiomático."
+just_coherencia: "Sin contradicciones; interlock de alarma apaga enfriador y lógica de histéresis completa."
+just_claridad: "Nombres descriptivos y comentarios breves; estructura lineal clara."
+just_mantenibilidad: "Umbrales y rango como literales mágicos; cambios requieren tocar lógica."
+
+2 similar:
+just_func_iec: "Funcional fijado; iec: usa INT_TO_REAL y estructura idiomática."
+just_coherencia: "Sin contradicciones; alarma desactiva el enfriador y la histéresis conserva estado."
+just_claridad: "Nombres claros y comentarios breves; secciones distinguibles."
+just_mantenibilidad: "Valores de rango y umbrales mágicos; poca parametrización."
+
+3 I6-1333:
+just_func_iec: "Funcional fijado; iec: tipos correctos, aunque usa conversión implícita en rawTemp/276.48."
+just_coherencia: "Lógica válida, pero tempCPrev está muerta y la histéresis depende de enfriadorPrev."
+just_claridad: "Nombres descriptivos y comentarios; variable no usada confunde."
+just_mantenibilidad: "Umbrales y factor de escala como literales; sin constantes."
+
+4:
+just_func_iec: ""
+just_coherencia: "Lógica aparente con histéresis y alarma, pero tempC_prev muerta y 'enfriador:=enfriador' es no-op."
+just_claridad: "Nombres descriptivos y comentarios en cada paso; estructura básica."
+just_mantenibilidad: "Literales mágicos y conversión inválida; parámetros no centralizados."
+
+5 I6-4554:
+just_func_iec: "Funcional fijado; iec: usa INT_TO_REAL y estructura idiomática."
+just_coherencia: "Sin contradicciones; alarma y histéresis con interlock completo."
+just_claridad: "Secciones numeradas y notas explicativas claras."
+just_mantenibilidad: "Umbrales y rango literales; poca parametrización."
+
+6:
+just_func_iec: "Funcional fijado; iec: INT_TO_REAL estándar y declaraciones correctas."
+just_coherencia: "Lógica sin contradicciones; alarma apaga enfriador y zona muerta conserva estado."
+just_claridad: "Comentarios útiles y nombres descriptivos; estructura organizada."
+just_mantenibilidad: "Valores mágicos para rango/umbrales; cambios no localizados."
+
+7 I6-5227:
+just_func_iec: "Funcional fijado; iec: compila, pero escalado con mezcla implícita INT/REAL."
+just_coherencia: "Sin contradicciones; aunque control se ejecuta antes que alarma, el apagado prevalece."
+just_claridad: "Variables de parámetros claras y secciones comentadas."
+just_mantenibilidad: "Parámetros centralizados en variables, aunque no constantes."
+
+8 I6-1990:
+just_func_iec: "Funcional fijado; iec: compila con escalado mixto INT/REAL, correcto en CODESYS."
+just_coherencia: "Sin contradicciones; rango inválido deja salidas seguras y escalado antes de histéresis."
+just_claridad: "Nombres claros, comentarios y secciones separadas."
+just_mantenibilidad: "Parámetros centralizados en variables, no constantes; cambios localizados."
+
+9 I6-8944:
+just_func_iec: "Funcional fijado; iec: usa INT_TO_REAL estándar e IF idiomático."
+just_coherencia: "Sin contradicciones; alarma enclava el enfriador y la histéresis es correcta."
+just_claridad: "Secciones numeradas y comentarios que explican la intención."
+just_mantenibilidad: "Literales mágicos para umbrales y rango; cambios no localizados."
+
+10 I6-2466:
+just_func_iec: "Funcional fijado; iec: VAR CONSTANT y INT_TO_REAL idiomáticos."
+just_coherencia: "Sin contradicciones ni estados muertos; camino de fallo y zona de histéresis completos."
+just_claridad: "Secciones numeradas, comentarios con porqué y nombres descriptivos."
+just_mantenibilidad: "Constantes declaradas para rango/umbrales; cambios localizados y diseño extensible."
+
+11 I6-7405:
+just_func_iec: "Funcional fijado; iec: INT_TO_REAL estándar y declaraciones correctas."
+just_coherencia: "Sin contradicciones; alarma apaga y la banda de histéresis mantiene estado."
+just_claridad: "Nombres claros y comentarios breves; estructura simple."
+just_mantenibilidad: "Valores de umbral y rango literales; poca parametrización."
+
+12 I6-4763:
+just_func_iec: "Funcional fijado; iec: VAR CONSTANT, INT_TO_REAL y RETURN idiomáticos."
+just_coherencia: "Sin contradicciones; RETURN temprano en fallo evita lógica posterior."
+just_claridad: "Secciones numeradas y comentarios con el porqué; muy clara."
+just_mantenibilidad: "Constantes centralizadas y diseño extensible; sin duplicación."
+
+13 no compila:
+just_func_iec: ""
+just_coherencia: "Lógica aparente con histéresis y alarma, pero tempC_prev muerta y conversión inválida."
+just_claridad: "Nombres descriptivos y comentarios; estructura básica legible."
+just_mantenibilidad: "Literales mágicos y parámetros no centralizados."
+
+14 I6-5219:
+just_func_iec: "Funcional fijado; iec: usa conversión implícita INT*REAL; tipos correctos en CODESYS."
+just_coherencia: "Sin contradicciones, pero tempCPrev muerta y actualización de enfriadorPrev al final."
+just_claridad: "Nombres descriptivos y comentarios; variable no usada resta claridad."
+just_mantenibilidad: "Umbrales y factor de escala literales; sin parametrización."
+
+15 I6-8502:
+just_func_iec: "Funcional fijado; iec: INT_TO_REAL estándar y estructura idiomática."
+just_coherencia: "Sin contradicciones; alarma desactiva y zona muerta conserva estado."
+just_claridad: "Secciones numeradas y notas explicativas claras."
+just_mantenibilidad: "Literales mágicos para rango/umbrales; poca parametrización."
+
+16 no compila:
+just_func_iec: ""
+just_coherencia: "Lógica aparente correcta pero redundante; tempC_prev muerta y 'enfriador:=enfriador'."
+just_claridad: "Intento de secciones y comentarios, pero la constante mal declarada confunde."
+just_mantenibilidad: "Intento de SCALE_FACTOR no válido; umbrales aún literales."
+
+17 I6-7940:
+just_func_iec: "Funcional fijado; iec: INT_TO_REAL estándar y estructura idiomática."
+just_coherencia: "Sin contradicciones; fallo apaga y zona de histéresis conserva estado."
+just_claridad: "Nombres descriptivos y comentarios por bloque; estructura clara."
+just_mantenibilidad: "Valores mágicos para rango/umbrales; poca parametrización."
+
+18 no compila:
+just_func_iec: ""
+just_coherencia: "Lógica aparente; tempC_prev muerta y 'enfriador:=enfriador' no-op."
+just_claridad: "Nombres y comentarios legibles; estructura típica."
+just_mantenibilidad: "Literales mágicos y parámetros no centralizados."
+
+19 I6-7606:
+just_func_iec: "Funcional fijado; iec: VAR CONSTANT e INT_TO_REAL idiomáticos."
+just_coherencia: "Sin contradicciones; camino de fallo y zona de histéresis completos."
+just_claridad: "Secciones numeradas y comentarios del porqué; muy clara."
+just_mantenibilidad: "Constantes centralizadas; diseño extensible y sin duplicación."
+
+20 I6-9273:
+just_func_iec: "Funcional fijado; iec: compila con conversión implícita INT/REAL; correcto en CODESYS."
+just_coherencia: "Sin contradicciones, pero tempCPrev sin uso y manejo de previos al final."
+just_claridad: "Nombres descriptivos y comentarios; variable no usada."
+just_mantenibilidad: "Umbrales y factor como literales; sin constantes."
+
+21 no compila:
+just_func_iec: ""
+just_coherencia: "Lógica aparente; tempC_prev muerta y 'enfriador:=enfriador' no-op."
+just_claridad: "Comentarios y nombres claros; estructura básica."
+just_mantenibilidad: "Literales mágicos; sin parametrización."
+
+22 no compila:
+just_func_iec: ""
+just_coherencia: "Lógica aparente; tempC_prev muerta y 'enfriador:=enfriador' no-op."
+just_claridad: "Nombres y comentarios legibles; estructura básica."
+just_mantenibilidad: "Literales mágicos; sin parametrización."
+
+23 I6-1860:
+just_func_iec: "Funcional 1: falla paso 3 porque la alarma no apaga el enfriador; iec: 2, mezcla INT/REAL aceptable."
+just_coherencia: "Sin contradicciones, pero variable histeresis sin uso y falta interlock de seguridad."
+just_claridad: "Nombres descriptivos y secciones con comentarios."
+just_mantenibilidad: "Parámetros de rango/umbrales en variables; histeresis sin uso."
+
+24 I6-9306:
+just_func_iec: "Funcional fijado; iec: VAR CONSTANT e INT_TO_REAL idiomáticos."
+just_coherencia: "Sin contradicciones; fallo de rango, alarma y zona de histéresis completos."
+just_claridad: "Secciones numeradas y comentarios del porqué; muy clara."
+just_mantenibilidad: "Constantes centralizadas; diseño extensible."
+
+Reviso: para I6-4554 claridad 3, justificación "Secciones numeradas y notas explicativas claras." Es válido.
+
+Para I6-8944 claridad 3, I6-8502 3. Ajuste en tabla: I6-4554 clar 3, I6-8944 clar 3, I6-8502 clar 3. I6-2466, 4763, 7606, 9306 clar 3. Los otros 2.
+
+Para I6-5227 e I6-1990 claridad 2.
+
+Para I6-1860 claridad 2.
+
+No hay problema.
+
+Sin embargo, debo verificar coherencia I6-5227. La lógica de alarma se aplica después del control, y para fuera de rango inferior tempC 0 -> enfriador FALSE antes de alarma. Para fuera de rango superior tempC >80 -> enfriador TRUE antes de alarma. En un ciclo, la salida final es FALSE, pero temporalmente se asigna TRUE. La rúbrica coherencia 3 pide "comportamiento seguro ante entradas simultáneas": aunque la salida final es segura, una asignación intermedia no es visible a menos que se lea en el mismo ciclo? En ST, las salidas se actualizan al final de la POU, no inmediatamente? No estoy seguro. En CODESYS, la variable de salida se actualiza inmediatamente dentro del ciclo de ejecución. Si el harness lee después de llamar, no ve. En un sistema con comunicación, se actualiza al final de la tarea, no por instrucción. En cualquier caso, la salida final es FALSE. La orden de encendido seguida de apagado en el mismo scan es una redundancia. No severe. Coherencia 3.
+
+Pero ¿es idiomático calcular tempC fuera de rango con rawTemp sin comprobar? No, pero no penalizo coherencia. 
+
+Además, I6-5227 no desactiva `tempC` fuera de rango, el harness espera `compTemp := FALSE` y `espTemp := 0.0` para pasos 3 y 6. Si el FB no setea tempC=0 fuera de rango, fallaría harness. Sin embargo, resultado dice Pasa los 8 pasos. Entonces debe estarlo. En el código I6-5227, `tempC := (rawTemp - rawMin) * (tempMax - tempMin) / (rawMax - rawMin) + tempMin;` con rawTemp=27649, rawMin=0, tempMax-tempMin=100.0, rawMax-rawMin=27648 => tempC = 27649*100.0/27648 = 100.0036, no 0.0. En el harness, paso 3 espera espTemp=0.0 y compTemp=FALSE. Si compTemp FALSE, no compara tempC, por lo que no importa. En paso 6 fuera rango inferior tempC = -1*100/27648 = -0.0036, compTemp FALSE. El harness no compara. En paso 7 vuelve 0, tempC 0, compTemp TRUE. OK. Así pasa. No hay problema.
+
+Lo mismo I6-1860 falla paso 3 porque `almSensor` sí pero `enfriador` no se apaga. El harness compara enfriador FALSE. Falla.
+
+Debo verificar si I6-1333 usa `tempC := rawTemp / 276.48;` y `rawTemp` INT / REAL. En ST, la división produce REAL, y asignación correcta. Funcional fijado 3. 
+
+Los no compila con `REAL(rawTemp)` errores. Está bien.
+
+Ahora, hay que entregar JSON sin markdown. 
+
+Posible problema: "just_func_iec": una línea; si no compila y las dos fijadas, vacío. Para compilados, debe no ser vacío. Escribo.
+
+Verifico que no contenga caracteres especiales conflictivos. Usaré comillas dobles.
+
+Creo que valdría.
+
+No invoco herramientas.
+
+Necesito devolver solo JSON. Hazlo.
+
+Aseguro que cada objeto no tenga campos adicionales. 
+
+Voy a enumerar en el mismo orden de entrada, con los códigos exactos.
+
+Ahora, una cuestión sobre `iec` para no compilados: fijado 0; ok. 
+Para `iec` en compilados, valores 1-3. No usé 1 en ninguno. ¿Debería penalizar extensiones `//`? No. 
+No hay ningún caso que use `BEGIN`? I6-1774 usa `BEGIN` tras VAR sin separación? En ST, `BEGIN` no se usa en FUNCTION_BLOCK? En CODESYS no; el cuerpo de FB no lleva BEGIN, comienza después de declaraciones. No compila. Eso confirma iec 0 fijado.
+
+Para no compilados, coherencia 1. 
+Claridad 2 para todos no compilados. 
+Mantenibilidad 1. 
+
+Reviso no compilados: I6-1644, 2631, 1774, 9872, 9365, 4205. Son 6 no compila. Los resultados lo indican. 
+Respuestas 4, 13, 16, 18, 21, 22. Correcto.
+
+Falla 1 paso: I6-1860. 
+
+Total: 1-3, 4 no compila, 5-12, 13 no, 14-15, 16 no, 17, 18 no, 19-20, 21 no, 22 no, 23 falla, 24. 24.
+
+Bien.
+
+Ahora, para el campo `just_func_iec` de compilados con funcional fijado e iec no: Podría ser "Funcional fijado; iec 3: ..." No hace falta incluir "iec 3" pero okay. 
+Para I6-1860: "Funcional 1: ...; iec 2: ..." 
+Para no compila: "".
+
+Verificar que `iec` en I6-1333 no esté fijado. Compila y pasa: iec_fijo null. Asigno 2. Su justificación menciona conversión implícita. Correcto.
+
+Posiblemente `iec` para I6-5227 y I6-1990: usan variables de parámetros y escalado implícito. ¿Podría ser 3? Rúbrica 3 "además idiomático." No usan INT_TO_REAL, pero la fórmula de escalado con variables es idiomática. No mezcles. Para consistencia, los que no usan INT_TO_REAL y usan implicits, doy 2. I6-1860 también 2.
+
+Ok.
+
+Genero el JSON.
+
+Asegúrate de no incluir markdown. 
+Inicio:
+[
+  {
+    "codigo": "I6-6450",
+    "funcional": 3,
+    "iec": 3,
+    "coherencia": 3,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Funcional fijado; iec: usa INT_TO_REAL y tipos correctos, idiomático.",
+    "just_coherencia": "Sin contradicciones; interlock de alarma apaga enfriador y lógica de histéresis completa.",
+    "just_claridad": "Nombres descriptivos y comentarios breves; estructura lineal clara.",
+    "just_mantenibilidad": "Umbrales y rango como literales mágicos; cambios requieren tocar lógica."
+  },
+...
+]
+
+Para I6-4554 claridad 3. Just claridad "Secciones numeradas y notas explicativas claras." Good.
+
+Mantenibilidad I6-4554 1. 
+
+Para I6-8944 claridad 3.
+
+Para I6-8502 claridad 3.
+
+Para I6-2466 claridad 3, mantenibilidad 3.
+Para I6-4763 claridad 3, mantenibilidad 3.
+Para I6-7606 claridad 3, mantenibilidad 3.
+Para I6-9306 claridad 3, mantenibilidad 3.
+
+Reviso I6-7405 clar 2. 
+I6-7940 clar 2. 
+I6-4640 clar 2.
+
+Ok.
+
+Posible inconsistencia: I6-6450 y I6-4554 tienen casi el mismo contenido, pero claridad 2 vs 3. I6-4554 tiene secciones numeradas y nota. Es una diferencia de presentación. I6-6450 tiene comentarios por bloque, no secciones numeradas. Está bien.
+
+Ahora final.

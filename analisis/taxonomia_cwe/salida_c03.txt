@@ -1,0 +1,253 @@
+==============================================================================
+1. VERIFICACION DEL MAPA DE PASOS v1 FRENTE A LA LECTURA DEL CODIGO
+Filas por paso con el mapa v1: 109; grupos modelo x tarea: 36; la muestra verificada coincide con la regla de seleccion: True
+Categorias del mapa v1 en la tabla de verificacion coinciden con la clasificacion v1: True
+Muestra: 36 respuestas (una por modelo x tarea). Coinciden: 29/36 = 80.6 %
+Discrepancias (paso -> categoria del mapa v1 -> categoria por codigo):
+  claude B5 few_ ejec_2 paso 0: INICIALIZACION -> TEMPORIZACION
+  gpt-4o A2 few_ ejec_2 paso 8: CALCULO -> TEMPORIZACION
+  gpt-4o A3 few_ ejec_1 paso 7: CALCULO -> SEGURIDAD
+  qwen2. A2 few_ ejec_1 paso 8: CALCULO -> TEMPORIZACION
+  qwen2. B5 few_ ejec_1 paso 0: INICIALIZACION -> TEMPORIZACION
+  qwen2. I2 few_ ejec_1 paso 2: SECUENCIA -> TEMPORIZACION
+  qwen2. I5 few_ ejec_1 paso 0: INICIALIZACION -> FLANCO
+
+==============================================================================
+2. METODO DE CLASIFICACION
+  automatico     110/249 = 44.2 %
+  paso_harness    88/249 = 35.3 %
+  juicio          51/249 = 20.5 %
+  dentro de FALLA_LOGICA, paso_harness   88/139 = 63.3 %
+  dentro de FALLA_LOGICA, juicio         51/139 = 36.7 %
+  juicio por modelo: {'Qwen': 26, 'GPT-4o': 14, 'Claude': 10, 'Gemini': 1}
+
+==============================================================================
+3a. CATEGORIA x MODELO (conteos)
+modelo_corto    Gemini  Claude  GPT-4o  Qwen  Total
+categoria_plc                                      
+CONSTRUCCION         6       8      15    21     50
+CONVERSION           0       0      14     4     18
+DIALECTO             1       6       2     5     14
+INTERFAZ             0       0      22     6     28
+TEMPORIZACION        1      12      21    41     75
+SECUENCIA            0       4       6    12     22
+SEGURIDAD            1       1       7     6     15
+INICIALIZACION       0       5       5     7     17
+FLANCO               0       0       4     5      9
+CALCULO              0       0       0     1      1
+Total                9      36      96   108    249
+
+3b. CATEGORIA x MODELO (% de los fallos de cada modelo)
+modelo_corto    Gemini  Claude  GPT-4o  Qwen  Total
+categoria_plc                                      
+CONSTRUCCION      66.7    22.2    15.6  19.4   20.1
+CONVERSION         0.0     0.0    14.6   3.7    7.2
+DIALECTO          11.1    16.7     2.1   4.6    5.6
+INTERFAZ           0.0     0.0    22.9   5.6   11.2
+TEMPORIZACION     11.1    33.3    21.9  38.0   30.1
+SECUENCIA          0.0    11.1     6.2  11.1    8.8
+SEGURIDAD         11.1     2.8     7.3   5.6    6.0
+INICIALIZACION     0.0    13.9     5.2   6.5    6.8
+FLANCO             0.0     0.0     4.2   4.6    3.6
+CALCULO            0.0     0.0     0.0   0.9    0.4
+
+3c. CATEGORIA x MODELO (% de las 150 respuestas de codigo de cada modelo)
+modelo_corto    Gemini  Claude  GPT-4o  Qwen
+categoria_plc                               
+CONSTRUCCION       4.0     5.3    10.0  14.0
+CONVERSION         0.0     0.0     9.3   2.7
+DIALECTO           0.7     4.0     1.3   3.3
+INTERFAZ           0.0     0.0    14.7   4.0
+TEMPORIZACION      0.7     8.0    14.0  27.3
+SECUENCIA          0.0     2.7     4.0   8.0
+SEGURIDAD          0.7     0.7     4.7   4.0
+INICIALIZACION     0.0     3.3     3.3   4.7
+FLANCO             0.0     0.0     2.7   3.3
+CALCULO            0.0     0.0     0.0   0.7
+
+3d. CATEGORIA x NIVEL
+nivel           Basico  Intermedio  Avanzado  Complementaria  Total
+categoria_plc                                                      
+CONSTRUCCION         2           9        39               0     50
+CONVERSION           0           5        13               0     18
+DIALECTO             1           0        12               1     14
+INTERFAZ             8           6         3              11     28
+TEMPORIZACION       25          34        13               3     75
+SECUENCIA            1          17         4               0     22
+SEGURIDAD           12           2         1               0     15
+INICIALIZACION       0          10         7               0     17
+FLANCO               4           4         0               1      9
+CALCULO              0           1         0               0      1
+Total               53          88        92              16    249
+   % de los fallos de cada nivel:
+nivel           Basico  Intermedio  Avanzado  Complementaria  Total
+categoria_plc                                                      
+CONSTRUCCION       3.8        10.2      42.4             0.0   20.1
+CONVERSION         0.0         5.7      14.1             0.0    7.2
+DIALECTO           1.9         0.0      13.0             6.2    5.6
+INTERFAZ          15.1         6.8       3.3            68.8   11.2
+TEMPORIZACION     47.2        38.6      14.1            18.8   30.1
+SECUENCIA          1.9        19.3       4.3             0.0    8.8
+SEGURIDAD         22.6         2.3       1.1             0.0    6.0
+INICIALIZACION     0.0        11.4       7.6             0.0    6.8
+FLANCO             7.5         4.5       0.0             6.2    3.6
+CALCULO            0.0         1.1       0.0             0.0    0.4
+
+3e. CATEGORIA x ESTRATEGIA
+estrategia      few_shot  zero_shot  Total
+categoria_plc                             
+CONSTRUCCION          20         30     50
+CONVERSION            10          8     18
+DIALECTO               6          8     14
+INTERFAZ               2         26     28
+TEMPORIZACION         48         27     75
+SECUENCIA              7         15     22
+SEGURIDAD              9          6     15
+INICIALIZACION         8          9     17
+FLANCO                 5          4      9
+CALCULO                1          0      1
+Total                116        133    249
+
+3f. CATEGORIA x MODELO x ESTRATEGIA
+modelo_corto     Claude             GPT-4o             Gemini               Qwen          
+estrategia     few_shot zero_shot few_shot zero_shot few_shot zero_shot few_shot zero_shot
+categoria_plc                                                                             
+CONSTRUCCION          4         4        3        12        2         4       11        10
+CONVERSION            0         0        9         5        0         0        1         3
+DIALECTO              3         3        2         0        1         0        0         5
+INTERFAZ              0         0        2        20        0         0        0         6
+TEMPORIZACION         6         6       15         6        1         0       26        15
+SECUENCIA             0         4        1         5        0         0        6         6
+SEGURIDAD             1         0        4         3        0         1        4         2
+INICIALIZACION        3         2        2         3        0         0        3         4
+FLANCO                0         0        3         1        0         0        2         3
+CALCULO               0         0        0         0        0         0        1         0
+
+3f-bis. GPT-4o: fallos de temporizacion con few-shot en tareas cuyo zero-shot fallo por interfaz: 13/15 (tareas con interfaz en zero-shot: ['A3', 'B2', 'B5', 'B7', 'C3', 'C8', 'I1', 'I2', 'I4', 'I8'])
+
+3g. CATEGORIA x TIER (c1_categoria)
+c1_categoria    FALLA_LOGICA  INTERFAZ_NO_CONFORME  NO_COMPILA
+categoria_plc                                                 
+CONSTRUCCION               0                     0          50
+CONVERSION                 0                     0          18
+DIALECTO                   0                     0          14
+INTERFAZ                   0                    28           0
+TEMPORIZACION             75                     0           0
+SECUENCIA                 22                     0           0
+SEGURIDAD                 15                     0           0
+INICIALIZACION            17                     0           0
+FLANCO                     9                     0           0
+CALCULO                    1                     0           0
+
+3h. CWE x MODELO
+modelo_corto                                                                    Gemini  Claude  GPT-4o  Qwen  Total
+cwe_id  cwe_nombre                                                                                                 
+CWE-670 Always-Incorrect Control Flow Implementation                                 1      15      27    53     96
+CWE-710 Improper Adherence to Coding Standards                                       6       8      15    19     48
+CWE-684 Incorrect Provision of Specified Functionality                               0       0      22     6     28
+CWE-704 Incorrect Type Conversion or Cast                                            0       0      14     4     18
+CWE-754 Improper Check for Unusual or Exceptional Conditions                         1       1       7     6     15
+CWE-758 Reliance on Undefined, Unspecified, or Implementation-Defined Behavior       0       5       2     5     12
+CWE-665 Improper Initialization                                                      0       6       4     1     11
+CWE-372 Incomplete Internal State Distinction                                        0       0       4     5      9
+CWE-456 Missing Initialization of a Variable                                         0       0       1     6      7
+CWE-589 Call to Non-ubiquitous API                                                   1       1       0     0      2
+CWE-20  Improper Input Validation                                                    0       0       0     1      1
+CWE-561 Dead Code                                                                    0       0       0     1      1
+CWE-628 Function Call with Incorrectly Specified Arguments                           0       0       0     1      1
+
+3h-bis. Respuestas segun el uso para mapeo de la entrada CWE asignada
+  Allowed-with-review   169/249 = 67.9 %
+  Discouraged            69/249 = 27.7 %
+  Allowed                11/249 = 4.4 %
+  por nivel de abstraccion: {'Clase': 181, 'Pilar': 48, 'Base': 11, 'Variante': 9}
+
+3i. CWE x CATEGORIA
+categoria_plc  CONSTRUCCION  CONVERSION  DIALECTO  INTERFAZ  TEMPORIZACION  SECUENCIA  SEGURIDAD  INICIALIZACION  FLANCO  CALCULO
+cwe_id                                                                                                                           
+CWE-20                    0           0         0         0              0          0          0               0       0        1
+CWE-372                   0           0         0         0              0          0          0               0       9        0
+CWE-456                   0           0         0         0              0          0          0               7       0        0
+CWE-561                   1           0         0         0              0          0          0               0       0        0
+CWE-589                   0           0         2         0              0          0          0               0       0        0
+CWE-628                   1           0         0         0              0          0          0               0       0        0
+CWE-665                   0           0         0         0              1          0          0              10       0        0
+CWE-670                   0           0         0         0             74         22          0               0       0        0
+CWE-684                   0           0         0        28              0          0          0               0       0        0
+CWE-704                   0          18         0         0              0          0          0               0       0        0
+CWE-710                  48           0         0         0              0          0          0               0       0        0
+CWE-754                   0           0         0         0              0          0         15               0       0        0
+CWE-758                   0           0        12         0              0          0          0               0       0        0
+
+==============================================================================
+4. PRESENCIA EN CUALQUIER PASO FALLIDO (139 fallos de logica)
+  TEMPORIZACION    93/139 = 66.9 %  Gemini 1  Claude 13  GPT-4o 31  Qwen 48
+  SECUENCIA        58/139 = 41.7 %  Gemini 1  Claude 10  GPT-4o 17  Qwen 30
+  SEGURIDAD        53/139 = 38.1 %  Gemini 1  Claude 6  GPT-4o 20  Qwen 26
+  INICIALIZACION   18/139 = 12.9 %  Gemini 0  Claude 5  GPT-4o 5  Qwen 8
+  FLANCO           34/139 = 24.5 %  Gemini 0  Claude 0  GPT-4o 10  Qwen 24
+  CALCULO          18/139 = 12.9 %  Gemini 0  Claude 3  GPT-4o 4  Qwen 11
+  Fallos de logica con una sola categoria en sus pasos: 57; con dos o mas: 82
+
+==============================================================================
+5. SUBTIPOS DE NO_COMPILA x MODELO
+modelo_corto                                                                                                                                                         Gemini  Claude  GPT-4o  Qwen
+subtipo                                                                                                                                                                                          
+METHOD embebido en el texto del FUNCTION_BLOCK (POO de IEC 61131-3 ed. 3 no admitida en la importación textual de CODESYS; decisión del autor 2026-10-13: dialecto)       0       0       0     5
+TIME convertido implicitamente o con funcion erronea a REAL                                                                                                               0       0       4     1
+`ELSE:` con dos puntos en una sentencia CASE                                                                                                                              0       3       0     0
+`END_STRUCT;` (forma de la gramatica IEC rechazada por CODESYS)                                                                                                           0       5       2     0
+bloque inexistente `CONST ... END_CONST`                                                                                                                                  0       1       1     2
+conversion con sintaxis de funcion `REAL(x)` ajena al ST                                                                                                                  0       0       5     3
+entrada `R` del CTU (IEC) en lugar de `RESET` (CODESYS)                                                                                                                   1       1       0     0
+etiquetas CASE superpuestas (rama inalcanzable)                                                                                                                           0       0       0     1
+funcion de conversion inexistente `REAL_TO_REAL`                                                                                                                          0       0       5     0
+palabra `BEGIN` ajena al ST                                                                                                                                               0       0       1     0
+palabra `ELSEIF` en lugar de `ELSIF`                                                                                                                                      0       0       0     5
+palabra reservada `dt` usada como identificador                                                                                                                           6       4       3     8
+parametro inexistente de un bloque estandar (`PTR` en TON)                                                                                                                0       0       0     1
+terminador inexistente `END_VAR_INPUT`/`END_VAR_OUTPUT`                                                                                                                   0       0       4     0
+variable no declarada                                                                                                                                                     0       0       6     4
+
+Subtipos de los fallos de logica clasificados por juicio (texto de la justificacion):
+  TP en lugar de TON/TOF                           15
+  TON no invocado en cada ciclo o reiniciado       8
+  TOF emulado con TON                              0
+  conteo por nivel o sin evento                    2
+  memoria de flanco actualizada antes de comparar  0
+
+==============================================================================
+6. INDICADOR AUTOMATICO: RESPUESTAS QUE DECLARAN UN TP (600 respuestas de codigo)
+                    n  con_tp
+m      estrategia            
+Gemini few_shot    75       3
+       zero_shot   75       3
+Claude few_shot    75       6
+       zero_shot   75       0
+GPT-4o few_shot    75       1
+       zero_shot   75       0
+Qwen   few_shot    75      30
+       zero_shot   75       0
+Con TP: 43 respuestas; pasan el criterio 1: 9 (20.9 %)
+Sin TP: 557 respuestas; pasan el criterio 1: 342 (61.4 %)
+Qwen few-shot con TP: 30 en 10 tareas (A2, A3, B2, B5, B6, I1, I2, I4, I5, I8); pasan: 0
+Qwen: aciertos del criterio 1 en las tareas donde adopto TP con few-shot frente al resto (exploratorio):
+  zero_shot tareas con TP: 5/30   resto: 16/45   (respuestas con TP en esas tareas: 0)
+  few_shot  tareas con TP: 0/30   resto: 21/45   (respuestas con TP en esas tareas: 30)
+Tareas con TP por modelo y estrategia:
+m       estrategia  tarea
+Claude  few_shot    I1       3
+                    I5       3
+GPT-4o  few_shot    I5       1
+Gemini  few_shot    I5       3
+        zero_shot   I5       3
+Qwen    few_shot    A2       3
+                    A3       3
+                    B2       3
+                    B5       3
+                    B6       3
+                    I1       3
+                    I2       3
+                    I4       3
+                    I5       3
+                    I8       3

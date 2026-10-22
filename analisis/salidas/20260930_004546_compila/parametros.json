@@ -1,0 +1,8 @@
+{
+  "log": "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\raw\\log.jsonl",
+  "resultados": "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\results_codesys\\compilacion_piloto.csv",
+  "metrica": "compila",
+  "retest": "None",
+  "salida": "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\analisis\\salidas",
+  "alfa": "0.05"
+}

@@ -1,0 +1,97 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B7 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>B7 — Selector manual/automático (POU a elección) (Basico)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja B7 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa la selección de la fuente de mando de una bomba. La entrada modoAuto selecciona el modo: cuando está activa (modo automático), la bomba debe estar encendida mientras nivelBajo esté activo; cuando está inactiva (modo manual), la bomba obedece directamente al botón btnManual. El estado de la bomba depende únicamente del valor actual de las entradas, sin memoria entre ciclos. Programa en Structured Text (ST) conforme a IEC 61131-3. Elige tú el tipo de unidad de organización de programa (FUNCTION, FUNCTION_BLOCK o PROGRAM) más adecuado para esta lógica y llámala SelBomba. Debe recibir las entradas modoAuto, btnManual, nivelBajo (BOOL) y entregar el estado de la bomba como un valor BOOL; si eliges un FUNCTION_BLOCK o un PROGRAM, nombra esa salida bomba. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_B7_FB.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea B7 (SelBomba, POU a eleccion)
+    VARIANTE: FUNCTION_BLOCK  (generada por generar_harness_B7.py; no editar a mano)
+    ---------------------------------------------------------------------------
+    Validado en codesys/validar_harness_B7.py: 9 implementaciones (3 correctas,
+    una por tipo de POU, y 6 defectuosas), ciclos de 4, 10 y 20 ms.
+    Las tres variantes comparten secuencia y evaluacion; solo cambia la llamada.
+
+    Paso (modoAuto, btnManual, nivelBajo) -&gt; bomba
+      0 (F,F,F) F   1 (F,T,F) T   2 (F,F,F) F   3 (F,F,T) F   4 (T,F,T) T
+      5 (T,F,F) F   6 (T,T,F) F   7 (T,T,T) T   8 (F,T,T) T   9 (F,F,T) F
+    Cada paso de TRUE a FALSE delata memoria entre ciclos (el enunciado la prohibe).
+
+--- Pasos (CASE paso OF) ---
+
+        0: modoAuto := FALSE; btnManual := FALSE; nivelBajo := FALSE; esperado := FALSE;
+        1: modoAuto := FALSE; btnManual := TRUE;  nivelBajo := FALSE; esperado := TRUE;
+        2: modoAuto := FALSE; btnManual := FALSE; nivelBajo := FALSE; esperado := FALSE;
+        3: modoAuto := FALSE; btnManual := FALSE; nivelBajo := TRUE;  esperado := FALSE;
+        4: modoAuto := TRUE;  btnManual := FALSE; nivelBajo := TRUE;  esperado := TRUE;
+        5: modoAuto := TRUE;  btnManual := FALSE; nivelBajo := FALSE; esperado := FALSE;
+        6: modoAuto := TRUE;  btnManual := TRUE;  nivelBajo := FALSE; esperado := FALSE;
+        7: modoAuto := TRUE;  btnManual := TRUE;  nivelBajo := TRUE;  esperado := TRUE;
+        8: modoAuto := FALSE; btnManual := TRUE;  nivelBajo := TRUE;  esperado := TRUE;
+        9: modoAuto := FALSE; btnManual := FALSE; nivelBajo := TRUE;  esperado := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#B7-2790">B7-2790</a><a href="#B7-3058">B7-3058</a><a href="#B7-4839">B7-4839</a></div>
+<div class="caja resp" id="B7-2790"><div class="cod"><h3>B7-2790</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK SelBomba
+VAR_INPUT
+    modoAuto : BOOL;    // Indica si el modo automático está activo
+    btnManual : BOOL;   // Estado del botón manual
+    nivelBajo : BOOL;   // Indica si el nivel bajo está activo
+END_VAR
+
+VAR_OUTPUT
+    bomba : BOOL;       // Estado de la bomba
+END_VAR
+
+// Lógica de control de la bomba
+// Si modo automático está activo, la bomba se enciende si nivelBajo está activo
+// Si modo automático no está activo, la bomba sigue el estado del botón manual
+bomba := (modoAuto AND nivelBajo) OR (NOT modoAuto AND btnManual);
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B7-3058"><div class="cod"><h3>B7-3058</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION SelBomba : BOOL
+VAR_INPUT
+    modoAuto : BOOL;  // TRUE = Modo Automático, FALSE = Modo Manual
+    btnManual : BOOL; // Comando de encendido en modo manual
+    nivelBajo : BOOL; // Condición de encendido en modo automático
+END_VAR
+
+(* 
+   Al no requerir memoria entre ciclos (lógica puramente combinacional), 
+   una FUNCTION es la unidad de organización de programa (POU) más adecuada.
+*)
+
+IF modoAuto THEN
+    // En modo automático, el estado depende de la señal de nivel bajo
+    SelBomba := nivelBajo;
+ELSE
+    // En modo manual, el estado obedece directamente al botón
+    SelBomba := btnManual;
+END_IF;
+
+// Nota: También se puede expresar como:
+// SelBomba := (modoAuto AND nivelBajo) OR (NOT modoAuto AND btnManual);
+
+END_FUNCTION</pre></div>
+<div class="caja resp" id="B7-4839"><div class="cod"><h3>B7-4839</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;modoAuto&#x27; no es ninguna entrada de &#x27;SELBOMBA&#x27;).</div><pre>PROGRAM SelBomba
+VAR
+    modoAuto : BOOL;  // Entrada que indica si el sistema está en modo automático
+    btnManual : BOOL; // Entrada que indica el estado del botón manual
+    nivelBajo : BOOL; // Entrada que indica si el nivel está por debajo del umbral
+    bomba : BOOL;     // Salida que indica el estado de la bomba
+END_VAR
+
+// Lógica de selección de la fuente de mando de la bomba
+IF modoAuto THEN
+    // En modo automático, la bomba está encendida si nivelBajo está activo
+    bomba := nivelBajo;
+ELSE
+    // En modo manual, la bomba obedece directamente al botón btnManual
+    bomba := btnManual;
+END_IF;</pre></div>
+</main></body></html>

@@ -1,0 +1,186 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>I6 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>I6 — Escalado analógico con histéresis (Intermedio)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja I6 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa el acondicionamiento y control de una señal de temperatura. La entrada rawTemp entrega un valor entero de 0 a 27648 proporcional a 0.0–100.0 grados Celsius; calcula la temperatura en la salida tempC. El enfriador debe activarse cuando tempC sea mayor o igual a 80.0 y desactivarse cuando sea menor o igual a 75.0 (histéresis: entre ambos umbrales conserva su estado, sin oscilar). Si rawTemp es menor que 0 o mayor que 27648, debe activarse almSensor y desactivarse el enfriador. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Temperatura con variable de entrada rawTemp (INT) y salidas tempC (REAL), enfriador (BOOL) y almSensor (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_I6.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea I6 (escalado analogico con histeresis)
+    ---------------------------------------------------------------------------
+    rawTemp de 0 a 27648 se escala a tempC de 0.0 a 100.0 grados. El enfriador
+    se activa cuando tempC alcanza 80.0 y se desactiva cuando desciende a 75.0,
+    conservando su estado entre ambos umbrales. Si rawTemp queda fuera del
+    rango se activa almSensor Y SE DESACTIVA EL ENFRIADOR.
+
+    Se comprueba la histeresis en LOS DOS SENTIDOS: conserva el estado ON al
+    bajar dentro de la banda y conserva el estado OFF al subir dentro de ella.
+
+    USO: crear este PROGRAM junto al FUNCTION_BLOCK de la respuesta a evaluar y
+    ejecutar en modo Simulacion. Al terminar, leer &#x27;veredicto&#x27;: 1 = supera,
+    2 = falla.
+
+    ---------------------------------------------------------------------------
+    CORRECCION DEL 2026-09-09 (enmienda 13). Validado con validar_harness_I6.py.
+    La version anterior daba veredicto 1 a una implementacion que activaba la
+    alarma pero NO desactivaba el enfriador, incumpliendo la ultima frase del
+    enunciado.
+
+    Causa: los dos pasos de fuera de rango estaban al final de la secuencia,
+    cuando el enfriador ya llevaba tres pasos apagado. La condicion &quot;y se
+    desactiva el enfriador&quot; se evaluaba sobre una salida que ya estaba en el
+    valor esperado, de modo que la implementacion defectuosa y la correcta
+    daban el mismo resultado. Para observar que la alarma APAGA el enfriador
+    hay que provocarla con el enfriador ENCENDIDO.
+
+    Es el mismo patron de cobertura de las enmiendas 7, 9, 10 y 12: el banco no
+    llegaba al estado en el que el defecto se manifiesta.
+
+    Correccion: el primer paso de fuera de rango se adelanta y pasa a aplicarse
+    justo despues de la banda de histeresis con el enfriador encendido. La
+    secuencia conserva los ocho pasos y sigue cubriendo los dos sentidos de la
+    histeresis y los dos limites del rango.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Punto medio del rango *)
+            rawTemp := 13824; espTemp := 50.0;
+            espFrio := FALSE; espAlarma := FALSE; compTemp := TRUE;
+        1:  (* Umbral superior: el enfriador debe activarse *)
+            rawTemp := 22119; espTemp := 80.0;
+            espFrio := TRUE;  espAlarma := FALSE; compTemp := TRUE;
+        2:  (* Dentro de la banda bajando: debe CONSERVAR el estado ON *)
+            rawTemp := 21289; espTemp := 77.0;
+            espFrio := TRUE;  espAlarma := FALSE; compTemp := TRUE;
+        3:  (* Fuera de rango CON EL ENFRIADOR ENCENDIDO (enmienda 13):
+               la alarma debe activarse y el enfriador debe apagarse *)
+            rawTemp := 27649; espTemp := 0.0;
+            espFrio := FALSE; espAlarma := TRUE;  compTemp := FALSE;
+        4:  (* Vuelve al rango en el umbral inferior: enfriador apagado *)
+            rawTemp := 20736; espTemp := 75.0;
+            espFrio := FALSE; espAlarma := FALSE; compTemp := TRUE;
+        5:  (* Dentro de la banda subiendo: debe CONSERVAR el estado OFF *)
+            rawTemp := 21289; espTemp := 77.0;
+            espFrio := FALSE; espAlarma := FALSE; compTemp := TRUE;
+        6:  (* Fuera de rango por el limite inferior *)
+            rawTemp := -1;    espTemp := 0.0;
+            espFrio := FALSE; espAlarma := TRUE;  compTemp := FALSE;
+        7:  (* Vuelve al rango: la alarma debe desactivarse *)
+            rawTemp := 0;     espTemp := 0.0;
+            espFrio := FALSE; espAlarma := FALSE; compTemp := TRUE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#I6-5227">I6-5227</a><a href="#I6-1774">I6-1774</a><a href="#I6-7940">I6-7940</a></div>
+<div class="caja resp" id="I6-5227"><div class="cod"><h3>I6-5227</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 8 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Temperatura
+VAR_INPUT
+    rawTemp : INT; (* Valor raw de temperatura *)
+END_VAR
+VAR_OUTPUT
+    tempC : REAL; (* Temperatura en Celsius *)
+    enfriador : BOOL; (* Control del enfriador *)
+    almSensor : BOOL; (* Alarma del sensor *)
+END_VAR
+VAR
+    tempMin : REAL := 0.0; (* Temperatura mínima *)
+    tempMax : REAL := 100.0; (* Temperatura máxima *)
+    rawMin : INT := 0; (* Valor raw mínimo *)
+    rawMax : INT := 27648; (* Valor raw máximo *)
+    tempThresholdHigh : REAL := 80.0; (* Umbral alto para activar el enfriador *)
+    tempThresholdLow : REAL := 75.0; (* Umbral bajo para desactivar el enfriador *)
+END_VAR
+
+(* Conversión de rawTemp a temperatura en Celsius *)
+tempC := (rawTemp - rawMin) * (tempMax - tempMin) / (rawMax - rawMin) + tempMin;
+
+(* Control del enfriador con histéresis *)
+IF tempC &gt;= tempThresholdHigh THEN
+    enfriador := TRUE;
+ELSIF tempC &lt;= tempThresholdLow THEN
+    enfriador := FALSE;
+END_IF;
+
+(* Alarma del sensor si rawTemp está fuera de rango *)
+IF rawTemp &lt; rawMin OR rawTemp &gt; rawMax THEN
+    almSensor := TRUE;
+    enfriador := FALSE;
+ELSE
+    almSensor := FALSE;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I6-1774"><div class="cod"><h3>I6-1774</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (12 errores).<div class="err">Mensajes del compilador: L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;SCALE_FACTOR&#x27; || L?nea 2, columna 1 (Impl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 2, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;100.0&#x27; || L?nea 2, columna 1 (Impl) Encontrado token inesperado &#x27;100.0&#x27; || L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;/&#x27; || L?nea 2, columna 1 (Impl) Encontrado token inesperado &#x27;/&#x27; || L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;27648.0&#x27; || L?nea 2, columna 1 (Impl) Encontrado token inesperado &#x27;27648.0&#x27; || L?nea 6, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;BEGIN&#x27; || L?nea 8, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;IF&#x27;</div></div><pre>FUNCTION_BLOCK FB_Temperatura
+VAR_INPUT
+    rawTemp : INT; // Valor de entrada de temperatura en bruto
+END_VAR
+
+VAR_OUTPUT
+    tempC : REAL; // Temperatura calculada en grados Celsius
+    enfriador : BOOL; // Estado del enfriador
+    almSensor : BOOL; // Alarma de sensor
+END_VAR
+
+VAR
+    tempC_prev : REAL; // Almacena el valor anterior de tempC para histéresis
+END_VAR
+
+// Constantes para la conversión de la señal de entrada a grados Celsius
+CONST
+    SCALE_FACTOR : REAL := 100.0 / 27648.0; // Factor de escala para convertir rawTemp a grados Celsius
+END_CONST
+
+// Cuerpo del bloque de función
+BEGIN
+    // Verificar si rawTemp está fuera de rango
+    IF (rawTemp &lt; 0) OR (rawTemp &gt; 27648) THEN
+        almSensor := TRUE; // Activar alarma de sensor
+        enfriador := FALSE; // Desactivar enfriador
+    ELSE
+        almSensor := FALSE; // Desactivar alarma de sensor
+        // Convertir rawTemp a grados Celsius
+        tempC := rawTemp * SCALE_FACTOR;
+
+        // Control del enfriador con histéresis
+        IF tempC &gt;= 80.0 THEN
+            enfriador := TRUE; // Activar enfriador
+        ELSIF tempC &lt;= 75.0 THEN
+            enfriador := FALSE; // Desactivar enfriador
+        ELSE
+            // Mantener el estado anterior del enfriador
+            enfriador := enfriador;
+        END_IF;
+    END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I6-7940"><div class="cod"><h3>I6-7940</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 8 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Temperatura
+VAR_INPUT
+    rawTemp : INT; (* Valor crudo del sensor: 0..27648 -&gt; 0.0..100.0 °C *)
+END_VAR
+VAR_OUTPUT
+    tempC     : REAL; (* Temperatura calculada en grados Celsius *)
+    enfriador : BOOL; (* Activacion del enfriador *)
+    almSensor : BOOL; (* Alarma de sensor fuera de rango *)
+END_VAR
+
+(* Verificar rango valido del sensor *)
+IF rawTemp &lt; 0 OR rawTemp &gt; 27648 THEN
+    almSensor := TRUE;
+    enfriador := FALSE; (* Apagar enfriador por seguridad ante fallo *)
+ELSE
+    almSensor := FALSE;
+
+    (* Escalar valor crudo a grados Celsius: tempC = rawTemp * 100.0 / 27648.0 *)
+    tempC := INT_TO_REAL(rawTemp) * 100.0 / 27648.0;
+
+    (* Control con histeresis: ON &gt;= 80.0, OFF &lt;= 75.0, entre ambos conserva estado *)
+    IF tempC &gt;= 80.0 THEN
+        enfriador := TRUE;  (* Activar enfriador al superar umbral alto *)
+    ELSIF tempC &lt;= 75.0 THEN
+        enfriador := FALSE; (* Desactivar enfriador al bajar del umbral bajo *)
+    (* Entre 75.0 y 80.0 exclusivo: enfriador mantiene su estado anterior *)
+    END_IF;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

@@ -1,0 +1,25 @@
+modelo,estrategia,ejec,descripcion,cobertura_5,errores,nivel,observacion
+gemini-3.1-pro-preview,zero_shot,ejec_1,Si,5,0,Intencion,Describe duty/standby y relevo; turno TRUE = bomba 1 correcto
+gemini-3.1-pro-preview,zero_shot,ejec_2,Si,5,0,Intencion,
+gemini-3.1-pro-preview,zero_shot,ejec_3,Si,5,0,Intencion,
+gemini-3.1-pro-preview,few_shot,ejec_1,Si,5,0,Intencion,
+gemini-3.1-pro-preview,few_shot,ejec_2,Si,5,0,Intencion,
+gemini-3.1-pro-preview,few_shot,ejec_3,Si,5,0,Intencion,
+claude-sonnet-4-6,zero_shot,ejec_1,Si,5,0,Intencion,Encabezados por sección que explican el propósito
+claude-sonnet-4-6,zero_shot,ejec_2,Si,5,0,Intencion,
+claude-sonnet-4-6,zero_shot,ejec_3,Si,5,0,Intencion,
+claude-sonnet-4-6,few_shot,ejec_1,Parcial,5,0,Intencion,El párrafo omite la alarma (los comentarios sí la describen)
+claude-sonnet-4-6,few_shot,ejec_2,Si,5,0,Intencion,
+claude-sonnet-4-6,few_shot,ejec_3,Si,5,0,Intencion,
+gpt-4o-2024-08-06,zero_shot,ejec_1,Si,5,0,Parafrasis,
+gpt-4o-2024-08-06,zero_shot,ejec_2,Parcial,5,1,Parafrasis,Párrafo: la alarma se activa si ambas bombas fallan (se activa con la falla de la principal)
+gpt-4o-2024-08-06,zero_shot,ejec_3,Si,5,0,Parafrasis,
+gpt-4o-2024-08-06,few_shot,ejec_1,Parcial,5,2,Parafrasis,Alarma si alguna de las bombas falla (la falla sola del respaldo no la activa); turno indica la bomba del siguiente ciclo (indica la principal vigente)
+gpt-4o-2024-08-06,few_shot,ejec_2,Parcial,5,1,Parafrasis,Alarma si alguna de las bombas falla (párrafo y comentario de almFalla)
+gpt-4o-2024-08-06,few_shot,ejec_3,Si,5,0,Parafrasis,
+qwen2.5-coder_14b,zero_shot,ejec_1,Parcial,5,1,Parafrasis,almFalla descrita como registro o almacenamiento de la falla (es una alarma combinacional de la principal)
+qwen2.5-coder_14b,zero_shot,ejec_2,Parcial,5,2,Parafrasis,R_TRIG llamado objeto de retardo; alarma ante la falla de cualquiera de las bombas
+qwen2.5-coder_14b,zero_shot,ejec_3,Parcial,5,2,Parafrasis,R_TRIG llamado temporizador; almFalla como registro de la falla; el párrafo no describe el respaldo
+qwen2.5-coder_14b,few_shot,ejec_1,Parcial,5,1,Parafrasis,almFalla como registro de la última falla
+qwen2.5-coder_14b,few_shot,ejec_2,Parcial,5,1,Parafrasis,almFalla como registro de la última falla
+qwen2.5-coder_14b,few_shot,ejec_3,Parcial,5,2,Parafrasis,R_TRIG llamado temporizador; almFalla como registro de la última falla

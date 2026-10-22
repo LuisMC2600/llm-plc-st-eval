@@ -1,0 +1,18 @@
+Casos: 51 | acuerdo DeepSeek-Claude: 46/51 = 90.2% | kappa de Cohen = 0.79
+
+Matriz de confusión (filas Claude, columnas DeepSeek):
+cat_deepseek      FLANCO  SECUENCIA  TEMPORIZACION  All
+categoria_claude                                       
+FLANCO                 7          2              0    9
+SECUENCIA              0          5              0    5
+TEMPORIZACION          1          2             34   37
+All                    8          9             34   51
+
+Desacuerdos:
+ J02 qwen2.5-coder_14b I5 few_shot ejec_1: Claude=FLANCO DeepSeek=SECUENCIA | El ELSE incrementa nBajas cada ciclo en reposo porque solo depende de tEspera.Q y sensorAltura, sin exigir piezaDetectada; el reposo no deja los contadores en cero.
+ J13 gpt-4o-2024-08-06 I5 zero_shot ejec_1: Claude=TEMPORIZACION DeepSeek=SECUENCIA | El conteo de piezas se realiza al expirar timerRetraso.Q, es decir 2 s después de la detección, en lugar de contar en el flanco de sensorPresencia.
+ J14 qwen2.5-coder_14b I5 zero_shot ejec_1: Claude=TEMPORIZACION DeepSeek=SECUENCIA | Los contadores nAltas y nBajas se declaran como VAR local y no como VAR_OUTPUT del FB, y además el CASE los incrementa tras 2 s, no al detectar la pieza.
+ J18 qwen2.5-coder_14b I5 few_shot ejec_3: Claude=FLANCO DeepSeek=SECUENCIA | El ELSE nBajas++ se ejecuta cuando tEspera.Q es FALSE, incluso en reposo; el contador no se mantiene en cero antes de detectar una pieza.
+ J27 qwen2.5-coder_14b I5 few_shot ejec_2: Claude=TEMPORIZACION DeepSeek=FLANCO | El TP tPiston.Q reinicia piezaDetectada en el mismo ciclo de la detección, por lo que una presencia sostenida se vuelve a detectar cada ciclo y los contadores se incrementan repetidamente.
+
+Escrito juicio_deepseek.csv (oficial) y concordancia_juicio_deepseek_claude.csv

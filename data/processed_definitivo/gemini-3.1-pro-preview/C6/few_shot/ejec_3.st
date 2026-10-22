@@ -1,0 +1,7 @@
+1. Cálculo de escalado (`tempC := INT_TO_REAL(rawTemp / 27648 * 100);`): Al ser `rawTemp` de tipo INT, la operación `rawTemp / 27648` realiza una división entera. Para cualquier valor de entrada menor al máximo, el resultado será 0, por lo que `tempC` siempre valdrá 0.0. Corrección: Convertir el valor a REAL antes de realizar las operaciones matemáticas: `tempC := INT_TO_REAL(rawTemp) / 27648.0 * 100.0;`.
+
+2. Lógica de histéresis del enfriador (`IF tempC >= 75.0 THEN...`): Los umbrales de encendido y apagado están invertidos respecto a la especificación (enciende en 75.0 y apaga en 80.0). Corrección: Intercambiar los valores en las condiciones: `IF tempC >= 80.0 THEN enfriador := TRUE; ELSIF tempC <= 75.0 THEN enfriador := FALSE; END_IF`.
+
+3. Condición de la alarma (`IF rawTemp > 27648 THEN almSensor := TRUE; END_IF`): Solo evalúa el límite superior del rango, ignorando si la señal cae por debajo de 0. Además, carece de una condición de apagado, por lo que una vez que `almSensor` pasa a TRUE, se queda enclavada para siempre. Corrección: Evaluar ambos límites y usar una asignación directa: `almSensor := (rawTemp < 0) OR (rawTemp > 27648);`.
+
+4. Interbloqueo del enfriador con la alarma: La especificación exige que al salir del rango (alarma activa) se desactive el enfriador, pero el código actual no vincula la alarma con el estado del enfriador. Corrección: Añadir al final del bloque una condición que fuerce el apagado por seguridad, por ejemplo: `IF almSensor THEN enfriador := FALSE; END_IF`.

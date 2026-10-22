@@ -1,0 +1,8 @@
+﻿archivo,sustituciones,caracteres_eliminados,sha256_original,sha256_normalizado
+claude-sonnet-4-6/A5/few_shot/ejec_1.st,1,1,de8143c878d9861a,218fd2a28be2dce7
+claude-sonnet-4-6/A5/few_shot/ejec_2.st,1,1,8a08886586de7202,dd929cc5f5df1970
+claude-sonnet-4-6/A5/few_shot/ejec_3.st,1,1,4b08c72ba24092c8,d2d0fd0dbf10d1c3
+claude-sonnet-4-6/A5/zero_shot/ejec_1.st,1,1,a8e40ea01206e941,e592f12f9cd60a87
+claude-sonnet-4-6/A5/zero_shot/ejec_2.st,1,1,dd9255f44a28dd3d,996b22c6f600ecf9
+gpt-4o-2024-08-06/A5/few_shot/ejec_1.st,1,1,f19e341ca3ce0c44,d6eec2b7568cabae
+gpt-4o-2024-08-06/A5/few_shot/ejec_2.st,1,1,2028604821ab5b61,d8bb85ae12e31f5a

@@ -1,0 +1,432 @@
+Necesito responder solo con JSON. Debo evaluar 24 respuestas. Ya están en orden. Necesito generar campos. Debo verificar reglas.
+
+Necesito analizar cada una. El JSON incluye 24? Contemos: A1-9962, A1-1725, A1-9421, A1-8114, A1-6268, A1-7933, A1-7927, A1-6125, A1-3038, A1-7444, A1-7874, A1-9190, A1-6243, A1-6380, A1-5398, A1-9749, A1-9704, A1-6233, A1-7633, A1-5864, A1-5313, A1-2241, A1-6805, A1-8493. Sí 24.
+
+Voy a evaluar.
+
+Debo respetar:
+- funcional_fijo e iec_fijo: copiar si no null.
+- Si no compila: funcional = 0 e iec = 0 vienen fijados. Los otros tres se puntúan leyendo.
+- Si pasa todos los pasos: funcional = 3 fijado.
+- Si compila pero falla pasos: funcional 0,1,2.
+- Si compila pero no se pudo simular (interfaz no conforme): funcional 0,1,2 leyendo código; nunca 3.
+- Cumplimiento IEC cuando compila: 1 extensiones, 2 correcto, 3 idiomático.
+
+Aquí solo hay compila y pasa todos, o no compila. No hay compila falla pasos. Por tanto fijados: compilan pasan todos funcional=3; no compilan funcional=0 iec=0.
+
+Debo evaluar iec para los tres que compilan y pasan todos: A1-9962, A1-7444, A1-2241. Sus iec_fijo null, debo poner 1-3. Todos compilan sin cambios; TIME_TO_REAL? Es estándar IEC? TIME_TO_REAL es función estándar? IEC 61131-3 define TIME_TO_REAL? Creo que no exactamente? CODESYS permite. El estándar define conversiones entre TIME y REAL? Hmm. Necesito evaluar. TIME_TO_REAL(ciclo) / 1000.0 se asume ms. En IEC 61131-3, TIME es comparable y convertible a LREAL? La norma IEC 61131-3 incluye funciones de conversión de tipo como TIME_TO_REAL? De hecho hay conversiones numéricas: *_TO_*; TIME_TO_REAL está en CODESYS, no sé si estándar. Por lo general, conversión TIME to REAL es estándar? IEC 61131-3 define tipos de datos y funciones de conversión, p.ej. TIME_TO_LREAL? No estoy 100%. La instrucción dice "tipos TIME correctos, bloques estándar como TON..." En ejemplos se usa TIME_TO_REAL. Considero aceptado como extensión CODESYS? El resultado compila. Para iec: probablemente 2 o 3. A1-9962 usa TIME_TO_REAL, no bloques estándar, pero declaraciones y tipos correctos. Idiomático? FB_PID, constantes? No utiliza VAR CONSTANT para límites. Podría ser 2. A1-7444 usa VAR CONSTANT, tiempo en segundos, bien comentado. Puede ser 3. A1-2241 usa TIME_TO_DINT/DINT_TO_REAL, RETURN si Ts<=0. Es idiomático. Puede ser 3.
+
+Para no compilar, iec_fijo 0. Ya.
+
+Los campos para no compilación:
+- funcional=0, iec=0 fijados.
+- coherencia, claridad, mantenibilidad puntúo leyendo código.
+
+Necesito puntuar consistentemente. Veo muchos no compilan principalmente porque usan comentarios // en lugar de (* *)? Espera, en ST IEC, comentarios son (* *), no //. CODESYS puede aceptar //? Los mensajes indican que no compilan y el primer error suele "token inesperado 'dt'" en línea 18/20 Decl. Pero por qué no compilan exactamente? El código_st incluye // comentarios. Al parecer el entorno de validación quizás solo acepta IEC puro? CODESYS normalmente acepta //, pero el compilador reporta errores raros por "dt". Vamos a analizar: en muchos no compilan, aunque código parece sintácticamente válido en CODESYS. El error "Encontrado token inesperado 'dt'" en línea decl, se esperaba ';' en lugar de ':'. Tal vez "dt" es palabra reservada? Ah, sí: "DT" es un tipo de datos en IEC (DATE_AND_TIME), no puede ser nombre de variable? En ST, "DT" es palabra reservada. Los compiladores lo marcan. Por eso todo programa que declara variable dt no compila. Correcto: no compilan porque usan identificador dt, que es tipo reservado (DATE_AND_TIME abreviado DT). Igual error para "integral" quizá. No podemos adivinar. Muchas respuestas no compilan por usar `dt` como variable. Debo puntuar no compila con iec=0, funcional=0.
+
+Debo puntuar coherencia, claridad, mantenibilidad para las no compilan. Aunque no compilan, evaluar código.
+
+Necesito revisar cada respuesta.
+
+Voy a enumerar y asignar.
+
+1. A1-9962 Compila, pasa 11. funcional_fijo=3, iec_fijo=null. Código: FB_PID, vars correctas. TIME_TO_REAL(ciclo)/1000.0, etc. Anti-windup con CV >=100/e>0. Integral_acc actualizada. Derivada guarda e_prev. Falta protección dt=0? Tiene dt_sec ser 0? Si ciclo 0, dt_sec=0, derivada condicional dt_sec>0, antiwindup no acumula? En protocolo ciclo=T#100ms. Correcto. No VAR CONSTANT. Comentarios breves. Mantenibilidad: no parametriza límites, pero variables descriptivas. Puede ser 2. iec: compila, tipos correctos, usa TIME_TO_REAL (posible extensión CODESYS) pero buen uso. Yo pondría 2. Coherencia: correcta, una redundancia? CV inicial no inicializado, se usa en condición antiwindup antes de CV calculado del ciclo actual. En CODESYS variables VAR se inicializan a 0 por defecto. Correcto. La condición usa CV del ciclo anterior. Es lo estándar. Sin estados muertos. Podría 2 o 3. Robustez: dt_sec>0 condicional para derivada, pera antiwindup checa dt_sec? Si ciclo=0, dt_sec=0, integral no se acumula? En su código integral se acumula si condición antiwindup TRUE; e*0 = 0. OK. No inicialización de integral_acc? En VAR, se inicializa a 0. Correcto. Podría 3? Claridad: nombres descriptivos, secciones, comentarios. 2 o 3. Mantenibilidad: sin constantes de límites, aunque lógica localizada; valores 100.0/0.0 mágicos. 2. No usa FB con parámetros de entrada duplicados? Es FB. Creo claridad 2, coherencia 3? Necesario justificar.
+
+2. A1-1725 no compila. funcional=0, iec=0. Código similar, usa `dt` variable -> no compila. Evaluar:
+- coherencia: Ojo: código calcula CV_tentative con integral tentativa; actualiza I_sum; pero luego calcula CV final. La lógica integral es: I_new := I_sum + e*dt; CV_tentative := Kp*(e+I_new/Ti+Td*de_dt). Si CV_tentative>=100 y e>0 no actualiza. Esto es antiwindup correcto (con salida tentativa en lugar de CV real). Luego CV final con I_sum. Tengo dudas: se declara I_sum no inicializado, pero default 0. Coherencia mayormente correcta, excepto si Ti <=0, su bloque integral no se usa; CV se calcula sin integral. Correcto. Sin contradicciones. Aunque no compila por usar dt. Puntuación coherencia 2 (sin contradicciones, inicialización por default, transiciones completas). Podría 3? Robusto? evalúa CV_tentative en vez de CV, es bueno. No hay estados inalcanzables. Sin embargo, en `ELSE` de Ti>0 no reinicia I_sum? Sí. Sí. Le daría 2 o 3. Como no compila, no puedo saber; leo código. La variable `dt` forzada a 0.001 si <=0; OK. 3? El antiwindup por CV_tentative no es exactamente "clamping: mientras CV esté saturada"; está usando salida tentativa; pero correcto. No hay estados muertos. Podría dar 3 coherencia. Claridad: usa // comentarios, no compila porque dt reservado. Nombres descriptivos, secciones. Comentarios útiles. Puntuación 2. Mantenibilidad: no constantes para límites; pero hay variables. 2. 
+Debo diferenciar entre no compilas con buena lógica y no compilas más defectuosas. Usaré rúbrica.
+
+3. A1-9421 no compila. funcional=0, iec=0. Código: usa `dt`. Convert time. Ti >0: I_term := Kp * ((integral + e*dt)/Ti); CV_unc := P_term + I_term + D_term; antiwindup actualiza integral si not ((CV_unc>=100 and e>0) or (CV_unc<=0 and e<0)). Ojo: el antiwindup se aplica después de calcular I_term; I_term se usa para CV_unc. Correcto. Pero D_term := Kp * Td * ((e - e_prev)/dt); P_term := Kp * e; luego CV_unc = P_term + I_term + D_term. Correcto. En Ti<=0, I_term 0, integral reset. Coherencia 3? Sí robusta. Claridad 2 (comentarios con (* *), secciones, nombres descriptivos). Mantenibilidad 2. 
+IEC no compila fijado 0.
+
+4. A1-8114 no compila. dt. Código: antiwindup usa CV anterior. Integral += e*dt. Derivada: `derivada := (eActual - eAnterior) / dt;` CVraw := Kp*eActual + Kp/Ti*integral + Kp*Td*derivada. Correcto. Coherencia 3? Claridad 3? Comentarios con secciones, nombres descriptivos. Mantenibilidad 2. Similar. No compila por dt. 
+Debo ser consistente: dar puntajes parecidos a lógica correcta no compila. Claridad podría 3 si muchos comentarios. Mantenibilidad 2.
+
+5. A1-6268 no compila. dt TIME variable y división `dt / 1.0s` inválida. funcional 0 iec 0. Lógica: CV := Kp*e. integral += e*dt_sec; integral_limit := 100.0/Kp; IF CV>=100 THEN integral -= e*dt_sec etc. Luego CV := CV + Kp/Ti*integral. Derivative: `derivative := (e - e_prev)/dt_sec; CV := CV + Kp*Td*derivative`. Clamp. Anti-windup resta siempre al saturar, tanto error positivo como negativo? Dice IF CV>=100 THEN integral := integral - e*dt_sec; ELSIF CV<=0 THEN integral := integral - e*dt_sec. Si CV>=100 y e negativo, restar e*dt (negativo) aumenta la integral, lo cual es incorrecto? El antiwindup por clamping debería no acumular error positivo si CV=100. Aquí si CV>=100 y e negativo, resta e*dt -> integral = integral - (negativo) = aumenta, cuando debería acumular error negativo para desaturar. Entonces es defectuoso. Si CV<=0 y e positivo, resta e*dt positivo disminuye integral, cuando debería acumular error positivo. Adicional `dt := ciclo` y `dt_sec := dt / 1.0s` inválido. Coherencia: antiwindup incorrecto en lógica. Puntuación coherencia 1 (lógica mayormente coherente con error de signo en antiwindup, no solo redundancia; puede comprometer casos límite). Pero no compila por tipos. Claridad: nombres descriptivos, comentarios, aunque usa //. 2. Mantenibilidad: constantes 100.0, Kp divisor sin proteger Kp=0. Integral limit variable no usada apropiadamente. 1. 
+Debo justificar. 
+
+6. A1-7933 no compila. dt. Lógica: P_term, D_term, integral antiwindup con CV_pre. I_term := (Kp/Ti)*integral_sum; CV_pre := P_term+I_term+D_term. Antiwindup: if (CV_pre >=100 and e>0) or (CV_pre<=0 and e<0) no acumula; else integral_sum += e*dt. Luego recalcula I_term. Correcto. Ti<=0 resets. Coherencia 3. Claridad 2. Mantenibilidad 2.
+
+7. A1-7927 no compila. dt, usa DINT_TO_REAL(TIME_TO_DINT(ciclo))/1000.0. Todo el cálculo envuelto en IF dt>0. Correcto. Antiwindup usa CV anterior no CVraw. Correcto. Coherencia 3. Claridad 2. Mantenibilidad 2.
+
+8. A1-6125 no compila. dt. Lógica: I_term := I_term + (Kp * e * dt)/Ti; Es decir integra término integral ya escalado, no acumulador puro. Así luego CV := P_term + I_term + D_term. Es equivalente: I_term = Kp/Ti * integral. Antiwindup con CV anterior, e y no actualiza si sat. Correcto. Nota: en Ti<=0 resets I_term. Derivative D_term := Kp * Td * (e-e_prev)/dt. Correcto. Coherencia 3. Claridad 2. Mantenibilidad 2.
+
+9. A1-3038 no compila (2 errores): usa REAL_TO_TIME(ciclo) / 1000.0. Código: `delta_t := REAL_TO_TIME(ciclo) / 1000.0;` inválido. `CV := Kp * (e + (integral / Ti) + (Td * derivada));` Si Ti<=0? No chequea Ti>0 excepto en integral, pero luego divide integral/Ti incondicionalmente. En la integral, si Ti<=0, no entra, integral queda 0, pero división 0/0 en REAL? En ST, 0.0/0.0 puede dar NaN o error. La lógica no desactiva integral en salida. Correcto? No, si Ti=0 y integral=0, 0/0 produce indefinido. En CODESYS, división real por cero no detiene, produce inf? Para 0/0 NaN. Podría no importar pero es defectuoso. Anti-windup: `integral := MIN(integral,0.0);` si CV>=100; `integral := MAX(integral,0.0);` si CV<=0. Eso limita el acumulador en vez de no acumular. Si CV>=100 y e>0: integral += e*dt, luego MIN(integral,0) deja integral en 0 (si positivo), pero si integral era negativo, lo mantiene. Esto permite acumular error negativo cuando saturado alto. Es correcto para desaturación. Si CV<=0 y e<0, integral += negativo, MAX(integral,0) deja 0, similar. Aunque el método no evita exactamente la acumulación sino la limita; puede acumular en dirección de desaturación. OK. Pero no compila. Coherencia: la división por Ti incondicional es un fallo lógico para Ti<=0. Puntuación coherencia 2 (sin contradicciones pero riesgo si Ti<=0). Claridad 2 (comentarios, nombres). Mantenibilidad 2 (constantes 100/0 magic). 
+
+10. A1-7444 compila pasa 11. funcional=3, iec=null. Código robusto, VAR CONSTANT, TIME_TO_REAL, antiwindup con CV anterior y satur flags. Nota: no END_FUNCTION_BLOCK al final? El código mostrado termina con `e_prev := e;` sin END_FUNCTION_BLOCK. ¿Compila? Dice compila. Tal vez se omite? En ST, FUNCTION_BLOCK requiere END_FUNCTION_BLOCK. Si no, no compilaría. Quizás lo cortó el JSON? Reviso: termina `e_prev := e;` y no hay END_FUNCTION_BLOCK. Sin embargo resultado dice compila. Quizá en texto no se muestra la última línea? Puede ser error del JSON. No importa. Debo puntuar según resultado. iec: 3 (constantes, comentarios, estructura). Coherencia 3. Claridad 3. Mantenibilidad 3? Tiene constantes CV_MAX/CV_MIN. Diseño extensible? Parámetros de entrada del FB, sin duplicación. Le daría 3. Pero no declaró e_prev inicializado, default 0. Correcto. 
+Debo dar just.
+
+11. A1-7874 no compila. dt TIME. Lógica: `derivada := (e - e_prev) / REAL_TO_TIME(dt);` mal. Integral: `integral := integral + (e * REAL_TO_TIME(dt))/Ti;` luego antiwindup resta. CV = Kp*(e + integral + Td*derivada). Ojo: CV usa `integral` (que incluye división por Ti). Correcto? Ecuación estándar: Kp*(e + (1/Ti)*∫e + Td*derivada). Aquí integral acumula e*dt/Ti, y CV=Kp*(e + integral + Td*derivada). Correcto. Anti-windup resta e*dt/Ti solo si CV>=100 y e>0, o CV<=0 y e<0. Correcto. Coherencia 2? Tiene problema calcula `derivada` antes de `dt`? dt := ciclo. `REAL_TO_TIME(dt)` convierte? Es inválido, pero conceptual división TIME/TIME? no. El código no compila. Coherencia de intención: correcta en integral, derivada asuma. Puedo dar 2. Claridad 2. Mantenibilidad 1 (no constantes). 
+Debo recordar no puntuar si no compila: iec_fijo 0.
+
+12. A1-9190 no compila. dt. Lógica muy defectuosa: `CV_unsat := Kp * e; integral += e*dt/Ti; antiwindup: if CV_unsat >= CV_MAX then if e>0 then integral -= e*dt/Ti; elsif CV_unsat <= CV_MIN ...` Nota: usa CV_unsat solo con P para saturar, no salida completa. Luego `CV_unsat := CV_unsat + Kp * integral; derivative := Td * (e - e_prev)/dt; CV_unsat := CV_unsat + Kp * derivative;`. Esto es matemáticamente: P term + Kp*integral + Kp*Td*derivative; integral incluye 1/Ti; entonces Kp*integral = Kp/Ti*∫e, correcto. Antiwindup utiliza CV_unsat provisional? Usa el valor puro P para decidir; incorrecto en general. En el protocolo, Ti=5, Kp=1, e=100, P=100 => CV_unsat >=100 y e>0, no acumula; luego CV calcula 100+? integral no acumulada, luego satura. En escenario de saturación alto, P ya 100, no hay integral; salida alta. En paso 8, después SP=100 PV=110 e=-10, CV_unsat := -10; antiwindup? if CV_unsat >= max no, elsif CV_unsat <= min (-10 <=0) then if e<0 (true) integral -= e*dt/Ti = -(-10*dt)/Ti = +... Permite acumular? En este código extraño, en Ti<=0? `IF Ti >0`; ok. Para antiwindup con salida en bajo, funciona si P solo negativo. Pero es incorrecto: la detección de saturación debe considerar salida completa; no P. Coherencia 1/2. No compila por dt. Hay IF sin END_IF? Reviso: `IF CV_unsat >= CV_MAX THEN IF e > 0.0 THEN integral := integral - ... END_IF ELSIF... END_IF END_IF` Tiene END_IF? En texto: `END_IF` al final de inner y outer? Tal vez. No compila. 
+Puntuación coherencia 1 (fallo lógico en antiwindup). Claridad 2. Mantenibilidad 2 (constantes CV_MIN/MAX). 
+
+13. A1-6243 no compila (2 errores). `REAL_TO_TIME(ciclo)` en lugar de TIME_TO_REAL. Lógica: integral := integral + e*dt/Ti; antiwindup limitando con MIN/MAX. Luego derivada := (e-e_prev)/dt*Td; CV := Kp*(e+integral+derivada). NO CHEQUEA Ti<=0 en salida: CV := Kp*(e + integral + derivada), integral se queda 0 si Ti<=0? En IF Ti>0 no integra, integral default 0; CV Kp*(e+0+derivada). Correcto, no hay división. Integral se inicializa en 0. Anti-windup: si CV>=100 limita integral 0; si CV<=0 limita integral 0. Permite desaturación. Coherencia 2. Claridad 2. Mantenibilidad 2.
+
+14. A1-6380 no compila. `REAL_TO_TIME(ciclo)`. Lógica: integral += e*dt/Ti; antiwindup resta. CV = Kp*(e + integral + derivada). Correcto. Ti<=0 no integra, integral default 0. Coherencia 3? La `dt` inválida. Sí. Claridad 2. Mantenibilidad 2.
+
+15. A1-5398 no compila. dt TIME. Similar A1-7874. Lógica correcta. Coherencia 2/3. 
+16. A1-9749 no compila. dt TIME, `dt_sec := dt / T#1s;` inválido en CODESYS? Tal vez. Lógica: `CV := Kp*e; integral += e*dt_sec; CV := CV + (Kp/Ti)*integral; derivative := (e-e_prev)/dt_sec; CV := CV + Kp*Td*derivative; antiwindup resta e*dt_sec si CV >100 y e>0, o CV<0 y e<0. Correcto. Ti<=0 no integra. Coherencia 3. Claridad 2. Mantenibilidad 1/2.
+17. A1-9704 no compila. `REAL_TO_TIME(ciclo)`, lógica defectuosa: integral acumula, antiwindup con CV_unsat? Inicializa CV_unsat := Kp*e. Luego `IF (CV_unsat >= CV_MAX) AND (e > 0.0) THEN integral := integral; ELSIF (CV_unsat <= CV_MIN) AND (e < 0.0) THEN integral := integral; ELSE CV_unsat := CV_unsat + Kp * integral; END_IF`. Derivative luego `CV_unsat := CV_unsat + Kp * derivative`. Entonces CV_unsat=P + derivative + (Kp*integral si no sat P). Mal: en saturación P>=100, nunca calcula CV_unsat con integral o derivative? Luego se satura. Funcional mal. Coherencia 1. Claridad 2. Mantenibilidad 2.
+18. A1-6233 no compila. dt TIME. Lógica: e*dt/Ti con dt TIME (incompatible) si compilara. Derivative `(e-e_prev)/dt` división REAL/TIME inválido. Anti-windup resta `e` en lugar de `e*dt`; mal. Coherencia 1. Claridad 2. Mantenibilidad 1.
+19. A1-7633 no compila. `REAL_TO_TIME(ciclo)`. Lógica: integral += e*dt; antiwindup resta e*dt si CV>=100 y e>0, etc. Derivative := (e-e_prev)/dt. CV_unsat := Kp*(e +(1/Ti)*integral + Td*derivative). Si Ti<=0, CV_unsat divide por Ti aunque integral=0? `Kp*(e + (1.0/Ti)*integral ...)`; si Ti=0, (1.0/0.0)*0? 0/0. Mal; no maneja Ti<=0. Coherencia 1 (división por Ti incondicional). Claridad 2. Mantenibilidad 2.
+20. A1-5864 no compila. dt TIME. Similar A1-7874. Anti-windup resta. CV = Kp*(e+integral+Td*derivada). Correcto. Coherencia 3. Claridad 2. Mantenibilidad 2.
+21. A1-5313 no compila. dt. Lógica: derivada := Td*(e-eAnterior)/dt. CVraw := Kp*eActual + derivada; luego añade Kp/Ti*integral. Correcto con integral pura. Antiwindup usa CV anterior. Coherencia 3. Claridad 2. Mantenibilidad 2.
+22. A1-2241 compila pasa 11. funcional=3, iec=null. Código robusto, usa TIME_TO_DINT/DINT_TO_REAL (estándar), RETURN si Ts<=0. Antiwindup con saturado OR etc. Correcto. VAR, no VAR CONSTANT, pero usa 100/0 magic. Comentarios por qué. Claridad 3, coherencia 3, mantenibilidad 2 (parámetros en FB, pero límites no constantes). iec 3? Es idiomático; RETURN en FB quizás. Le doy 3.
+23. A1-6805 no compila. dt. Código casi igual a A1-2241 pero con dt y TIME_TO_REAL, no RETURN. Lógica robusta. No compila. Coherencia 3, claridad 3, mantenibilidad 2. 
+24. A1-8493 no compila. dt. Similar A1-5313. Lógica correcta. Coherencia 3, claridad 2, mantenibilidad 2.
+
+Debo asegurar los valores fijados: para no compila, funcional_fijo e iec_fijo = 0. En JSON final, "funcional": 0, "iec": 0, y just_func_iec "" porque las dos estaban fijadas? La instrucción dice "just_func_iec": "una línea, o \"\" si las dos estaban fijadas". En no compila, funcional_fijo e iec_fijo están fijadas (ambas). Entonces just_func_iec: "".
+
+Para los que compilan y pasan, funcional_fijo=3 y iec_fijo=null. Solo funcional fijada, iec no. ¿just_func_iec? Como funcional estaba fijada pero iec no, debo proveer justificación para iec quizá en just_func_iec. Instrucción: just_func_iec una línea, o "" si las dos estaban fijadas. Si solo una fijada, se espera justificación de la no fijada. Pondré justificación para iec. 
+Debe ser una línea. 
+
+Ojo: No intentar adivinar qué modelo. 
+
+Necesito emitir JSON válido, no markdown.
+
+Debo verificar 24 objetos, códigos iguales y orden.
+
+Antes de escribir, revisar cada uno.
+
+Para no compilación, ¿debo usar funcional=0 e iec=0 exactamente? Sí.
+
+Pensemos en puntuaciones. Rúbrica 0-3. No compilan -> funcional 0, iec 0. No puedo dar coherente 3 a programas muy buenos. Correcto.
+
+Posibles quejas: A1-9962 código no incluye END_FUNCTION_BLOCK? Reviso: termina `END_FUNCTION_BLOCK`. Sí.
+
+A1-7444: No vi END_FUNCTION_BLOCK. ¿Está? Texto termina e_prev := e; sin END_FUNCTION_BLOCK. Resultado dice compila. Quizá error de transcripción; no debo penalizar. Si no compila? El campo dice compila y pasa. Asumir.
+
+A1-2241: termina END_FUNCTION_BLOCK. Correcto.
+
+Iec para A1-9962: ¿usa TIME_TO_REAL? Es posible que TIME_TO_REAL no sea estándar IEC, pero CODESYS lo tiene. La regla dice "usa extensiones fuera del estándar" -> 1 si usa extensiones. TIME_TO_REAL es función estándar de conversión en IEC 61131-3? Creo que IEC 61131-3 sí define TIME_TO_REAL? Vamos a ver: la norma define conversiones entre tipos numéricos y bit strings. Existe TIME_TO_LREAL? No estoy seguro. En CODESYS, TIME_TO_REAL es estándar. En IEC 61131-3, las funciones de conversión de tipo son `*_TO_**`; para tipos de tiempo existe `TIME_TO_DINT`, `TIME_TO_REAL`, etc.? Según IEC 61131-3, las funciones de conversión incluyen `TIME_TO_*` y `*_TO_TIME` para tipos enteros/REAL? Posiblemente sí estandarizado. La instrucción permitiría. Daremos 2 o 3. 
+
+Para diferenciar:
+- A1-9962: sin VAR CONSTANT, sin bloques estándar TON/CTU. Usa TIME_TO_REAL correcto. Declaraciones y tipos correctos. Cumplimiento 2.
+- A1-7444: usa VAR CONSTANT, comentarios, TIME_TO_REAL, estructura con separación. Cumplimiento 3.
+- A1-2241: usa DINT_TO_REAL(TIME_TO_DINT(ciclo)), RETURN temprano, comentarios. Cumplimiento 3.
+
+A1-2241 tiene `saturado := (CV >= 100.0) OR (CV <= 0.0);` Luego la condición IF NOT saturado OR (CV>=100 AND e<0) OR (CV<=0 AND e>0) THEN integral... Correcta. 
+
+Revisar A1-7444 antiwindup: 
+```
+sat_high := (CV >= CV_MAX);
+sat_low := (CV <= CV_MIN);
+saturated := sat_high OR sat_low;
+IF Ti > 0.0 THEN
+    IF NOT ((sat_high AND (e > 0.0)) OR (sat_low AND (e < 0.0))) THEN
+        integral := integral + e * Ts;
+    END_IF;
+END_IF;
+```
+Correcto. Aunque si CV=0 y e>0, no entra en sat_low y e<0, entonces acumula. Correcto. Si CV=100 y e<0, no entra sat_high and e>0, acumula negativo. Correcto. 
+
+A1-9962 antiwindup usa CV anterior sin flags:
+```
+IF NOT ((CV >= 100.0 AND e > 0.0) OR (CV <= 0.0 AND e < 0.0)) THEN
+  integral_acc := integral_acc + e*dt_sec;
+END_IF;
+```
+Correcto. 
+
+Ahora no compilas coherencia: Debo ser estricto con lógica. Pero no compilan por palabras reservadas. Algunos tienen lógica correcta, otros no.
+
+Puntos notables:
+- A1-3038 y A1-6243/6380 usan `REAL_TO_TIME`. Es un error de conversión. No compilan.
+- Many `dt` variable no compilan.
+
+Debo escribir justificaciones breves una línea.
+
+Voy a estructurar las puntuaciones:
+
+1 A1-9962:
+funcional 3, iec 2, coherencia 3, claridad 3, mantenibilidad 2.
+just_func_iec: "IEC compila sin cambios y declaraciones correctas, pero usa TIME_TO_REAL sin constantes; no del todo idiomático."
+¿O "funcional fijado, iec correcto"? Una línea. 
+just_coherencia: "Lógica consistente, antiwindup bien condicionado y estados iniciales correctos."
+just_claridad: "Nombres descriptivos, secciones y comentarios breves útiles."
+just_mantenibilidad: "Falta parametrizar límites de saturación y Ts mínimo; cambios localizados aceptables."
+
+2 A1-1725 no compila:
+funcional 0, iec 0, coherencia 3? ¿o 2? 
+Código: 
+```
+I_new := I_sum + (e*dt);
+CV_tentative := Kp*(e + (I_new/Ti) + (Td*de_dt));
+IF (CV_tentative >=100 AND e>0) OR (CV_tentative <=0 AND e<0) THEN no actualiza I_sum ELSE I_sum:=I_new;
+END_IF
+...
+IF Ti>0 THEN CV := Kp*(e+(I_sum/Ti)+(Td*de_dt)); ELSE CV := Kp*(e+(Td*de_dt));
+```
+Correcto. Aunque comentarios con // no compilan? No, fallo por dt. Lógica robusta, salvo `IF dt <= 0 THEN dt := 0.001;` evita división. Coherencia 3. Claridad 2. Mantenibilidad 2.
+just_coherencia: "Aunque no compila por 'dt', la lógica de antiwindup y desactivación integral es internamente coherente." 
+just_claridad: "Comentarios descriptivos y estructura, pero usa // y nombre 'dt' reservado." 
+just_mantenibilidad: "Constantes de límites no declaradas pero lógica central aislada." 
+
+3 A1-9421:
+funcional 0, iec 0, coherencia 3, claridad 2, mantenibilidad 2.
+Lógica correcta.
+
+4 A1-8114:
+funcional 0, iec 0, coherencia 3, claridad 3, mantenibilidad 2. Tiene comentarios de sección, nombres descriptivos. 
+
+5 A1-6268:
+funcional 0, iec 0, coherencia 1, claridad 2, mantenibilidad 1.
+just coherencia: "El antiwindup resta el incremento en ambas saturaciones sin evaluar el signo del error, por lo que puede acumular en dirección incorrecta." 
+just claridad: "Nombres claros y comentarios, pero usa // y variables de tiempo mal planteadas." 
+just mantenibilidad: "Valores mágicos y divisor Kp no protegido; modificación requiere revisar lógica." 
+
+6 A1-7933:
+funcional 0, iec 0, coherencia 3, claridad 2, mantenibilidad 2.
+just coherencia: "Lógica antiwindup bien planteada con CV preliminar; sin contradicciones." 
+just claridad: "Comentarios descriptivos, aunque // y variable dt reservada." 
+just mantenibilidad: "Límites no constantes y dt como tiempo en segundos implica cambios múltiples."
+
+7 A1-7927:
+0,0, coherencia 3, claridad 2, mantenibilidad 2. 
+Sin embargo todo envuelto en IF dt >0, pero si dt=0 no actualiza e_prev, CV se mantiene? Correcto. 
+
+8 A1-6125:
+0,0, coherencia 3, claridad 2, mantenibilidad 2.
+
+9 A1-3038:
+0,0, coherencia 2, claridad 2, mantenibilidad 2.
+just coherencia: "Uso de MIN/MAX para antiwindup es razonable, pero CV divide entre Ti incondicionalmente y falla si Ti<=0." 
+Claridad 2.
+Mantenibilidad 2.
+
+10 A1-7444:
+funcional 3, iec 3, coherencia 3, claridad 3, mantenibilidad 3.
+just_func_iec: "Compila limpio y usa VAR CONSTANT, TIME_TO_REAL y estructura idiomática de FB."
+just_coherencia: "Anti-windup correcto con saturación alta/baja, Ts protegida y estados coherentes."
+just_claridad: "Excelente separación por secciones, nombres descriptivos y comentarios que explican porqué."
+just_mantenibilidad: "Límites como constantes y lógica sin duplicación; diseño de FB extensible."
+
+11 A1-7874:
+0,0, coherencia 3? Reviso de nuevo: `derivada := (e - e_prev) / REAL_TO_TIME(dt);` Si dt es TIME, REAL_TO_TIME(dt) es inválido porque REAL_TO_TIME espera REAL, no TIME. No compila. La intención lógica es convertir dt a real. Integral antiwindup correcta. Pongo coherencia 3? La lógica es coherente. claridad 2, mantenibilidad 1? 
+Mantenibilidad: no constantes. Pongo 2 quizá. 
+Debo ser consistente con A1-5398, A1-5864 que son similares. Evaluaré mantenibilidad 1 o 2. Rúbrica: 1 "constantes parcialmente parametrizadas"; 2 "parámetros como variables o constantes declaradas". Ninguno declara constantes, pero variables. La lógica del PID no está duplicada. Yo usaré 2 para mayoría con variables descriptivas, y 1 para casos con valores mágicos graves o lógica defectuosa. Estos tienen valores 100/0 mágicos, pero no terrible. Rúbrica 1: modificable con esfuerzo; constantes parcialmente parametrizadas. 2: parámetros como variables o constantes declaradas; cambios localizados. En estos los límites no declarados son mágicos. Podría ser 1. Para no ser demasiado duro, doy 2 a lógica limpia, 1 a defectuosos con valores mágicos. Los códigos con límites no constantes podrían ser 1. A1-8114 etc. Poner 2 podría inflar. Revisemos ejemplos: A1-8114 tiene variables descriptivas, pero límites 100/0 mágicos. Rúbrica 1: "modificable con esfuerzo; constantes parcialmente parametrizadas." Podría ser 1. A1-7444 y A1-2241 manejan parámetros. 
+Debo ser consistente y no dar mantenibilidad 2 a todos. Para no compilados, solo evaluación cualitativa. 
+¿Qué nivel de mantenibilidad? Muchos no tienen VAR CONSTANT para límites, no ts min; utilizan valores mágicos 100.0/0.0. Excepto A1-7444 (VAR CONSTANT) y A1-9190/9704/7633 (VAR CONSTANT). A1-9190,9704,7633 no compilan, pero tienen constantes. A1-9962 no tiene constantes. A1-2241 no constantes, pero tiene parámetros FB, sin duplicación, pero límites mágicos. Podría ser 2. 
+La rúbrica 2 exige "parámetros como variables o constantes declaradas; cambios localizados". En A1-2241, los límites no son constantes, pero los cambios de la ley están localizados; no hay duplicación. Le doy 2. 
+Para no compilados básicos, 2 o 1.
+
+Mejor definir:
+- Mantenibilidad 3: A1-7444 (constantes + diseño)
+- A1-2241 2 (sin constantes, pero lógica extensible; límites no parametrizados)
+- A1-9962 2.
+- No compilados con lógica correcta y sin constantes: 2 para la mayoría; 1 para los que tienen dt TIME confuso, valores mágicos y no protegidos. 
+La rúbrica 1: "modificable con esfuerzo; constantes parcialmente parametrizadas." Creo la mayoría son 1 o 2. Para no compilados, no puedo penalizar funcional, pero mantenibilidad puede ser 2 si declara variables. 
+Pienso en los que usan dt TIME y división por T#1s: A1-9749, A1-6233 etc. "dt_sec := dt / T#1s" no compila, y variables `dt` TIME confuso. Mantenibilidad 1. 
+Los que usan REAL_TO_TIME(ciclo) en lugar de TIME_TO_REAL: A1-3038, A1-6243, A1-6380, A1-9704, A1-7633. Son errores de conversión; mantenibilidad 1 o 2. Podría dar 1 para A1-9704, A1-7633 (también lógica defectuosa) y 2 para A1-3038/6243/6380. 
+
+Necesito producir justificaciones creíbles.
+
+Voy a asignar con una tabla.
+
+Let's list all 24 with codigo and assessments.
+
+1 A1-9962: f=3, iec=2, coh=3, clar=3, mant=2.
+2 A1-1725: f=0, iec=0, coh=3, clar=2, mant=2.
+3 A1-9421: f=0, iec=0, coh=3, clar=2, mant=2.
+4 A1-8114: f=0, iec=0, coh=3, clar=3, mant=2.
+5 A1-6268: f=0, iec=0, coh=1, clar=2, mant=1.
+6 A1-7933: f=0, iec=0, coh=3, clar=2, mant=2.
+7 A1-7927: f=0, iec=0, coh=3, clar=2, mant=2.
+8 A1-6125: f=0, iec=0, coh=3, clar=2, mant=2.
+9 A1-3038: f=0, iec=0, coh=2, clar=2, mant=2.
+10 A1-7444: f=3, iec=3, coh=3, clar=3, mant=3.
+11 A1-7874: f=0, iec=0, coh=3, clar=2, mant=1? Hmm. Use `REAL_TO_TIME(dt)` where dt TIME. Logic otherwise good. Mant 1: "conversiones de tiempo erróneas y límites mágicos; cambios requieren tocar varios puntos." Clar 2.
+12 A1-9190: f=0, iec=0, coh=1, clar=2, mant=2 (has constants CV_MIN/MAX). 
+13 A1-6243: f=0, iec=0, coh=2, clar=2, mant=2.
+14 A1-6380: f=0, iec=0, coh=3, clar=2, mant=2.
+15 A1-5398: f=0, iec=0, coh=3, clar=2, mant=1? Similar A1-7874.
+16 A1-9749: f=0, iec=0, coh=3? Let's examine. Code:
+```
+IF ciclo > T#0s THEN dt := ciclo; dt_sec := dt / T#1s; ELSE dt:=T#1s; dt_sec:=1.0;
+...
+integral += e*dt_sec; CV += Kp/Ti*integral;
+derivative := (e-e_prev)/dt_sec; CV += Kp*Td*derivative;
+if CV >100 then CV:=100; if e>0 then integral -= e*dt_sec; end if; elsif CV<0 then CV:=0; if e<0 then integral -= e*dt_sec; end if; end if;
+```
+Anti-windup: if CV raw >100 and e>0, subtract e*dt_sec (positive) to undo integral accumulation. But if the integral term already saturated, CV contribution might be clamped. It subtracts even if antiwindup condition, okay. It doesn't condition not accumulating before adding; but subtracts after, equivalent if the same increment. If CV>100 not necessarily caused by integral. `integral -= e*dt_sec` is the incremental undo. If the CV was already >100 due to P, and e>0, this subtracts current increment from integral, which might be negative from previous; okay. Lógica coherente. No compila. `dt := ciclo; dt_sec := dt / T#1s` invalid? In CODESYS, TIME / TIME yields REAL? Actually not allowed? No compila? It says 16 errors. But could be acceptable? The compiler error not relevant. Coherence 3. Mant 1. Clar 2.
+17 A1-9704: f=0, iec=0, coh=1, clar=2, mant=2 (has constants). 
+18 A1-6233: f=0, iec=0, coh=1, clar=2, mant=1.
+19 A1-7633: f=0, iec=0, coh=1, clar=2, mant=2 (has constants).
+20 A1-5864: f=0, iec=0, coh=3, clar=2, mant=1.
+21 A1-5313: f=0, iec=0, coh=3, clar=2, mant=2.
+22 A1-2241: f=3, iec=3, coh=3, clar=3, mant=2.
+23 A1-6805: f=0, iec=0, coh=3, clar=3, mant=2.
+24 A1-8493: f=0, iec=0, coh=3, clar=2, mant=2.
+
+Chequear coherencia A1-6805: 
+```
+dt := TIME_TO_REAL(ciclo) / 1000.0;
+e := SP-PV; P_term:=e;
+IF Ti >0 THEN
+ saturated := (CV>=100) OR (CV<=0);
+ clamp_ok := NOT saturated OR (CV>=100 AND e<0) OR (CV<=0 AND e>0);
+ IF clamp_ok THEN integral += e*dt; END_IF
+ I_term := (1/Ti)*integral;
+ELSE integral:=0; I_term:=0;
+END_IF
+IF dt >0 THEN D_term := Td*(e-e_prev)/dt; ELSE D_term:=0; END_IF
+CVraw := Kp*(P_term + I_term + D_term); ...
+```
+Correcto. No compila por dt. Coherencia 3. Clar 3.
+A1-8493:
+```
+dt := TIME_TO_REAL(ciclo)/1000.0;
+e...
+IF Ti>0 then IF NOT (CV>=100 and e>0) AND NOT (CV<=0 and e<0) THEN integral += e*dt; END_IF;
+derivada := (e-e_prev)/dt; 
+if Ti>0 CVraw := Kp*(e + (1/Ti)*integral + Td*derivada); else CVraw := Kp*(e + Td*derivada)...
+```
+Correcto. Coherencia 3.
+
+Now I need ensure `iec` for compila: A1-9962 2, A1-7444 3, A1-2241 3. `just_func_iec` one line.
+
+For no compila `just_func_iec` = "".
+
+Need ensure `just_coherencia`, `just_claridad`, `just_mantenibilidad` one line.
+
+Let's craft concise Spanish lines.
+
+Need JSON only, no markdown. I will output a list.
+
+Double check valid JSON: strings quoted, no trailing commas.
+
+Let’s create each object.
+
+But before final, let's examine if any compila code has "iec_fijo": null but no funcional? The only compilan with all steps have functional_fijo=3. Yes.
+
+OK.
+
+Potential concern: Some no compilan still have `iec_fijo` =0, `funcional_fijo`=0. If I set `iec`=0 exactly, okay. Even if code uses non-standard extensions, fijado=0.
+
+Potential concern: The "resultado_codesys" no compiles with "mensajes_compilador" first error "L?nea 19 (Decl) Encontrado token inesperado 'dt'". That indeed indicates "dt" is not allowed. We don't need.
+
+Let's write final JSON.
+
+Wait: the instructions: "Responde únicamente con una lista JSON válida de 24 objetos, en el mismo orden de la entrada, sin texto antes ni después y sin bloque de código markdown." So final start `[` end `]`.
+
+Now write each with "codigo": "A1-...".
+
+Let's draft carefully.
+
+1:
+{
+"codigo":"A1-9962",
+"funcional":3,
+"iec":2,
+"coherencia":3,
+"claridad":3,
+"mantenibilidad":2,
+"just_func_iec":"Compila y usa TIME_TO_REAL y tipos correctos, aunque sin VAR CONSTANT ni bloques estándar.",
+"just_coherencia":"Anti-windup correcto con CV previo, integral desactivada si Ti<=0 y derivada sobre el error sin caminos muertos.",
+"just_claridad":"Buenos nombres, secciones ordenadas y comentarios breves que explican cada etapa.",
+"just_mantenibilidad":"Lógica localizada y variables descriptivas, pero los límites de saturación y protección de Ts no están parametrizados."
+}
+
+2:
+"just_func_iec":""
+"just_coherencia":"La lógica PID y antiwindup tentativo es internamente consistente aunque el fallo de compilación por 'dt' impide operar."
+"just_claridad":"Usa nombres descriptivos y comentarios, pero con // y variable reservada 'dt' que impiden compilación."
+"just_mantenibilidad":"Sin constantes declaradas para límites; requiere tocar varios puntos para cambiar saturación o tiempo."
+Maybe for many justify.
+
+Need not overdo.
+
+Let's assign final.
+
+I will produce.
+
+But let me double-check A1-1725: "I_new := I_sum + (e * dt);" then CV_tentative. If Ti <=0, `CV_tentative`? Actually within `IF Ti > 0`, so fine. After, when output `IF Ti > 0 THEN CV := Kp*(e + (I_sum/Ti) + (Td*de_dt)); ELSE CV := Kp*(e + (Td*de_dt)); END_IF`. Correct. Coherence 3.
+
+A1-9421: D_term := Kp*Td*((e-e_prev)/dt). I_term := Kp * ((integral+e*dt)/Ti). antiwindup evalua CV_unc >=100 etc. Note: I_term is with tentative integral, but antiwindup only updates after. It uses CV_unc (which includes tentative I) to decide. Good. Coherence 3.
+
+A1-8114: derivada term defined only `derivada := (e - eAnterior)/dt`, then CVraw := Kp*eActual + ... + Kp*Td*derivada. Correct.
+
+A1-7927: In `IF dt > 0.0 THEN` todo, including e_prev update. If dt=0 no update. Not in protocol. Coherence 3.
+
+A1-6125: I_term accumulated as Kp*e*dt/Ti. If Ti<=0, I_term reset 0. CV := P_term + I_term + D_term. Correct.
+
+A1-3038: `REAL_TO_TIME(ciclo) / 1000.0` no compila. If `ciclo` is TIME, REAL_TO_TIME is wrong. But the intended conversion would convert TIME to REAL? Actually `REAL_TO_TIME` expects REAL, returns TIME, cannot accept TIME. Coherence 2 due Ti division in output. But wait: Output `CV := Kp * (e + (integral / Ti) + (Td * derivada));` even if Ti<=0. However if Ti<=0, integral remains 0 (from default or explicit? no explicit reset except not integrate). In ST, if Ti<=0, code skips integral. Then `integral/Ti` = 0/0. In CODESYS, 0/0 yields NaN, then CV limit `MAX(0.0, MIN(100.0, CV))` with NaN? If CV NaN, MIN(100.0, NaN) may yield NaN? Actually CODESYS might yield NaN. Could cause unpredictable. That's a coherence issue for Ti<=0 edge. So 2.
+
+A1-6243: Similar but no Ti division in output? It uses `integral` not `integral/Ti`, since integral stored as e*dt/Ti. Output CV=Kp*(e+integral+derivada). If Ti<=0, integral no integra, remains 0; OK. Coherence 2 due antiwindup MIN/MAX maybe? It's okay. I gave 2, maybe 3. It only fails by wrong conversion. The MIN/MAX clamping method: 
+```
+integral := integral + e*delta_t/Ti;
+IF CV>=100 THEN integral := MIN(integral, 0.0);
+ELSIF CV<=0 THEN integral := MAX(integral,0.0);
+END_IF
+```
+This is unusual: if CV>=100 and e>0, integral += positive, MIN(integral,0) sets to 0 if integral was positive; if integral was negative, leaves negative. Equivalent to not accumulating positive if accumulator positive? But if integral was -5 and e positive 1, integral becomes -4, MIN(-4,0) leaves -4, adding positive while saturated high. The task says "mientras CV esté saturada en 100.0 la integral no debe acumular error positivo". Aquí si integral acumulada era negativa y error positivo, acumula positivo (aunque la integral sigue negativa). Estrictamente no cumple: no debe acumular error positivo, sin importar el acumulado. El método de limitar el acumulador no es equivalente. Para antiwindup clamping, se debe congelar/evitar sumar, o condicionar con signo. Limitar integral a 0 no es suficiente si hay integral negativa previa; puede acumular error positivo. Sin embargo, en escenarios típicos la integral no debería ser negativa si arranca en 0. Pero el protocolo prueba saturación alta con error positivo por 30s: integral se limita a 0, OK. Luego error negativo: integral acumula negativo y sale. Funcionalmente podría pasar. Coherence 2 (robusta? no). 
+A1-6380 uses subtraction method correct. So 3 maybe. Doy coherencia 3? Wait it uses wrong conversion but intended. The antiwindup subtracts current increment if saturated and wrong sign; correct. So 3.
+
+A1-7633: 
+```
+integral := integral + e*dt;
+IF CV>=CV_MAX AND e>0 THEN integral := integral - e*dt; ELSIF CV<=CV_MIN AND e<0 THEN integral := integral - e*dt;
+...
+CV_unsat := Kp*(e + (1.0/Ti)*integral + Td*derivative);
+```
+Doesn't handle Ti<=0 in CV. It only `IF Ti >0 THEN integral +=... ELSE integral :=0`. But then unconditional (1.0/Ti)*integral. If Ti=0 and integral=0, 1/0*0. In floating, maybe division by zero occurs first? `(1.0 / Ti) * integral` evaluated left to right: 1.0/0.0 = inf, inf*0.0 = NaN. CV NaN then saturation may misbehave. Coherence 1 because Ti<=0 edge. Also antiwindup evaluates CV previous (output after saturation), okay. 
+A1-9704:
+```
+IF Ti >0 THEN
+ integral += e*dt/Ti;
+ IF (CV_unsat >= CV_MAX) AND e>0 THEN integral := integral;
+ ELSIF (CV_unsat <= CV_MIN) AND e<0 THEN integral := integral;
+ ELSE CV_unsat := CV_unsat + Kp*integral;
+ END_IF
+END_IF
+derivative := Td*(e-e_prev)/dt;
+CV_unsat := CV_unsat + Kp*derivative;
+...
+```
+The antiwindup condition uses `CV_unsat` which is initially P only, before adding integral. It does nothing in saturated branch? It assigns integral to itself, preventing? It actually still accumulated integral before branch. If P>=100 and e>0, integral accumulated but then output not updated with integral; so intentional not applying integral to output, but integral accumulates internally. If error later negative, CV_unsat=P<100, else branch adds integral (which may have risen), causing delayed windup. Not correct. Coherence 1. 
+A1-9190 similar but different: if sat P, doesn't add integral; if not sat adds; derivative then always added. Integral accumulates unconditionally but output only adds if P not sat. Wrong. Coherence 1.
+A1-6268: antiwindup subtracts regardless of sign. Wrong. 1.
+A1-6233: integral addition uses e*dt/Ti where dt TIME, derivative diff/dt; antiwindup subtracts e instead of e*dt. Wrong. 1.
+
+A1-7874, 5398, 5864: subtraction method correct. Mant 1? They use `REAL_TO_TIME(dt)` y no separación. 
+- A1-7874: 
+```
+dt := ciclo;
+derivada := (e - e_prev) / REAL_TO_TIME(dt);
+integral += e*REAL_TO_TIME(dt)/Ti;
+IF CV >=100 THEN IF e>0 THEN integral -= e*REAL_TO_TIME(dt)/Ti; ...
+```
+But note: `REAL_TO_TIME(dt)` expects REAL but dt TIME. Wrong. If it were TIME_TO_REAL? The expression `e * REAL_TO_TIME(dt)` would also fail. It uses same conversion in multiple places. If corrected, logic correct. Mant 1 because many conversion errors duplicated? Actually duplication of REAL_TO_TIME instead of TIME_TO_REAL appears 4 times; maintainability poor (repeated conversion). Clar 2. 
+- A1-5398 same. 
+- A1-5864 uses `REAL_TO_TIME(dt)` for derivative and `REAL_TO_TIME(ciclo)` for integral; same. 
+I'll assign mant 1 for those.
+
+A1-9749: uses `dt_sec := dt / T#1s`, invalid, repeated only once; antiwindup uses dt_sec. Mant 1. 
+A1-6233: uses `dt` TIME in arithmetic, invalid; antiwindup subtracts e; mant 1.
+A1-3038/6243/6380 use only one erroneous conversion `REAL_TO_TIME(ciclo) / 1000.0`? They assign delta_t. If corrected, okay. Mant 2? But repeated variable helps. I gave 2.
+
+A1-9421, 8114, etc use `dt` variable reserved and no constants. Mant 2 maybe. 
+Should I adjust some mant to 1 for dt-reserved with no constants? Rúbrica: "0 valores mágicos por todas partes; imposible modificar sin reescribir." Not the case. "1 modificable con esfuerzo; constantes parcialmente parametrizadas." If no constants but variables, maybe 1. "2 parámetros como variables o constantes declaradas; cambios localizados." These have input parameters Kp,Ti,Td,ciclo, and local variables for errors. They don't have constants for CV limits, Ts min. The limits are magic. Could still be 1. I think many answers are 1 for mantenibilidad. To align with rubric, maybe I should be stricter: 1 for no constants. But then A1-9962 and A1-2241 also no constants (A1-2241 no VAR CONSTANT) though design extensible. A1-2241 has all parameters as input, and no duplication; I'd give 2. For noncompiled clean code, I'd give 1? Hmm.
+
+The rubric's maintenance 2 requires "parámetros como variables o constantes declaradas; cambios localizados." The input parameters are declared variables Kp, Ti, Td, ciclo. The CV limits are not. "parámetros como variables" yes they are inputs. Could satisfy 2. But limits still magic. 
+Maybe I can reserve 2 for those with clear local variables and no duplicate logic. Use 1 for cases with invalid time conversions repeated or wrong logic. That seems fair. 
+
+Now claridad: 
+- A1-8114 has detailed section comments; 3.
+- A1-6805 has section comments; 3.
+- A1-7444, A1-2241 3.
+- A1-9962 3.
+Others 2.
+
+Now just_func_iec for compila:
+A1-9962: "funcional fijado; IEC: compila limpio con TIME_TO_REAL y declaraciones correctas, pero no llega a idiomático por límites sin VAR CONSTANT." 
+A1-7444: "funcional fijado; IEC: TIM_TO_REAL correcto, VAR CONSTANT y estructura estándar de FB idiomática." 
+A1-2241: "funcional fijado; IEC: usa TIME_TO_DINT/DINT_TO_REAL estándar y estructura de FB clara." 
+
+A1-7444's code doesn't show END_FUNCTION_BLOCK, but result says compila. If I praise syntax, okay.
+
+Need final JSON.
+
+Let's produce now.

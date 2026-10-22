@@ -1,0 +1,1538 @@
+We need answer only JSON list of 24 objects. Need evaluate each response. Need be careful. We have to produce exactly 24 in same order. Need compute scores for each: functional_fijo maybe 3 for all except B8-2057 null. B8-2057 compila but fails 7 of 9, need functional 0/1/2. Need inspect code.
+
+We need understand rubric and fixed rules:
+
+- If funcional_fijo or iec_fijo not null, copy exact. For most, funcional_fijo=3, iec_fijo=null so functional=3, iec we set.
+- If program does NOT compile: functional=0 iec=0; not relevant? all compile except none? B8-2057 compila.
+- If passes all steps: functional=3 fixed.
+- If compila but falla pasos: funcional 0,1,2 according rubric. For B8-2057 falls 7 of 9. Need classify: Does it implement nominal? likely fails case nominal? Protocol: steps 0 reset puerta cerrada n=0 aviso=F. B8-2057 may pass step0 only? Need understand.
+
+Let's inspect B8-2057 code:
+
+```
+FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL;
+    reset : BOOL;
+END_VAR
+VAR_OUTPUT
+    aviso : BOOL;
+    nAperturas : INT;
+END_VAR
+VAR
+    puertaAbiertaAnterior : BOOL;
+END_VAR
+
+// Inicialización de variables
+IF NOT puertaAbiertaAnterior THEN
+    puertaAbiertaAnterior := puertaAbierta;
+END_IF
+
+// Lógica de reset
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+END_IF
+
+// Contador de aperturas
+IF puertaAbierta AND NOT puertaAbiertaAnterior THEN
+    nAperturas := nAperturas + 1;
+END_IF
+
+// Actualización del estado anterior de puertaAbierta
+puertaAbiertaAnterior := puertaAbierta;
+
+// Lógica de aviso
+IF nAperturas >= 5 THEN
+    aviso := TRUE;
+ELSE
+    aviso := FALSE;
+END_IF
+END_FUNCTION_BLOCK
+```
+
+Need determine behavior. The initial "IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta; END_IF" before reset? Let's simulate harness.
+
+Variables are persistent (VAR in FB instance). Initially zero? CODESYS may initialize VAR to zero? Yes BOOL initial FALSE if not explicitly initialized? Actually CODESYS VAR default: standard says initialized to 0? For FB variables maybe no explicit init? CODESYS initializes BOOL to FALSE, INT to 0 by default? Possibly yes. Let's assume default values.
+
+Step0: reset TRUE, puertaAbierta FALSE. First cycle: puertaAbiertaAnterior initial FALSE. Init IF NOT puertaAbiertaAnterior THEN (TRUE) puertaAbiertaAnterior := puertaAbierta (FALSE). Reset IF reset THEN nAperturas:=0; aviso:=FALSE. Count IF puertaAbierta AND NOT puertaAbiertaAnterior -> FALSE AND NOT FALSE = FALSE. Update previous := puertaAbierta FALSE. aviso IF nAperturas>=5 false else false. Step0 pass.
+
+Step1: reset FALSE; puertaAbierta TRUE for 200ms. First cycle of step1: previous FALSE. Init IF NOT false? FALSE, doesn't set. Reset IF false. Count IF TRUE AND NOT FALSE -> TRUE, increments nAperturas from 0 to 1. Update previous := TRUE. aviso false. Subsequent cycles with puertaAbierta TRUE: previous remains TRUE. Init block: IF NOT puertaAbiertaAnterior (NOT TRUE = FALSE), no action. Count IF TRUE AND NOT TRUE false. Update previous TRUE. Aviso false. So step1 should pass? But result says fails step1. Wait result says "Falla 7 de 9 pasos (pasos 1,2,3,4,5,6,8; numerados desde 0)". That suggests step0 passes, step1 fails. Why would step1 fail? Maybe because initial IF NOT puertaAbiertaAnterior is executed incorrectly each cycle? Let's think: If puertaAbiertaAnterior is initially FALSE, first cycle of step1 maybe not first execution? Step0 cycles lasted 200ms. At the end of step0, previous = FALSE. In step1 first cycle, previous FALSE. Then init IF NOT previous THEN previous := puertaAbierta; but puertaAbierta is TRUE. This sets previous := TRUE immediately before counter, so counter sees puertaAbierta TRUE AND NOT previous TRUE -> false. So does not increment. Ah yes! In step1 first cycle, the "inicialización" block set previous := puertaAbierta (TRUE), so it misses the rising edge. After that previous = TRUE. Thus count never increments in step1. So n stays 0. Step1 fails. That explains fail 1. Why step2 fail? Step2 puerta held abierta 500ms expected n=1, but n=0. Fail. Step3 closed expected 1 but n=0. Step4 starts n=0, generates 3 flancos but maybe misses first? Let's simulate: after step3, previous maybe FALSE? Need sequence. Step3 puerta FALSE. At step3 first cycle, previous from step2 TRUE. Init block NOT previous FALSE, no set. Count false. Update previous := FALSE. Subsequent cycles keep FALSE. Step4 generates 3 rising edges. The code misses the first edge of each rising transition because at first cycle of each TRUE state, init block sets previous := puerta (TRUE) before count. Wait but if previous is FALSE and puerta TRUE, init block sets previous TRUE before count, so it misses the edge, then update previous TRUE. So for each rising edge, it will suppress count. For falling edges, when puerta FALSE, previous TRUE, init false, count false, update previous FALSE. Thus all rising edges ignored. So n remains 0. Thus all fail except reset maybe. Step7 reset expected n=0 aviso false, maybe pass. Step8 after reset, puerta closed, reset false, then 1 flanco. Does code miss edge? After step7 reset, at step7 cycles puerta FALSE, reset TRUE. In reset branch set n=0 aviso false. Count if false. Update previous := puerta FALSE. Avise false. Step8 reset false, puerta TRUE at first cycle; init block sees previous FALSE, sets previous TRUE before count; misses edge. So step8 fails. So result matches: steps 0 and 7 pass.
+
+For functional: It implements basic intended logic? It misses all edges due to initialization logic. In nominal case (opening door with reset low) fails. So functional=0 (no implementa lógica pedida o falla en el caso nominal). Could argue it fails case nominal. So functional=0. But fixed rule: "Si compila pero falla pasos: funcional 0, 1 o 2 según la rúbrica, usando qué pasos fallan y el protocolo." We need judge. Since fails most and nominal, functional=0.
+
+Need set iec for B8-2057: It compila? Need scrutinize IEC compliance. Code declarations valid. Uses no extension? It has comments. It uses `ELSE aviso := FALSE;` in IF nAperturas>=5; valid. No TON/R_TRIG. It compiles without changes. Declarations and types correct. Maybe IEC rating 2. It doesn't use idiomatic constructions like R_TRIG. Could be 2 if compiles and declarations correct. But does it have issue: variables not explicitly initialized but standard? In IEC, VAR default initial values? It might be zero. CODESYS allows. It uses manual edge detection. That is acceptable standard. In IEC 61131-3, R_TRIG is standard, but manual edge is also standard. It's syntactically valid. So iec=2 or 3? Criterio: 3 if compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados). This code uses manual edge detection not R_TRIG. It is still idiomatic enough? Could 2. Many responses use R_TRIG, maybe 3. We need be consistent.
+
+But big issue: The `IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta; END_IF` is not valid? It's confusing but compiles. IEC compliance not about logic. It compiles, types correct, so iec=2. Could be 3? It uses manual edge detection but not standard block. The rubric specifically says 3 uses blocks estándar like TON, R_TRIG, CTU well instantiated. Here not. So 2.
+
+Now other 23 responses all pass all steps, functional_fijo=3. Need evaluate iec, coherencia, claridad, mantenibilidad.
+
+Need score each. We must output just JSON. Need be consistent as evaluator.
+
+Let's list all codes.
+
+We need assign for each:
+- functional: fixed 3 for all except B8-2057 maybe 0.
+- iec: for each pass all need set. For all pass and use standard? Some use manual previous, some R_TRIG, some CTU. Some have issues with reset / previous. Need decide scores 2 or 3 maybe 1 for extensiones? None extensions. All compile. Most use declarations valid. Some use CTU maybe standard. Need consider idiomatic IEC.
+
+The rubric:
+Cumplimiento IEC 61131-3:
+0: no compila; sintaxis o declaraciones inválidas.
+1: compila solo tras correcciones menores, o usa extensiones fuera del estándar.
+2: compila sin cambios; declaraciones y tipos correctos.
+3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados).
+
+Thus:
+- Any code using R_TRIG or CTU properly and compiles: iec=3 likely.
+- Any code using manual edge detection and compiles, declarations correct: iec=2. Unless it uses algo idiomático? Manual edge detection is standard but not necessarily "idiomática" as blocks. The rubric's 3 mentions blocks estándar. So manual previous likely 2.
+- Could be 3 if code uses manual edge detection but is clean? The phrase "usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)" implies standard blocks use is key for 3. So manual edge detection not 3.
+- What about CTU: B8-6907 uses `contador : CTU; ... contador(CU := puertaAbierta, RESET := reset, PV := 5); aviso := contador.Q; nAperturas := contador.CV;` Need verify CTU behavior: Counts rising edges of CU? CTU is standard counter with CU boolean, RESET, PV; Q true when CV >= PV. But does CTU count rising edges of CU? In IEC, CTU increments on FALSE->TRUE transition of CU. It also has Q when CV >= PV. But nAperturas as INT assigned from `contador.CV` (INT? CTU.CV is INT probably). It should pass harness. It is standard and idiomatic. However potential issue: If reset TRUE, CTU resets CV=0, Q false. If puertaAbierta also TRUE? Protocol doesn't test. It is okay. Rating iec=3 for CTU? Yes.
+
+But need inspect CTU: `contador(CU := puertaAbierta, RESET := reset, PV := 5);` In standard, CTU includes `CU : BOOL; RESET : BOOL; PV : INT; Q : BOOL; CV : INT;` and counts rising edges of CU. Q true when CV >= PV. It is standard function block. This is idiomatic. So iec=3.
+
+What about code B8-4753 and B8-6800 maybe missing END_FUNCTION_BLOCK? Let's check B8-4753:
+```
+... (* Guardar estado actual ... *)\npuertaAbierta_prev := puertaAbierta;
+```
+The code string ends with `puertaAbierta_prev := puertaAbierta;` no `END_FUNCTION_BLOCK`. Yet result says "Compila. Pasa los 9 pasos". Is it possible they omitted `END_FUNCTION_BLOCK`? The code_st lacks END_FUNCTION_BLOCK. Wait in JSON B8-4753 last line after the comment is `puertaAbierta_prev := puertaAbierta;` no END_FUNCTION_BLOCK. If no END_FUNCTION_BLOCK, doesn't compile? CODESYS might auto? No, should be syntax error. But result says compila. Could be truncation or missing from source? Need treat code as given. However the protocol says compila, so maybe we accept. But for IEC compliance, is missing END_FUNCTION_BLOCK an issue? The rule says no compiles -> fixed 0. But it says compiles. Could be because code_st incomplete but not actual. We should not override given result? We are told to puntuar what code is, not what assistant wanted. But result came from simulation, likely code is actually complete but JSON truncated? Hmm we need be careful. We should evaluate code as provided. But if code lacks END_FUNCTION_BLOCK, it would not compile; but given it compila. We might ignore the missing END_FUNCTION_BLOCK as maybe in actual file there is. But our output should reflect given codigo_st? The evaluation rules mention "Puntúa lo que el código es, no lo que el asistente probablemente quiso hacer." But the result says "Compila. Pasa los 9 pasos." That means in the simulation, the code likely did compile, maybe the JSON lost `END_FUNCTION_BLOCK` due to line limit? In the source raw, it may have been omitted because of truncation. Need determine if any other code missing END_FUNCTION_BLOCK. B8-4753 is only one? Let's check all.
+
+All code_st snippets likely end with `END_FUNCTION_BLOCK` except maybe B8-4753. Let's scan:
+1 B8-2855 ends `END_FUNCTION_BLOCK`
+2 B8-2057 ends `END_FUNCTION_BLOCK`
+3 B8-3959 ends `END_FUNCTION_BLOCK`
+4 B8-6962 ends `END_FUNCTION_BLOCK`
+5 B8-4908 ends `END_FUNCTION_BLOCK`
+6 B8-3439 ends `END_FUNCTION_BLOCK`
+7 B8-1092 ends `END_FUNCTION_BLOCK`
+8 B8-3080 ends `END_FUNCTION_BLOCK`
+9 B8-6589 ends `END_FUNCTION_BLOCK`
+10 B8-2238 ends `END_FUNCTION_BLOCK`
+11 B8-4457 ends `END_FUNCTION_BLOCK`
+12 B8-7031 ends `END_FUNCTION_BLOCK`
+13 B8-9508 ends `END_FUNCTION_BLOCK`
+14 B8-3862 ends `END_FUNCTION_BLOCK`
+15 B8-6907 ends `END_FUNCTION_BLOCK`
+16 B8-1323 ends `END_FUNCTION_BLOCK`
+17 B8-4753 ends with no END. 
+18 B8-5019 ends `END_FUNCTION_BLOCK`
+19 B8-3064 ends `END_FUNCTION_BLOCK`
+20 B8-8512 ends `END_FUNCTION_BLOCK`
+21 B8-6800 ends `END_FUNCTION_BLOCK`
+22 B8-9528 ends `END_FUNCTION_BLOCK`
+23 B8-3270 ends `END_FUNCTION_BLOCK`
+24 B8-2626 ends `END_FUNCTION_BLOCK`
+
+Only B8-4753 missing. We should consider it as maybe code is truncated in the JSON, but result says compiles. The instruction says React with same order. It might be a bug in data? We need handle. If code as given missing END_FUNCTION_BLOCK, it would not compile, contradicting result. We shouldn't mark iec=0 because result says compiles and fixed rules say if no compiles -> 0. Given no compile? We have "resultado_codesys": "Compila. Pasa los 9 pasos". We trust it. Could mark iec as 2 or 3? Need not penalize for missing END if we trust result. We can note structure maybe code block appears complete logically except missing terminator. But compila. We might not mention missing END. But as evaluator, if code string lacks `END_FUNCTION_BLOCK`, maybe claro? Hmm.
+
+Maybe the code_st in JSON for B8-4753 is:
+```
+(* Guardar estado actual para el próximo ciclo *)\npuertaAbierta_prev := puertaAbierta;
+```
+No END. Could it be that in CODESYS ST, `END_FUNCTION_BLOCK` is optional? No, not optional. But maybe they used a parser that auto-closes? The prompt says "resultado_codesys" from actual CODESYS simulation. I think the code provided is incomplete due to JSON formatting (maybe line cut off). We shouldn't over-penalize structural for that if it would compile. But for "codigo_st" given, missing terminator is structural issue. However the result fixed says compiles, so maybe the harness had full code. We have to use provided code? The task says "Cada respuesta trae: codigo_st (el programa)". We should grade the given code. But if given code misses END, it would be invalid. But "resultado_codesys: Compila..." conflicts. In such cases, we should rely on result for compile because fixed. But for clarity/coherence, we can note if code piece lacks END? Hmm.
+
+Let's inspect B8-4753: It is very similar to B8-6800. B8-6800 has complete END and has IF nAperturas>=5 sets aviso := TRUE but not else. That might be less robust?
+
+Need evaluate all codes deeply.
+
+Let's define a scoring approach.
+
+Functional: fixed for all pass: 3. For B8-2057: functional=0.
+
+Iec: Let's categorize.
+
+Manual edge detection with IF reset/else and previous variable, all standard syntax:
+- B8-2855: uses manual previous with IF reset ELSE ... update previous inside else? Wait code:
+```
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+ELSE
+    IF NOT puertaAbiertaAnterior AND puertaAbierta THEN
+        nAperturas := nAperturas + 1;
+    END_IF
+    puertaAbiertaAnterior := puertaAbierta;
+    IF nAperturas >= 5 THEN
+        aviso := TRUE;
+    ELSE
+        aviso := FALSE;
+    END_IF
+END_IF
+END_FUNCTION_BLOCK
+```
+It updates previous only when not reset. If reset while door open? It doesn't update previous, but protocol not test. Functional passes. Is it an issue with reset leaving previous stale? If reset with door closed, previous maybe false. With door open during reset not tested. It compiles. iec=2.
+- B8-6962: similar but update previous outside else after END_IF. `IF reset THEN ... ELSE ... count ... aviso ... END_IF; puertaAbiertaAnt := puertaAbierta;` It updates previous even in reset. Good. iec=2.
+- B8-3439: reset also sets previous false, then count and update outside? Let's see:
+```
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+    puertaAbiertaAnterior := FALSE;
+END_IF
+
+IF NOT puertaAbiertaAnterior AND puertaAbierta THEN
+    nAperturas := nAperturas + 1;
+END_IF
+
+puertaAbiertaAnterior := puertaAbierta;
+
+IF nAperturas >= 5 THEN
+    aviso := TRUE;
+ELSE
+    aviso := FALSE;
+END_IF
+```
+Wait: If reset TRUE and puertaAbierta TRUE, in same cycle it sets previous false, then counts because puertaAbierta AND NOT previous => increments during reset. Protocol doesn't test. If reset TRUE with door closed, count false. Good. It has potential flaw: reset does not prevent count when door open during reset. But harness doesn't test reset with door open. Functional still 3 per harness? The task says reset pone registro en cero y desactiva aviso. If reset active and puerta changes? Could be edge during reset. Not specified. Probably acceptable. iec=2. Coherence maybe 2/3? We'll later.
+
+- B8-1092: similar to B8-3080 etc. Manual previous. iec=2.
+- B8-3080: same.
+- B8-4457: same.
+- B8-7031: same.
+- B8-9508: code:
+```
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+END_IF
+
+IF puertaAbierta AND NOT puertaAbiertaAnterior THEN
+    nAperturas := nAperturas + 1;
+END_IF
+
+puertaAbiertaAnterior := puertaAbierta;
+
+IF nAperturas >= 5 THEN
+    aviso := TRUE;
+END_IF
+```
+This is problematic: if reset and puerta open, count may increment; also aviso only set true, never set false when nAperturas < 5 after reset? Actually reset sets aviso false. But if not reset and nAperturas <5, aviso remains previous state? Example after reset? Let's simulate: At reset nAperturas=0, aviso false. Then count 1, aviso if n>=5 false, aviso remains false. Count 2 etc, false. At 5 true. If reset later sets n=0, aviso false. So it works. But if count <5 after being true? Only by reset which sets false. So okay. Potential edge: if reset and puerta open, count n=1, but reset branch set n=0 then count increments to 1, and aviso false. After reset false, previous is updated to TRUE, so no additional edge. Could be okay maybe. Not in harness. iec=2? manual.
+- B8-1323: manual previous. iec=2.
+- B8-3270: manual previous. iec=2.
+- B8-8512: manual previous. iec=2.
+- B8-6800: manual previous with no ELSE for aviso? Need inspect: It sets aviso FALSE only in reset. After reset, if nAperturas <5, aviso may stay TRUE if it was true and then reset? Actually reset sets aviso false. Once true (n>=5), it can only be reset when reset true. So no issue if no else. It uses manual previous. iec=2. But code maybe incomplete? No, complete.
+- B8-2238: manual previous, reset clears prev and else count etc. iec=2.
+- B8-4753: manual previous with no else aviso false. It sets aviso FALSE only in reset; then if n>=5 true, but no false for n<5 after coming from true? Only reset clears. okay. Missing END? We'll treat as compiles. iec=2.
+
+R_TRIG users:
+- B8-3959: uses R_TRIG, `aviso := (nAperturas >= 5);` reset branch n=0; `IF reset THEN nAperturas:=0; ELSIF flancoApertura.Q THEN nAperturas := nAperturas + 1; END_IF; aviso := (nAperturas >=5);`. Is this clean. iec=3.
+- B8-4908: R_TRIG, same. iec=3.
+- B8-6589: R_TRIG, same. iec=3.
+- B8-3862: R_TRIG, same. iec=3.
+- B8-5019: R_TRIG, same. iec=3.
+- B8-3064: R_TRIG, same. iec=3.
+- B8-9528: R_TRIG, same. iec=3.
+- B8-2626: R_TRIG, same. iec=3.
+- B8-6907: CTU, iec=3.
+- B8-2057: no R_TRIG, manual edge detection flawed; compiles. iec=2.
+
+But need be consistent: Some R_TRIG users have a nuance: If reset TRUE and a rising edge coincident, the R_TRIG still updates `Q` internally each cycle. `IF reset THEN nAperturas :=0; ELSIF rTrigPuerta.Q THEN nAperturas := nAperturas+1; END_IF;` so reset priority. Then `aviso := nAperturas >=5`. That resets aviso. Good.
+
+CTU user: Is it fully correct with reset and Q? In standard CTU, `RESET` takes priority over count. It counts rising edges on CU. It sets CV=0 if reset. Q true if CV >= PV. Then `nAperturas := contador.CV`. However note CTU's CV may be INT and if reset then CV=0. Good. It passes. Idiomatic. iec=3.
+
+Now need evaluate coherencia lógica for all.
+
+Cohrencia: 0 conditions contradictory, uninitialized variables affecting, dead states. 1 mostly coherent with redundancies/conditions dead without serious effect. 2 no contradictions; initialization correct; complete transitions. 3 robust: interlocks complete, no unreachable states, safe behavior for simultaneous inputs.
+
+Need score each. We can differentiate.
+
+For all pass all harness. Functional gives 3 but coherence can vary.
+
+Let's examine each code for logic quality, initialization, edge detection, reset behavior.
+
+Many manual previous codes use `puertaAbiertaAnt` and update after. Some have subtle reset interactions.
+
+Need set scores 2 or 3. Need be careful: "3: además robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas." Many codes with reset and R_TRIG are robust. Some manual codes may have a flaw: not clearing previous or not handling simultaneous reset/open. But the protocol says transitions reset with door closed, doesn't test. The rubric mentions simultaneous inputs, so score may consider potential robustness.
+
+We need maybe assign 2 for manual variations that have dead code or redundancy, 3 for robust.
+
+Let's inspect each.
+
+I'll create table with code, features.
+
+1. B8-2855:
+```
+VAR puertaAbiertaAnterior BOOL := FALSE;
+IF reset THEN
+  nAperturas:=0; aviso:=FALSE;
+ELSE
+  IF NOT puertaAbiertaAnterior AND puertaAbierta THEN nAperturas := nAperturas +1; END_IF
+  puertaAbiertaAnterior := puertaAbierta;
+  IF nAperturas >=5 THEN aviso:=TRUE; ELSE aviso:=FALSE; END_IF
+END_IF
+END_FUNCTION_BLOCK
+```
+Coherence: Works. But previous is updated only in ELSE, not during reset. If reset is active while door open, previous not updated. If reset happens with door closed (tested), previous from before might be false. But consider real operation: door open, previous true, then reset active while door remains open (not tested). Since reset branch doesn't update previous, previous stays true. If reset is released with door still open, no rising edge detected because previous true, so first actual opening after that might be missed? Actually door remains open, then later closes, previous updates when reset false and door false? The update is in ELSE. So when reset false and door maybe false, previous updates false. Then next open counts. If reset is active while door open and then released while still open, previous remains true; door stays open, count not increment; when door closes, update previous false; next open counts. This is reasonable. Not severe. The logic has reset branch not updating previous but because door front? Not problematic. Also if reset is activated simultaneously with a rising edge, edge might be missed due to previous stale. Could be considered minor.
+Initialization: `puertaAbiertaAnterior : BOOL := FALSE;` explicit. Good. No contradictions. Could be 3? It uses balanced IF/ELSE for aviso, reset priority, explicit init. It doesn't have "interlocks" but simple task doesn't need much. I'd rate coherence 3? Maybe 2 because reset does not update prev, but not a huge issue. We need distribute scores.
+
+2. B8-2057: This is the flawed one. Coherence? It has a logical contradiction/dead condition: The "inicialización de variables" block:
+```
+IF NOT puertaAbiertaAnterior THEN
+    puertaAbiertaAnterior := puertaAbierta;
+END_IF
+```
+This suppresses edge detection on every rising edge when previous is false (first cycle), as described. It is a state dead condition? It creates a condition that makes the count impossible in normal operation. So coherence should be low. Rubric: 0: variables sin inicializar con efecto, o estados muertos que impiden operar. Here not exactly uninitialized but the init logic mistakenly suppresses all edges, so states dead? It prevents operation. I'd say coherence 1? Let's read: "0: condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar. 1: lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." This logic is mostly coherent? It has correct detection code but the init condition is harmful, causing all edges missed. It is a serious logic error but the structure is coherent. "estados muertos que impiden operar" maybe the program does not operate (n stays 0 except reset), so coherence 0? But it does reset and aviso false; the count never increments. That is effectively not operating. Could assign 0. But fixed functional already 0. Coherence we can rate 1 or 0. Need determine. The code has no contradictory condition per se; the condition `IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta; END_IF` is an initialisation attempt that is in the wrong place. This is a dead condition that blocks count. I'd assign coherencia=1? The rubric 1: "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." This has efecto grave. So maybe 0. But maybe we can give 1 because the remainder is coherent, the issue is misordered initialization. Need careful.
+
+Given "puntúa lo que el código es", I'd say coherencia=0 or 1? The condition `IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta;` on every cycle when previous is false, it sets previous to current input. In normal operation, when door is closed and previous false, this doesn't matter. When door opens, it immediately copies TRUE into previous, so the count condition below can't see the edge. Thus the count logic is effectively dead. That's a state dead causing failure. Could be 0. But it does not have uninitialized variables. It has "estados muertos que impiden operar." I'd choose 0 for coherence. However maybe if previous initially false and door starts false, then when door opens, first cycle previous gets TRUE before count; yes count never works. So all count paths dead. So 0. We'll use 0.
+
+Need clarify in just_coherencia: "La inicialización copia la entrada antes del conteo, anulando todo flanco; el contador queda muerto." That's one line.
+
+3. B8-3959: R_TRIG. Code:
+```
+rTrigApertura(CLK:=puertaAbierta);
+IF reset THEN
+   nAperturas:=0;
+ELSIF flancoApertura.Q THEN
+   nAperturas:=nAperturas+1;
+END_IF;
+aviso := (nAperturas >=5);
+```
+Coherence: R_TRIG standard. Reset priority. However if reset TRUE and puertaAbierta rising, n=0 and rTrig still updates. Once reset false, if door still true, no edge. okay. aviso is combinational; when reset n=0, aviso false. Good. No contradictions. Safe simultaneous: reset wins, edge ignored. I'd rate 3.
+
+4. B8-6962: manual previous, but updates previous outside ELSE:
+```
+VAR puertaAbiertaAnt : BOOL; (no initial explicit but default FALSE)
+IF reset THEN nAperturas :=0; aviso :=FALSE;
+ELSE
+    IF NOT puertaAbiertaAnt AND puertaAbierta THEN nAperturas := nAperturas+1; END_IF
+    IF nAperturas >=5 THEN aviso:=TRUE; ELSE aviso:=FALSE; END_IF
+END_IF
+puertaAbiertaAnt := puertaAbierta;
+```
+Coherence: Works. Previous updated after every cycle, including reset. Initialization default FALSE. It sets aviso false in else for n<5, so safe. Reset priority: if reset TRUE, it still executes update previous after END_IF (even if reset) with current input. If reset and door open, previous updated true. If reset and door closed, previous false. Good. Simultaneous reset and rising edge? If reset true and previous false, but code skip count due to reset branch. Then after END_IF, previous := puertaAbierta (TRUE). So edge is ignored. This is safe. It has no contradiction. Coherence 3? The only maybe: no explicit initial value on `puertaAbiertaAnt`, but CODESYS default to FALSE (standard maybe not guaranteed? In IEC default is zero? I think yes). Could rely on default. The rubric 2 says initialization correct; 3 robust. This code is robust. I'd give 3.
+
+5. B8-4908: R_TRIG, same as 3959. Coherence 3.
+
+6. B8-3439: manual previous, structure:
+```
+IF reset THEN
+    nAperturas :=0; aviso:=FALSE; puertaAbiertaAnterior:=FALSE;
+END_IF
+
+IF NOT puertaAbiertaAnterior AND puertaAbierta THEN
+    nAperturas := nAperturas+1;
+END_IF
+
+puertaAbiertaAnterior := puertaAbierta;
+
+IF nAperturas >=5 THEN aviso:=TRUE; ELSE aviso:=FALSE; END_IF
+```
+Potential issue: reset does not prevent count; after reset branch, count is evaluated in same cycle. If reset TRUE and puertaAbierta TRUE, previous was set false, so count increments to 1. This violates reset priority and could be unsafe with simultaneous reset and open. The harness test only reset with closed door, so it passes. For coherence, this is a real flaw: reset not fully interlocking. Also if reset TRUE with door closed then no increment. But simultaneous inputs not safe. The code also sets previous to false inside reset before count, then updates previous to current input. For reset with closed door, count false. If door open during reset, count increment after reset. So variable. This is less robust. Coherence maybe 2 or 1? It has no contradictions; but simultaneous reset/open has unexpected count. "2: sin contradicciones; inicialización correcta; transiciones completas." Maybe 2. It has complete transitions and init, but not safe for simultaneous. So not 3. I'd give 2. Could argue 1 due to reset not masking count. But there is no dead condition. I think 2.
+
+7. B8-1092: manual previous similar to 4 (reset/else, update outside):
+```
+IF reset THEN nAperturas:=0; aviso:=FALSE;
+ELSE
+    IF NOT puertaAbiertaAnt AND puertaAbierta THEN nAperturas := nAperturas+1; END_IF
+    IF nAperturas>=5 THEN aviso:=TRUE; ELSE aviso:=FALSE; END_IF
+END_IF
+puertaAbiertaAnt := puertaAbierta;
+```
+Same as 4. Previous updated even reset. Coherence 3.
+
+8. B8-3080: same as 7 with no explicit init? Same code? It is same as 6962 perhaps. Coherence 3.
+
+9. B8-6589: R_TRIG. Same as 3959. Coherence 3.
+
+10. B8-2238: manual previous with reset clearing previous. Code:
+```
+IF reset THEN
+    nAperturas :=0; aviso:=FALSE; puertaAbierta_prev:=FALSE;
+ELSE
+    IF puertaAbierta AND NOT puertaAbierta_prev THEN nAperturas := nAperturas+1; END_IF
+    aviso := (nAperturas >=5);
+END_IF
+puertaAbierta_prev := puertaAbierta;
+```
+Coherence: Reset branch clears prev FALSE, but after END_IF updates prev := puertaAbierta. If reset with closed door, prev false. If reset with open door: reset branch sets prev false, count skipped, aviso false; then update prev true. Good. Actually robust for simultaneous reset/open: it clears prev but later updates to current input, so when reset released with door open, no false edge. Good. Count only in ELSE so reset masks count. This is quite robust. Coherence 3.
+
+11. B8-4457: manual previous similar to 7. Coherence 3.
+
+12. B8-7031: manual previous similar to 7. Coherence 3.
+
+13. B8-9508: manual previous with independent IFs:
+```
+IF reset THEN nAperturas:=0; aviso:=FALSE; END_IF
+IF puertaAbierta AND NOT puertaAbiertaAnterior THEN nAperturas:=nAperturas+1; END_IF
+puertaAbiertaAnterior := puertaAbierta;
+IF nAperturas>=5 THEN aviso:=TRUE; END_IF
+```
+As noted, reset doesn't mask count, and aviso only sets true, no else false (except reset). Potential issues: If reset and door open, count increments. If n<5 after reset, aviso false set by reset; okay. If n>=5 and reset false, aviso true. If n later decreases? n never decreases except reset. So okay. But if n>=5 aviso true then n reset to 0 but count increments due to door open during reset to n=1, reset branch set aviso false before count, then aviso if n>=5 false. okay. So no issue with aviso false.
+Simultaneous reset/open causes nAperturas to become 1 after reset, which could be considered wrong (reset should put register in zero; if door is open during reset, not specified). It's less safe. I'd give coherence 2 (similar to B8-3439). Also aviso only set true may be considered incomplete transition (no else), but since n never decreases, okay. Could be 2.
+
+14. B8-3862: R_TRIG. Coherence 3.
+
+15. B8-6907: CTU. Code:
+```
+contador(CU := puertaAbierta, RESET := reset, PV := 5);
+aviso := contador.Q;
+nAperturas := contador.CV;
+```
+Coherence: Standard counter uses edge detection. Reset works. Is there any issue with simultaneous reset and open? CTU RESET likely dominates; if reset true, CV=0 and Q=FALSE. But if CU rising edge while reset true? In CTU standard, if RESET true, CV:=0, Q false; rising edge on CU maybe ignored? Typically yes. It passes. It is minimal, robust. But note `nAperturas := contador.CV` as INT. If contador.CV is INT maybe fine. Coherence 3? It uses standard block, no homegrown logic. It is very robust and simple. I'd give 3. Potential issue: CTU.Q true when CV >= PV; with PV=5, aviso true at 5. Good. CTU.CV increments on rising edge of CU. Nice. Coherence 3.
+
+16. B8-1323: manual previous similar to 7, but `aviso := nAperturas >=5;` inside ELSE. Code:
+```
+IF reset THEN nAperturas:=0; aviso:=FALSE;
+ELSE
+    IF NOT puertaAbiertaAnterior AND puertaAbierta THEN nAperturas := nAperturas+1; END_IF
+    aviso := nAperturas >=5;
+END_IF
+puertaAbiertaAnterior := puertaAbierta;
+```
+Same robust. Coherence 3.
+
+17. B8-4753: manual previous with reset clearing previous. Code:
+```
+IF reset THEN
+    nAperturas:=0; aviso:=FALSE; puertaAbierta_prev:=FALSE;
+ELSE
+    IF puertaAbierta AND NOT puertaAbierta_prev THEN nAperturas := nAperturas+1; END_IF
+    aviso := (nAperturas >=5);
+END_IF
+puertaAbierta_prev := puertaAbierta;
+```
+Same as B8-2238. Coherence 3, assuming complete FB? It has no END_FUNCTION_BLOCK but we're evaluating logic. We'll still coherencia 3. It has robust reset and count masking.
+But note it appears incomplete in code; in terms of logic, if missing END_FUNCTION_BLOCK it wouldn't compile. But result says compiles. We won't penalize logic.
+18. B8-5019: R_TRIG. Coherence 3.
+
+19. B8-3064: R_TRIG. Coherence 3.
+
+20. B8-8512: manual previous similar to 7. Coherence 3.
+
+21. B8-6800: manual previous with reset clearing previous and aviso no else:
+```
+IF reset THEN
+    nAperturas:=0; aviso:=FALSE; puertaAbierta_prev:=FALSE;
+ELSE
+    IF puertaAbierta AND NOT puertaAbierta_prev THEN nAperturas := nAperturas+1; END_IF
+    IF nAperturas >=5 THEN
+        aviso := TRUE;
+    END_IF
+END_IF
+puertaAbierta_prev := puertaAbierta;
+```
+Coherence: Works. Potential issue: aviso not set false when n<5 in else. But n never decreases except reset, and reset sets aviso false. If n=4 after reset, aviso false from reset. If n=5 aviso true. Good. If reset true with door open, reset branch clears prev, count skipped, aviso false, then update prev to actual. Good. Coherence 3? There's no else for aviso, but not an issue. However if nAperturas somehow >5 then reset? no. I'd give 3, even though no explicit else in aviso; the task is simple and n never decreases. Some evaluators might mark 2 for incomplete transition (aviso false only in reset). But it is robust enough. Let's consider: If reset true for one cycle, it sets aviso FALSE. If nAperturas then becomes 5 later, aviso true. If nAperturas stays <5, aviso remains false from reset. If controller first starts with aviso default false. So complete. I'd give 3.
+
+22. B8-9528: R_TRIG. Coherence 3.
+
+23. B8-3270: manual previous similar to 16. Coherence 3.
+
+24. B8-2626: R_TRIG. Coherence 3.
+
+Need also evaluate B8-2057 coherencia 0 or 1.
+
+Now claridad estructural. Rubric:
+0: sin estructura reconocible; nombres crípticos; sin comentarios.
+1: estructura básica, nombres pobres o comentarios ausentes o incorrectos.
+2: nombres descriptivos, secciones ordenadas, comentarios útiles.
+3: además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué.
+
+All responses are FUNCTION_BLOCK with declared inputs/outputs and some comments. They are not using additional sub-FB except maybe CTU/R_TRIG. For a basic FB, 2 generally. 3 if comments explain why and code is well structured, maybe some have detailed section headers. Need differentiate. Since task is simple, 3 might be easier if they have clear POU, separation of I/O, comments. But modularization? They are already an FB reutilizable, which is exactly asked. Separación entre lógica y E/S is inherent in VAR_INPUT/OUTPUT. Could many qualify for 3? Rubric's 3 "además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué." This basically asks for using FB and separating I/O, which they all do. Comment why? Some comments are just what, not why. Need be critical.
+
+We need score claridad 1/2/3. Most likely 2 for standard code with descriptive names and comments. Some with R_TRIG and clear comments can be 3. Some with sparse comments maybe 1 or 2. Let's inspect each.
+
+1. B8-2855:
+Comments:
+- I/O comments "Entrada que indica..." descriptive.
+- VAR comment "Variable para almacenar el estado anterior de la puerta"
+- Comments in code: // Comprueba si se ha reseteado, // Comprueba si la puerta...
+Well structured. Names descriptive. No section header but clear. Could be 2, maybe 3? It uses manual previous but comments explain what, not why. I'd give 2.
+2. B8-2057:
+Comments somewhat descriptive, but there is a misleading "Inicialización de variables" that is actually harmful. Structure basic. Names descriptive. Could be 1 or 2. Since comments are correct? The init comment says "Inicialización de variables" but it's not properly init; could be misleading. There are no section headers but enough. I'd lean 1: the comment "Inicialización de variables" is incorrect/misleading. But names are okay. The structure is basic. Rubric 1: "estructura básica, pero nombres pobres o comentarios ausentes o incorrectos." Here comments partly incorrect/insufficient. Could be 1. It does have descriptive names. I'd give 1? Hmm maybe 2: names descriptive, sections ordered, comments useful? The comment "Inicialización de variables" might be considered not useful. But the code is ordered. I'd give 1 due to misleading comment causing confusion. But as evaluator, we shouldn't overly punish because comments are brief but mostly okay. Let's examine: It has "// Inicialización de variables" over an IF that sets previous := puerta if previous false. That's mislabeled. Then "// Lógica de reset", "// Contador de aperturas", "// Actualización del estado anterior", "// Lógica de aviso". Those are useful and accurate except init. It's structurally clear. So claridad could be 2. The rubric's 2 requires comments útiles; this has mostly useful but one misleading. Could still be 2. We'll decide later.
+
+3. B8-3959:
+Comments:
+- I/O with (* ... *)
+- VAR comment detector
+- "Deteccion de transicion de FALSE a TRUE"
+- "Logica de reseteo e incremento del contador"
+- "Activacion del aviso al acumular 5 o mas aperturas"
+Names descriptive. Uses R_TRIG. Structure good. No excessive. Could be 3? It has comments of what, not why. The code is modular via standard R_TRIG. But not "comentarios que explican el porqué" much. I'd give 2 or 3. The rubric's 3: "además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué." The FB is reutilizable, separates I/O, comments explain what each block does. Are they "why"? "Deteccion de transicion" is what. Maybe not enough. I'd keep 2 for most.
+Could some deserve 3 for using R_TRIG standard block and clear comments? Maybe the "porqué" not present. I'd use 3 for those with explicit comments explaining why (e.g., "Reset tiene prioridad", "Evita flanco espurio tras reset"). Many have that.
+
+Let's identify codes with comments that include "why" or extra explanatory:
+- B8-2238: "Reset tiene prioridad sobre el conteo"; "Guardar estado actual para el siguiente ciclo". Some why. Could be 3.
+- B8-4753: has "Reset tiene prioridad sobre cualquier otra acción"; "Evita flanco espurio tras el reset"; "Guardar estado actual para el próximo ciclo". That's why. Could be 3 though missing END? But structure comments good.
+- B8-6800: same as 4753? It has "Reset tiene prioridad", "Evita flanco espurio tras el reset". Good. Could be 3.
+- B8-3439: comments only what. no why. 2.
+- B8-6962: comments what. 2.
+- B8-4908: comments what "Reset tiene prioridad sobre el conteo" maybe why? It says that. Could be 2 or 3.
+- B8-6589: "Reset tiene prioridad sobre el conteo"? Wait B8-6589: `IF reset THEN nAperturas:=0; ELSIF flancoApertura.Q THEN...` has comment "Logica de reinicio o incremento del contador". It doesn't explicitly say prioridad. Comments: (* Detectar transición...*), (* Lógica de reinicio o incremento...*), (* Evaluación de la salida de aviso (se desactiva automáticamente al resetear nAperturas) *). Some why. Could be 3. 
+- B8-3862: comments "Deteccion de la transicion...", "Logica de reinicio y conteo", "Evaluacion del aviso". 2.
+
+Need not overfit. The rubric says 3 requires modularización and comments that explain why. For many, comments are brief "what". I'd assign 2 to those with just what. 3 to those with explicit rationale and clean organization.
+
+Let's decide a consistent approach:
+- Code with R_TRIG: iec=3, claridad maybe 2 or 3 depending extra explanation.
+- Manual previous codes: claridad 2 mostly; some 3 if comments include edge condition and reset priority.
+
+Let's go through each and rate claridad:
+
+1 B8-2855: comments:
+- `// Comprueba si se ha reseteado el sistema`
+- `// Comprueba si la puerta ha pasado de cerrada a abierta`
+- `// Actualiza el estado anterior de la puerta`
+- `// Comprueba si se han acumulado 5 o más aperturas`
+All what. Names descriptive. Structure sequential. Claridad 2.
+
+2 B8-2057: Has comments:
+- I/O comments
+- `// Inicialización de variables` (misleading)
+- `// Lógica de reset`
+- `// Contador de aperturas`
+- `// Actualización del estado anterior de puertaAbierta`
+- `// Lógica de aviso`
+Mostly useful but init is wrong. Could be 2 or 1. I'd give 2 because there are clear section comments and descriptive names. The initial comment is not grossly cryptic; it just describes an intended initialization but it's incorrectly implemented. It could mislead but still indicates intent. Rubric 1: "comentarios ausentes o incorrectos." There is an incorrect comment. If I give 2, I'd be saying comments useful. But the init comment is misleading because the block does not simply initialize; it also masks edges each cycle. I'd lean 1: because a key comment is incorrect and could confuse. However other comments are useful. Hmm.
+
+Maybe use 2 for all compiled codes with reasonable comments, 1 only if no comments/poor names. The B8-2057 still has good names and sections; comment "Inicialización de variables" is actually what the programmer thought, but the effect is harmful. It's not exactly incorrect? It initializes previous if false? Actually it does set previous to current, but it's not proper initialization. It is a comment that doesn't explain the bug. I think 2 is acceptable.
+3 B8-3959: It has comments:
+- I/O comments: "Senal de puerta abierta", "Resetea el contador y el aviso"
+- "Detector de flanco ascendente"
+- `(* Deteccion de transicion de FALSE a TRUE *)` over call
+- `(* Logica de reseteo e incremento del contador *)`
+- `(* Activacion del aviso al acumular 5 o mas aperturas *)`
+No why. Names descriptive. Claridad 2.
+4 B8-6962: Comments:
+- I/O comments "Señal de la puerta, TRUE si está abierta"
+- `// Estado anterior...`
+- `// Inicialización de variables`? Actually header says `// Inicialización de variables` before IF reset; not exactly only reset. But okay.
+- comments for count and aviso. What. Claridad 2.
+5 B8-4908: Comments:
+- I/O comments.
+- `(* Detectar flanco ascendente de puertaAbierta *)`
+- `(* Reset tiene prioridad sobre el conteo *)` -> why
+- `(* Incrementar solo en cada nueva apertura *)`
+- `(* Activar aviso al alcanzar 5 o mas aperturas *)`
+Has some why. Claridad maybe 3. It uses R_TRIG, compact. I could give 3.
+6 B8-3439: Comments:
+- I/O comments.
+- `// Inicialización de variables` then reset? Not exactly init.
+- `// Detectar transición de FALSE a TRUE en puertaAbierta`
+- `// Actualizar el estado anterior de puertaAbierta`
+- `// Activar la salida de aviso...`
+No why. Claridad 2.
+7 B8-1092: Comments:
+- I/O comments.
+- `(* Si se activa el reset, reiniciar... *)` why? what.
+- `(* Detectar transición... *)`
+- `(* Activar aviso... *)`
+- `(* Actualizar el estado anterior... *)`
+No specific why. 2.
+8 B8-3080: Same as 6962. Comments what. 2.
+9 B8-6589: Comments:
+- I/O comments.
+- `(* Detectar transición de FALSE a TRUE en la señal de la puerta *)` over R_TRIG
+- `(* Lógica de reinicio o incremento del contador *)`
+- `(* Evaluación de la salida de aviso (se desactiva automáticamente al resetear nAperturas) *)` why. Could be 3.
+10 B8-2238: Comments:
+- I/O comments
+- Section `(* ── Lógica principal ── *)`
+- `(* Reset tiene prioridad sobre el conteo *)` why
+- `(* Detectar flanco ascendente: FALSE → TRUE *)`
+- `(* Activar aviso al alcanzar 5 o más aperturas *)`
+- `(* Guardar estado actual para el siguiente ciclo *)`
+Good. Claridad 3.
+11 B8-4457: Comments:
+- I/O
+- `(* Si se activa el reset, se reinicia el contador y el aviso *)`
+- `(* Detectar transición... *)`
+- `(* Activar aviso... *)`
+- `(* Actualizar el estado anterior... *)`
+2.
+12 B8-7031: Comments similar to 6962. 2.
+13 B8-9508: Comments:
+- I/O comments.
+- `(* Reinicio del registro *)`
+- `(* Detección de transición de FALSE a TRUE *)`
+- `(* Actualización del estado anterior *)`
+- `(* Activación del aviso si se alcanzan 5 aperturas *)`
+What. 2.
+14 B8-3862: Comments:
+- I/O
+- `(* Deteccion de la transicion de FALSE a TRUE *)`
+- `(* Logica de reinicio y conteo *)`
+- `(* Evaluacion del aviso *)`
+2.
+15 B8-6907: CTU code comments:
+- I/O comments
+- `(* Cuenta los flancos de subida y activa el aviso al llegar a 5 *)`
+It's very minimal. Names descriptive. Structure minimal but uses standard block. Comments one line. Claridad maybe 2 or 3? It's compact and clear. The comment explains what. But no why. Could be 2. However it's extremely maintainable. Claridad 2.
+16 B8-1323: Comments:
+- I/O
+- `(* Reinicio del registro *)`
+- `(* Detección de transición... *)`
+- `(* Activación del aviso... *)`
+- `(* Actualización del estado anterior... *)`
+2.
+17 B8-4753: Comments:
+- I/O
+- section `(* ------------------------------------------------------------------ *) Lógica principal`
+- `(* Reset tiene prioridad sobre cualquier otra acción *)`
+- `(* Detección de flanco ascendente: FALSE -> TRUE *)`
+- `(* Incrementar solo en la transición *)`
+- `(* Activar aviso al alcanzar 5 o más aperturas *)`
+- `(* Guardar estado actual para el próximo ciclo *)`
+- Within reset: `(* Evita flanco espurio tras el reset *)` why.
+This is excellent, despite missing END. Claridad 3.
+18 B8-5019: Comments:
+- I/O `//`
+- `// Detección de la transición...`
+- `// Lógica de reinicio y conteo de aperturas`
+- `// Evaluación de la salida de aviso (se desactiva automáticamente al resetear)`
+It uses R_TRIG. Has some why. Could be 2 or 3. I'd give 3? It is clear and rationale.
+19 B8-3064: Similar to B8-5019. Comments:
+- `(* Detección de la transición... *)`
+- `(* Lógica de reinicio y conteo... *)`
+- `(* Activación del aviso si se alcanzan 5 o más aperturas *)`
+No why. 2 maybe. But uses R_TRIG, standard. I'd give 3? Hmm.
+
+Need not overcomplicate. The difference between 2 and 3 is marginal. We'll allocate some 3.
+
+Now mantenibilidad.
+
+Rubric:
+0: valores mágicos por todas partes; imposible modificar sin reescribir.
+1: modificable con esfuerzo; constantes parcialmente parametrizadas.
+2: parámetros como variables o constantes declaradas; cambios localizados.
+3: además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica).
+
+For all: The threshold 5 appears as a magic literal in many codes: `>= 5`. The task fixed threshold 5. For maintainability, we expect use a constant `MAX_APERTURAS : INT := 5;` or parameter input. Most codes use literal 5. Does that qualify as 2? Rubric 2 says "parámetros como variables o constantes declaradas; cambios localizados." If they hard-coded 5, it's a magic number, maybe mant 1 not 2? Let's read: 0 values mágicas por todas partes. 1 modificable con esfuerzo; constantes parcialmente parametrizadas. 2 parámetros como variables o constantes declaradas; cambios localizados. Here threshold 5 is a single magic literal, but it's a constant from spec, not declared. This is "modificable con esfuerzo" because you'd edit one condition. It is localized at one line. Could be 2? The rubric says 2 if parameters as variables or constants declared. They didn't declare constant, so maybe 1. However many simple tasks don't require constant; but rubric explicitly mentions. Hmm.
+
+Need assign mantenibilidad for each. Let's inspect if any declare a constant. None? Check codes: all use `>= 5` or `PV := 5`. B8-6907 uses `PV := 5` inline. None declares `VAR CONSTANT`. So all have magic number 5 threshold. But only one value. Some have no duplication. So mantenibilidad likely 1 or 2. The rubric: "2: parámetros como variables o constantes declaradas; cambios localizados." Since no constant declared, could not be 2. But "cambios localizados" is true. The threshold 5 is in one line. Could the fact it's localized grant 2 without declared constant? The phrase combines both? It says "parámetros como variables o constantes declaradas; cambios localizados." Maybe either. But I think 2 expects using named constant, which these don't. 1: "modificable con esfuerzo; constantes parcialmente parametrizadas." No constants parametrized. However modifying threshold is trivial (find 5). But because they didn't parametize, maybe 1 or 2. Let's consider evaluation guidelines for this rubric: We could give 1 for all because they all hard-code 5. But maybe some use `PV := 5` for CTU, where threshold is localized in input, still hard-coded. Some codes could be 1. Are there any that use a variable/constant for threshold? I scanned none. So all maintainability should be 1 or maybe 2? But the rubric says 2: "parámetros como variables o constantes declaradas; cambios localizados." No variable/const declared for threshold. Thus they don't meet 2. But they do meet "cambios localizados" maybe partially. 1: "constantes parcialmente parametrizadas" not exactly; no constant. I'd perhaps rate 1 for most. But some may have no magic values? They all have 5. The initial `puertaAbiertaAnterior := FALSE` values maybe initialization, not magic. All use magic 5. So maintainability 1.
+
+But wait, the task is very small; the threshold is part of spec and using literal 5 in a single comparison is acceptable. Some evaluators might give 2 for "cambios localizados" despite not using constant. The rubric 2: "parámetros como variables o constantes declaradas; cambios localizados." It might require variables/constants. We can differentiate: codes with a clear comment and single localized threshold maybe 2; codes less flexible 1. But all almost same. Hmm.
+
+Let's see if any code uses `aviso := (nAperturas >= 5);` with threshold in one expression. That's localized and easy to change. But not parametrized. I'd honestly rate 2 for most because the number 5 is not "por todas partes"; it's one occurrence. The rubric says 1 for "valores mágicos parcialmente" not "all over". Actually 0: values mágicas por todas partes. 1: modificable con esfuerzo; constantes parcialmente parametrizadas. Since only one literal and it's from spec, maybe 2? The phrase "constantes parcialmente parametrizadas" implies no magic all over and some constants. Here no. I think a careful teacher would give 1 because the threshold should be a VAR CONSTANT. But maybe many accept 2 for localized single occurrence.
+
+Need align with mantenibilidad scale:
+- 0: magic numbers everywhere, impossible to modify without rewrite.
+- 1: modifiable with effort; constants partially parameterized.
+- 2: parameters as variables or constants declared; changes localized.
+- 3: extensible design (FB input parameters, no duplicated logic).
+
+All these are FUNCTION_BLOCK with inputs/outputs; the FB itself is reutilizable, separating I/O. Could be 3? "parámetros de entrada del FB" they have inputs puertaAbierta, reset, outputs; threshold 5 is not an input. Maybe no. "sin duplicación de lógica" yes. Could be 3 for those using R_TRIG standard block? But the threshold still magic. Since no declared constant, I'd cap at 2 or 1. But some might be 3 because they designed as FB. Hmm.
+
+The task asked specifically "FUNCTION_BLOCK called FB_Puerta with variables input/output", so using FB is required, not a sign of extensibility. For maintainability, threshold magic is a drawback. I'd assign 1 to those without a threshold constant. But maybe some code has no duplication, but only one magic 5; could get 2.
+
+Let's examine if any code declares a constant? No.
+
+Thus all maintainability scores could be 1 or 2. We need consistent. Let's decide a policy: Since all codes use one hard-coded literal `5`, but no constant, we give mantenibilidad=2? The rubric's `2` "cambios localizados" can be satisfied because there is only one place to change. It doesn't explicitly require both parameter declared and changes localized; "parámetros como variables o constantes declaradas; cambios localizados" maybe both. Hmm.
+
+Let's maybe give `1` when the threshold appears as a magic number and no named constant, with one occurrence. But would that be too harsh? The phrasing "1: modificable con esfuerzo; constantes parcialmente parametrizadas." These programs are *modificable con poco esfuerzo*, not effort. If I give 1, it implies more effort than 2. Actually 2 is higher. If I give 2, it acknowledges changes localized. The 5 is localized in one line. So maybe 2 is more appropriate. "parámetros como variables o constantes declaradas" isn't met, but "cambios localizados" is. The rubric maybe says 2: "parámetros como variables o constantes declaradas; cambios localizados." It has two clauses: "parámetros como variables o constantes declaradas" AND "cambios localizados". Without constant, not meeting first. But perhaps the semicolon means equivalences? No.
+
+Could be that in CODESYS, one could easily change the literal. But "valores mágicos por todas partes" is 0; if one literal, maybe 2. The 1 mentions "constantes parcialmente parametrizadas". Here none. Hmm.
+
+Let's see other tasks from same dataset? The rubric is custom. We need be careful not to give all 1s maybe causing strictness. There is no hidden expectation. But as evaluator, I'd assign:
+- 2 to most because the threshold is a single localized literal; code is in a dedicated FB, easy to modify.
+- 1 to B8-2057 because it has the flawed initialization, making modification riskier; maybe threshold still localized.
+- 3 maybe none because no constant/input for threshold. But could give 3 to B8-6907 CTU? It uses PV := 5 in call; still not parameterized. No.
+- Could give 2 to all passes; 1 to B8-2057.
+
+But rubric says `2` requires parameters as variables or constants declared. Since none, maybe all 1. Which is more defensible? We need output with justifications. If I write "Umbral 5 literal sin declarar; no hay constante" then score 1. That is consistent. For B8-6907, it uses `PV := 5`, still literal but localized in one call. Could be 1 too. But for maintainability, using a CTU with PV param is somewhat better: it's one call with named parameter PV. The literal 5 is explicit but parameterized via block input. The threshold is localized in one place. Could get 2.
+
+Let's maybe differentiate:
+- Codes with CTU `PV := 5`: mantenibilidad 2 (parameterizó el límite a través del input PV, aunque el valor esté literal; cambio localizado).
+- R_TRIG/manual with literal `>= 5`: 1, because no constant.
+- Some code with clear constant? none.
+But the rubric 2: "parámetros como variables o constantes declaradas; cambios localizados." In CTU, `PV := 5` is an input parameter; not declared but parameter assignment. Changes localized. Could argue 2. For others, the comparison `>= 5` is local but not a declared parameter. I'd assign 1 to be safe.
+
+However, the rubric also says 3: "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)." The FB already has input/output, but threshold not. Some R_TRIG codes have reset priority; no duplication. Maybe 2 not 1. Hmm.
+
+Let's think of what a careful instructor would do: In a basic exercise, hard-coding 5 is acceptable; they'd give 2 for maintainability because code is clear, modular (FB), easy to modify. 1 would be for messy code with magic numbers scattered. Here there is only one magic number. 0 is "valores mágicos por todas partes". The 1 mentions "constantes parcialmente parametrizadas" which maybe refers to some magic numbers declared but not all. Here no constants but also only one. I'd lean 2 for most, because changes are localized. But if strictly applying "constantes declaradas", maybe 1. The prompt wants consistent across 24 responses. Since all share same threshold, we can set based on that.
+
+Maybe assign mantenibilidad=2 to codes that compute `aviso := (nAperturas >= 5);` because changing threshold is one place. That's all. Hmm.
+
+Let's also consider B8-4753 missing END_FUNCTION_BLOCK; if treated as code, maintainability maybe lower? But result says compiles. We'll not.
+
+Need also maybe penalize B8-2057 functional and coherence, but maintainability could still be 2 because structure similar? It has the literal 5. Could be 1 because the code's flawed logic would require rewriting to fix, not localized. The task "imposible modificar sin reescribir" maybe not impossible; fixing edge detection might require moving/removing init block. But not extensive. I'd give 1.
+
+Now need write justifications for each field. Need be concise one line.
+
+Let's plan scores per code.
+
+I'll create table:
+
+Code | func | iec | coher | clar | mant | just_func_iec maybe if func/iec fixed? Need note. If both funcional and iec fixed? For all func fixed but iec not. For B8-2057 both null? Actually funcional_fijo null, iec_fijo null. So we set both. For all others funcional fijo=3, iec_fijo null. So just_func_iec should contain one line explaining funcional (fixed by pass) and iec. The instructions: `"just_func_iec": "una línea, o \"\" si las dos estaban fijadas"`. Since for any code, iec is not fixed, so need line. funcional fixed for most; line can mention pass and iec. For B8-2057, funcional not fixed; line should mention both.
+
+Need maybe for codes with funcional_fijo=3, just_func_iec can be "Pasa todos los pasos; ST estándar con..." etc.
+
+Let's decide detailed scores.
+
+We'll evaluate each code:
+
+1. B8-2855:
+- func: 3 fixed.
+- iec: 2 (manual edge detection; compiles)
+- coher: 3? wait earlier for B8-2855 we thought maybe 3 or 2? Let's revisit. Code:
+```
+IF reset THEN n=0; aviso:=FALSE;
+ELSE
+    count if edge;
+    puertaAbiertaAnterior := puertaAbierta;
+    aviso if n>=5 else false;
+END_IF
+```
+Rising edge detection inside ELSE. Update previous only inside ELSE. If reset true and door open, previous not updated; but as argued okay. If reset false with door open, previous false? Let's simulate initial: previous init FALSE. Step1 with reset false, door true. Since previous false, count increment, update previous true. Good. If reset true with door closed, previous remains false after reset (was maybe false). Good. If reset true with door open, previous maybe from before maybe true; reset branch doesn't update, so remains true. Suppose previous true, reset true door false (normal reset from open? The door is closed before reset per protocol). Then previous true from before open? Actually if door was open previous true, then door closes with reset true? Step7 reset true, puertaAbierta false; previous before step7 from step6 (door maybe true? step6 ends with door? Let's trace harness: Step6 generates 1 flanco, ends with door open maybe? The generator deterministic flancos maybe leaves door? Hard to know. Step7 reset true, puertaAbierta false. Before step7 previous maybe true if door was left open? Wait harness transitions may generate. At step7, reset true, puerta closed. If previous was true, reset branch does not update previous. So previous remains true. Step8 reset false, puerta true? Actually step8 reset false, then 1 flanco? It says "se suelta reset, 1 flanco". At the moment reset false, likely puertaAbierta FALSE then a rising edge. The code in step8 first cycle maybe reset false, puertaAbierta FALSE? If previous held true from before reset, it enters ELSE, count condition `NOT puertaAbiertaAnterior AND puertaAbierta` = NOT TRUE AND FALSE => false. Then update previous := puertaAbierta (FALSE). So previous becomes false. Next rising edge counts. So no problem. But if reset true with door open, previous not updated; if reset is released while door open, previous may stay true and then count condition misses edge when door stays open. But after door closes, previous updates false. So actual opening later counts. There's a possible edge missed if reset occurs during open and then door closes without code seeing? No, the edge was not counted during reset anyway. So the previous stale doesn't cause false count. It could cause a false count? Suppose previous false, reset true while door false, no update. Later reset false while door false; previous false. Door opens -> count. works. Suppose previous false, reset true while door true simultaneously (not tested). reset branch sets n=0, aviso false, doesn't update previous (false). Then maybe reset false while door still true; since previous false, count increments (that is a rising edge maybe shouldn't count? Actually if door was open during reset, after reset perhaps should not count as new opening). This is a possible unexpected count. So simultaneous reset/open not robust. Thus coherence maybe 2 not 3. I earlier thought maybe 3 but this code has reset not interlocked with previous. It also doesn't update previous inside reset. I'd assign 2. Let's make note.
+- clar: 2.
+- mant: 1 or 2? We'll decide later.
+
+2. B8-2057:
+- func: 0 (fails nominal).
+- iec: 2 (compiles, valid declarations; manual edge not idiomatic)
+- coher: 0 or 1? we said 0. Let's think maybe 1 because logic is coherent but bug prevents count. The rubric's 0 includes "estados muertos que impiden operar", which exactly. I'll choose 0.
+- clar: 2 maybe? Given bug, but structure clear. I'll still 1/2. Hmm.
+- mant: 1.
+
+3. B8-3959:
+- func: 3 fixed.
+- iec: 3 (R_TRIG)
+- coher: 3 (reset priority, standard edge detection, safe)
+- clar: 2 (comments what)
+- mant: 2? Let's decide later.
+
+4. B8-6962:
+- func: 3.
+- iec: 2 (manual edge)
+- coher: 3 (reset priority, previous updated every cycle including reset, robust)
+- clar: 2.
+- mant: ? maybe 2.
+
+5. B8-4908:
+- func: 3.
+- iec: 3 (R_TRIG)
+- coher: 3.
+- clar: 3 maybe (reset priority comments)
+- mant: 2.
+
+6. B8-3439:
+- func: 3.
+- iec: 2 (manual)
+- coher: 2 (reset doesn't mask count; simultaneous edge can increment)
+- clar: 2.
+- mant: maybe 1/2.
+
+7. B8-1092:
+- func: 3.
+- iec: 2
+- coher: 3 (same as 4)
+- clar: 2
+- mant: 2
+
+8. B8-3080:
+- func: 3
+- iec: 2
+- coher: 3
+- clar: 2
+- mant: 2
+
+9. B8-6589:
+- func: 3
+- iec: 3
+- coher: 3
+- clar: 3 maybe
+- mant: 2
+
+10. B8-2238:
+- func: 3
+- iec: 2 (manual)
+- coher: 3
+- clar: 3
+- mant: 2
+
+11. B8-4457:
+- func: 3
+- iec: 2
+- coher: 3
+- clar: 2
+- mant: 2
+
+12. B8-7031:
+- func: 3
+- iec: 2
+- coher: 3
+- clar: 2
+- mant: 2
+
+13. B8-9508:
+- func: 3
+- iec: 2
+- coher: 2 (reset doesn't mask count; aviso only set true)
+- clar: 2
+- mant: maybe 1/2
+
+14. B8-3862:
+- func: 3
+- iec: 3
+- coher: 3
+- clar: 2
+- mant: 2
+
+15. B8-6907:
+- func: 3
+- iec: 3 (CTU)
+- coher: 3
+- clar: 2 (minimal, one comment)
+- mant: 2? Could be 3? It uses CTU with PV as parameter; no duplicated logic. The threshold is literal in call. Maybe 2. Hmm.
+
+16. B8-1323:
+- func: 3
+- iec: 2
+- coher: 3
+- clar: 2
+- mant: 2
+
+17. B8-4753:
+- func: 3
+- iec: 2 manual (but missing END maybe? if we penalize? no)
+- coher: 3
+- clar: 3 (excellent comments)
+- mant: 2
+
+18. B8-5019:
+- func: 3
+- iec: 3 R_TRIG
+- coher: 3
+- clar: 3 maybe
+- mant: 2
+
+19. B8-3064:
+- func: 3
+- iec: 3 R_TRIG
+- coher: 3
+- clar: 2
+- mant: 2
+
+20. B8-8512:
+- func: 3
+- iec: 2
+- coher: 3
+- clar: 2
+- mant: 2
+
+21. B8-6800:
+- func: 3
+- iec: 2 manual
+- coher: 3
+- clar: 3
+- mant: 2
+
+22. B8-9528:
+- func: 3
+- iec: 3 R_TRIG
+- coher: 3
+- clar: 2 or 3? It has clear comments. Maybe 3? Let's see:
+```
+(* Detectar flanco ascendente: solo cuenta la transicion FALSE->TRUE *)
+rTrigPuerta(CLK := puertaAbierta);
+
+IF reset THEN
+    (* Reset: pone el contador en cero y desactiva el aviso *)
+    nAperturas := 0;
+ELSIF rTrigPuerta.Q THEN
+    (* Nueva apertura detectada: incrementar contador *)
+    nAperturas := nAperturas + 1;
+END_IF;
+
+(* Activar aviso si se han acumulado 5 o mas aperturas *)
+aviso := nAperturas >= 5;
+```
+No why beyond what. Claridad 2.
+- mant: 2.
+
+23. B8-3270:
+- func: 3
+- iec: 2
+- coher: 3
+- clar: 2
+- mant: 2
+
+24. B8-2626:
+- func: 3
+- iec: 3 R_TRIG
+- coher: 3
+- clar: 2 maybe 3? It has `(* Reset tiene prioridad sobre el conteo *)`. Could be 3. But maybe 2.
+- mant: 2.
+
+Now the question of mantenibilidad.
+
+Let's decide scoring. The rubric:
+- 0: valores mágicos por todas partes; imposible modificar sin reescribir.
+- 1: modificable con esfuerzo; constantes parcialmente parametrizadas.
+- 2: parámetros como variables o constantes declaradas; cambios localizados.
+- 3: además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica).
+
+All have hardcoded `5` (threshold). None has a `VAR CONSTANT` for it. But the code changes needed for the threshold are localized to one line. This could be 2? However the phrase "parámetros como variables o constantes declaradas" specifically not met. Since they didn't declare a constant, I'd assign 1 to those with literal `>= 5`. But then no code gets 2? That's plausible. But there is B8-6907 CTU: `PV := 5` is a named input parameter of CTU, so the threshold is somewhat parameterized. Could get 2. Also B8-3959 etc maybe use `>= 5` one literal. Could be 1.
+
+Let's see possible justifications:
+- "Umbral 5 literal; sin constante declarada, pero cambio localizado." That aligns with 1 if no constante. But if "cambio localizado" maybe 2. Hmm.
+
+The rubric's 1 mentions "constantes parcialmente parametrizadas." In our code there are no constants at all, so maybe less than 1? But 0 is "valores mágicos por todas partes", and there's only one. So maybe 1. Therefore most get 1. But that makes all very similar.
+
+What about maintainability for code B8-6907: It uses CTU, no duplicated logic, threshold via PV. Could get 2 or 3? It's extensible? The threshold is a literal in the call but named. You can change to 10 in one place. Could be 3? "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)" The FB doesn't have threshold as an input. It does use standard CTU which is reusable but not parameterized at FB level. So 2.
+
+Could any code get 3? If threshold not param, no. The code with R_TRIG has no duplicate logic but threshold magic, so maybe 2. Wait, they also use block inputs puertaAbierta, reset; that's required. "parámetros de entrada del FB" could refer to those existing inputs, not threshold. The FB is reusable for any door signal and reset. Could be 3? But the threshold is not a parameter, so not extensible to different thresholds. I'd cap at 2.
+
+Maybe for simple tasks, not using a constant for 5 is acceptable and localized; I'd score 2 for most. Let's look at rubric 2: "parámetros como variables o constantes declaradas; cambios localizados." It requires "parámetros como variables o constantes declaradas" which none. But if I give 2, I'd be ignoring that. The "o constantes declaradas" is a criterion. So to be rigorous, I should give 1 for all except maybe CTU? CTU `PV` is an input parameter but not declared as a constant; still param.
+
+But maybe the input/output variables themselves are declared variables; `nAperturas` etc. There are no magic values except 5. Hmm.
+
+Let's maybe assign 1 to all manual/R_TRIG codes that hard-code 5, and 2 to CTU because it passes threshold via block input `PV`. But is that over-penalizing? The rubric says 1 "modificable con esfuerzo" but changing one literal is not much effort. Yet "constantes parcialmente parametrizadas" no. 2 expects constants declared. I think 1 is fair.
+
+But many codes may have no duplicated logic and are in an FB, which is a kind of design. I'd perhaps give 2 to those with proper structural comments, because maintainability isn't just threshold. For example B8-2238 has clear separation and comments; changing threshold is one line. I think a teacher would give 2.
+
+Let's not overfocus on threshold. The code is an FB with inputs/outputs; threshold fixed by specification. In PLC programming, hard-coding a single threshold is common and acceptable for a basic task. Mantenibilidad 2 (cambios localizados) seems okay. 3 would require threshold as input. So I'll give 2 for most. For those with less clarity or flawed reset maybe 1.
+
+Let's set maintainability policy:
+- For all passing codes: mantenibilidad = 2. Except maybe B8-4753 missing END? If we consider code as given, maybe 1? But no.
+- B8-2057: mantenibilidad = 1 (logic bug requires rework beyond local change).
+
+But then there's no 1/3. Is that okay? Yes, scores vary in other criteria.
+
+Need also consider B8-3439 and B8-9508 have reset not masking count; maintainability maybe 2 but logic issue. It might have non-localized oddity. But still.
+
+If all passing get 2, the justifications can say "Umbral 5 localizado; lógica simple; no duplicación." But the rubric 2 says constants declared; maybe not. "Umbral literal en un único punto; cambios localizados." I can phrase as 2. Hmm.
+
+Let's examine if any code uses a constant for threshold? None, so if I give 2, some just could be "Umbral mágico único pero localizado; sin constante declarada." That contradicts rubric? It says "parámetros como variables o constantes declaradas." I could give 1 instead: "Umbral 5 literal sin declarar; se modifica con esfuerzo." But "esfuerzo" is minimal. Hmm.
+
+Maybe should give 2 to those that "constantes declaradas" — none. Therefore all 1. Let's think of the scale intent: The authors want 2 for named constants. Here no named constants. So I should comply and give 1. But could any code have a constant? No. So all maintainability = 1. That is very consistent with rubric. But then B8-6907 CTU has `PV := 5` maybe it's a named parameter of standard CTU; threshold not declared as program constant. Still 1.
+
+However, the rubric's 1 text says "constantes parcialmente parametrizadas." Here there are no constants at all. Maybe should be 1 because there is only one magic value. Yes.
+
+But if all 24 get 1, is that acceptable? The output can have same values. We just need verificar values integers. The eval says "valores enteros entre 0 y 3." Not need variance. I think a documented evaluation can give all 1 for maintainability due to lack of threshold constant. But maybe not all, because some might use `PV := 5` which is a block parameter. Hmm.
+
+Let's see if any code uses `VAR CONSTANT`? scan: "VAR CONSTANT" no. "5" appears only in condition. So all have a magic number. According to strict rubric, mant not 2. But 1 says "modificable con esfuerzo; constantes parcialmente parametrizadas." There are no constants. But it is modifiable with little effort. Could 1. I'll lean 1 for all. But maybe the instructor expects 2 because no magic "por todas partes" and changes are localized. The 1 description includes "constantes parcialmente parametrizadas" but they may not require constants; maybe "modificable con esfuerzo" is about code with magic numbers in several places. Since here only one, I'd assign 1 not 2? Actually 2 is higher than 1; if the code has localized change, it's better than "con esfuerzo". But 2 requires variable/constant declared. This is ambiguous.
+
+Let's perhaps compromise: give maintainability 2 to codes that localize threshold and are otherwise clean, 1 to ones with structural/logic issues or less clear. But then not strict.
+
+The prompt says "Puntúa como lo haría un docente cuidadoso y de forma consistente entre las 24 respuestas." Consistency suggests use same criteria. A docente cuidadoso might differentiate:
+- Most code with literal 5: mantenibilidad 1 (no constant declared, magic number)
+- B8-6907 CTU: 2 (threshold passed via PV input)
+Could still be consistent.
+
+Let's decide final maintainability:
+- B8-6907: 2 (PV input, no duplicated logic)
+- All others: 1? But some codes like B8-2238 have clear structure and comments, but no constant. Still 1.
+- B8-2057: 1.
+- Could give 2 to code with comments and local 5? Hmm.
+
+Let's read rubric 3: "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)." If threshold is a fixed spec, the FB is extensible for different input signals but not different thresholds. That's okay. I'd not give 3.
+
+I think a careful teacher might indeed give maintainability 1 to all because they didn't declare a constant for the threshold. But then many codes are similar. That's okay.
+
+Let's perhaps use 1 for all except B8-6907 (CTU) which uses block parameter PV for threshold; get 2. And maybe B8-686? no.
+
+Wait, B8-6907 still has magic 5 hardcoded in `PV := 5`. But it's passed to a named parameter of a standard block; a change is localized and semantically clear. I'll give 2.
+
+Now need ensure justifications one line each.
+
+Let's maybe create final mapping.
+
+Before finalizing, let's verify the missing END in B8-4753. Should we give iec=2? It says Compila. We'll not mention. But if we evaluate code as written, it lacks `END_FUNCTION_BLOCK`, but the result says compiles. Since fixed `funcional_fijo` 3 and result says compiles. For iec, we could note "Compila; declaraciones correctas; detección manual de flanco sin bloque estándar." That doesn't mention missing END. The code likely was truncated. Fine.
+
+Now maybe some code uses `R_TRIG` but not `END_FUNCTION_BLOCK`? only B8-4753 manual.
+
+Let's revisit B8-2057 functional: The result says "Falla 7 de 9 pasos". It passes steps 0 and 7 reset. For the rubric, functional 0 if "no implementa la lógica pedida o falla en el caso nominal." It definitely fails nominal. So 0. just_func_iec should say "No cuenta: el bloque de inicialización copia la entrada antes de la detección, omitiendo todo flanco; compila sin extensiones." That's one line.
+
+Need ensure if functional not fixed, between 0 and 2. 0 is okay.
+
+Now let's craft justifications for each field.
+
+We need produce JSON. Let's write one line per criterion, concise.
+
+Need maybe use no markdown. Output only JSON list.
+
+Let's define final scores and just.
+
+I'll make a table with final scores:
+
+1 B8-2855: func 3, iec 2, coher 2, clar 2, mant 1.
+just_func_iec: "Pasa el harness; ST estándar con flanco manual, sin bloques IEC de borde."
+just_coherencia: "Reset prioriza el conteo, pero no actualiza el estado anterior durante reset; riesgo menor con puerta abierta." Wait if score 2, this justification fits 2: no contradictions but not fully safe simultaneous. Good.
+just_claridad: "Nombres descriptivos y comentarios por sección; explica qué, no por qué."
+just_mantenibilidad: "Umbral 5 literal sin constante declarada; cambios en un punto pero no parametrizado."
+
+2 B8-2057: func 0, iec 2, coher 0, clar 1, mant 1.
+just_func_iec: "Falla el caso nominal: la inicialización anula el flanco; compila y declara tipos correctos."
+just_coherencia: "La copia de puertaAbierta en el bloque de inicialización impide incrementar el contador; camino de conteo muerto."
+just_claridad: "Estructura básica y comentarios de sección, pero el comentario 'Inicialización' es engañoso."
+just_mantenibilidad: "Valor 5 literal; la corrección requiere mover/revisar el bloque de inicialización."
+
+3 B8-3959: func 3, iec 3, coher 3, clar 2, mant 1? maybe 2? Let's decide all pass except CTU and perhaps some. Hmm.
+
+Let's decide maintainability now. I'll assign:
+- For R_TRIG/manual simple with literal 5: maybe 1 or 2? The rubric strict says no constant. But maybe all code should be 1. Let's see if we can assign 2 to those with one magic? The prompt "puntúa como lo haría un docente cuidadoso" Could a careful instructor give 2 for ones using `PV` param only? I'd assign 2 to:
+  - B8-6907 (CTU with PV param)
+  - B8-2238, B8-4753, B8-6800 maybe due clean param? Wait they don't have constant.
+But then consistency. Hmm.
+
+Maybe I'll assign maintenance 2 to those with no other maintainability problems and threshold localized; because "cambios localizados" is satisfied, even without constant, but the rubric says "constantes declaradas". However 2 may be more appropriate than 1 since changing only one literal. The phrase "1: modificable con esfuerzo; constantes parcialmente parametrizadas." If there is a single literal, changing it is not effort. So maybe 2. Let's give 2 to all passing codes except those with logic flaws? B8-3439 and B8-9508 have reset issue but maintainability not worse. Hmm.
+
+If I give 2 to all passing, justifications can be "Umbral 5 localizado y lógica aislada; sin duplicación." For strictness, maybe okay. But "sin constante declarada" would contradict. I could still write "Umbral 5 único y localizado; cambio sencillo." That aligns with 2's "cambios localizados."
+
+Let's look at scale:
+- 0: magic numbers everywhere, impossible.
+- 1: modifiable with effort; constants partially parameterized.
+- 2: parameters as variables or constants declared; changes localized.
+Here no declared constants, so maybe 1. Hmm.
+
+Maybe the term "parámetros como variables o constantes declaradas" means if you have any declared variables/constants (which all have declared variables like puertaAbiertaAnt), not specifically threshold. Actually all code has variables declared for I/O and state. The phrase could mean "parameters (not magic numbers) as variables or constants declared" meaning the 5 should be a constant. It isn't. So 1.
+
+Given the rubric's specificity, I'd adhere: all with literal 5 get 1, except CTU gets 2 due to PV parameter. But even CTU has literal 5 but it's passed to a named input; I'd give 2. Could also give 2 to code that uses `>= 5` as a localized comparison; but then not.
+
+Let's decide final maintainability:
+- B8-6907: 2.
+- All others: 1.
+
+But wait, some code may have a `VAR CONSTANT`? none. Yes.
+
+Then maintainability scores mostly 1. That is a bit uniform, but ok.
+
+Now need maybe B8-4753 missing END might affect maintainability? No.
+
+Let's adjust final table:
+
+1 mant 1.
+2 mant 1.
+3 mant 1? Use R_TRIG but literal 5.
+4 mant 1.
+5 mant 1.
+6 mant 1.
+7 mant 1.
+8 mant 1.
+9 mant 1.
+10 mant 1.
+11 mant 1.
+12 mant 1.
+13 mant 1.
+14 mant 1.
+15 mant 2.
+16 mant 1.
+17 mant 1.
+18 mant 1.
+19 mant 1.
+20 mant 1.
+21 mant 1.
+22 mant 1.
+23 mant 1.
+24 mant 1.
+
+But is that too harsh for clear code? Hmm.
+
+Let's maybe elevate some with a nice constant? The code B8-2238 has `aviso := (nAperturas >= 5);` not constant. But no.
+
+Maybe we can grant 2 to any code where the threshold is a single literal and the logic is well modularized? The rubric says 2 "parámetros como variables o constantes declaradas; cambios localizados." They declared `nAperturas` etc. They didn't declare a *constant*, but the input/output variables are declared. I might be misreading; maybe "parámetros como variables o constantes declaradas" means not magic numbers for all relevant values. They did declare variables for truth and state, but 5 is a literal. If a teacher sees one magic number 5, they'd likely not downgrade to 1. Hmm.
+
+Let's choose maintainability scores 2 for most passing clean code, 1 for flawed/problematic. I'd rather rubrics reflect differentiation. Let's assign:
+- 2 for code with one literal and clean structure.
+- 1 for B8-2057 (logic bug), B8-9508 maybe incomplete aviso, B8-3439 reset not masking count? That's logic, not maintainability. Hmm.
+- Maybe 3 for B8-6907 CTU because it uses standard block and threshold as PV. But still no constant, maybe 2.
+
+This might be more balanced. But need justification.
+
+Let's maybe settle:
+
+Mantenibilidad:
+- 2 for all passing responses except maybe B8-3439 and B8-9508 (due reset/count issue can cause surprise; maintenance necessary to correct) -> actually maintainability evaluates ease of modification, not current correctness. But logic flaws impact maintainability if need rewrite. We can still assign 1 to those.
+- 3 for B8-6907? uses CTU simple. The code is minimal, no duplication; but threshold literal. Could get 2.
+- B8-2057: 1.
+
+What about code B8-4753 with missing END but compiles? not.
+
+Let's look at B8-3439: It has reset branch then count outside; if I want to change reset behavior, I need to add ELSE or restructure, not huge. Mant 1 maybe.
+B8-9508: aviso only set true, but reset adds false. To make robust, add ELSE, not huge. Mant 1.
+
+For all clean codes, mant 2.
+
+That gives enough variation:
+- clean manual/R_TRIG: 2
+- CTU: 3? Actually extensible with standard block? No, maybe 2.
+- flawed B8-2057, B8-3439, B8-9508: 1.
+
+But the prompt wants "mantenibilidad: 3 además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)." None with threshold input, but all are FBs. Could maybe give 3 to B8-6907 because it uses a standard CTU, no duplicated logic; the threshold is passed as `PV` to the counter, easy to change. But that's still not FB input. I'd cap 2.
+
+Thus:
+- B8-6907: mant 2.
+- Clean: mant 2.
+- B8-2057, B8-3439, B8-9508: 1.
+
+Maybe give B8-4753, B8-6800, B8-2238 mant 2.
+
+Now re-evaluate whether B8-3439 logic issue warrants mantenibilidad 1? It may not be a maintainability issue but logic issue. The rubric's 1 "modificable con esfuerzo" because to fix reset priority you need to restructure. I'd give 1.
+B8-9508 likewise.
+
+Are there other codes with subtle aviso not else? B8-6800 and B8-4753, B8-2238, etc. They set aviso false only reset; but no issue due monotonic. It's clean. Good.
+
+Now final claridad scores. Let's decide maybe some 3 for highly clean and explanatory.
+
+Clarity 3 candidates:
+- B8-4908: R_TRIG, comments explain priority and increment. Good but comments not why beyond. Maybe 3? Hmm.
+- B8-6589: R_TRIG, comments mention auto-deactivate. Maybe 3? 
+- B8-2238: clear section and priority comments. 3.
+- B8-4753: excellent section and rationale. 3.
+- B8-6800: excellent section and rationale. 3.
+- B8-5019: R_TRIG, comments good. 3?
+- B8-9528: R_TRIG, comments okay. maybe 2.
+- B8-2626: R_TRIG, comments priority. maybe 3.
+- B8-6907: minimal one comment. 2.
+- B8-3959: comments only what. 2.
+- B8-3862: comments what. 2.
+- B8-3064: similar. 2.
+- B8-6962: comments what. 2.
+- B8-1092: comments what. 2.
+- B8-3080: comments what. 2.
+- B8-4457: comments what. 2.
+- B8-7031: comments what. 2.
+- B8-8512: comments what. 2.
+- B8-1323: comments what. 2.
+- B8-2855: comments what. 2.
+- B8-3439: comments what. 2.
+- B8-9508: comments what. 2.
+- B8-2057: 1 or 2. Let's set 2 (descriptive names/sections despite mislabeled init). Hmm.
+
+Maybe I should give clarity 3 less liberally to be consistent: only codes with explicit comments explaining *why* (priority, avoiding spurious edge) get 3. Those are:
+- B8-2238 (priority)
+- B8-4753 (priority, evita flanco espurio)
+- B8-6800 (priority, evita flanco espurio)
+- B8-4908 (priority)
+- B8-2626 (priority)
+- B8-5019 maybe automated? It says "se desactiva automáticamente al resetear" but not why.
+- B8-6589: "se desactiva automáticamente al resetear nAperturas" a because? Could be 3.
+Let's mark:
+- B8-4908: 3
+- B8-6589: 3
+- B8-2238: 3
+- B8-4753: 3
+- B8-6800: 3
+- B8-5019: 3? It has clear comments. I'll decide 3 for B8-5019 too? Hmm.
+- B8-2626: 3? It says reset priority and increment only. Good.
+
+Maybe that's too many. But okay.
+
+Now coherencia for B8-2855 earlier we set 2. Check: It has reset branch then update prev inside ELSE, not during reset. Our just says risk. Good.
+
+What about B8-3439 coherencia: 2. Need just: "Sin contradicciones, pero el reset no enmascara el conteo; si reset coincide con puerta abierta cuenta un flanco." Good.
+B8-9508 coherencia: 2. Just: "Reset no enmascara el conteo y aviso solo se activa; correcto en secuencia simple pero menos robusto."
+B8-2057 coher 0. Good.
+
+Now need maybe re-evaluate B8-2855 coher with risk: It passes harness; but reset doesn't update prev. Is that enough for 2? I think yes.
+
+Let's also check B8-1323, B8-1092, B8-4457 etc all robust. Good.
+
+Let's maybe give coherence 3 to codes with reset priority and previous update after every cycle including reset. Those:
+- B8-6962 updates previous outside if; reset masks count. coher 3.
+- B8-1092 same.
+- B8-3080 same.
+- B8-4457 same.
+- B8-7031 same.
+- B8-8512 same.
+- B8-1323 same.
+- B8-3270 same.
+- B8-2238 reset branch clears prev then update outside; reset masks count. coher 3.
+- B8-4753 same.
+- B8-6800 same.
+- B8-3959 reset priority via ELSIF; R_TRIG handles edge. coher 3.
+- B8-4908 same.
+- B8-6589 same.
+- B8-3862 same.
+- B8-5019 same.
+- B8-3064 same.
+- B8-9528 same.
+- B8-2626 same.
+- B8-6907 CTU standard reset dominates; coher 3.
+- B8-2855 coher 2.
+- B8-3439 coher 2.
+- B8-9508 coher 2.
+- B8-2057 coher 0.
+
+Need maybe check B8-9508: It does update previous after count, so when reset false and door closed, it works. If reset true and puertaAbierta false: reset sets n=0, aviso false; count false; previous false; aviso if n>=5 false. Good. When step1 reset false, door true: previous false; count increments; previous true; aviso if n>=5 false. Works. Why did it pass harness? Yes. It only fails if reset occurs with door open, not tested. Coherence 2.
+
+Now we need assign `iec` for each. For manual codes we have 2; R_TRIG codes 3; CTU 3. Need verify B8-2855 maybe manual but uses no extension; iec=2. Good.
+
+Let's maybe consider B8-2057 iec=2. It compiles, valid decl. Manual edge detection, but not standard FBD blocks. So 2.
+
+Now maybe B8-3959 uses R_TRIG. Did it instantiate properly? Yes. `flancoApertura : R_TRIG;` and call with `CLK := puertaAbierta`. Good.
+
+Now just_func_iec lines:
+For all pass func fixed, mention "Pasa los 9 pasos; ..." plus iec.
+
+Need maybe avoid too long lines but okay.
+
+Let's prepare the JSON. Need be valid JSON, no markdown. Ensure strings escaped if needed. Use Spanish with accents? We can include accents in JSON. Ensure quotes. Use \n? No, just one line.
+
+Let's check each code list in order. I'll create objects with code, scores, justs.
+
+Before final, maybe revisit `B8-4753` missing END: In JSON code_st doesn't have END_FUNCTION_BLOCK. We can't mention because result says Compila. If we rate iec 2, just says "manual" not mention. Fine.
+
+Need ensure all values integer 0-3. Functional fixed copied: all pass 3; B8-2057 set 0. IEC for all compiles: should be 1-3. We have 2/3. Good.
+
+Now let's generate final list in order. We must be careful not to include trailing commas.
+
+Let's maybe draft:
+
+1 B8-2855:
+- func 3, iec 2, coher 2, clar 2, mant 1? Wait we earlier changed mant policy. Let's decide final mant now.
+
+Let's choose final maintainability scores:
+- Clean manual/R_TRIG: 2
+- CTU: 2
+- B8-2057: 1
+- B8-3439: 1
+- B8-9508: 1
+- Maybe B8-2855 is clean enough but logic minor risk; still 2.
+So mant for most 2, except 2057/3439/9508 1.
+
+What about B8-6907 CTU mant 2. Fine.
+
+Let's verify all justs:
+- For clean manual with mant 2: "Umbral 5 único y localizado; lógica simple y sin duplicación." Could be 2.
+- For B8-3439 mant 1: "Umbral 5 literal y reset no aislado; reestructuración necesaria para robustez." Good.
+- For B8-9508 mant 1: "Umbral 5 literal y aviso incompleto; requiere revisar condiciones." Good.
+- For B8-2057 mant 1: "Corrección de la lógica de inicialización necesaria; umbral 5 sin constante." Good.
+- For B8-6907 mant 2: "Umbral pasado a PV en un único punto; sin duplicación."
+- For B8-4753 maybe missing END? Mant 2.
+
+Now ensure just_coherencia for B8-2855 mentions risk. Good.
+
+But B8-2855 reset doesn't update previous during reset; we rated coher 2. `just_coherencia`: "Sin contradicciones, pero el estado anterior no se actualiza durante reset; riesgo sólo con reset simultáneo a puerta abierta." Good.
+
+Coherence 3 for B8-6962 etc just "Detección de flanco limpia y reset con prioridad; estado anterior se actualiza siempre." Good.
+
+Clarity scores:
+Let's finalize clarity list:
+
+1 2
+2 2? or 1? We'll set 2 maybe.
+3 2
+4 2
+5 3
+6 2
+7 2
+8 2
+9 3
+10 3
+11 2
+12 2
+13 2
+14 2
+15 2
+16 2
+17 3
+18 3
+19 2
+20 2
+21 3
+22 2
+23 2
+24 2
+
+Need maybe B8-5019 clarity 3? We set 18 B8-5019 to 3 earlier. In table I said 3.
+B8-2626 clarity maybe 2 or 3? We'll set 2 maybe to not too many. Actually B8-2626 has priority comment. Could be 3. Let's see B8-2626 code:
+```
+(* Detectar flanco ascendente de puertaAbierta *)
+rTrigPuerta(CLK := puertaAbierta);
+
+(* Reset tiene prioridad sobre el conteo *)
+IF reset THEN
+    nAperturas := 0;
+ELSIF rTrigPuerta.Q THEN
+    (* Incrementar solo en cada nueva apertura *)
+    nAperturas := nAperturas + 1;
+END_IF;
+
+(* Activar aviso al alcanzar 5 o mas aperturas *)
+aviso := nAperturas >= 5;
+```
+Comments include why "Reset tiene prioridad". Could be 3. B8-4908 similar. We set B8-4908 3. Maybe B8-2626 3 too. But we don't want overcount. It's okay.
+B8-9528 similar but comments only what, set 2.
+B8-5019:
+```
+// Detección de la transición...
+flancoApertura(CLK := puertaAbierta);
+// Lógica de reinicio y conteo de aperturas
+IF reset THEN ... ELSIF ...
+// Evaluación de la salida de aviso (se desactiva automáticamente al resetear)
+aviso := ...
+```
+Comments okay, some why. Set 3 maybe.
+B8-6589:
+```
+(* Detectar transición... *)
+flancoApertura...
+(* Lógica de reinicio o incremento del contador *)
+IF reset...
+(* Evaluación de la salida de aviso (se desactiva automáticamente al resetear nAperturas) *)
+aviso := ...
+```
+No explicit priority. But comment "se desactiva automáticamente al resetear nAperturas" why. Set 3 maybe.
+B8-2238 has section and priority. 3.
+B8-4753 3.
+B8-6800 3.
+
+Now clarity justs:
+- 2: "Nombres claros y comentarios por paso; explican qué, no siempre por qué."
+- 3: "Comentarios explican prioridad/porqué y secciones claras."
+- 1? For B8-2057 maybe 2. Could choose 2 for clarity. It has clear sections. I'll set 2.
+Let's not use clarity 1 at all. That's okay.
+No code with no comments. All have descriptive names. So 2 min.
+
+Now we need produce justifications. Let's make generic but custom enough.
+
+Let's map each code details:
+
+1 B8-2855:
+- just_func_iec: "Pasa los 9 pasos; ST estándar con detección manual de flanco, sin bloques IEC de borde."
+- just_coherencia: "Sin contradicciones; reset no actualiza el estado anterior, con riesgo sólo si reset coincide con puerta abierta."
+- just_claridad: "Nombres descriptivos y comentarios de sección; correcto pero no explica el porqué."
+- just_mantenibilidad: "Umbral 5 literal y único; cambio localizado, sin constante declarada."
+
+Wait if mant 2, "sin constante declarada" but score 2? Hmm. Maybe better to not mention "sin constante" if score 2? But the rubric 2 expects constants. Hmm. I can write "Umbral 5 en un único punto; lógica simple, cambio localizado." That's fine.
+
+2 B8-2057:
+- just_func_iec: "Falla el nominal: el flanco nunca cuenta; ST compila y declara tipos correctos."
+- just_coherencia: "La inicialización copia la entrada antes del conteo y anula todo flanco; contador muerto."
+- just_claridad: "Comentarios de sección presentes, pero el de 'Inicialización' es engañoso."
+- just_mantenibilidad: "Umbral 5 literal; corregir la lógica de inicialización obliga a revisar el flujo."
+
+3 B8-3959:
+- just_func_iec: "Pasa los 9 pasos; R_TRIG instanciado correctamente y ST estándar idiomático."
+- just_coherencia: "Detección de flanco y reset con ELSIF; sin contradicciones y comportamiento robusto."
+- just_claridad: "Nombres claros y comentarios concisos de qué hace cada bloque."
+- just_mantenibilidad: "Umbral 5 en único punto; lógica sin duplicación y fácil de ajustar."
+
+4 B8-6962:
+- just_func_iec: "Pasa los 9 pasos; ST estándar con detección manual de flanco."
+- just_coherencia: "Reset con prioridad y actualización del estado anterior en cada ciclo; robusto."
+- just_claridad: "Nombres descriptivos y comentarios de pasos; claro aunque no explica porqué."
+- just_mantenibilidad: "Umbral 5 en un único punto; cambios localizados."
+
+5 B8-4908:
+- just_func_iec: "Pasa los 9 pasos; R_TRIG estándar bien instanciado y ST idiomático."
+- just_coherencia: "Reset prioritario mediante ELSIF; detección por bloque de flanco robusta."
+- just_claridad: "Comentarios que indican prioridad e intención; código ordenado."
+- just_mantenibilidad: "Umbral 5 en único punto; sin duplicación de lógica."
+
+6 B8-3439:
+- just_func_iec: "Pasa los 9 pasos; ST válido con detección manual de flanco."
+- just_coherencia: "Sin contradicciones, pero el reset no enmascara el conteo; un flanco simultáneo incrementaría."
+- just_claridad: "Nombres y comentarios descriptivos, aunque no explican riesgos."
+- just_mantenibilidad: "Umbral 5 literal; la lógica de reset no aislada requiere reestructuración para robustez."
+
+7 B8-1092:
+- just_func_iec: "Pasa los 9 pasos; ST estándar con flanco manual."
+- just_coherencia: "Reset prioritario y estado anterior actualizado en cada ciclo; comportamiento robusto."
+- just_claridad: "Nombres descriptivos y comentarios claros de cada paso."
+- just_mantenibilidad: "Umbral 5 en único punto; sin duplicación."
+
+8 B8-3080:
+- just_func_iec: "Pasa los 9 pasos; ST válido con detección manual de flanco."
+- just_coherencia: "Reset enmascara el conteo; prev actualizado en cada ciclo; consistente."
+- just_claridad: "Comentarios por sección y nombres descriptivos; formato claro."
+- just_mantenibilidad: "Umbral 5 localizado; lógica simple."
+
+9 B8-6589:
+- just_func_iec: "Pasa los 9 pasos; R_TRIG estándar bien instanciado."
+- just_coherencia: "Bloque de flanco estándar y reset prioritario; sin estados muertos."
+- just_claridad: "Comentarios con intención y evaluación de aviso; estructura limpia."
+- just_mantenibilidad: "Umbral 5 único; lógica sin duplicación."
+
+10 B8-2238:
+- just_func_iec: "Pasa los 9 pasos; ST válido con detección manual de flanco."
+- just_coherencia: "Reset prioritario, prev actualizado tras cada ciclo; manejo seguro de simultáneos."
+- just_claridad: "Sección de lógica y comentarios que explican prioridad y porqué."
+- just_mantenibilidad: "Umbral 5 en único punto; código modular dentro del FB."
+
+11 B8-4457:
+- just_func_iec: "Pasa los 9 pasos; ST estándar con flanco manual."
+- just_coherencia: "Prev actualizado en cada ciclo y reset con prioridad; transiciones completas."
+- just_claridad: "Nombres y comentarios descriptivos, sin explicar porqué."
+- just_mantenibilidad: "Umbral 5 único; cambio localizado."
+
+12 B8-7031:
+- just_func_iec: "Pasa los 9 pasos; ST válido con detección manual."
+- just_coherencia: "Reset enmascara conteo y prev actualizado siempre; robusto."
+- just_claridad: "Comentarios claros y nombres descriptivos."
+- just_mantenibilidad: "Umbral 5 en un único punto."
+
+13 B8-9508:
+- just_func_iec: "Pasa los 9 pasos; ST compila con detección manual de flanco."
+- just_coherencia: "Reset no enmascara el conteo y aviso sólo se activa; correcto en secuencia, menos robusto."
+- just_claridad: "Comentarios por paso y nombres descriptivos."
+- just_mantenibilidad: "Umbral 5 literal; requiere revisar reset/aviso para mejorar robustez."
+
+14 B8-3862:
+- just_func_iec: "Pasa los 9 pasos; R_TRIG estándar bien instanciado."
+- just_coherencia: "Detección por R_TRIG y reset priorizado por ELSIF; robusto."
+- just_claridad: "Comentarios concisos y nombres descriptivos."
+- just_mantenibilidad: "Umbral 5 único; sin duplicación."
+
+15 B8-6907:
+- just_func_iec: "Pasa los 9 pasos; uso idiomático del CTU estándar."
+- just_coherencia: "CTU estándar gestiona flanco y reset; lógica mínima y robusta."
+- just_claridad: "Código mínimo y claro; una línea de comentario suficiente."
+- just_mantenibilidad: "Umbral pasado a PV en un único punto; diseño compacto."
+
+16 B8-1323:
+- just_func_iec: "Pasa los 9 pasos; ST válido con detección manual de flanco."
+- just_coherencia: "Reset con prioridad y prev actualizado al final; robusto."
+- just_claridad: "Comentarios descriptivos y estructura ordenada."
+- just_mantenibilidad: "Umbral 5 único; cambio localizado."
+
+17 B8-4753:
+- just_func_iec: "Pasa los 9 pasos; ST válido con detección manual de flanco."
+- just_coherencia: "Reset prioritario, prev actualizado en cada ciclo; evita flanco espurio."
+- just_claridad: "Comentarios explican prioridad y decisión; excelente estructura."
+- just_mantenibilidad: "Umbral 5 único; lógica clara y sin duplicación."
+
+18 B8-5019:
+- just_func_iec: "Pasa los 9 pasos; R_TRIG estándar bien instanciado."
+- just_coherencia: "Detección por R_TRIG y reset por ELSIF; comportamiento robusto."
+- just_claridad: "Comentarios explican detección y desactivación automática; claro."
+- just_mantenibilidad: "Umbral 5 en un único punto; sin duplicación."
+
+19 B8-3064:
+- just_func_iec: "Pasa los 9 pasos; R_TRIG estándar bien instanciado."
+- just_coherencia: "R_TRIG y reset prioritario; init correcta."
+- just_claridad: "Comentarios y nombres descriptivos; estructura clara."
+- just_mantenibilidad: "Umbral 5 único; cambio localizado."
+
+20 B8-8512:
+- just_func_iec: "Pasa los 9 pasos; ST válido con flanco manual."
+- just_coherencia: "Reset priorizado y prev actualizado al final; robusto."
+- just_claridad: "Comentarios por paso y nombres descriptivos."
+- just_mantenibilidad: "Umbral 5 único; sin duplicación."
+
+21 B8-6800:
+- just_func_iec: "Pasa los 9 pasos; ST válido con detección manual de flanco."
+- just_coherencia: "Reset prioritario y manejo explícito de flanco espurio; robusto."
+- just_claridad: "Comentarios explican el porqué de cada decisión; muy claro."
+- just_mantenibilidad: "Umbral 5 único; lógica sin duplicación."
+
+22 B8-9528:
+- just_func_iec: "Pasa los 9 pasos; R_TRIG estándar bien instanciado."
+- just_coherencia: "R_TRIG y reset por ELSIF; sin contradicciones."
+- just_claridad: "Comentarios descriptivos y estructura ordenada."
+- just_mantenibilidad: "Umbral 5 único; lógica sin duplicación."
+
+23 B8-3270:
+- just_func_iec: "Pasa los 9 pasos; ST válido con detección manual."
+- just_coherencia: "Reset con prioridad y prev actualizado al final; robusto."
+- just_claridad: "Comentarios y nombres claros."
+- just_mantenibilidad: "Umbral 5 único; cambio localizado."
+
+24 B8-2626:
+- just_func_iec: "Pasa los 9 pasos; R_TRIG estándar bien instanciado."
+- just_coherencia: "Reset prioritario con ELSIF; detección de flanco estándar robusta."
+- just_claridad: "Comentarios claros y prioridad explícita."
+- just_mantenibilidad: "Umbral 5 único; sin duplicación."
+
+Check that for B8-2626 I set claridad 2 maybe but just says "prioridad explícita" which maybe implies 3. I need align. Earlier I set B8-2626 clar 2 maybe. If just says priority explicit, maybe score 3. Let's decide if B8-2626 should be 3. It has priority comment. I'll set clarity 3 for B8-2626 as well. But too many 3? Okay.
+
+Let's finalize clarity scores:
+1 2
+2 2
+3 2
+4 2
+5 3
+6 2
+7 2
+8 2
+9 3
+10 3
+11 2
+12 2
+13 2
+14 2
+15 2
+16 2
+17 3
+18 3
+19 2
+20 2
+21 3
+22 2
+23 2
+24 3
+
+Need adjust just_claridad for B8-2626: "Comentarios claros y prioridad explícita." ok.
+
+Now check B8-5019 I set clarity 3. Good.
+B8-4908 clarity 3.
+B8-6589 clarity 3.
+B8-2238 3.
+B8-4753 3.
+B8-6800 3.
+
+Now all justs one line.
+
+Need ensure `just_func_iec` for B8-2057 uses both func and iec. fine.
+
+Now maybe `just_func_iec` for all pass, we mention "Pasa los 9 pasos". Good.
+
+Let's verify functional_fijo for all: first B8-2855 fixed 3, etc. B8-2057 no fijo, we set 0. fine.
+
+Now maybe issue: B8-2057 result says "Falla 7 de 9 pasos". Our functional 0, not 1/2. The rubric says 0 if falla caso nominal. It fails nominal. Good.
+
+Now need perhaps consider if B8-2057 iec should be 2? It compiles but uses manual edge detection. However it has an "IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta; END_IF" which is non-idiomatic but standard. I'd kept 2. Could perhaps be 1? It compiles without corrections. So 2. Good.
+
+Now need produce final JSON only. Verify object count 24. We'll output one per line in array.
+
+Let's ensure JSON strings properly escape accents. Accents are okay. Avoid unescaped `"` in strings.
+
+Let's write final.
+
+Need maybe re-evaluate code B8-4753 missing END. Our justifica: "ST válido con detección manual..." According to code as provided, it might not be válido. But given compiles. Accept.
+
+Now let's double-check codes in same order:
+1 B8-2855
+2 B8-2057
+3 B8-3959
+4 B8-6962
+5 B8-4908
+6 B8-3439
+7 B8-1092
+8 B8-3080
+9 B8-6589
+10 B8-2238
+11 B8-4457
+12 B8-7031
+13 B8-9508
+14 B8-3862
+15 B8-6907
+16 B8-1323
+17 B8-4753
+18 B8-5019
+19 B8-3064
+20 B8-8512
+21 B8-6800
+22 B8-9528
+23 B8-3270
+24 B8-2626
+
+Yes.
+
+Let's ensure scores:
+- B8-2855 functional 3, iec 2, coher 2, clar 2, mant 2? Wait I set mant for clean 2. But earlier I debated. We now use clean 2. So B8-2855 mant 2. Need `just_mantenibilidad` not mention no constante if score 2. I wrote "Umbral 5 en un único punto; lógica simple, cambio localizado." okay.
+- B8-2057 mant 1
+- B8-3439 mant 1
+- B8-9508 mant 1
+Others mant 2.
+
+What about B8-6907 mant 2. Good.
+
+Now maybe code B8-2855 coher 2. Justifica mentions no actualización prev during reset. Good.
+
+Let's ensure just_coherencia for B8-2855 not too verbose but one line. Fine.
+
+Now produce JSON.
+
+Wait, before final, verify if any `just_func_iec` should be empty if funcional and iec both fijados. In this dataset, no iec_fijo non-null. All iec_fijo null except? Let's inspect input: for all, `iec_fijo`: null. So not empty. Good.
+
+Now final.
+
+Let's write in Spanish with accents. Make sure no line breaks in strings? We can include as one line.
+
+We'll output as array.
+
+Need no markdown, no trailing comma. Let's carefully construct.
+
+Potential syntax issue: JSON newlines in strings not allowed, but our strings have no \n. Fine.
+
+Let's now produce final.

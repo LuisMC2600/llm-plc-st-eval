@@ -1,0 +1,138 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B5 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>B5 — Ventilador con retardo a la desconexión (Basico)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja B5 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_B5.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea B5 (ventilador con retardo TOF)
+    ---------------------------------------------------------------------------
+    El ventilador acompana al quemador y sigue funcionando 30 s tras el paro.
+    El punto delicado, declarado en ENMIENDAS_HARNESSES.md, es reactivar el
+    quemador DURANTE el post-enfriamiento: la reactivacion debe REARMAR el
+    temporizador, de modo que el siguiente post-enfriamiento vuelva a durar
+    30 s completos.
+
+    USO: crear este PROGRAM junto al FUNCTION_BLOCK de la respuesta a evaluar y
+    ejecutar en modo Simulacion. Al terminar, leer &#x27;veredicto&#x27;: 1 = supera,
+    2 = falla. &#x27;resultado&#x27; indica el paso.
+
+    ---------------------------------------------------------------------------
+    CORRECCION DEL 2026-09-09 (enmienda 7). Validado con validar_harness_B5.py.
+    La version anterior daba veredicto 1 a una implementacion que rearmaba el
+    temporizador pero con un tiempo MENOR: el segundo post-enfriamiento duraba
+    15 s en lugar de 30 s y pasaba como correcta en los tres ciclos de tarea.
+
+    Causa: la secuencia reactivaba el quemador en el ultimo paso y terminaba
+    ahi. Comprobaba que el temporizador se rearmaba, pero nunca que se rearmara
+    a los 30 s completos, porque el segundo post-enfriamiento no se llegaba a
+    recorrer. El paso final, ademas, no discriminaba nada: cualquier
+    implementacion que superara el paso 1 lo superaba tambien.
+
+    La propia enmienda de correccion de tiempos ya anticipaba esto al estimar
+    B5 en ~70 s &quot;porque la reactivacion durante el post-enfriamiento exige un
+    segundo ciclo&quot;. La secuencia anterior duraba 41 s: el segundo ciclo que esa
+    estimacion daba por hecho nunca se habia implementado.
+
+    Correccion: tras la reactivacion se anaden dos pasos que recorren el
+    segundo post-enfriamiento completo, con la misma pareja de comprobaciones
+    que el primero (antes de los 30 s debe seguir encendido; pasados los 30 s
+    debe estar apagado). La secuencia pasa a durar 71,2 s, acorde con la
+    estimacion de la enmienda.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reposo *)
+            quemadorOn := FALSE; tEspera := T#200MS;  esperado := FALSE;
+        1:  (* El ventilador acompana al quemador *)
+            quemadorOn := TRUE;  tEspera := T#200MS;  esperado := TRUE;
+
+        (* --- Primer post-enfriamiento --- *)
+        2:  (* A los 29 s aun debe estar encendido *)
+            quemadorOn := FALSE; tEspera := T#29S;    esperado := TRUE;
+        3:  (* A los 30,2 s acumulados ya debe estar apagado *)
+            quemadorOn := FALSE; tEspera := T#1200MS; esperado := FALSE;
+
+        (* --- Reactivacion durante el post-enfriamiento --- *)
+        4:  (* Se reenciende el quemador *)
+            quemadorOn := TRUE;  tEspera := T#200MS;  esperado := TRUE;
+        5:  (* Se apaga: arranca un post-enfriamiento que aun no vence *)
+            quemadorOn := FALSE; tEspera := T#10S;    esperado := TRUE;
+        6:  (* Se reenciende EN PLENO post-enfriamiento: debe rearmar *)
+            quemadorOn := TRUE;  tEspera := T#200MS;  esperado := TRUE;
+
+        (* --- Segundo post-enfriamiento COMPLETO (enmienda 7):
+               no basta con que el temporizador se rearme, tiene que rearmarse
+               a los 30 s completos --- *)
+        7:  (* A los 29 s del nuevo paro aun debe estar encendido *)
+            quemadorOn := FALSE; tEspera := T#29S;    esperado := TRUE;
+        8:  (* A los 30,2 s del nuevo paro ya debe estar apagado *)
+            quemadorOn := FALSE; tEspera := T#1200MS; esperado := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#B5-6632">B5-6632</a><a href="#B5-4246">B5-4246</a><a href="#B5-8170">B5-8170</a></div>
+<div class="caja resp" id="B5-6632"><div class="cod"><h3>B5-6632</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 5 de 9 pasos del harness (pasos 2,3,5,7,8; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Ventilador
+VAR_INPUT
+    quemadorOn : BOOL; (* Estado del quemador *)
+END_VAR
+VAR_OUTPUT
+    ventilador : BOOL; (* Estado del ventilador *)
+END_VAR
+VAR
+    tRetraso : TON; (* Temporizador de retardo *)
+END_VAR
+
+(* El ventilador funciona mientras el quemador está encendido o durante 30 s después de apagarse *)
+tRetraso(IN := NOT quemadorOn, PT := T#30S);
+ventilador := quemadorOn OR tRetraso.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B5-4246"><div class="cod"><h3>B5-4246</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 9 pasos del harness (pasos 0; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Ventilador
+VAR_INPUT
+    quemadorOn : BOOL; (* Señal del quemador: TRUE = encendido *)
+END_VAR
+
+VAR_OUTPUT
+    ventilador : BOOL; (* Salida del ventilador: TRUE = funcionando *)
+END_VAR
+
+VAR
+    tonPostApagado : TON;  (* Temporizador de retardo al apagado *)
+END_VAR
+
+(*
+    Lógica:
+    - Si el quemador está encendido, el ventilador funciona y el temporizador se mantiene reseteado.
+    - Al apagarse el quemador, el temporizador comienza a contar 30 segundos.
+    - Cuando el temporizador completa los 30 segundos (Q = TRUE), el ventilador se detiene.
+*)
+
+(* Activar temporizador solo cuando el quemador está apagado *)
+tonPostApagado(
+    IN  := NOT quemadorOn,  (* Inicia cuenta cuando el quemador se apaga *)
+    PT  := T#30S            (* Tiempo de post-ventilación: 30 segundos   *)
+);
+
+(* El ventilador funciona si el quemador está ON,
+   o si el temporizador aún no ha completado los 30 s *)
+ventilador := quemadorOn OR NOT tonPostApagado.Q;</pre></div>
+<div class="caja resp" id="B5-8170"><div class="cod"><h3>B5-8170</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Ventilador
+VAR_INPUT
+    quemadorOn : BOOL; (* Estado del quemador *)
+END_VAR
+VAR_OUTPUT
+    ventilador : BOOL; (* Ventilador de enfriamiento *)
+END_VAR
+VAR
+    tRetardoApagado : TOF; (* Temporizador de retardo a la desconexion *)
+END_VAR
+
+(* El ventilador continua encendido 30 s despues de apagarse el quemador *)
+tRetardoApagado(IN := quemadorOn, PT := T#30S);
+ventilador := tRetardoApagado.Q;
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

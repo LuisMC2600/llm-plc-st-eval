@@ -1,0 +1,24 @@
+Medias por modelo evaluado (rúbrica, 150 resp. c/u)
+modelo   evaluador     cohere  clarid  manten  funcio     iec   total
+Gemini   Claude-eval     2.81    2.25    1.87    2.83    2.80   12.56
+Gemini   DS-eval         2.94    2.43    1.83    2.83    2.67   12.71
+Claude   Claude-eval     2.34    2.35    1.75    2.44    2.39   11.27
+Claude   DS-eval         2.61    2.59    1.85    2.39    2.41   11.84
+GPT-4o   Claude-eval     1.43    1.80    1.52    1.33    1.66    7.73
+GPT-4o   DS-eval         1.66    1.93    1.45    1.26    1.69    7.99
+Qwen     Claude-eval     0.81    1.55    1.42    0.99    1.62    6.38
+Qwen     DS-eval         1.33    1.83    1.25    0.94    1.59    6.94
+
+Diferencia DS − Claude por modelo (criterios 3–5):
+Gemini cohere +0.13 clarid +0.19 manten -0.03
+Claude cohere +0.27 clarid +0.24 manten +0.10
+GPT-4o cohere +0.23 clarid +0.13 manten -0.07
+Qwen cohere +0.52 clarid +0.29 manten -0.17
+Claude-eval ranking total: ['Gemini', 'Claude', 'GPT-4o', 'Qwen']
+DS-eval ranking total: ['Gemini', 'Claude', 'GPT-4o', 'Qwen']
+
+Diagnóstico C1/C5/C6: detecciones medias (0–4) / inventados medios por modelo
+Gemini   Claude-eval det 4.00 inv 0.00 | DS-eval det 4.00 inv 0.50
+Claude   Claude-eval det 3.94 inv 0.89 | DS-eval det 4.00 inv 1.00
+GPT-4o   Claude-eval det 3.56 inv 0.56 | DS-eval det 3.61 inv 0.78
+Qwen     Claude-eval det 2.61 inv 1.67 | DS-eval det 2.61 inv 1.50

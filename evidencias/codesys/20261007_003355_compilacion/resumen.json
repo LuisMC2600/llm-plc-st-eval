@@ -1,0 +1,14 @@
+﻿{
+    "salida":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\results_codesys\\sens_endstruct_compilacion.csv",
+    "fecha":  "20261007_003355",
+    "duracion_min":  0.8,
+    "sha256_plantilla_antes":  "119B6A663B32E0ABEC287A55E8E9F5523B48AC8E4DB47AE449F0F5511690D8DF",
+    "respuestas":  7,
+    "sha256_script":  "F1D2571355AE20EC0925867190F6700E9DE1F55B645A15E66A42DBFBA5A8E95A",
+    "codigo_salida":  0,
+    "sha256_plantilla_despues":  "119B6A663B32E0ABEC287A55E8E9F5523B48AC8E4DB47AE449F0F5511690D8DF",
+    "compila_NA":  0,
+    "compila_1":  7,
+    "compila_0":  0,
+    "sha256_csv":  "63B9832194FF0F9D6E46599FF0D860F2AB1843959DB20C2E10830BF8ED603007"
+}

@@ -1,0 +1,768 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Respuestas a ciegas — Evaluador 2</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:18px 28px}header h1{margin:0;font-size:20px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+nav{position:sticky;top:0;background:#fff;border-bottom:1px solid #d0d4da;padding:10px 28px;font-size:14px;z-index:5}nav a{margin-right:18px;color:#1f4e78;font-weight:bold;text-decoration:none}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}h2{color:#1f4e78;border-bottom:2px solid #1f4e78;padding-bottom:4px;margin-top:38px}
+h3{margin:0;font-size:16px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.clave{background:#fff8e1;border-color:#e6c65c}.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}li{margin-bottom:6px}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{nav{position:static}.caja{break-inside:avoid}}</style></head><body>
+<header><h1>Respuestas a ciegas — Evaluador 2</h1><p>24 respuestas identificadas solo por código. Califícalas en Ficha_Evaluador2.xlsx, tarea por tarea y en este orden.</p></header>
+<nav><a href="#C1">C1 (6)</a><a href="#C5">C5 (6)</a><a href="#C6">C6 (6)</a><a href="#C2">C2 (6)</a></nav><main>
+<h2 id="C1">C1 — Diagnóstico de código con errores</h2>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: el siguiente FUNCTION_BLOCK en Structured Text (IEC 61131-3) debería implementar un semáforo cíclico (verde 20 s, amarillo 4 s, rojo 15 s) mientras habilitado esté activo, con un modo de amarillo intermitente. El código contiene errores lógicos. Analízalo, identifica todos los errores, y para cada uno explica: en qué línea o sección está, por qué es un error y cuál sería la corrección. No reescribas el programa completo.
+
+FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL;
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL;
+    luzA : BOOL;
+    luzR : BOOL;
+END_VAR
+VAR
+    estado : INT;
+    t1 : TON;
+    parp : BOOL;
+END_VAR
+
+IF NOT habilitado THEN
+    CASE estado OF
+        0:
+            luzV := TRUE; luzA := FALSE; luzR := FALSE;
+            t1(IN := TRUE, PT := T#20S);
+            IF t1.Q THEN estado := 1; END_IF
+        1:
+            luzV := FALSE; luzA := TRUE;
+            t1(IN := TRUE, PT := T#4S);
+            IF t1.Q THEN estado := 2; END_IF
+        2:
+            luzA := FALSE; luzR := TRUE;
+            t1(IN := TRUE, PT := T#15S);
+            IF t1.Q THEN estado := 0; END_IF
+        3:
+            luzA := parp;
+    END_CASE
+ELSE
+    luzV := FALSE; luzA := FALSE; luzR := FALSE;
+END_IF
+END_FUNCTION_BLOCK
+
+Entrega únicamente la lista numerada de errores con su explicación y corrección propuesta.</pre></details></div>
+<div class="caja clave"><h3>Clave de evaluación</h3><ul>
+<li><b>E1.</b> Condición invertida: IF NOT habilitado ejecuta la secuencia cuando debería ser IF habilitado.</li>
+<li><b>E2.</b> El TON t1 se llama con IN:=TRUE permanente y nunca se reinicia entre estados, por lo que las transiciones tras la primera son inmediatas.</li>
+<li><b>E3.</b> El estado 3 (amarillo intermitente) es inalcanzable: ninguna transición asigna estado:=3.</li>
+<li><b>E4.</b> parp nunca se inicializa ni se conmuta, así que el intermitente jamás parpadearía.</li>
+<li><i>Hallazgo adicional aceptado por la clave: luzV/luzR no se apagan en el estado 3. Cuenta como hallazgo adicional válido, no como error inventado.</i></li>
+</ul></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#C1-130">C1-130</a><a href="#C1-146">C1-146</a><a href="#C1-138">C1-138</a><a href="#C1-165">C1-165</a><a href="#C1-172">C1-172</a><a href="#C1-161">C1-161</a></div>
+<div class="caja resp" id="C1-130"><div class="cod"><h3>C1-130</h3><span>1 de 6 · 2291 caracteres</span></div><pre>1. **Error en la condición del IF principal:**
+   - **Ubicación:** Línea 12, `IF NOT habilitado THEN`
+   - **Descripción:** La lógica está invertida. El bloque de código que controla el semáforo se ejecuta cuando `habilitado` es `FALSE`, lo cual es incorrecto. Debería ejecutarse cuando `habilitado` es `TRUE`.
+   - **Corrección:** Cambiar la condición a `IF habilitado THEN`.
+
+2. **Error en la inicialización del temporizador:**
+   - **Ubicación:** Dentro de cada caso del `CASE` (líneas 15, 19, 23).
+   - **Descripción:** El temporizador `t1` se está reiniciando en cada ciclo del programa porque `IN` se establece en `TRUE` sin condiciones adicionales. Esto impide que el temporizador cuente correctamente.
+   - **Corrección:** Establecer `t1(IN := TRUE)` solo cuando el estado cambia. Por ejemplo, usar una variable de control para asegurarse de que `IN` se establece en `TRUE` solo una vez al entrar en un nuevo estado.
+
+3. **Error en el manejo del estado de parpadeo:**
+   - **Ubicación:** Línea 26, `luzA := parp;`
+   - **Descripción:** La variable `parp` no se actualiza en ninguna parte del código, por lo que no se producirá ningún parpadeo.
+   - **Corrección:** Implementar una lógica de parpadeo para `parp`, por ejemplo, utilizando un temporizador adicional para alternar el valor de `parp` entre `TRUE` y `FALSE` a intervalos regulares.
+
+4. **Error en la inicialización del estado:**
+   - **Ubicación:** No está explícitamente en el código, pero es un problema lógico.
+   - **Descripción:** No hay una inicialización explícita del estado al inicio del programa. Esto puede llevar a un comportamiento indefinido si el estado no se inicializa correctamente.
+   - **Corrección:** Inicializar `estado` a `0` al comienzo del programa o en una sección de inicialización.
+
+5. **Error en la lógica del ELSE:**
+   - **Ubicación:** Línea 28, `ELSE luzV := FALSE; luzA := FALSE; luzR := FALSE;`
+   - **Descripción:** Cuando `habilitado` es `FALSE`, todas las luces se apagan, lo cual es correcto. Sin embargo, esto debería ser parte del bloque `IF NOT habilitado THEN`, no del `ELSE`.
+   - **Corrección:** Mover esta lógica al bloque `IF NOT habilitado THEN` y asegurarse de que el `ELSE` maneje el modo de parpadeo o cualquier otra lógica necesaria cuando el semáforo no está habilitado.</pre></div>
+<div class="caja resp" id="C1-146"><div class="cod"><h3>C1-146</h3><span>2 de 6 · 2002 caracteres</span></div><pre>1. **Error en la condición del IF principal:**
+   - **Ubicación:** Línea 11, `IF NOT habilitado THEN`.
+   - **Descripción:** La lógica está invertida. El bloque de código que controla el semáforo debería ejecutarse cuando `habilitado` es `TRUE`, no `FALSE`.
+   - **Corrección:** Cambiar la condición a `IF habilitado THEN`.
+
+2. **Error en la inicialización del temporizador:**
+   - **Ubicación:** En cada caso del `CASE`, por ejemplo, línea 15 `t1(IN := TRUE, PT := T#20S);`.
+   - **Descripción:** El temporizador `t1` se está reiniciando en cada ciclo del programa, lo que impide que cuente correctamente el tiempo.
+   - **Corrección:** Inicializar el temporizador solo cuando se entra en un nuevo estado. Esto se puede hacer estableciendo `t1(IN := FALSE);` al salir de un estado y `t1(IN := TRUE);` al entrar en uno nuevo.
+
+3. **Error en el manejo del estado intermitente:**
+   - **Ubicación:** Línea 27, `luzA := parp;`.
+   - **Descripción:** La variable `parp` no está siendo controlada para alternar entre `TRUE` y `FALSE`, lo cual es necesario para el parpadeo.
+   - **Corrección:** Implementar una lógica de parpadeo para `parp`, por ejemplo, usando un temporizador adicional que alterne su valor cada cierto tiempo.
+
+4. **Error en la inicialización del estado:**
+   - **Ubicación:** No hay una inicialización explícita del estado.
+   - **Descripción:** El estado inicial del semáforo no está definido, lo que puede llevar a un comportamiento inesperado.
+   - **Corrección:** Inicializar `estado` en 0 al inicio del bloque de código, por ejemplo, `estado := 0;` en la sección de variables.
+
+5. **Error en la salida del estado intermitente:**
+   - **Ubicación:** Línea 27, `luzA := parp;`.
+   - **Descripción:** No se está manejando la transición de salida del estado intermitente.
+   - **Corrección:** Asegurar que haya una condición para salir del estado intermitente y regresar al ciclo normal del semáforo, posiblemente usando una condición de tiempo o un cambio en la variable `habilitado`.</pre></div>
+<div class="caja resp" id="C1-138"><div class="cod"><h3>C1-138</h3><span>3 de 6 · 1158 caracteres</span></div><pre>1. Condición del IF (IF NOT habilitado THEN): el bloque CASE se ejecuta cuando habilitado es FALSE, lo cual es contrario a la especificación que requiere que el semáforo opere cíclicamente cuando habilitado está activo. Corrección: cambiar la condición a IF habilitado THEN.
+
+2. Estado de amarillo intermitente (estado 3): el estado 3 no tiene lógica para alternar el valor de `parp`, por lo que `luzA` nunca parpadea. Corrección: implementar una lógica de parpadeo, por ejemplo, usando un temporizador adicional que alterne el valor de `parp`.
+
+3. Manejo del temporizador `t1`: el temporizador `t1` se reinicia en cada estado sin ser detenido, lo que puede causar un comportamiento inesperado. Corrección: asegurarse de que `t1.IN` se establezca en FALSE al cambiar de estado para reiniciar el temporizador adecuadamente.
+
+4. Estado de luces en modo de amarillo intermitente: cuando habilitado es FALSE, todas las luces se apagan, lo cual es incorrecto según la especificación que requiere un modo de amarillo intermitente. Corrección: mover la lógica de apagado de luces al bloque ELSE y asegurarse de que el estado 3 se ejecute cuando habilitado es FALSE.</pre></div>
+<div class="caja resp" id="C1-165"><div class="cod"><h3>C1-165</h3><span>4 de 6 · 1647 caracteres</span></div><pre>1. Condición del IF principal (`IF NOT habilitado THEN`): ejecuta el ciclo normal del semáforo cuando está deshabilitado, lo cual contradice la especificación (&quot;mientras habilitado esté activo&quot;). Corrección: cambiar a `IF habilitado THEN`.
+2. Uso del temporizador t1 (`t1(IN := TRUE, ...)`): la entrada `IN` siempre recibe `TRUE`. Un temporizador `TON` necesita un flanco de subida (pasar de `FALSE` a `TRUE`) para empezar a contar. Al no pasar nunca a `FALSE` entre estados, el temporizador no se reinicia y la secuencia fallará o saltará sin control tras el primer estado. Corrección: reiniciar el temporizador al cambiar de estado (ej. añadir `t1(IN := FALSE);` justo antes de cada asignación de nuevo estado dentro de los `IF t1.Q THEN`).
+3. Modo intermitente inalcanzable y mal ubicado (estado 3 y rama `ELSE`): el estado 3 nunca se ejecuta porque no hay ninguna transición hacia él (`estado := 3`). Además, en la rama `ELSE` (cuando el semáforo se deshabilita) se apagan todas las luces en lugar de activar el amarillo intermitente. Corrección: eliminar el estado 3, mover la lógica del parpadeo a la rama `ELSE` (`luzV := FALSE; luzR := FALSE; luzA := parp;`) y añadir `estado := 0;` en esa misma rama para que el ciclo normal reinicie correctamente al volver a habilitarse.
+4. Variable `parp` estática: la variable `parp` está declarada pero no tiene ninguna lógica que alterne su estado, por lo que siempre valdrá `FALSE` y la luz amarilla nunca parpadeará. Corrección: implementar lógica de oscilación para `parp` (usando temporizadores, un bloque generador de pulsos o una marca de reloj del sistema) antes de que sea asignada a `luzA`.</pre></div>
+<div class="caja resp" id="C1-172"><div class="cod"><h3>C1-172</h3><span>5 de 6 · 3766 caracteres</span></div><pre># Análisis de errores en FB_Semaforo
+
+---
+
+**Error 1 — Condición del IF principal invertida (línea `IF NOT habilitado THEN`)**
+
+- **Dónde:** Condición principal de control.
+- **Por qué es error:** La lógica está al revés. El ciclo semafórico debería ejecutarse cuando `habilitado = TRUE`, pero con `NOT habilitado` se ejecuta precisamente cuando el bloque está *deshabilitado*. Cuando `habilitado` es TRUE, se apagan todas las luces (rama ELSE), que es el comportamiento contrario al esperado.
+- **Corrección:** Cambiar la condición a `IF habilitado THEN`.
+
+---
+
+**Error 2 — El temporizador TON nunca se reinicia entre transiciones de estado (dentro del CASE)**
+
+- **Dónde:** Estados 0, 1 y 2 del CASE.
+- **Por qué es error:** El temporizador `t1` es una instancia única. Cuando se detecta `t1.Q = TRUE` y se cambia de estado, en el siguiente ciclo el nuevo estado llama a `t1` con `IN := TRUE` y un nuevo `PT`, pero `t1.Q` sigue siendo TRUE porque `IN` nunca pasó por FALSE. El temporizador no se reinicia y la condición `t1.Q` se cumple inmediatamente en el nuevo estado, provocando transiciones instantáneas.
+- **Corrección:** Al detectar la transición, poner `IN := FALSE` en una llamada previa, o bien llamar al temporizador con `IN := FALSE` durante un ciclo antes de cambiar de estado. La forma más limpia en IEC 61131-3 es llamar a `t1(IN := FALSE)` justo antes de cambiar `estado`, para que se reinicie:
+  ```
+  IF t1.Q THEN
+      t1(IN := FALSE);   (* reinicio explícito *)
+      estado := 1;
+  END_IF
+  ```
+
+---
+
+**Error 3 — En el estado 1 no se apaga `luzR` (línea del estado 1)**
+
+- **Dónde:** `Estado 1` (fase amarilla).
+- **Por qué es error:** Al entrar al estado 1 procedente del estado 2 (rojo), la salida `luzR` no se pone a FALSE explícitamente. Como las salidas son VAR retentivas entre ciclos, `luzR` permanecerá encendida junto con `luzA`, mostrando amarillo y rojo simultáneamente.
+- **Corrección:** Añadir `luzR := FALSE;` en el estado 1:
+  ```
+  luzV := FALSE; luzA := TRUE; luzR := FALSE;
+  ```
+
+---
+
+**Error 4 — En el estado 2 no se apaga `luzV` (línea del estado 2)**
+
+- **Dónde:** `Estado 2` (fase roja).
+- **Por qué es error:** Al entrar al estado 2 procedente del estado 1, `luzV` no se pone a FALSE. Si por alguna razón `luzV` estuviera activa, permanecería encendida junto con `luzR`.
+- **Corrección:** Añadir `luzV := FALSE;` en el estado 2:
+  ```
+  luzV := FALSE; luzA := FALSE; luzR := TRUE;
+  ```
+
+---
+
+**Error 5 — El estado 3 (amarillo intermitente) nunca es alcanzable**
+
+- **Dónde:** `Estado 3` del CASE y lógica general del bloque.
+- **Por qué es error:** Ningún estado del CASE ni ninguna lógica externa transiciona hacia `estado := 3`. El estado 3 está definido pero es código muerto; el modo intermitente nunca se activa.
+- **Corrección:** Debe existir una entrada (por ejemplo `VAR_INPUT modoIntermitente : BOOL`) y una condición que asigne `estado := 3`, así como una condición de salida del estado 3 que regrese al ciclo normal. Además, la variable `parp` debe ser generada por un oscilador (por ejemplo otro TON o un bloque de clock), ya que actualmente nunca cambia de valor.
+
+---
+
+**Error 6 — La variable `parp` nunca se actualiza (estado 3)**
+
+- **Dónde:** Estado 3 y declaración de variables.
+- **Por qué es error:** `parp` se declara como `BOOL` pero nunca se le asigna ningún valor oscilante dentro del bloque. En el estado 3 se asigna `luzA := parp`, pero `parp` siempre valdrá FALSE (valor inicial por defecto), por lo que la luz amarilla nunca parpadeará.
+- **Corrección:** Implementar un oscilador para `parp`, por ejemplo mediante un segundo temporizador TON que se autoalterne, o usando un bloque `BLINK` si la plataforma lo provee:
+  ```
+  tParp(IN := NOT tParp.Q, PT := T#500MS);
+  parp := tParp.Q;
+  ```</pre></div>
+<div class="caja resp" id="C1-161"><div class="cod"><h3>C1-161</h3><span>6 de 6 · 2408 caracteres</span></div><pre>1. **Error:** El estado 3 no es utilizado en el ciclo de estados, por lo que nunca se alcanzará. Además, el parpadeo del amarillo no está implementado correctamente.
+   - **Línea:** 24-26
+   - **Explicación:** El estado 3 no tiene una transición definida y no se utiliza en el ciclo de estados. Además, el parpadeo del amarillo no está implementado.
+   - **Corrección:** Eliminar el estado 3 y agregar un temporizador adicional para el parpadeo del amarillo.
+
+2. **Error:** El temporizador `t1` no se reinicia cuando se cambia de estado.
+   - **Línea:** 13, 18, 23
+   - **Explicación:** El temporizador `t1` no se reinicia cuando se cambia de estado, lo que puede causar que el temporizador cuente más allá del tiempo programado.
+   - **Corrección:** Reiniciar el temporizador `t1` al cambiar de estado estableciendo `t1(IN := FALSE)` antes de cambiar el estado.
+
+3. **Error:** El parpadeo del amarillo no está implementado.
+   - **Línea:** 24-26
+   - **Explicación:** El parpadeo del amarillo no está implementado, por lo que el amarillo permanecerá encendido durante todo el tiempo de 4 segundos.
+   - **Corrección:** Implementar un temporizador adicional para el parpadeo del amarillo y cambiar el estado de `luzA` entre `TRUE` y `FALSE` en función de este temporizador.
+
+4. **Error:** El temporizador `t1` no se detiene cuando `habilitado` es `FALSE`.
+   - **Línea:** 13, 18, 23
+   - **Explicación:** El temporizador `t1` no se detiene cuando `habilitado` es `FALSE`, lo que puede causar que el temporizador cuente más allá del tiempo programado.
+   - **Corrección:** Detener el temporizador `t1` al establecer `habilitado` en `FALSE` estableciendo `t1(IN := FALSE)`.
+
+5. **Error:** El estado inicial no está definido.
+   - **Línea:** 13
+   - **Explicación:** El estado inicial no está definido, lo que puede causar comportamientos inesperados al iniciar el programa.
+   - **Corrección:** Definir el estado inicial en `VAR` como `estado := 0;`.
+
+6. **Error:** El parpadeo del amarillo no está sincronizado con el ciclo de estados.
+   - **Línea:** 24-26
+   - **Explicación:** El parpadeo del amarillo no está sincronizado con el ciclo de estados, lo que puede causar que el parpadeo no se realice correctamente.
+   - **Corrección:** Implementar un temporizador adicional para el parpadeo del amarillo y cambiar el estado de `luzA` entre `TRUE` y `FALSE` en función de este temporizador y el estado actual.</pre></div>
+<h2 id="C5">C5 — Diagnóstico de arranque estrella-triángulo</h2>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: el siguiente FUNCTION_BLOCK en Structured Text (IEC 61131-3) debería implementar un arranque estrella-triángulo: al pulsar btnMarcha se activan el contactor principal kM y el de estrella kY; transcurridos 8 segundos se desconecta kY, se respeta un tiempo muerto de 100 milisegundos y se conecta el de triángulo kD; kY y kD jamás deben estar activos simultáneamente; btnParo desactiva todos los contactores en cualquier momento. El código contiene errores lógicos. Analízalo, identifica todos los errores, y para cada uno explica: en qué línea o sección está, por qué es un error y cuál sería la corrección. No reescribas el programa completo.
+
+FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL;
+    btnParo : BOOL;
+END_VAR
+VAR_OUTPUT
+    kM : BOOL;
+    kY : BOOL;
+    kD : BOOL;
+END_VAR
+VAR
+    estado : INT;
+    t1 : TON;
+    t2 : TON;
+END_VAR
+
+CASE estado OF
+    0:
+        IF btnMarcha THEN
+            kM := TRUE;
+            kY := TRUE;
+            estado := 1;
+        END_IF
+    1:
+        t1(IN := TRUE, PT := T#8S);
+        IF t1.Q THEN
+            kD := TRUE;
+            estado := 2;
+        END_IF
+    2:
+        kY := FALSE;
+END_CASE
+
+IF btnParo THEN
+    kY := FALSE;
+    kD := FALSE;
+    estado := 0;
+END_IF
+END_FUNCTION_BLOCK
+
+Entrega únicamente la lista numerada de errores con su explicación y corrección propuesta.</pre></details></div>
+<div class="caja clave"><h3>Clave de evaluación</h3><ul>
+<li><b>E1.</b> Violación de interlock: en el estado 1 se activa kD y kY solo se apaga al entrar al estado 2, por lo que ambos contactores quedan activos simultáneamente durante al menos un ciclo de scan.</li>
+<li><b>E2.</b> Tiempo muerto ausente: el temporizador t2 se declara pero nunca se usa; la conmutación estrella-triángulo ocurre sin los 100 ms exigidos.</li>
+<li><b>E3.</b> El temporizador t1 se llama con IN := TRUE permanente y no se reinicia en el paro, de modo que tras un paro y un rearranque la transición a triángulo es inmediata.</li>
+<li><b>E4.</b> btnParo no desactiva kM, así que el motor queda alimentado por el contactor principal después del paro.</li>
+</ul></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#C5-185">C5-185</a><a href="#C5-196">C5-196</a><a href="#C5-164">C5-164</a><a href="#C5-163">C5-163</a><a href="#C5-121">C5-121</a><a href="#C5-153">C5-153</a></div>
+<div class="caja resp" id="C5-185"><div class="cod"><h3>C5-185</h3><span>1 de 6 · 1519 caracteres</span></div><pre>1. Transición de estrella a triángulo (Estados 1 y 2 del CASE): Al cumplirse `t1.Q`, se activa `kD` en el estado 1 y recién en el estado 2 (en el siguiente ciclo de scan) se desactiva `kY`. Esto provoca que ambos contactores estén activos simultáneamente, provocando un cortocircuito. Además, se omite por completo el tiempo muerto de 100 ms exigido (el temporizador `t2` está declarado pero no se utiliza). Corrección: En el estado 1, al cumplirse `t1.Q`, hacer únicamente `kY := FALSE` y pasar al estado 2. En el estado 2, evaluar el tiempo muerto con `t2` y, al cumplirse `t2.Q`, hacer `kD := TRUE` y pasar a un estado 3 (marcha continua).
+2. Lógica de paro (IF btnParo THEN): El bloque desactiva `kY`, `kD` y reinicia el estado, pero olvida apagar el contactor principal `kM`, por lo que el motor nunca se detendría por completo. Corrección: Añadir la instrucción `kM := FALSE;` dentro de este bloque IF.
+3. Reseteo y evaluación de temporizadores (t1 en el estado 1): El temporizador `t1` se ejecuta con `IN := TRUE` exclusivamente dentro del estado 1. Al pasar a otro estado (por ejemplo, al pulsar paro y volver al estado 0), el temporizador nunca recibe un `IN := FALSE`, por lo que no se reiniciará y fallará en el siguiente arranque. Corrección: Llamar a los temporizadores fuera de la estructura CASE asignando su condición de entrada según el estado correspondiente (ej. `t1(IN := (estado = 1), PT := T#8S);` y `t2(IN := (estado = 2), PT := T#100MS);`), evaluando únicamente sus salidas `.Q` dentro del CASE.</pre></div>
+<div class="caja resp" id="C5-196"><div class="cod"><h3>C5-196</h3><span>2 de 6 · 2628 caracteres</span></div><pre>1. **Estado 1 – kY no se desactiva antes de activar kD (solapamiento kY/kD):** Cuando `t1.Q` se cumple, el código pone `kD := TRUE` sin haber puesto antes `kY := FALSE`. En ese ciclo de scan ambos contactores quedan activos simultáneamente, violando el requisito de enclavamiento. Corrección: añadir `kY := FALSE;` justo antes de `kD := TRUE;` en esa rama.
+
+2. **Estado 1 – Falta el tiempo muerto de 100 ms entre kY y kD:** La especificación exige un tiempo muerto de 100 ms tras desconectar kY y antes de conectar kD. El código pasa directamente de apagar kY a encender kD en el mismo ciclo, sin ninguna espera. Corrección: al detectar `t1.Q`, apagar `kY`, pasar a un estado intermedio nuevo (p. ej. estado 2) donde se arranque `t2` con `PT := T#100MS`, y solo cuando `t2.Q` sea TRUE pasar al estado 3 donde se activa `kD`.
+
+3. **Estado 1 – El temporizador t1 nunca se resetea:** `t1` se llama con `IN := TRUE` de forma permanente mientras se está en el estado 1, pero cuando se sale de ese estado nunca se llama con `IN := FALSE`. En una ejecución posterior (si el sistema arranca de nuevo sin reiniciar el FB) `t1.Q` podría seguir activo desde el ciclo anterior. Corrección: al salir del estado 1 (o al entrar en el estado 0 por paro), llamar `t1(IN := FALSE, PT := T#8S);` para resetear el temporizador.
+
+4. **Estado 2 – Solo apaga kY pero no activa kD ni gestiona kM:** El estado 2 en el código original únicamente hace `kY := FALSE`, pero con la lógica actual `kD` ya se habría activado en el estado 1 (error 1) y `kM` nunca se desactiva al llegar a este estado de funcionamiento normal en triángulo. Tras la reestructuración indicada en el error 2, el estado final de triángulo debe mantener `kM := TRUE` y `kD := TRUE`, y el estado 2 (tiempo muerto) no debe activar `kD` todavía.
+
+5. **Bloque IF btnParo – kM no se desactiva:** Cuando se pulsa `btnParo`, el código apaga `kY` y `kD` y resetea `estado`, pero no apaga el contactor principal `kM`, que queda energizado indefinidamente. Corrección: añadir `kM := FALSE;` dentro del bloque `IF btnParo THEN`.
+
+6. **Estado 0 – kM, kY y kD no se garantizan en FALSE al inicio / tras paro:** Al volver al estado 0 por paro, solo se resetea `estado`; las salidas `kM`, `kY` y `kD` dependen de que el bloque `IF btnParo` las apague (y ya vimos que `kM` no se apaga). Además, en el arranque inicial del FB las variables retienen su valor previo si el estado 0 no las fuerza a FALSE. Corrección: en el estado 0, asignar explícitamente `kM := FALSE; kY := FALSE; kD := FALSE;` antes de evaluar `btnMarcha`, de modo que el estado de reposo siempre garantice los contactores apagados.</pre></div>
+<div class="caja resp" id="C5-164"><div class="cod"><h3>C5-164</h3><span>3 de 6 · 3406 caracteres</span></div><pre># Análisis de errores lógicos en FB_EstrellaTriangulo
+
+---
+
+**Error 1 — Estado 1: `kD` se activa antes de desconectar `kY` (violación del enclavamiento)**
+
+- **Dónde:** Estado `1`, dentro del bloque `IF t1.Q THEN`.
+- **Por qué es un error:** En cuanto expira el temporizador, el código hace `kD := TRUE` y salta al estado `2`, donde *después* se ejecuta `kY := FALSE`. Esto significa que durante al menos un ciclo de scan ambos contactores están activos simultáneamente, violando el requisito de que kY y kD jamás deben coincidir.
+- **Corrección:** Al detectar `t1.Q`, únicamente desactivar `kY` y avanzar al estado `2` (inicio del tiempo muerto). La activación de `kD` debe ocurrir en un estado posterior, tras cumplirse el tiempo muerto.
+
+---
+
+**Error 2 — Estado 1: el temporizador `t1` nunca se resetea**
+
+- **Dónde:** Estado `1`, llamada `t1(IN := TRUE, PT := T#8S)`.
+- **Por qué es un error:** `IN` se mantiene siempre en `TRUE` mientras se está en el estado `1`, pero nunca se pone a `FALSE` al salir de él. En una ejecución posterior del bloque (por ejemplo, si se hace un nuevo arranque), `t1` ya habrá completado su ciclo y `t1.Q` podría ser `TRUE` desde el primer scan, saltándose los 8 segundos.
+- **Corrección:** Al abandonar el estado `1` (o al entrar en el estado `0`), llamar al temporizador con `IN := FALSE` para resetearlo: `t1(IN := FALSE)`.
+
+---
+
+**Error 3 — Ausencia total del temporizador de tiempo muerto (`t2` nunca se usa)**
+
+- **Dónde:** La variable `t2` está declarada pero no aparece en ninguna parte del código.
+- **Por qué es un error:** El requisito exige 100 ms de tiempo muerto entre la desconexión de `kY` y la conexión de `kD`. Sin ese temporizador activo en un estado intermedio, el tiempo muerto no se implementa en absoluto.
+- **Corrección:** Introducir un estado intermedio (p. ej. estado `2`) donde se ejecute `t2(IN := TRUE, PT := T#100MS)` y, solo cuando `t2.Q` sea `TRUE`, se pase a un estado `3` donde se active `kD`. El estado actual `2` pasaría a ser ese estado `3`.
+
+---
+
+**Error 4 — Estado 2: `kY` se desactiva tarde y de forma incompleta**
+
+- **Dónde:** Estado `2`, instrucción `kY := FALSE`.
+- **Por qué es un error:** `kY` debería desactivarse en el mismo ciclo en que expira `t1`, es decir, al final del estado `1`, no un estado después. Tal como está, hay al menos un ciclo de scan en que el programa está en estado `2` con `kD := TRUE` (asignado en el estado anterior) y `kY` todavía en `TRUE` (aún no ejecutado el estado `2`). Además, una vez ejecutado el estado `2` en el primer scan, el programa no avanza a ningún estado siguiente, por lo que `kD` queda activo pero el autómata se queda bloqueado en el estado `2` reejecutando `kY := FALSE` indefinidamente sin propósito.
+- **Corrección:** Desactivar `kY` al final del estado `1` (junto con el reset de `t1`) y hacer que el estado `2` sea exclusivamente el tiempo muerto, avanzando a un estado `3` para activar `kD` y luego a un estado final estable.
+
+---
+
+**Error 5 — `btnParo` no desactiva `kM`**
+
+- **Dónde:** Bloque `IF btnParo THEN` al final del código.
+- **Por qué es un error:** Al pulsar paro se ponen a `FALSE` `kY` y `kD`, y se resetea `estado`, pero `kM` (el contactor principal) permanece activo. El motor seguiría alimentado, lo que contradice el requisito de que btnParo desactiva **todos** los contactores.
+- **Corrección:** Añadir `kM := FALSE;` dentro del bloque `IF btnParo THEN`.</pre></div>
+<div class="caja resp" id="C5-163"><div class="cod"><h3>C5-163</h3><span>4 de 6 · 1516 caracteres</span></div><pre>1. Falta de inicialización del temporizador t1: El temporizador t1 se activa en el estado 1, pero nunca se reinicia, lo que puede causar un comportamiento incorrecto si el bloque se ejecuta más de una vez. Corrección: Asegúrate de que t1(IN := FALSE) se ejecute cuando el estado no sea 1 para reiniciar el temporizador.
+
+2. Activación simultánea de kY y kD: En el estado 1, kD se activa antes de desactivar kY, lo que viola la condición de que kY y kD no deben estar activos simultáneamente. Corrección: Cambia el orden de las operaciones en el estado 1 para desactivar kY antes de activar kD.
+
+3. Falta de tiempo muerto entre kY y kD: No se respeta el tiempo muerto de 100 milisegundos entre la desconexión de kY y la conexión de kD. Corrección: Añadir un estado intermedio que use el temporizador t2 para implementar el tiempo muerto antes de activar kD.
+
+4. Falta de desactivación de kM en btnParo: Al presionar btnParo, kM no se desactiva, lo que puede dejar el contactor principal activado. Corrección: Añadir kM := FALSE; dentro del bloque IF btnParo THEN.
+
+5. Falta de inicialización del temporizador t2: Similar al error 1, t2 nunca se inicializa ni se reinicia. Corrección: Asegúrate de que t2(IN := FALSE) se ejecute cuando no esté en el estado correspondiente al tiempo muerto.
+
+6. Estado inicial incorrecto: El estado inicial no está explícitamente definido, lo que puede llevar a un comportamiento impredecible. Corrección: Asegúrate de que el estado se inicialice a 0 al inicio del bloque de funciones.</pre></div>
+<div class="caja resp" id="C5-121"><div class="cod"><h3>C5-121</h3><span>5 de 6 · 2282 caracteres</span></div><pre>1. **Estado 1 – kY no se desactiva antes de activar kD (solapamiento kY/kD):** Cuando `t1.Q` se cumple, el código pasa directamente a `kD := TRUE` sin haber puesto `kY := FALSE` previamente. En ese ciclo de scan ambos contactores están activos a la vez, violando el requisito de enclavamiento. Corrección: añadir `kY := FALSE;` justo antes de `kD := TRUE;` en esa rama.
+
+2. **Estado 1 – No se respeta el tiempo muerto de 100 ms entre kY y kD:** La especificación exige un intervalo de 100 ms entre la desconexión de kY y la conexión de kD. El código activa kD en el mismo ciclo en que desconecta kY (o incluso antes, véase error 1), sin ninguna espera. Corrección: introducir un estado intermedio (p. ej. estado 2) donde se desactive kY, se arranque el temporizador `t2` con `PT := T#100MS` y solo al completarse (`t2.Q`) se pase a un estado 3 donde se active kD.
+
+3. **Estado 1 – El temporizador t1 no se resetea al salir del estado:** `t1` se llama con `IN := TRUE` mientras `estado = 1`, pero cuando se abandona ese estado el temporizador queda con `IN` sin actualizarse (ya no se ejecuta su llamada), lo que puede dejar `t1.Q` activo. Si el sistema vuelve al estado 1 en algún ciclo futuro, `t1` podría dispararse inmediatamente. Corrección: antes de cambiar de estado, llamar `t1(IN := FALSE);` para resetear el temporizador, o bien llamar `t1` en todos los estados con `IN := (estado = 1)`.
+
+4. **Estado 2 – kY se pone a FALSE pero kM nunca se desactiva en el paro ni al finalizar:** En el bloque `IF btnParo`, `kM` no se desactiva (`kM := FALSE` está ausente), por lo que el contactor principal permanece energizado tras pulsar paro. Corrección: añadir `kM := FALSE;` dentro del bloque `IF btnParo THEN`.
+
+5. **Estado 2 – No hay transición de salida ni kD se mantiene correctamente:** El estado 2 solo ejecuta `kY := FALSE` cada ciclo pero nunca avanza a un estado estable de marcha en triángulo ni gestiona kD. Una vez alcanzado el estado 2 (con la lógica corregida), el sistema debe permanecer en un estado de &quot;marcha triángulo&quot; donde kM y kD estén activos. Corrección: tras la reestructuración de estados descrita en el error 2, el estado final de marcha triángulo debe limitarse a mantener `kM` y `kD` activos y esperar `btnParo`, sin modificar kY (que ya está en FALSE).</pre></div>
+<div class="caja resp" id="C5-153"><div class="cod"><h3>C5-153</h3><span>6 de 6 · 1900 caracteres</span></div><pre>Respuesta:
+1. Falta inicializar el temporizador t1: el temporizador t1 no se inicializa antes de su uso, lo que puede llevar a comportamientos impredecibles. Corrección: añadir t1(IN := FALSE, PT := T#0S); al inicio del FUNCTION_BLOCK.
+2. Falta inicializar el temporizador t2: el temporizador t2 no se inicializa y no se usa en el código, lo que puede llevar a comportamientos impredecibles. Corrección: eliminar la declaración de t2 o inicializarlo si se necesita en el futuro.
+3. Falta manejar el tiempo muerto de 100 milisegundos: después de desconectar kY y antes de conectar kD, se debe esperar un tiempo muerto de 100 milisegundos. Corrección: añadir un nuevo temporizador t2 para manejar el tiempo muerto y modificar el estado 1 para incluir este tiempo muerto.
+4. Falta manejar el caso en que btnParo se presione mientras kY está activo: si btnParo se presiona mientras kY está activo, kY no se apagará hasta que t1.Q sea verdadero. Corrección: añadir una comprobación de btnParo en el estado 1 y cambiar el estado a 0 si btnParo es verdadero.
+5. Falta manejar el caso en que btnParo se presione mientras kD está activo: si btnParo se presiona mientras kD está activo, kD no se apagará hasta que t1.Q sea verdadero. Corrección: añadir una comprobación de btnParo en el estado 2 y cambiar el estado a 0 si btnParo es verdadero.
+6. Falta manejar el caso en que btnMarcha se presione mientras kY está activo: si btnMarcha se presiona mientras kY está activo, kY no se apagará y kD no se conectará. Corrección: añadir una comprobación de btnMarcha en el estado 1 y cambiar el estado a 0 si btnMarcha es verdadero.
+7. Falta manejar el caso en que btnMarcha se presione mientras kD está activo: si btnMarcha se presiona mientras kD está activo, kD no se apagará y kY no se conectará. Corrección: añadir una comprobación de btnMarcha en el estado 2 y cambiar el estado a 0 si btnMarcha es verdadero.</pre></div>
+<h2 id="C6">C6 — Diagnóstico de escalado con histéresis</h2>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: el siguiente FUNCTION_BLOCK en Structured Text (IEC 61131-3) debería acondicionar una señal de temperatura: la entrada rawTemp entrega un valor entero de 0 a 27648 proporcional a 0.0–100.0 grados Celsius, que debe escalarse en la salida tempC; el enfriador debe activarse cuando tempC alcance 80.0 y desactivarse cuando descienda a 75.0, conservando su estado entre ambos umbrales; si rawTemp queda fuera del rango 0 a 27648 debe activarse almSensor y desactivarse el enfriador. El código contiene errores lógicos. Analízalo, identifica todos los errores, y para cada uno explica: en qué línea o sección está, por qué es un error y cuál sería la corrección. No reescribas el programa completo.
+
+FUNCTION_BLOCK FB_Temperatura
+VAR_INPUT
+    rawTemp : INT;
+END_VAR
+VAR_OUTPUT
+    tempC : REAL;
+    enfriador : BOOL;
+    almSensor : BOOL;
+END_VAR
+
+tempC := INT_TO_REAL(rawTemp / 27648 * 100);
+
+IF tempC &gt;= 75.0 THEN
+    enfriador := TRUE;
+ELSIF tempC &lt;= 80.0 THEN
+    enfriador := FALSE;
+END_IF
+
+IF rawTemp &gt; 27648 THEN
+    almSensor := TRUE;
+END_IF
+END_FUNCTION_BLOCK
+
+Entrega únicamente la lista numerada de errores con su explicación y corrección propuesta.</pre></details></div>
+<div class="caja clave"><h3>Clave de evaluación</h3><ul>
+<li><b>E1.</b> División entera: rawTemp / 27648 se evalúa en aritmética INT y vale 0 para todo rawTemp entre 0 y 27647 (solo en 27648 da 1, es decir 100.0), de modo que tempC queda prácticamente siempre en 0.0; la conversión a REAL se aplica después del daño.</li>
+<li><b>E2.</b> La histéresis no existe: la lógica conmuta en un único umbral de 75.0 en lugar de activar en 80.0 y desactivar en 75.0, y la rama ELSIF es inalcanzable para valores por encima de 75.0.</li>
+<li><b>E3.</b> La detección de fuera de rango omite la condición rawTemp &lt; 0, así que un valor negativo no genera alarma.</li>
+<li><b>E4.</b> almSensor nunca vuelve a FALSE al regresar la señal al rango y la alarma no fuerza enfriador := FALSE como exige la especificación.</li>
+</ul></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#C6-155">C6-155</a><a href="#C6-143">C6-143</a><a href="#C6-142">C6-142</a><a href="#C6-139">C6-139</a><a href="#C6-193">C6-193</a><a href="#C6-112">C6-112</a></div>
+<div class="caja resp" id="C6-155"><div class="cod"><h3>C6-155</h3><span>1 de 6 · 1153 caracteres</span></div><pre>1. Cálculo de tempC (tempC := INT_TO_REAL(rawTemp / 27648 * 100);): La división de enteros se realiza antes de la conversión a REAL, lo que resulta en una pérdida de precisión. Corrección: Convertir rawTemp a REAL antes de la división: tempC := (INT_TO_REAL(rawTemp) / 27648.0) * 100.0;
+
+2. Lógica de control del enfriador (IF tempC &gt;= 75.0 THEN ... ELSIF tempC &lt;= 80.0 THEN ...): La lógica está invertida; el enfriador debería activarse a 80.0 y desactivarse a 75.0, además, el uso de ELSIF es incorrecto para este caso. Corrección: Cambiar a IF tempC &gt;= 80.0 THEN enfriador := TRUE; ELSIF tempC &lt;= 75.0 THEN enfriador := FALSE;.
+
+3. Manejo de rawTemp fuera de rango (IF rawTemp &gt; 27648 THEN ...): No se considera el caso en que rawTemp es menor que 0, y no se desactiva el enfriador cuando almSensor está activo. Corrección: Cambiar la condición a IF rawTemp &lt; 0 OR rawTemp &gt; 27648 THEN almSensor := TRUE; enfriador := FALSE;.
+
+4. Falta desactivar almSensor: Una vez que rawTemp vuelve a estar dentro del rango válido, almSensor debería desactivarse. Corrección: Añadir ELSE almSensor := FALSE; al final del bloque IF que verifica el rango de rawTemp.</pre></div>
+<div class="caja resp" id="C6-143"><div class="cod"><h3>C6-143</h3><span>2 de 6 · 2375 caracteres</span></div><pre>## Lista de errores identificados
+
+---
+
+**Error 1 — Cálculo de escala con división entera antes de la conversión a REAL**
+
+- **Línea:** `tempC := INT_TO_REAL(rawTemp / 27648 * 100);`
+- **Por qué es un error:** `rawTemp` y `27648` son ambos `INT`, por lo que la división `rawTemp / 27648` se realiza en aritmética entera y produce **siempre 0** (salvo cuando `rawTemp = 27648`, donde da 1). El resultado se multiplica por 100 y *después* se convierte a `REAL`, perdiendo toda la precisión decimal.
+- **Corrección:** Convertir primero a `REAL` y luego operar:
+  ```
+  tempC := INT_TO_REAL(rawTemp) / 27648.0 * 100.0;
+  ```
+
+---
+
+**Error 2 — Lógica de histéresis invertida**
+
+- **Líneas:** bloque `IF tempC &gt;= 75.0 ... ELSIF tempC &lt;= 80.0`
+- **Por qué es un error:** Las condiciones están intercambiadas respecto a la especificación. Con esta lógica el enfriador se activa a 75 °C (debería activarse a 80 °C) y se desactiva a 80 °C (debería desactivarse a 75 °C). Además, la condición `ELSIF tempC &lt;= 80.0` es siempre verdadera cuando la primera rama es falsa (`tempC &lt; 75.0`), eliminando por completo la zona de histéresis.
+- **Corrección:** Invertir los umbrales y las acciones:
+  ```
+  IF tempC &gt;= 80.0 THEN
+      enfriador := TRUE;
+  ELSIF tempC &lt;= 75.0 THEN
+      enfriador := FALSE;
+  END_IF
+  ```
+
+---
+
+**Error 3 — Alarma de sensor no detecta valores negativos (rango incompleto)**
+
+- **Línea:** `IF rawTemp &gt; 27648 THEN`
+- **Por qué es un error:** La especificación indica que el rango válido es **0 a 27648**. La condición actual solo detecta valores superiores a 27648, ignorando los valores negativos (`rawTemp &lt; 0`), que también están fuera de rango y deben activar `almSensor`.
+- **Corrección:**
+  ```
+  IF rawTemp &lt; 0 OR rawTemp &gt; 27648 THEN
+  ```
+
+---
+
+**Error 4 — El enfriador no se desactiva ante alarma de sensor**
+
+- **Sección:** bloque de gestión de `almSensor`
+- **Por qué es un error:** La especificación exige que cuando se active `almSensor` el enfriador debe **desactivarse**. El código actual no incluye esa acción, por lo que el enfriador podría quedar encendido ante una lectura inválida.
+- **Corrección:** Añadir el apagado del enfriador y el restablecimiento de la alarma dentro del bloque condicional:
+  ```
+  IF rawTemp &lt; 0 OR rawTemp &gt; 27648 THEN
+      almSensor := TRUE;
+      enfriador := FALSE;
+  ELSE
+      almSensor := FALSE;
+  END_IF
+  ```</pre></div>
+<div class="caja resp" id="C6-142"><div class="cod"><h3>C6-142</h3><span>3 de 6 · 3176 caracteres</span></div><pre>## Lista de errores identificados
+
+---
+
+**Error 1 — Línea de escalado: división entera antes de la conversión a REAL**
+
+- **Dónde:** `tempC := INT_TO_REAL(rawTemp / 27648 * 100);`
+- **Por qué es un error:** `rawTemp` es `INT` y `27648` es una literal entera, por lo que `/` ejecuta división entera. Para cualquier valor de `rawTemp` menor que `27648`, el cociente es `0`, y el resultado siempre será `0.0` salvo cuando `rawTemp = 27648`. La conversión a `REAL` ocurre demasiado tarde, cuando la precisión ya se perdió.
+- **Corrección propuesta:** Convertir primero a `REAL` y usar literales reales para forzar aritmética en punto flotante:
+  ```
+  tempC := INT_TO_REAL(rawTemp) / 27648.0 * 100.0;
+  ```
+
+---
+
+**Error 2 — Lógica de histéresis invertida**
+
+- **Dónde:** Bloque `IF tempC &gt;= 75.0 ... ELSIF tempC &lt;= 80.0`
+- **Por qué es un error:** Las condiciones están intercambiadas respecto a la especificación. La rama `TRUE` se activa con `tempC &gt;= 75.0` (umbral de apagado) y la rama `FALSE` con `tempC &lt;= 80.0` (umbral de encendido). Esto invierte el comportamiento: el enfriador se encendería demasiado pronto y se apagaría demasiado tarde. Además, ambas condiciones se solapan en el rango 75–80, pero como `ELSIF` solo evalúa si la primera es falsa, en ese rango intermedio el enfriador siempre se activaría, eliminando la histéresis.
+- **Corrección propuesta:** Intercambiar los umbrales y las acciones:
+  ```
+  IF tempC &gt;= 80.0 THEN
+      enfriador := TRUE;
+  ELSIF tempC &lt;= 75.0 THEN
+      enfriador := FALSE;
+  END_IF
+  ```
+
+---
+
+**Error 3 — Alarma no detecta valores negativos (rango incompleto)**
+
+- **Dónde:** `IF rawTemp &gt; 27648 THEN almSensor := TRUE; END_IF`
+- **Por qué es un error:** Solo se comprueba el límite superior. La especificación indica que `rawTemp` fuera del rango `0–27648` debe activar `almSensor`, pero valores negativos (posibles en `INT`) no son detectados.
+- **Corrección propuesta:**
+  ```
+  IF rawTemp &lt; 0 OR rawTemp &gt; 27648 THEN
+      almSensor := TRUE;
+  END_IF
+  ```
+
+---
+
+**Error 4 — La alarma nunca se desactiva**
+
+- **Dónde:** Mismo bloque `IF rawTemp &gt; 27648 THEN almSensor := TRUE; END_IF`
+- **Por qué es un error:** No existe rama `ELSE` ni condición que ponga `almSensor := FALSE`. Una vez activada, la alarma permanece encendida indefinidamente aunque `rawTemp` vuelva al rango válido, lo que impide la recuperación automática.
+- **Corrección propuesta:** Añadir la rama `ELSE`:
+  ```
+  IF rawTemp &lt; 0 OR rawTemp &gt; 27648 THEN
+      almSensor := TRUE;
+  ELSE
+      almSensor := FALSE;
+  END_IF
+  ```
+
+---
+
+**Error 5 — El enfriador no se apaga ante condición de alarma**
+
+- **Dónde:** Bloque de alarma (ausencia de lógica de seguridad)
+- **Por qué es un error:** La especificación exige que cuando se active `almSensor` el enfriador se desactive, pero no existe ninguna instrucción que fuerce `enfriador := FALSE` en ese caso. El enfriador podría quedar activo con una señal de sensor inválida.
+- **Corrección propuesta:** Forzar el apagado del enfriador dentro del bloque de alarma:
+  ```
+  IF rawTemp &lt; 0 OR rawTemp &gt; 27648 THEN
+      almSensor := TRUE;
+      enfriador := FALSE;
+  ELSE
+      almSensor := FALSE;
+  END_IF
+  ```</pre></div>
+<div class="caja resp" id="C6-139"><div class="cod"><h3>C6-139</h3><span>4 de 6 · 2139 caracteres</span></div><pre>1. Cálculo de tempC (tempC := INT_TO_REAL(rawTemp / 27648 * 100);): el orden de las operaciones no está correcto, ya que la división se realiza antes de la conversión a REAL, lo que puede resultar en una pérdida de precisión. Además, la conversión a REAL debería realizarse antes de la división. Corrección: tempC := INT_TO_REAL(rawTemp) / 27648 * 100;
+2. Condición del IF (IF tempC &gt;= 75.0 THEN): la lógica de encendido y apagado del enfriador está invertida. El enfriador debería encenderse cuando tempC alcance 80.0 y apagarse cuando descienda a 75.0. Corrección: invertir las condiciones en los IF y ELSIF.
+3. Falta la condición para apagar el enfriador cuando tempC descienda a 75.0: la lógica actual solo maneja el encendido del enfriador, pero no su apagado. Corrección: añadir una nueva condición ELSIF tempC &lt; 75.0 THEN enfriador := FALSE;.
+4. Falta la condición para desactivar almSensor cuando rawTemp esté dentro del rango válido: la lógica actual solo activa almSensor cuando rawTemp está fuera del rango, pero no lo desactiva cuando está dentro. Corrección: añadir una nueva condición IF rawTemp &gt;= 0 AND rawTemp &lt;= 27648 THEN almSensor := FALSE;.
+5. Falta la condición para manejar el caso en que rawTemp esté por debajo del rango válido: la lógica actual solo maneja el caso en que rawTemp esté por encima del rango, pero no lo hace cuando está por debajo. Corrección: añadir una nueva condición IF rawTemp &lt; 0 THEN almSensor := TRUE; enfriador := FALSE;.
+6. Falta la condición para manejar el caso en que rawTemp esté fuera del rango válido y el enfriador esté encendido: la lógica actual no desactiva el enfriador cuando rawTemp está fuera del rango y el enfriador está encendido. Corrección: añadir una nueva condición IF rawTemp &gt; 27648 AND enfriador THEN enfriador := FALSE;.
+7. Falta la condición para manejar el caso en que rawTemp esté dentro del rango válido y el enfriador esté apagado: la lógica actual no enciende el enfriador cuando rawTemp está dentro del rango y el enfriador está apagado. Corrección: añadir una nueva condición IF rawTemp &gt;= 0 AND rawTemp &lt;= 27648 AND NOT enfriador THEN enfriador := TRUE;.</pre></div>
+<div class="caja resp" id="C6-193"><div class="cod"><h3>C6-193</h3><span>5 de 6 · 3247 caracteres</span></div><pre>1. **Error de división entera en el escalado**
+   * **Sección:** `tempC := INT_TO_REAL(rawTemp / 27648 * 100);`
+   * **Por qué es un error:** Al ser `rawTemp` una variable de tipo `INT`, la operación `rawTemp / 27648` realiza una división entera. Para cualquier valor de entrada menor a 27648, el resultado de la división será `0`. Al multiplicar `0 * 100` da `0`, y finalmente se convierte a `REAL`. La salida `tempC` siempre será `0.0` (o `100.0` si la entrada es exactamente 27648), perdiendo toda la proporcionalidad.
+   * **Corrección:** Se debe convertir el valor entero a real *antes* de realizar las operaciones matemáticas, o usar literales reales para forzar la conversión implícita: 
+     `tempC := INT_TO_REAL(rawTemp) / 27648.0 * 100.0;`
+
+2. **Umbrales de histéresis invertidos**
+   * **Sección:** 
+     ```iecst
+     IF tempC &gt;= 75.0 THEN
+         enfriador := TRUE;
+     ELSIF tempC &lt;= 80.0 THEN
+         enfriador := FALSE;
+     END_IF
+     ```
+   * **Por qué es un error:** El requerimiento indica que el enfriador debe activarse al alcanzar `80.0` y desactivarse al descender a `75.0`. El código hace exactamente lo contrario: lo enciende en `75.0` y lo apaga en `80.0`.
+   * **Corrección:** Invertir los valores de temperatura en las condiciones lógicas:
+     `IF tempC &gt;= 80.0 THEN enfriador := TRUE; ELSIF tempC &lt;= 75.0 THEN enfriador := FALSE; END_IF;`
+
+3. **Condición de alarma incompleta (falta límite inferior)**
+   * **Sección:** `IF rawTemp &gt; 27648 THEN`
+   * **Por qué es un error:** El requerimiento exige que la alarma se active si `rawTemp` queda fuera del rango `0` a `27648`. El código actual solo evalúa si el valor supera el límite superior, ignorando por completo si el valor cae por debajo de `0` (valores negativos).
+   * **Corrección:** Incluir el límite inferior utilizando el operador lógico `OR`:
+     `IF rawTemp &lt; 0 OR rawTemp &gt; 27648 THEN`
+
+4. **Falta de reinicio (reset) para la alarma**
+   * **Sección:** 
+     ```iecst
+     IF rawTemp &gt; 27648 THEN
+         almSensor := TRUE;
+     END_IF
+     ```
+   * **Por qué es un error:** Si la variable `rawTemp` sale del rango, `almSensor` se establece en `TRUE`. Sin embargo, si el valor regresa al rango normal (0 a 27648), la alarma nunca vuelve a `FALSE` porque no hay una condición `ELSE` que la desactive.
+   * **Corrección:** Asignar directamente el resultado de la evaluación booleana a la variable, o usar una estructura `IF-ELSE`:
+     `almSensor := (rawTemp &lt; 0) OR (rawTemp &gt; 27648);`
+
+5. **El enfriador no se desactiva al ocurrir una alarma**
+   * **Sección:** Lógica de alarma y lógica del enfriador (ausencia de interbloqueo).
+   * **Por qué es un error:** El requerimiento indica explícitamente que si la señal queda fuera de rango &quot;debe activarse almSensor y desactivarse el enfriador&quot;. En el código actual, la activación de la alarma no tiene ningún efecto sobre el estado de la variable `enfriador`, permitiendo que siga encendido aunque el sensor esté en fallo.
+   * **Corrección:** Forzar el apagado del enfriador cuando la alarma está activa. Esto se puede hacer sobrescribiendo la variable al final del bloque o integrándolo en la lógica principal:
+     ```iecst
+     IF almSensor THEN
+         enfriador := FALSE;
+     END_IF;
+     ```</pre></div>
+<div class="caja resp" id="C6-112"><div class="cod"><h3>C6-112</h3><span>6 de 6 · 1659 caracteres</span></div><pre>1. **Error en la línea de cálculo de `tempC`:**
+   - **Ubicación:** Línea donde se asigna `tempC`.
+   - **Descripción del error:** La operación `rawTemp / 27648 * 100` se realiza con aritmética entera, lo que puede llevar a un resultado incorrecto debido a la truncación de decimales antes de la conversión a `REAL`.
+   - **Corrección:** Cambiar la operación para asegurar que se realice con aritmética de punto flotante: `tempC := INT_TO_REAL(rawTemp) / 27648.0 * 100.0;`.
+
+2. **Error en la lógica de control del enfriador:**
+   - **Ubicación:** Bloque `IF` que controla `enfriador`.
+   - **Descripción del error:** La lógica de control del enfriador está invertida. El enfriador debería activarse cuando `tempC` sea mayor o igual a 80.0 y desactivarse cuando sea menor o igual a 75.0. Además, el uso de `ELSIF` es incorrecto para este caso, ya que no se cubre el rango entre 75.0 y 80.0 correctamente.
+   - **Corrección:** Cambiar la lógica a:
+     ```pascal
+     IF tempC &gt;= 80.0 THEN
+         enfriador := TRUE;
+     ELSIF tempC &lt;= 75.0 THEN
+         enfriador := FALSE;
+     END_IF
+     ```
+
+3. **Error en la condición de `almSensor`:**
+   - **Ubicación:** Bloque `IF` que controla `almSensor`.
+   - **Descripción del error:** La condición solo verifica si `rawTemp` es mayor que 27648, pero no verifica si es menor que 0, lo cual también es un caso fuera de rango.
+   - **Corrección:** Cambiar la condición a:
+     ```pascal
+     IF rawTemp &lt; 0 OR rawTemp &gt; 27648 THEN
+         almSensor := TRUE;
+         enfriador := FALSE; // Asegurar que el enfriador se desactive si hay un error de sensor
+     ELSE
+         almSensor := FALSE;
+     END_IF
+     ```</pre></div>
+<h2 id="C2">C2 — De requisito ambiguo a especificación</h2>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: un cliente describe así lo que necesita para el control de la bomba de un pozo: &quot;Necesito que la bomba del pozo no se queme. Cuando el tanque de arriba esté vacío, que arranque sola; pero si el pozo está sin agua, que no arranque porque se quema. Y un botón para apagarla cuando queramos, y que una luz avise cuando algo ande mal.&quot; A partir de ese requisito, produce: (1) una tabla de entradas y salidas con nombre propuesto, tipo de dato IEC 61131-3 y descripción; (2) el tipo de POU que recomendarías (FUNCTION, FUNCTION_BLOCK o PROGRAM) con una justificación breve; (3) la lista de ambigüedades o información faltante que habría que aclarar con el cliente antes de programar. Entrega únicamente los tres apartados numerados, sin escribir código.</pre></details></div>
+<div class="caja clave"><h3>Clave de evaluación</h3><ul>
+<li><b>Tabla de E/S.</b> Señales esperadas: nivel del tanque; agua en el pozo; botón de paro; bomba; luz de aviso. Tipos de dato IEC 61131-3 válidos.</li>
+<li><b>POU.</b> Tipo recomendado y si la justificación es coherente.</li>
+<li><b>A1.</b> Niveles como señales digitales (flotadores) o analógicas.</li>
+<li><b>A2.</b> Qué significa exactamente &#x27;tanque vacío&#x27; (histéresis entre niveles de arranque y paro).</li>
+<li><b>A3.</b> Tiempo de protección por marcha en seco y si el rearme es manual o automático.</li>
+<li><b>A4.</b> El &#x27;botón para apagarla&#x27;: ¿paro momentáneo o inhibición retenida?</li>
+<li><b>A5.</b> Qué condiciones agrupa la luz de falla.</li>
+<li><b>A6.</b> Comportamiento al recuperarse el agua del pozo.</li>
+</ul></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#C2-183">C2-183</a><a href="#C2-186">C2-186</a><a href="#C2-154">C2-154</a><a href="#C2-145">C2-145</a><a href="#C2-187">C2-187</a><a href="#C2-132">C2-132</a></div>
+<div class="caja resp" id="C2-183"><div class="cod"><h3>C2-183</h3><span>1 de 6 · 2480 caracteres</span></div><pre>1. Tabla de entradas y salidas
+
+**Entradas (VAR_INPUT)**
+*   `snrTanqueVacio` | BOOL | Sensor de nivel del tanque superior (Activo cuando el tanque está vacío).
+*   `snrPozoVacio` | BOOL | Sensor de nivel del pozo (Activo cuando el pozo se queda sin agua).
+*   `btnApagar` | BOOL | Botón manual para detener o deshabilitar el funcionamiento de la bomba.
+*   `snrFallaExterna` | BOOL | Señal de protección de la bomba (ej. relé térmico o guardamotor) para detectar si &quot;algo anda mal&quot;.
+
+**Salidas (VAR_OUTPUT)**
+*   `cmdBomba` | BOOL | Señal de mando para accionar el contactor o relé de la bomba del pozo.
+*   `indAlarma` | BOOL | Señal para encender la luz de aviso de falla o pozo vacío.
+
+2. Tipo de POU recomendado
+
+**FUNCTION_BLOCK**
+*Justificación:* El control de esta bomba requiere memoria (retención de estado). Por ejemplo, si la bomba arranca al vaciarse el tanque, debe mantenerse encendida hasta que se llene, lo que implica recordar su estado. Además, el manejo de alarmas y botones de parada suele requerir enclavamientos o detección de flancos. Un `FUNCTION_BLOCK` permite almacenar estos estados internos entre ciclos de scan, a diferencia de una `FUNCTION`, y ofrece mayor modularidad y reutilización que un `PROGRAM` en caso de que en el futuro se añadan más pozos.
+
+3. Lista de ambigüedades o información faltante a aclarar con el cliente
+
+*   **Condición de parada automática:** El cliente indicó que la bomba arranca cuando el tanque está vacío, pero no especificó cuándo debe detenerse. ¿Existe un sensor de &quot;tanque lleno&quot; para apagarla automáticamente?
+*   **Definición de &quot;algo ande mal&quot;:** ¿La luz de aviso debe encenderse solo cuando el pozo se queda sin agua, o existe alguna otra señal de falla eléctrica/mecánica (como un relé térmico) que deba disparar esta alarma?
+*   **Comportamiento del botón de apagado:** ¿Es un interruptor fijo (tipo Auto/Apagado) o un pulsador momentáneo? Si se apaga con el botón, ¿cómo y cuándo se vuelve a habilitar el modo automático?
+*   **Reinicio tras falta de agua:** Si la bomba se detiene para protegerse porque el pozo se quedó sin agua, ¿debe arrancar sola de nuevo en cuanto el pozo recupere su nivel, o requiere que un operador presione un botón de reinicio (reset) por seguridad?
+*   **Lógica de los contactos (Hardware):** Es necesario definir si los sensores de nivel y el botón de apagado serán Normalmente Abiertos (NO) o Normalmente Cerrados (NC) para programar la lógica de seguridad adecuada (fail-safe).</pre></div>
+<div class="caja resp" id="C2-186"><div class="cod"><h3>C2-186</h3><span>2 de 6 · 1787 caracteres</span></div><pre>1. **Tabla de entradas y salidas:**
+
+| Nombre Propuesto | Tipo de Dato | Descripción |
+|------------------|--------------|-------------|
+| `TankIsEmpty`    | BOOL         | Indica si el tanque de arriba está vacío |
+| `PumpTemperature`| INT          | Temperatura de la bomba del pozo |
+| `PumpOverheat`   | BOOL         | Indica si la bomba se ha sobrecalentado |
+| `PumpStopButton` | BOOL         | Botón para detener manualmente la bomba |
+| `PumpStatus`     | BOOL         | Estado de la bomba (encendida/apagada) |
+| `AlarmLight`     | BOOL         | Indica si hay un problema con la bomba |
+
+2. **Tipo de POU recomendado:**
+   - **PROGRAM**: Se recomienda utilizar un PROGRAM para este caso. Un PROGRAM es adecuado para manejar el flujo de control principal y las interacciones entre diferentes partes del sistema. En este caso, el programa principal controlará el arranque y apagado de la bomba, así como la gestión de la luz de alarma.
+
+3. **Lista de ambigüedades o información faltante:**
+   - **Umbral de temperatura de sobrecalentamiento**: ¿Cuál es la temperatura máxima permitida antes de que se considere que la bomba se ha sobrecalentado?
+   - **Tiempo de espera después de que el tanque esté vacío**: ¿Cuánto tiempo debe esperar la bomba antes de intentar arrancar nuevamente si el tanque se vacía?
+   - **Tiempo de encendido mínimo**: ¿Hay un tiempo mínimo que la bomba debe estar encendida antes de que pueda apagarse?
+   - **Comportamiento en caso de sobrecalentamiento**: ¿Debería la bomba apagarse automáticamente si se sobrecalienta? ¿O se debe esperar a que el usuario apague la bomba manualmente?
+   - **Comportamiento del botón de apagado**: ¿Cuando se presione el botón de apagado, la bomba debe detenerse inmediatamente o debe esperar a que el pozo esté vacío?</pre></div>
+<div class="caja resp" id="C2-154"><div class="cod"><h3>C2-154</h3><span>3 de 6 · 1761 caracteres</span></div><pre>1. **Tabla de Entradas y Salidas:**
+
+| Nombre Propuesto | Tipo de Dato IEC 61131-3 | Descripción |
+|----------------|------------------------|-------------|
+| `TankIsEmpty`  | BOOL                   | Indica si el tanque de arriba está vacío |
+| `PumpOverheat`   | BOOL                   | Indica si la bomba está en riesgo de quemarse |
+| `PumpEmpty`      | BOOL                   | Indica si el pozo está sin agua |
+| `StopButton`     | BOOL                   | Botón para apagar manualmente la bomba |
+| `PumpRun`        | BOOL                   | Salida para controlar el arranque de la bomba |
+| `AlarmLight`     | BOOL                   | Salida para encender la luz de advertencia |
+
+2. **Tipo de POU Recomendado:**
+   - **PROGRAM**: Se recomienda utilizar un PROGRAM para este caso. Un PROGRAM es adecuado para manejar un proceso de control secuencial y coordinar las diferentes condiciones y acciones que se describen. Un PROGRAM puede manejar múltiples entradas y salidas, y puede ser fácilmente expandido si se necesitan más funcionalidades en el futuro.
+
+3. **Lista de Ambigüedades o Información Faltante:**
+   - **Tiempo de Retardo**: ¿Hay un tiempo de retardo antes de que la bomba se encienda después de que el tanque esté vacío?
+   - **Niveles de Temperatura**: ¿Cuál es el umbral de temperatura que considera el cliente como &quot;riesgo de quemarse&quot;?
+   - **Niveles de Agua**: ¿Cuál es el umbral de nivel de agua que considera el cliente como &quot;sin agua&quot;?
+   - **Tiempo de Encendido**: ¿Hay un límite de tiempo después del cual la bomba debe apagarse automáticamente si no se detecta agua en el pozo?
+   - **Comportamiento en Fallos**: ¿Qué debe hacer la bomba si se detecta un fallo en algún sensor (por ejemplo, si el sensor de temperatura falla)?</pre></div>
+<div class="caja resp" id="C2-145"><div class="cod"><h3>C2-145</h3><span>4 de 6 · 2235 caracteres</span></div><pre>1. Tabla de entradas y salidas
+
+| Nombre | Tipo de dato | Descripción |
+| :--- | :--- | :--- |
+| **Entradas (VAR_INPUT)** | | |
+| `senTanqueVacio` | BOOL | Sensor de nivel del tanque superior (Activo = tanque vacío). |
+| `senPozoVacio` | BOOL | Sensor de nivel del pozo (Activo = pozo sin agua). |
+| `btnParo` | BOOL | Botón para apagar la bomba manualmente. |
+| **Salidas (VAR_OUTPUT)** | | |
+| `cmdBomba` | BOOL | Comando de encendido para el motor/contactor de la bomba. |
+| `luzAlarma` | BOOL | Luz indicadora de advertencia/falla. |
+
+2. Tipo de POU recomendado
+
+**FUNCTION_BLOCK**
+*Justificación:* El control de esta bomba requiere memoria interna (estado). Por ejemplo, si la bomba arranca al vaciarse el tanque, debe mantenerse encendida (enclavamiento) hasta que se llene, lo cual implica recordar su estado anterior. Además, el manejo de alarmas suele requerir retención de estados. Una `FUNCTION` no puede retener valores entre ciclos de escaneo, y un `PROGRAM` limitaría la reutilización del código si en el futuro el cliente añade más pozos o bombas al sistema.
+
+3. Lista de ambigüedades o información faltante a aclarar con el cliente
+
+* **Condición de paro automático:** El cliente indica que la bomba arranca cuando el tanque está vacío, pero no especifica cuándo debe detenerse automáticamente (por ejemplo, ¿existe un sensor de &quot;tanque lleno&quot;?).
+* **Reinicio tras el paro manual:** Si se presiona el botón para apagarla, ¿cómo vuelve el sistema a modo automático? ¿Se necesita un botón adicional de &quot;Arranque/Auto&quot; o un selector manual/automático?
+* **Definición de &quot;algo ande mal&quot; (Alarma):** ¿La luz de aviso solo debe encenderse cuando el pozo se queda sin agua, o existen otras señales de falla a considerar (como un relé térmico de sobrecarga de la bomba)?
+* **Reinicio de la alarma:** Una vez que se enciende la luz de aviso, ¿se apaga sola cuando el problema se resuelve (ej. el pozo vuelve a tener agua) o requiere que un operador presione un botón de &quot;Reset&quot; o &quot;Acuse de recibo&quot;?
+* **Naturaleza física de los sensores y botones:** Es necesario definir si los sensores y el botón de paro son Normalmente Abiertos (NO) o Normalmente Cerrados (NC) para programar la lógica de seguridad (fail-safe) correctamente.</pre></div>
+<div class="caja resp" id="C2-187"><div class="cod"><h3>C2-187</h3><span>5 de 6 · 1743 caracteres</span></div><pre>1. Tabla de entradas y salidas:
+
+| Nombre       | Tipo de dato | Descripción                                                  |
+|--------------|--------------|--------------------------------------------------------------|
+| tanqueVacio  | BOOL         | Indica si el tanque de arriba está vacío                     |
+| pozoSinAgua  | BOOL         | Indica si el pozo está sin agua                              |
+| btnApagar    | BOOL         | Botón para apagar manualmente la bomba                       |
+| bombaPozo    | BOOL         | Salida para controlar el estado de la bomba del pozo         |
+| luzAlarma    | BOOL         | Luz indicadora de que algo está mal (pozo sin agua)          |
+
+2. Tipo de POU recomendado: FUNCTION_BLOCK
+
+Justificación: Un FUNCTION_BLOCK es adecuado porque encapsula el comportamiento de control de la bomba del pozo, permitiendo gestionar múltiples estados y condiciones (como el estado del tanque, el pozo y el botón de apagado). Además, facilita la reutilización del bloque en diferentes partes del programa o en otros proyectos.
+
+3. Lista de ambigüedades o información faltante:
+
+- ¿Qué debe suceder si el tanque está vacío y el pozo tiene agua, pero el botón de apagado está activado? ¿Debe la bomba permanecer apagada?
+- ¿Qué condiciones específicas deben activar la luz de alarma? ¿Solo cuando el pozo está sin agua o también en otras situaciones?
+- ¿Debe haber algún tipo de retardo o temporización en el encendido o apagado de la bomba para evitar ciclos rápidos de encendido/apagado?
+- ¿Existen otras condiciones de seguridad o fallos que deban ser considerados para el control de la bomba?
+- ¿Cómo se debe manejar la situación cuando el tanque se llena? ¿Debe la bomba apagarse automáticamente?</pre></div>
+<div class="caja resp" id="C2-132"><div class="cod"><h3>C2-132</h3><span>6 de 6 · 2811 caracteres</span></div><pre># Análisis de requisitos: Control de bomba de pozo
+
+---
+
+## 1. Tabla de entradas y salidas propuestas
+
+| # | Nombre | Dirección sugerida | Tipo IEC 61131-3 | Descripción |
+|---|--------|--------------------|------------------|-------------|
+| **ENTRADAS** |
+| 1 | `sensorTanqueVacio` | `%IX0.0` | `BOOL` | Sensor de nivel bajo del tanque superior (TRUE = tanque vacío) |
+| 2 | `sensorPozoSinAgua` | `%IX0.1` | `BOOL` | Sensor de nivel mínimo del pozo (TRUE = pozo sin agua) |
+| 3 | `btnParo` | `%IX0.2` | `BOOL` | Botón de paro manual de la bomba |
+| **SALIDAS** |
+| 4 | `bomba` | `%QX0.0` | `BOOL` | Activación del contactor/variador de la bomba del pozo |
+| 5 | `luzFalla` | `%QX0.1` | `BOOL` | Piloto de aviso de condición anormal |
+
+---
+
+## 2. Tipo de POU recomendado
+
+**FUNCTION_BLOCK**
+
+**Justificación:** El control de la bomba requiere conservar estado interno entre ciclos de scan (por ejemplo, el enclavamiento de marcha, el historial de fallas o el tiempo de funcionamiento). Un `FUNCTION` no retiene estado y un `PROGRAM` es menos reutilizable; el `FUNCTION_BLOCK` permite instanciar el mismo bloque para varios pozos o tanques si la instalación crece, y encapsula correctamente la lógica con su memoria propia.
+
+---
+
+## 3. Ambigüedades e información faltante a aclarar con el cliente
+
+1. **Lógica de los sensores:** ¿Los sensores de nivel son normalmente abiertos o normalmente cerrados? ¿El sensor activa la señal cuando *detecta* agua o cuando *no* la detecta? Esto es crítico para no invertir la lógica de protección.
+
+2. **Condición de &quot;tanque lleno&quot;:** ¿Existe un sensor de nivel alto del tanque superior para detener la bomba cuando el tanque se llene, o solo hay sensor de nivel bajo?
+
+3. **Rearranque tras paro manual:** Después de pulsar el botón de paro, ¿la bomba debe volver a arrancar automáticamente cuando el tanque vuelva a estar vacío, o se requiere un botón de marcha manual para reanudar?
+
+4. **Qué condiciones activan la luz de falla:** ¿Solo el pozo sin agua, o también otras situaciones como sobrecarga del motor, paro de emergencia o falla de sensor?
+
+5. **Protección por sobrecarga:** ¿El PLC recibirá la señal de disparo del relé térmico o guardamotor? ¿Debe incluirse en la lógica de enclavamiento y de falla?
+
+6. **Temporización de arranque:** ¿Se requiere un retardo antes de arrancar (para evitar arranques por falsas lecturas del sensor) o un tiempo mínimo de funcionamiento antes de permitir el paro automático?
+
+7. **Reconocimiento de falla:** ¿La luz de falla debe apagarse sola cuando desaparece la causa, o requiere un botón de reconocimiento (reset) manual?
+
+8. **Tipo de botón de paro:** ¿Es un pulsador momentáneo (normalmente abierto) o un selector con enclavamiento mecánico? ¿Debe funcionar como parada de emergencia certificada o es solo un paro operativo?</pre></div>
+</main></body></html>

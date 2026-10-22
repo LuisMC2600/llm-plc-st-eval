@@ -1,0 +1,201 @@
+{
+ "tarea": "B1",
+ "titulo": "Arranque/paro de motor con enclavamiento",
+ "nivel": "Basico",
+ "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el control de arranque y paro de un motor trifásico. El motor debe arrancar al pulsar el botón de marcha y mantenerse encendido al soltarlo. Debe detenerse al pulsar el botón de paro o el paro de emergencia; tras un paro de emergencia el motor no debe rearrancar aunque el botón de marcha siga pulsado. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Motor con variables de entrada btnMarcha, btnParo, btnEmerg (BOOL) y salida motorOn (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+ "protocolo_prueba": "Harness: PRG_Test_B1.st\n\nBANCO DE PRUEBA AUTOVERIFICABLE — Tarea B1 (arranque/paro con enclavamiento)\n    ---------------------------------------------------------------------------\n    Implementa el protocolo de 7 pasos de la ficha de evaluacion de B1 como\n    codigo ST. El programa aplica las entradas paso a paso, compara la salida\n    del bloque bajo prueba contra el valor esperado y emite un veredicto.\n\n    Ventaja para la investigacion: la verificacion funcional deja de depender\n    de que el investigador manipule variables a mano en linea. El mismo\n    protocolo se aplica de forma identica a las 24 respuestas de B1, lo que\n    elimina la variabilidad del operador. El veredicto queda en una variable\n    que el ScriptEngine puede leer, o que puede volcarse a archivo.\n\n    LO QUE NO HACE: no juzga claridad estructural ni mantenibilidad. Esos\n    criterios de la rubrica siguen requiriendo lectura humana del codigo.\n\n    USO: crear este PROGRAM en el proyecto, junto al FUNCTION_BLOCK de la\n    respuesta a evaluar. Ejecutar en modo Simulacion. Al terminar la secuencia,\n    leer 'veredicto': 1 = supera todos los pasos, 2 = falla al menos uno.\n    El arreglo 'resultado' indica que paso concreto fallo.\n\n--- Pasos (CASE paso OF) ---\n\n        0:  (* Reposo: ninguna entrada activa *)\n            btnMarcha := FALSE; btnParo := FALSE; btnEmerg := FALSE;\n            esperado  := FALSE;\n        1:  (* Arranque con pulso de marcha *)\n            btnMarcha := TRUE;\n            esperado  := TRUE;\n        2:  (* Se suelta la marcha: debe mantenerse (enclavamiento) *)\n            btnMarcha := FALSE;\n            esperado  := TRUE;\n        3:  (* Paro normal *)\n            btnParo   := TRUE;\n            esperado  := FALSE;\n        4:  (* Rearranque tras paro normal *)\n            btnParo   := FALSE; btnMarcha := TRUE;\n            esperado  := TRUE;\n        5:  (* Paro de emergencia *)\n            btnEmerg  := TRUE;\n            esperado  := FALSE;\n        6:  (* Se libera la emergencia con la marcha aun pulsada:\n               NO debe rearrancar solo *)\n            btnEmerg  := FALSE;\n            esperado  := FALSE;",
+ "respuestas": [
+  {
+   "codigo": "B1-3577",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; // Botón de arranque (TRUE = arrancar)\n    btnParo   : BOOL; // Botón de paro normal (TRUE = detener)\n    btnEmerg  : BOOL; // Botón de paro de emergencia (TRUE = detener)\nEND_VAR\n\nVAR_OUTPUT\n    motorOn   : BOOL; // Señal de control hacia el contactor del motor\nEND_VAR\n\nVAR\n    flancoMarcha : R_TRIG; // Detector de flanco para el botón de marcha\nEND_VAR\n\n// Detectar el flanco de subida de la señal de marcha.\n// Esto garantiza que el motor no rearranque automáticamente si el \n// botón de marcha se mantiene presionado tras un paro de emergencia.\nflancoMarcha(CLK := btnMarcha);\n\n// Lógica de control: \n// Enclavamiento del motor (flancoMarcha.Q OR motorOn) \n// condicionado a que no haya ninguna señal de paro activa.\n// El paro y la emergencia tienen prioridad sobre el arranque.\nmotorOn := (flancoMarcha.Q OR motorOn) AND NOT btnParo AND NOT btnEmerg;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-8070",
+   "resultado_codesys": "No compila (12 errores).",
+   "mensajes_compilador": "L?nea 5, columna 1 (Impl) Se esperaba ';' en lugar de 'emergenciaActiva' || L?nea 5, columna 1 (Impl) Se esperaba ';' en lugar de 'THEN' || L?nea 5, columna 1 (Impl) Encontrado token inesperado 'THEN' || L?nea 7, columna 1 (Impl) Se esperaba ';' en lugar de 'motorOn' || L?nea 8, columna 1 (Impl) Se esperaba ';' en lugar de 'btnParo' || L?nea 8, columna 1 (Impl) Se esperaba ';' en lugar de 'THEN' || L?nea 8, columna 1 (Impl) Encontrado token inesperado 'THEN' || L?nea 10, columna 1 (Impl) Se esperaba ';' en lugar de 'motorOn' || L?nea 11, columna 1 (Impl) Se esperaba ';' en lugar de 'btnMarcha' || L?nea 11, columna 1 (Impl) Se esperaba ';' en lugar de 'THEN' || L?nea 11, columna 1 (Impl) Encontrado token inesperado 'THEN' || L?nea 13, columna 1 (Impl) Se esperaba ';' en lugar de 'motorOn'",
+   "funcional_fijo": 0,
+   "iec_fijo": 0,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL;  // Botón de marcha\n    btnParo : BOOL;    // Botón de paro\n    btnEmerg : BOOL;   // Botón de paro de emergencia\nEND_VAR\n\nVAR_OUTPUT\n    motorOn : BOOL;    // Estado del motor (encendido/apagado)\nEND_VAR\n\nVAR\n    emergenciaActiva : BOOL := FALSE;  // Bandera para indicar si hay una emergencia activa\nEND_VAR\n\n// Programa principal\nIF btnEmerg THEN\n    // Si se activa el botón de emergencia\n    emergenciaActiva := TRUE;\n    motorOn := FALSE;  // Apaga el motor\nELSEIF emergenciaActiva THEN\n    // Si hay una emergencia activa, no se permite el arranque del motor\n    motorOn := FALSE;\nELSEIF btnParo THEN\n    // Si se presiona el botón de paro\n    motorOn := FALSE;  // Apaga el motor\nELSEIF btnMarcha THEN\n    // Si se presiona el botón de marcha\n    motorOn := TRUE;   // Enciende el motor\nEND_IF;"
+  },
+  {
+   "codigo": "B1-4667",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo   : BOOL; (* Boton de paro *)\n    btnEmerg  : BOOL; (* Boton de paro de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL; (* Salida del motor *)\nEND_VAR\nVAR\n    bloqEmerg : BOOL; (* Bloqueo activo tras paro de emergencia *)\nEND_VAR\n\n(* Si se activa emergencia: apagar motor y activar bloqueo *)\nIF btnEmerg THEN\n    bloqEmerg := TRUE;\n    motorOn   := FALSE;\n\n(* Si se pulsa paro: apagar motor (sin bloqueo) *)\nELSIF btnParo THEN\n    motorOn := FALSE;\n\n(* Arranque solo si no hay bloqueo de emergencia *)\nELSIF btnMarcha AND NOT bloqEmerg THEN\n    motorOn := TRUE;\nEND_IF;\n\n(* El bloqueo de emergencia se libera unicamente cuando\n   btnEmerg ya no esta activo Y btnMarcha no esta pulsado,\n   evitando rearranque involuntario al liberar el bloqueo *)\nIF bloqEmerg AND NOT btnEmerg AND NOT btnMarcha THEN\n    bloqEmerg := FALSE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-3153",
+   "resultado_codesys": "Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo : BOOL;   (* Boton de paro *)\n    btnEmerg : BOOL;  (* Boton de paro de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL;   (* Estado del motor *)\nEND_VAR\nVAR\n    motorLatch : BOOL; (* Latch para mantener el motor encendido *)\nEND_VAR\n\n(* Control de arranque y paro del motor *)\nIF btnEmerg THEN\n    (* Si se activa el paro de emergencia, el motor se apaga y no puede rearrancar *)\n    motorLatch := FALSE;\nELSIF btnParo THEN\n    (* Si se pulsa el boton de paro, el motor se apaga *)\n    motorLatch := FALSE;\nELSIF btnMarcha THEN\n    (* Si se pulsa el boton de marcha, el motor se enciende y se mantiene encendido *)\n    motorLatch := TRUE;\nEND_IF\n\n(* Actualizar el estado del motor *)\nmotorOn := motorLatch;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-3916",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; // Botón de marcha (TRUE = pulsado)\n    btnParo   : BOOL; // Botón de paro (TRUE = pulsado)\n    btnEmerg  : BOOL; // Paro de emergencia (TRUE = pulsado)\nEND_VAR\n\nVAR_OUTPUT\n    motorOn   : BOOL; // Estado del motor (TRUE = encendido)\nEND_VAR\n\nVAR\n    rtMarcha  : R_TRIG; // Detector de flanco ascendente\nEND_VAR\n\n// Detectar flanco ascendente de la marcha para evitar rearranque automático\n// si el botón se mantiene pulsado tras un paro de emergencia.\nrtMarcha(CLK := btnMarcha);\n\n// Lógica de control (Enclavamiento)\n// Prioridad a las señales de paro (btnParo y btnEmerg)\nmotorOn := (rtMarcha.Q OR motorOn) AND NOT btnParo AND NOT btnEmerg;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-4316",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Botón de marcha: TRUE = pulsado *)\n    btnParo   : BOOL; (* Botón de paro: TRUE = pulsado *)\n    btnEmerg  : BOOL; (* Paro de emergencia: TRUE = activado *)\nEND_VAR\n\nVAR_OUTPUT\n    motorOn : BOOL; (* Salida al contactor del motor *)\nEND_VAR\n\nVAR\n    bloqueado : BOOL; (* Enclavamiento por emergencia *)\nEND_VAR\n\n(*\n    Lógica de control:\n    - btnParo y btnEmerg se asumen como contacto normalmente cerrado\n      representado en lógica positiva: TRUE = fallo/paro activo.\n    - bloqueado se activa con btnEmerg y solo se resetea manualmente\n      (aquí se mantiene hasta un ciclo sin emergencia Y sin marcha,\n       o bien puede requerir un reset explícito según la aplicación).\n    - Para rearrancar tras emergencia se debe soltar btnEmerg\n      y NO tener btnMarcha activo en ese mismo ciclo (reset seguro).\n*)\n\n(* 1. Activar enclavamiento si se detecta emergencia *)\nIF btnEmerg THEN\n    bloqueado := TRUE;\nEND_IF;\n\n(* 2. Reset del enclavamiento: solo cuando NO hay emergencia\n      Y NO hay botón de marcha pulsado (evita rearranque automático) *)\nIF NOT btnEmerg AND NOT btnMarcha THEN\n    bloqueado := FALSE;\nEND_IF;\n\n(* 3. Lógica de marcha/paro con auto-retención (seal-in) *)\nIF btnEmerg OR btnParo OR bloqueado THEN\n    (* Paro prioritario: emergencia, paro normal o enclavamiento activo *)\n    motorOn := FALSE;\nELSIF btnMarcha THEN\n    (* Arranque: flanco o nivel, el motor se enciende *)\n    motorOn := TRUE;\nEND_IF;\n(* Si ninguna condición aplica, motorOn conserva su valor anterior\n   → auto-retención implementada por la variable de salida misma *)\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-7103",
+   "resultado_codesys": "Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Botón de marcha *)\n    btnParo : BOOL;   (* Botón de paro *)\n    btnEmerg : BOOL;  (* Botón de paro de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL;   (* Estado del motor *)\nEND_VAR\nVAR\n    estadoMotor : BOOL; (* Estado interno del motor *)\nEND_VAR\n\n(* Lógica de control del motor *)\nIF btnEmerg THEN\n    estadoMotor := FALSE; (* Paro de emergencia, motor apagado *)\nELSIF btnParo THEN\n    estadoMotor := FALSE; (* Botón de paro, motor apagado *)\nELSIF btnMarcha THEN\n    estadoMotor := TRUE;  (* Botón de marcha, motor encendido *)\nEND_IF\n\nmotorOn := estadoMotor; (* Salida del estado del motor *)\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-3006",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Botón de marcha: TRUE = pulsado *)\n    btnParo   : BOOL; (* Botón de paro: TRUE = pulsado *)\n    btnEmerg  : BOOL; (* Paro de emergencia: TRUE = activado *)\nEND_VAR\n\nVAR_OUTPUT\n    motorOn : BOOL; (* Salida al contactor del motor *)\nEND_VAR\n\nVAR\n    bloqueado : BOOL; (* Enclavamiento por emergencia *)\nEND_VAR\n\n(*\n    Lógica de control:\n    1. Si se activa la emergencia → parar motor y bloquear rearranque.\n    2. Si se pulsa paro → parar motor (sin bloqueo).\n    3. Si está bloqueado → no permitir arranque aunque btnMarcha esté activo.\n    4. Si se pulsa marcha y no hay bloqueo ni paro → arrancar y retener (automantenimiento).\n*)\n\n(* --- Gestión del enclavamiento por emergencia --- *)\nIF btnEmerg THEN\n    bloqueado := TRUE;  (* Activa bloqueo; solo un reset manual lo limpia *)\nEND_IF;\n\n(* --- Lógica de paro con prioridad sobre marcha --- *)\nIF btnEmerg OR btnParo THEN\n    motorOn := FALSE;   (* Paro inmediato en cualquier caso *)\n\n(* --- Lógica de arranque: solo si no hay bloqueo activo --- *)\nELSIF btnMarcha AND NOT bloqueado THEN\n    motorOn := TRUE;    (* Arranque + automantenimiento por la propia salida *)\nEND_IF;\n\n(* Nota: el automantenimiento lo garantiza el PLC al conservar el valor\n   de motorOn entre ciclos; no se necesita contacto auxiliar explícito\n   en ST porque la variable retiene su estado hasta que se modifique. *)"
+  },
+  {
+   "codigo": "B1-7637",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL;  // Botón de marcha\n    btnParo : BOOL;    // Botón de paro\n    btnEmerg : BOOL;   // Botón de paro de emergencia\nEND_VAR\n\nVAR_OUTPUT\n    motorOn : BOOL;    // Estado del motor (encendido/apagado)\nEND_VAR\n\nVAR\n    emergenciaActiva : BOOL := FALSE;  // Bandera para indicar si hay una parada de emergencia\nEND_VAR\n\n// Programa principal\nIF btnEmerg THEN\n    // Si se activa el botón de emergencia, detener el motor y activar la bandera de emergencia\n    motorOn := FALSE;\n    emergenciaActiva := TRUE;\nELSIF emergenciaActiva THEN\n    // Si hay una parada de emergencia activa, mantener el motor apagado\n    motorOn := FALSE;\nELSIF btnParo THEN\n    // Si se presiona el botón de paro, detener el motor\n    motorOn := FALSE;\nELSIF btnMarcha THEN\n    // Si se presiona el botón de marcha, encender el motor\n    motorOn := TRUE;\nEND_IF;"
+  },
+  {
+   "codigo": "B1-3504",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Botón de marcha: TRUE = pulsado *)\n    btnParo   : BOOL; (* Botón de paro: TRUE = pulsado *)\n    btnEmerg  : BOOL; (* Paro de emergencia: TRUE = activado *)\nEND_VAR\n\nVAR_OUTPUT\n    motorOn : BOOL; (* Salida al contactor del motor *)\nEND_VAR\n\nVAR\n    bloqueado : BOOL; (* Enclavamiento por emergencia *)\nEND_VAR\n\n(*\n    Lógica de control:\n    1. Si se activa la emergencia → parar motor y bloquear rearranque.\n    2. Si se pulsa paro → parar motor (sin bloqueo).\n    3. Si se pulsa marcha Y no hay bloqueo → arrancar motor (set).\n    4. El motor se mantiene encendido por auto-retención (motorOn se conserva).\n*)\n\n(* --- Gestión del enclavamiento por emergencia --- *)\nIF btnEmerg THEN\n    bloqueado := TRUE;  (* Bloqueo permanente hasta reset manual *)\nEND_IF;\n\n(* --- Paro: emergencia o botón de paro --- *)\nIF btnEmerg OR btnParo THEN\n    motorOn := FALSE;\n\n(* --- Arranque: marcha pulsada, sin bloqueo y sin paro activo --- *)\nELSIF btnMarcha AND NOT bloqueado THEN\n    motorOn := TRUE;\n\n(* --- Auto-retención: si no hay orden nueva, mantener estado actual --- *)\n(* (motorOn conserva su valor al no asignarse en otra rama) *)\nEND_IF;"
+  },
+  {
+   "codigo": "B1-1729",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; // TRUE al pulsar para arrancar\n    btnParo   : BOOL; // TRUE al pulsar para detener\n    btnEmerg  : BOOL; // TRUE al activar el paro de emergencia\nEND_VAR\n\nVAR_OUTPUT\n    motorOn   : BOOL; // Estado del motor (TRUE = Encendido)\nEND_VAR\n\nVAR\n    rtMarcha  : R_TRIG; // Detector de flanco de subida para el botón de marcha\nEND_VAR\n\n// Detección de flanco ascendente para evitar el rearranque automático \n// si el botón de marcha se mantiene pulsado tras una emergencia.\nrtMarcha(CLK := btnMarcha);\n\n// Lógica de control: Enclavamiento con paro dominante.\n// El motor se enciende con el flanco de marcha y se mantiene (motorOn).\n// Se detiene inmediatamente si btnParo o btnEmerg son TRUE.\nmotorOn := (motorOn OR rtMarcha.Q) AND NOT btnParo AND NOT btnEmerg;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-8468",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; // Botón de marcha\n    btnParo : BOOL;   // Botón de paro\n    btnEmerg : BOOL;  // Botón de paro de emergencia\nEND_VAR\n\nVAR_OUTPUT\n    motorOn : BOOL;   // Estado del motor: encendido o apagado\nEND_VAR\n\nVAR\n    estadoMotor : BOOL := FALSE; // Estado interno del motor\n    emergenciaActiva : BOOL := FALSE; // Estado de emergencia\nEND_VAR\n\n// Lógica de control del motor\nIF btnEmerg THEN\n    // Si el botón de emergencia está presionado, activar estado de emergencia\n    emergenciaActiva := TRUE;\n    estadoMotor := FALSE;\nELSIF btnParo THEN\n    // Si el botón de paro está presionado, apagar el motor\n    estadoMotor := FALSE;\nELSIF btnMarcha AND NOT emergenciaActiva THEN\n    // Si el botón de marcha está presionado y no hay emergencia, encender el motor\n    estadoMotor := TRUE;\nEND_IF\n\n// Actualizar la salida del motor\nmotorOn := estadoMotor;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-2708",
+   "resultado_codesys": "Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo   : BOOL; (* Boton de paro *)\n    btnEmerg  : BOOL; (* Boton de paro de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL; (* Salida del motor *)\nEND_VAR\nVAR\n    bloqEmerg : BOOL; (* Bloqueo activo tras emergencia *)\nEND_VAR\n\n(* Activar bloqueo de emergencia; solo se libera al ciclo siguiente sin emergencia *)\nIF btnEmerg THEN\n    bloqEmerg := TRUE;\nEND_IF;\n\n(* Logica de arranque/paro con autoretencion *)\n(* Paro normal o emergencia detienen el motor                *)\n(* El bloqueo impide rearranque hasta que se libere          *)\nIF btnParo OR btnEmerg THEN\n    motorOn := FALSE;\nELSIF btnMarcha AND NOT bloqEmerg THEN\n    motorOn := TRUE;\nEND_IF;\n\n(* Liberar bloqueo de emergencia solo cuando no hay emergencia ni motor en marcha *)\nIF NOT btnEmerg AND NOT motorOn THEN\n    bloqEmerg := FALSE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-7716",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo : BOOL;   (* Boton de paro normal *)\n    btnEmerg : BOOL;  (* Boton de paro de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL;   (* Estado de activacion del motor *)\nEND_VAR\nVAR\n    flancoMarcha : R_TRIG; (* Detector de flanco para evitar rearranque *)\nEND_VAR\n\n(* Detecta solo el instante en que se presiona el boton de marcha *)\nflancoMarcha(CLK := btnMarcha);\n\n(* Logica de enclavamiento con prioridad a las señales de paro *)\nmotorOn := (motorOn OR flancoMarcha.Q) AND NOT (btnParo OR btnEmerg);\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-4160",
+   "resultado_codesys": "No compila (12 errores).",
+   "mensajes_compilador": "L?nea 5, columna 1 (Impl) Se esperaba ';' en lugar de 'emergenciaActiva' || L?nea 5, columna 1 (Impl) Se esperaba ';' en lugar de 'THEN' || L?nea 5, columna 1 (Impl) Encontrado token inesperado 'THEN' || L?nea 7, columna 1 (Impl) Se esperaba ';' en lugar de 'motorOn' || L?nea 8, columna 1 (Impl) Se esperaba ';' en lugar de 'btnParo' || L?nea 8, columna 1 (Impl) Se esperaba ';' en lugar de 'THEN' || L?nea 8, columna 1 (Impl) Encontrado token inesperado 'THEN' || L?nea 10, columna 1 (Impl) Se esperaba ';' en lugar de 'motorOn' || L?nea 11, columna 1 (Impl) Se esperaba ';' en lugar de 'btnMarcha' || L?nea 11, columna 1 (Impl) Se esperaba ';' en lugar de 'THEN' || L?nea 11, columna 1 (Impl) Encontrado token inesperado 'THEN' || L?nea 13, columna 1 (Impl) Se esperaba ';' en lugar de 'motorOn'",
+   "funcional_fijo": 0,
+   "iec_fijo": 0,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL;  // Botón de marcha\n    btnParo : BOOL;    // Botón de paro\n    btnEmerg : BOOL;   // Botón de paro de emergencia\nEND_VAR\n\nVAR_OUTPUT\n    motorOn : BOOL;    // Estado del motor (encendido/apagado)\nEND_VAR\n\nVAR\n    emergenciaActiva : BOOL := FALSE;  // Bandera para indicar si hay una parada de emergencia\nEND_VAR\n\n// Programa principal\nIF btnEmerg THEN\n    // Si se detecta una parada de emergencia\n    emergenciaActiva := TRUE;\n    motorOn := FALSE;  // Apaga el motor\nELSEIF emergenciaActiva THEN\n    // Si hay una parada de emergencia activa, no se permite el arranque\n    motorOn := FALSE;\nELSEIF btnParo THEN\n    // Si se presiona el botón de paro\n    motorOn := FALSE;  // Apaga el motor\nELSEIF btnMarcha THEN\n    // Si se presiona el botón de marcha\n    motorOn := TRUE;   // Enciende el motor\nEND_IF"
+  },
+  {
+   "codigo": "B1-3776",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo : BOOL; (* Boton de paro *)\n    btnEmerg : BOOL; (* Boton de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL; (* Estado del motor *)\nEND_VAR\nVAR\n    estadoEmergencia : BOOL; (* Estado de emergencia *)\nEND_VAR\n\n(* Manejo del estado de emergencia *)\nestadoEmergencia := estadoEmergencia OR btnEmerg;\n\n(* Control del motor *)\nIF estadoEmergencia THEN\n    motorOn := FALSE; (* El motor se detiene en caso de emergencia *)\nELSE\n    IF btnParo THEN\n        motorOn := FALSE; (* El motor se detiene al pulsar el botón de paro *)\n    ELSE\n        motorOn := motorOn OR btnMarcha; (* El motor se mantiene encendido al soltar el botón de marcha *)\n    END_IF\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-1689",
+   "resultado_codesys": "Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Botón de marcha *)\n    btnParo : BOOL;   (* Botón de paro *)\n    btnEmerg : BOOL;  (* Botón de paro de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL;   (* Estado del motor *)\nEND_VAR\nVAR\n    estadoMotor : BOOL; (* Estado interno del motor *)\nEND_VAR\n\n(* Control de arranque y paro del motor *)\nIF btnEmerg THEN\n    estadoMotor := FALSE; (* Paro de emergencia, motor apagado *)\nELSIF btnParo THEN\n    estadoMotor := FALSE; (* Botón de paro, motor apagado *)\nELSIF btnMarcha THEN\n    estadoMotor := TRUE;  (* Botón de marcha, motor encendido *)\nEND_IF\n\nmotorOn := estadoMotor; (* Salida del estado del motor *)\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-7970",
+   "resultado_codesys": "Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL;   // Botón de marcha\n    btnParo : BOOL;     // Botón de paro\n    btnEmerg : BOOL;    // Botón de paro de emergencia\nEND_VAR\n\nVAR_OUTPUT\n    motorOn : BOOL;     // Estado del motor (encendido/apagado)\nEND_VAR\n\nVAR\n    motorLatch : BOOL;  // Latch para mantener el motor encendido\n    emergStopLatch : BOOL; // Latch para el estado de paro de emergencia\nEND_VAR\n\n// Lógica de control del motor\nIF btnEmerg THEN\n    // Si el botón de emergencia está presionado, activar el latch de emergencia\n    emergStopLatch := TRUE;\n    motorOn := FALSE; // Apagar el motor inmediatamente\nELSIF btnParo THEN\n    // Si el botón de paro está presionado, apagar el motor\n    motorOn := FALSE;\nELSIF btnMarcha AND NOT emergStopLatch THEN\n    // Si el botón de marcha está presionado y no hay paro de emergencia, encender el motor\n    motorLatch := TRUE;\nEND_IF\n\n// Mantener el motor encendido si el latch está activo\nIF motorLatch AND NOT btnParo AND NOT btnEmerg THEN\n    motorOn := TRUE;\nELSE\n    motorOn := FALSE;\n    motorLatch := FALSE; // Resetear el latch si el motor se apaga\nEND_IF\n\n// Resetear el latch de emergencia si el motor está apagado y no hay emergencia\nIF NOT btnEmerg THEN\n    emergStopLatch := FALSE;\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-2577",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo   : BOOL; (* Boton de paro *)\n    btnEmerg  : BOOL; (* Boton de paro de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL; (* Salida del contactor del motor *)\nEND_VAR\nVAR\n    bloqEmerg : BOOL; (* Bloqueo activo tras paro de emergencia *)\nEND_VAR\n\n(* Activar bloqueo ante paro de emergencia; se mantiene hasta nuevo ciclo de paro normal *)\nIF btnEmerg THEN\n    bloqEmerg := TRUE;\nEND_IF;\n\n(* Desbloquear solo cuando se pulsa paro sin emergencia activa *)\nIF btnParo AND NOT btnEmerg THEN\n    bloqEmerg := FALSE;\nEND_IF;\n\n(* Logica de arranque con autoretencion:\n   - Arranca si btnMarcha y no hay bloqueo de emergencia\n   - Para si btnParo o btnEmerg                          *)\nIF (btnParo OR btnEmerg) THEN\n    motorOn := FALSE;\nELSIF btnMarcha AND NOT bloqEmerg THEN\n    motorOn := TRUE;\nEND_IF;\n(* Si ninguna condicion se cumple, motorOn conserva su estado anterior (autoretencion) *)\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-2078",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo : BOOL;   (* Boton de paro normal *)\n    btnEmerg : BOOL;  (* Boton de paro de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL;   (* Estado de activacion del motor *)\nEND_VAR\nVAR\n    flancoMarcha : R_TRIG; (* Detector de flanco para evitar rearranque accidental *)\nEND_VAR\n\n(* Detecta solo el instante en que se pulsa la marcha *)\nflancoMarcha(CLK := btnMarcha);\n\n(* Logica de enclavamiento: prioridad a las senales de paro *)\nIF btnParo OR btnEmerg THEN\n    motorOn := FALSE;\nELSIF flancoMarcha.Q THEN\n    motorOn := TRUE;\nEND_IF;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-2077",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo : BOOL;   (* Boton de paro *)\n    btnEmerg : BOOL;  (* Paro de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL;   (* Estado del motor *)\nEND_VAR\nVAR\n    trigMarcha : R_TRIG; (* Detector de flanco para evitar rearranque *)\nEND_VAR\n\n(* Detecta el flanco de subida de la marcha para que no rearranque si se mantiene pulsado *)\ntrigMarcha(CLK := btnMarcha);\n\n(* Enclavamiento del motor con prioridad a las señales de paro *)\nmotorOn := (motorOn OR trigMarcha.Q) AND NOT btnParo AND NOT btnEmerg;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-6475",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo : BOOL; (* Boton de paro *)\n    btnEmerg : BOOL; (* Boton de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL; (* Motor encendido *)\nEND_VAR\nVAR\n    estadoEmergencia : BOOL := FALSE; (* Estado de emergencia *)\nEND_VAR\n\n(* Control de arranque y paro del motor *)\nIF btnEmerg THEN\n    estadoEmergencia := TRUE;\n    motorOn := FALSE;\nELSIF estadoEmergencia THEN\n    motorOn := FALSE;\nELSIF btnParo THEN\n    motorOn := FALSE;\nELSIF btnMarcha THEN\n    motorOn := TRUE;\nEND_IF;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-9711",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo : BOOL; (* Boton de paro *)\n    btnEmerg : BOOL; (* Boton de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL; (* Motor encendido *)\nEND_VAR\nVAR\n    estadoEmergencia : BOOL := FALSE; (* Estado de emergencia *)\nEND_VAR\n\n(* Control de arranque y paro del motor *)\nIF btnEmerg THEN\n    estadoEmergencia := TRUE;\n    motorOn := FALSE;\nELSIF estadoEmergencia THEN\n    motorOn := FALSE;\nELSIF btnParo THEN\n    motorOn := FALSE;\nELSIF btnMarcha THEN\n    motorOn := TRUE;\nEND_IF;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B1-4469",
+   "resultado_codesys": "Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL;   // Botón de marcha\n    btnParo : BOOL;     // Botón de paro\n    btnEmerg : BOOL;    // Botón de paro de emergencia\nEND_VAR\n\nVAR_OUTPUT\n    motorOn : BOOL;     // Estado del motor (encendido/apagado)\nEND_VAR\n\nVAR\n    motorLatch : BOOL;  // Latch para mantener el motor encendido\n    emergStop : BOOL;   // Estado de paro de emergencia\nEND_VAR\n\n// Lógica de control del motor\nIF btnEmerg THEN\n    // Si el botón de emergencia está presionado, detener el motor\n    motorOn := FALSE;\n    emergStop := TRUE;\nELSIF btnParo THEN\n    // Si el botón de paro está presionado, detener el motor\n    motorOn := FALSE;\nELSIF btnMarcha AND NOT emergStop THEN\n    // Si el botón de marcha está presionado y no hay paro de emergencia, arrancar el motor\n    motorOn := TRUE;\nEND_IF\n\n// Actualizar el estado del latch del motor\nmotorLatch := motorOn;\n\n// Si el motor está encendido, mantenerlo encendido\nIF motorLatch THEN\n    motorOn := TRUE;\nEND_IF\n\n// Resetear el estado de paro de emergencia si el motor está apagado\nIF NOT motorOn THEN\n    emergStop := FALSE;\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}

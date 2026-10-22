@@ -1,0 +1,54 @@
+FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Alarma de prioridad alta *)
+    alm2 : BOOL; (* Alarma de prioridad media *)
+    alm3 : BOOL; (* Alarma de prioridad baja *)
+    ack1 : BOOL; (* Reconocimiento de alarma 1 *)
+    ack2 : BOOL; (* Reconocimiento de alarma 2 *)
+    ack3 : BOOL; (* Reconocimiento de alarma 3 *)
+END_VAR
+VAR_OUTPUT
+    sirena : BOOL; (* Sirena *)
+    codigoAlm : INT; (* Código de la alarma de mayor prioridad *)
+END_VAR
+VAR
+    retAlm1 : BOOL; (* Retención de alarma 1 *)
+    retAlm2 : BOOL; (* Retención de alarma 2 *)
+    retAlm3 : BOOL; (* Retención de alarma 3 *)
+END_VAR
+
+(* Retención de alarmas *)
+IF NOT ack1 THEN
+    retAlm1 := alm1;
+ELSE
+    retAlm1 := FALSE;
+END_IF;
+
+IF NOT ack2 THEN
+    retAlm2 := alm2;
+ELSE
+    retAlm2 := FALSE;
+END_IF;
+
+IF NOT ack3 THEN
+    retAlm3 := alm3;
+ELSE
+    retAlm3 := FALSE;
+END_IF;
+
+(* Determinación de la alarma de mayor prioridad *)
+IF retAlm1 THEN
+    sirena := TRUE;
+    codigoAlm := 1;
+ELSIF retAlm2 THEN
+    sirena := TRUE;
+    codigoAlm := 2;
+ELSIF retAlm3 THEN
+    sirena := TRUE;
+    codigoAlm := 3;
+ELSE
+    sirena := FALSE;
+    codigoAlm := 0;
+END_IF;
+
+END_FUNCTION_BLOCK

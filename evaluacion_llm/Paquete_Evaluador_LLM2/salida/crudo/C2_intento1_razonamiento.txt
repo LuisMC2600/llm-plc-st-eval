@@ -1,0 +1,1486 @@
+We need answer in Spanish, only JSON list, no markdown. Need evaluate 24 responses. We must carefully read all. Need produce for each: codigo, es list of 5 S/N for including E/S: [nivel tanque superior, agua en pozo/protección marcha en seco, botón de paro, mando bomba, luz aviso]. tipos S if all data types valid IEC and coherent. pou exact one of FUNCTION, FUNCTION_BLOCK, PROGRAM, "Varios o ninguno". jus S if technical justification coherent; N if not. amb list of 6 S/N for A1-A6 from key. Need check if response raises ambiguity with any wording. adic integer: other pertinent ambiguities not in key. codigo_st S if includes ST code (should N likely all no code). obs brief line.
+
+Need classify each response.
+
+Need first understand key amb:
+A1 Digital o analógica: Niveles como señales digitales (flotadores) o analógicas.
+A2 Qué es "tanque vacío": qué significa exactamente tanque vacío (histéresis entre niveles de arranque y paro).
+A3 Marcha en seco y rearme: Tiempo de protección por marcha en seco y si el rearme es manual o automático.
+A4 Tipo de botón: El 'botón para apagarla': ¿paro momentáneo o inhibición retenida?
+A5 Qué agrupa la luz: Qué condiciones agrupa la luz de falla.
+A6 Retorno del agua: Comportamiento al recuperarse el agua del pozo.
+
+Need evaluate each amb list if mention. "plantea" any wording. Need be fair but careful.
+
+Need maybe note if table includes "bombaArrancada" as output? In some responses table lists pump status as "estado" maybe not necessarily mando bomba. Need check entry "bombaArrancada" "Indica si la bomba está arrancada" could be an output? It says "salida para controlar el estado" maybe yes? Task requires mando de la bomba. If table includes "bombaArrancada" "Indica si..." maybe it seems as output not input; might be "salida" maybe accepted as mando? We must evaluate if includes with any name. For E/S they may put "PumpRunning" as output for control? We need see each.
+
+Need determine "es" list exactly [nivel tanque superior, agua en pozo / proteccion seca, boton de paro, mando bomba, luz aviso]. For most yes.
+
+Need inspect 24 entries.
+
+I need deeply analyze each response.
+
+I'll go one by one.
+
+Let's list codes:
+1 C2-183
+2 C2-186
+3 C2-176
+4 C2-154
+5 C2-127
+6 C2-179
+7 C2-166
+8 C2-194
+9 C2-145
+10 C2-118
+11 C2-137
+12 C2-129
+13 C2-149
+14 C2-169
+15 C2-111
+16 C2-158
+17 C2-167
+18 C2-105
+19 C2-187
+20 C2-171
+21 C2-150
+22 C2-152
+23 C2-177
+24 C2-132
+
+Need maybe some responses have table with extra entries; es includes if they include each required. Some have extra irrelevant. We need mark "S"/"N" for each required: [nivel tanque superior, agua en pozo/protección, botón de paro, mando bomba, luz de aviso]. If table uses "StartPump" as "Señal para arrancar la bomba automáticamente..." maybe might be an input not mando. Need compare with own code.
+
+Let's inspect each in detail.
+
+1 C2-183:
+Table:
+Inputs:
+snrTanqueVacio BOOL sensor nivel tanque superior activo vacío.
+snrPozoVacio BOOL sensor nivel pozo activo sin agua.
+btnApagar BOOL botón manual...
+snrFallaExterna BOOL señal protección bomba.
+Outputs:
+cmdBomba BOOL señal de mando...
+indAlarma BOOL señal para luz.
+
+Includes required: tanque yes, pozo yes, botón paro yes, mando bomba yes, luz aviso yes. Types all BOOL valid. POU FUNCTION_BLOCK. Justification: memory state, etc coherent. amb list:
+- Condición de parada automática: no especifica cuándo detenerse ¿existe sensor tanque lleno? This maybe A2 (qué es tanque vacío/histéresis? condition of stop auto). A2 can include "qué significa tanque vacío" and histéresis. They mention condition of parada automática, tanque lleno. This does raise relevant info: que el tanque vacío alone doesn't define hysteresis. Is it A2? Since A2 explicitly "Qué es 'tanque vacío' (histéresis entre niveles de arranque y paro)." They mention lack of condición de parada automática: arranca vacío but not when detiene. I'd map to A2 yes. They don't mention digital/analog (A1 no). Then "Definición de 'algo ande mal'..." maps A5 yes. "Comportamiento botón apagado" maps A4 yes. "Reinicio tras falta de agua" maps A6? "Si bomba se detiene para protegerse porque pozo se quedó sin agua, ¿debe arrancar sola de nuevo en cuanto pozo recupere... o requiere reset?" This maps A6 (retorno del agua) and A3? A3 includes marcha en seco y rearme manual/automático. Yes A3 maybe after lack water and reset. But key A3 "Tiempo de protección por marcha en seco y si el rearme es manual o automático." This item asks reset after seco (marcha seca). It includes if arranca sola al recuperar pozo or reset. That's exactly A3 and A6? Hmm key A3 is "Marcha en seco y rearme: Tiempo de protección por marcha en seco y si el rearme es manual o automático." A6 "Retorno del agua: Comportamiento al recuperarse el agua del pozo." They are related but distinct: A3 includes protection time and reset for dry-run; A6 behavior upon water recovery. If response says "Reinicio tras falta de agua... debe arrancar sola de nuevo en cuanto pozo recupere su nivel, o requiere reset?" That's exactly both A3/A6. But for amb list, if phrase raises the ambiguity. Need mark both A3 and A6? Maybe yes because they ask about rearme and recovered water. But careful: Same bullet could cover both. We'll mark S for A3, A6 if it raises.
+Also "Lógica de los contactos... NO/NC" not key; but related A1? A1 digital/analog but NO/NC is hardware contact logic, not digital vs analog type. Also table includes digital; ask NO/NC not in key. It's an adic? maybe additional pertinent. So maybe adic 1. No code. Need maybe A1? They don't ask digital vs analógica; no. A2? yes.
+
+Need maybe include "Condición de parada automática" as A2. Let's set amb: A1 N, A2 S (parada/tanque lleno), A3 S (reinicio tras falta agua), A4 S, A5 S, A6 S (si arranca sola al recuperar pozo), but A6 and A3 in same bullet? Actually bullet "Reinicio tras falta de agua: Si la bomba se detiene para protegerse porque el pozo se quedó sin agua, ¿debe arrancar sola de nuevo en cuanto el pozo recupere su nivel, o requiere que un operador presione un botón de reinicio (reset) por seguridad?" This definitely asks behavior upon recovery (A6), and reset (A3). So mark both. adic maybe 1 (NO/NC contact logic) or maybe "fallaExterna" extra indicated? They assumed external fault? Actually not ambiguity. There's ambiguity of "señal de falla externa" maybe no. We'll set adic=1 for NO/NC.
+
+Need ensure A2: key includes "qué significa exactamente 'tanque vacío' (histéresis entre niveles de arranque y paro)." The response asks "Condición de parada automática: ... no especificó cuándo debe detenerse. ¿Existe sensor de tanque lleno?" That raises ambiguity about hysteresis/start-stop levels. Good enough.
+
+2 C2-186:
+Table:
+TankIsEmpty BOOL yes
+PumpTemperature INT (temperature) maybe not required
+PumpOverheat BOOL
+PumpStopButton BOOL yes
+PumpStatus BOOL "Estado de la bomba (encendida/apagada)" maybe as output? But not clear if mando? It says "PumpStatus BOOL Estado de la bomba" maybe could be retroalimentación/entrada but table not labelled. Required "mando bomba" maybe missing because they don't explicitly have output command to pump; they list PumpStatus. "AlarmLight BOOL Indica si hay un problema con bomba" but "salida?" maybe luz aviso yes. No clear mando bomba; "PumpStatus" could be "estado" as output? Actually not, the required is mando de bomba: signal to control pump. PumpStatus "estado de la bomba (encendida/apagada)" could be a variable for internal/output state. Could be considered mando? Need strict. Table includes no "PumpStart" or "PumpRun" except PumpStatus. Might not include mando bomba explicitly. But maybe "PumpStatus" is not clearly command, but it can be the output to define pump state. I need decide. The table has "PumpStatus BOOL Estado de la bomba (encendida/apagada)" likely they intended as output for control? Hmm not listed under inputs/outputs. But because type? In table just name type description. Not categorize. They also include PumpTemperature INT (invalid? Actually INT is valid IEC, but signal temperature maybe could be INT valid; "PumpOverheat BOOL" okay. INT for temperature coherent? Yes maybe analog in INT not necessarily real but valid. Coherent? Could be valid, though maybe temperature sensor often INT. So tipos maybe S? Wait "PumpStatus" as status maybe maybe output; BOOL valid. Types all valid. Need evaluate "tipos": if all types of table are valid IEC and coherent with signal. "PumpTemperature INT" could be valid and coherent if sensor gives integer temperature. No issue. POU: PROGRAM, justification "adecuado para manejar flujo de control principal..." technically? A program can handle main flow; but not necessarily needs memory. It is not wrong, but if they recommend program with somewhat generic justification. Is it technically coherent? It says program is adequate for main control flow, interactions, control pump and alarm. It's not invalid, though FB better. Need mark S if technically coherent, "PROGRAM" acceptable? Hmm "jus S si justificación técnicamente coherente". It is coherent enough though not ideal. But maybe lack mention memory; for this task, PROGRAM can hold state; so justification is okay enough. Mark S.
+Ambs:
+- Umbral temperatura sobrecalentamiento. Not key? Could be related to A5? Conditions for lamp includes overheat. But they mention threshold for overheat, not "what conditions activate lamp"? The response did not mention key A5? It asks "Umbral de temperatura de sobrecalentamiento: cuál temperatura máxima..." This is a new ambiguity (not key) maybe related A5 if light should include overheat. But not exactly "qué agrupa la luz". Could mark A5 N? maybe no.
+- Tiempo espera después de tanque vacío before arrancar. This is maybe new (start delay) not key maybe not A2. Could be additional. 
+- Tiempo de encendido mínimo. Additional.
+- Comportamiento en caso de sobrecalentamiento: auto apagado or manual. Additional.
+- Comportamiento del botón de apagado: if pressed immediate or wait pozo vacío. Actually question: "¿Cuando se presione el botón de apagado, la bomba debe detenerse inmediatamente o debe esperar a que el pozo esté vacío?" This maps A4 (tipo botón? behavior) but not tipo momentáneo/retenida. A4 is "Tipo de botón: paro momentáneo o inhibición retenida". This is about behavior; maybe not. Could mark A4 S? It asks behavior of stop button (immediate vs wait), not exactly type/momentary/retained. But maybe "comportamiento del botón de apagado" covers A4? A4 includes whether it is momentary or latched inhibition. This isn't type but behavior. I'd maybe mark S because they identify ambiguity about stop button behavior. 
+Need maybe they didn't mention A1 digital/analog. A2? They mention wait after empty, not hysteresis. A3? no. A6? no.
+Need maybe table includes extra "PumpOverheat" but they didn't ask "what conditions light". Could mark A5 N perhaps. Actually they list "Umbral de temperatura de sobrecalentamiento" as ambiguity, which involves overheat detection; but the key A5 is what conditions the warning light includes. They don't mention light at all in ambiguities. Maybe no.
+Additional ambiguities: umbral temp, wait, min on, sobrecal behavior, botón behavior — 5? Need count adic: "otras ambigüedades pertinentes que no están en la clave." Could be many. We need an integer. The response has 5 bullets. Are all pertinent? Yes mostly. But "botón apagado" might be A4. Others not key. So adic maybe 4 or 5 depending if we map botón to A4. Let's think.
+
+We need not overcount? We should count all not in key. The key amb lists 6: digital/analog, how define empty, dry-run/rearme, button type, light groups, water return. This response raises:
+- Umbral de temperatura de sobrecalentamiento (additional, but related to overheat threshold; not key). 
+- Tiempo de espera después de tanque vacío (additional)
+- Tiempo de encendido mínimo (additional)
+- Comportamiento en caso de sobrecalentamiento (additional)
+- Comportamiento del botón de apagado (could A4)
+Maybe no A2. So adic=4 if botón maps A4; 5 if not. Need be consistent.
+
+But maybe "Comportamiento en caso de sobrecalentamiento" is related to A5 conditions light? Actually not. Additional.
+
+If we need exact amb list, let's set:
+amb: A1 N, A2 N, A3 N, A4 S, A5 N, A6 N.
+adic: 4? But "Comportamiento del botón de apagado" may be A4 S. So other four: temperatura, espera, encendido mínimo, sobrecalentamiento. Yes.
+
+But "¿Hay un tiempo mínimo ... antes de poder apagarse?" is about time min run; relevant. Yes.
+
+Potential "tipos": Wait "PumpTemperature INT" in a BOOL table; maybe temperature as INT can be valid IEC. coherent? yes maybe but if "PumpTemperature" with type INT, not specified input/output. Fine.
+
+3 C2-176:
+Table:
+tanqueVacio BOOL yes
+pozoSeco BOOL yes
+btnApagar BOOL yes
+bombaArranca BOOL "Salida para controlar el arranque de la bomba" yes
+luzAlerta BOOL "Luz que avisa..." yes
+Types all BOOL. POU FUNCTION_BLOCK. Justification: encapsulate state internal, timers, reutilización. coherent. 
+Ambs:
+- Definición de "algo anda mal": what conditions activate light. A5 yes.
+- Tiempo de espera antes de arrancar... additional maybe.
+- Control de sobrecalentamiento: sensor temp? qué temperatura considera cliente "quemarse"? additional.
+- Comportamiento en caso de apagón (actually "botón de apagón"? says "si botón de apagón se mantiene pulsado ... espera antes de apagarse") maybe A4? no, maybe button behavior.
+- Control de arranque múltiple: lógica para evitar arranque múltiples... additional.
+No A1, A2? Not mention hysteresis/parada. A3? They mention if tanque empty wait, not dry-run rearme. A6? No.
+Maybe "Tiempo de espera antes de arrancar" if after tank empty: relates A2? Not exactly. 
+Need mark A5 S. A4? The "Comportamiento en caso de apagón: ... botón de apagón mantenido" maybe the word apagón likely "botón de apagado" (they wrote apagón) but no type. It asks if maintained, behavior. That maps A4? Maybe yes, they are raising button behavior. But it's maybe about sustained press; it's an ambiguity of button. We'll mark A4 S perhaps. Others no.
+Also "Control de temperatura" maybe no.
+adic: let's count additional beyond key:
+- tiempo de espera antes de arrancar (start delay)
+- control sobrecalentamiento (conditions/quemarse)
+- comportamiento botón apagado prolongado? Could be A4, so maybe not adic.
+- control de arranque múltiple.
+So adic=4? if we include button as A4. Hmm.
+
+Need maybe A5? yes. No A1, A2, A3, A6. 
+codigo_st N.
+
+4 C2-154:
+Table:
+TankIsEmpty BOOL yes
+PumpOverheat BOOL "riesgo de quemarse" maybe extra
+PumpEmpty BOOL "pozo sin agua" yes
+StopButton BOOL yes
+PumpRun BOOL "Salida para controlar el arranque..." yes
+AlarmLight BOOL "Salida para encender luz" yes
+Types all BOOL valid. POU PROGRAM. Justification: "adecuado para manejar proceso de control secuencial y coordinar... expandido" coherent? Somewhat generic but acceptable. jus S? maybe yes.
+Ambs:
+- Tiempo de retardo antes encendido after vacío: additional.
+- Niveles de temperatura: additional.
+- Niveles de agua: threshold "sin agua": maybe A1? no, but threshold maybe not key: digital/analog? Actually "¿Cuál es el umbral de nivel de agua que considera sin agua?" This relates A2? No, tanque? Well dry. Could be A3? Marcha seca? maybe threshold for dry-run. Not key? Could be additional.
+- Tiempo de encendido: additional.
+- Comportamiento en fallos: sensor fail: additional.
+No A1 (signal type), no A2, no A3? They mention threshold sea "sin agua" but not dry-run rearme/time. no. A4? no. A5? no, though they list "PumpOverheat" but not as ambiguity maybe. A6? no.
+adic: 5. Could include "niveles de agua" maybe related A3? Hmm. We'll mark all amb false except maybe none. Actually maybe A5? They include "Comportamiento en fallos: si detecta fallo sensor" not what light groups. no.
+
+5 C2-127:
+Table:
+sensorTanqueVacio BOOL yes
+sensorPozoSinAgua BOOL yes
+btnParo BOOL yes
+bombaPozo BOOL salida contactor yes
+luzAlarma BOOL yes
+Types BOOL valid. POU FUNCTION_BLOCK. Justification: state, alarm, timers etc. coherent.
+Ambs:
+1 logica sensores NO/NC. Not A1 digital/analog? They ask NO/NC and TRUE meaning. This closely relates A1? A1 "Digital o analógica: Niveles como señales digitales (flotadores) o analógicas." NO/NC is contact configuration, not analog vs digital. But first bullet maybe "¿TRUE significa hay agua o no?" That's not A1 exactly. 
+2 Condición rearranque tras paro manual: after stop, remain stopped until operator or auto? This is A4? Maybe button/inhibición retenida. A4 asks type of stop button (momentary or latched inhibition). This asks what happens after stop (manual rearm?). This maps A4 S maybe. 
+3 Condición exacta alarma: what situations activate light? A5 yes.
+4 Retroalimentación bomba: contact aux flow confirm arranque. additional (not key).
+5 Temporización: retardo, tiempo min marcha/parada. additional.
+6 Rearranque automático tras recuperación del pozo: A6 yes.
+7 Nivel tanque superior: ¿existe también sensor tanque lleno para detener? A2 yes.
+8 Prioridades seguridad: paro manual vs pozo seco. additional.
+9 Tipo de botón de paro: momentáneo o selector? A4 yes.
+10 Requisitos eléctricos y seguridad: SIL/PLd. additional.
+Also A3? They mention temporización not specific dry-run protection/rearme? They mention "tiempo mínimo de parada para proteger motor" additional. They do not ask "marcha en seco y rearme" explicitly aside from A6. But maybe item 5 "temporización" could include "tiempo mínimo de parada" not dry-run. No. Did they ask if dry-run requires reset? They asked "Rearranque automático tras recuperación del pozo" but not manual/auto reset? Actually "si pozo recupera nivel mientras el tanque sigue vacío, ¿debe arrancar automáticamente o esperar confirmación del operador?" This is A6, not necessarily "marcha en seco y rearme" (A3) but yes it includes rearme? Could map to A3 maybe. But key A3 is time protection + manual/auto reset after dry-run. They didn't mention time of dry-run. The recovery re-start could be A6. Need decide for A3. Hmm if response asks only "debe arrancar automáticamente o esperar confirmación tras recuperación", that is both A3 (rearme) and A6 (retorno). A3 includes "si el rearme es manual o automático." The response says "esperar confirmación del operador" which is manual rearm. So A3 yes. Also A6 yes. But maybe no mention "Tiempo de protección por marcha en seco". A3 says time AND rearme. If at least one part? The rubric: "amb: lista de 6 S/N, una por cada ambigüedad A1–A6, según si la respuesta la plantea, con cualquier redacción." So if they raise one of the two aspects maybe S? I'd treat if they mention any part of that ambiguity. So A3 S because rearme.
+Need A1? They ask NO/NC and true meaning, not digital vs analógica. If we're strict, A1 N. But maybe "Lógica de los sensores" could be considered digital? Hmm A1 is about signal type (discrete vs analog). They don't mention. So N.
+A2 S (tanque lleno sensor). A4 S. A5 S. A6 S. A3 S. adic: Count extra: bullet 1 NO/NC, bullet 4 retroalimentación, bullet 5 temporización, bullet 8 prioridades, bullet 10 requisitos seguridad. Maybe bullet 1 maybe A1? not. So adic 5. 
+But "Temporización" maybe partly A3? Need maybe not; but I already A3 S. It's extra because specific times. So yes.
+No code.
+
+6 C2-179:
+Table:
+TankEmpty BOOL yes
+PumpRunning BOOL "Indica si la bomba está en funcionamiento" could be an input (status) not output mando.
+PumpFault BOOL fallo bomba extra
+StopButton BOOL yes
+PumpStart BOOL "Salida para iniciar la bomba" yes mando
+FaultLight BOOL salida luz warning yes.
+Required mando yes via PumpStart. Types all BOOL valid. POU PROGRAM. Justification: manages complete process, multiple E/S, persistent state, sequence. Coherent? PROGRAM does have state; fine enough. jus S.
+Ambs:
+- Definición de "se queme": what exactly means pump "burn": electrical? additional.
+- Tiempo de espera después de tanque vacío: additional.
+- Condición de "sin agua": cómo se detecta? sensor level or another method? This could be A1? It asks how detect sin agua, but not digital vs analog. Maybe relates A1 partially. But not explicit digital/analog; I can mark A1 S? Hmm The ambiguity "Condición de 'sin agua' en el pozo: ¿Cómo se detecta que el pozo está sin agua? ¿Es un sensor de nivel de agua o algún otro método?" This is about instrumentation type but not digital/analog; could lead to A1. But key A1 is "Niveles como señales digitales (flotadores) o analógicas." They don't mention signal type exactly. However "¿Cómo se detecta?" could be enough? Any wording. Need be consistent: A1 aims at clarifying whether levels are digital or analog, maybe response asks method not signal. Maybe mark N? Hmm. Many responses ask "cómo se detecta" but not type. Maybe should not conflate.
+- Tiempo de encendido de luz warning: how long stays on once fault detected. Additional.
+- Acciones en caso de fallo: additional.
+No A4 (stop button) no, no A5? They did not ask what conditions light includes? Actually "Definición de 'se queme'" maybe not A5. "Acciones en caso de fallo ... además de encender la luz" not light groups. 
+No A2, A3, A6. 
+Maybe A5? They ask "Definición de 'se queme'... ¿fallo eléctrico, sobrecarga...?" This could be about faults to detect light, but no.
+adic: maybe 5 (se queme, wait after empty, detect sin agua, time light, actions). If detect sin agua maybe could map A1. Hmm let's decide later.
+
+7 C2-166:
+Table:
+StartPump BOOL "Señal para arrancar la bomba automáticamente cuando tanque vacío." Hmm this sounds maybe an input or command? They do not categorize. 
+WellEmpty BOOL yes pozo sin agua
+ManualStop BOOL yes botón paro (though "manual stop")
+FaultIndicator BOOL "Luz indicadora de fallo en el sistema." yes as output? yes.
+PumpStatus BOOL "Estado de la bomba (encendida/apagada)." This is maybe output or feedback. 
+Missing explicit "tank empty"? They do NOT list tank level input? Wait there is no tanque vacío variable. Actually maybe "StartPump" is "Señal para arrancar la bomba automáticamente cuando el tanque está vacío" but it may be an input? No variable for tank level. The table does not include "TanqueVacio" or sensor. So "nivel del tanque superior" missing? Wait they may treat StartPump as input? The table only 5 entries: StartPump, WellEmpty, ManualStop, FaultIndicator, PumpStatus. "StartPump" as "señal para arrancar la bomba automáticamente cuando tanque vacío" maybe maybe an input from a sensor? But named "StartPump" not clear. Described as signal to start automatically when tank vacío. It does not include a separate tank level signal. The required key includes [nivel del tanque superior]. This response lacks a variable explicitly for tank level. Could mark N for first. Need careful: maybe "StartPump" is derived internally? It says "Señal para arrancar la bomba automáticamente cuando el tanque está vacío." Could be a command input from a float? But not named "nivel tanque". Hmm. 
+Also mando bomba? They have PumpStatus "Estado de la bomba (encendida/apagada)" not command. "StartPump" maybe maybe output? Let's parse: "StartPump" description "Señal para arrancar la bomba automáticamente cuando el tanque está vacío." That sounds like an input from sensor? Actually if I/O table, "Señal para arrancar" maybe could be output to pump. But description says "cuando tanque vacío" maybe a command. It might be intended as mando. They also list PumpStatus as "estado de la bomba" maybe feedback. So mando bomba maybe "StartPump". Thus yes first missing, other four maybe yes? 
+Need maybe table lacks luz aviso? FaultIndicator "Luz indicadora de fallo en el sistema." yes.
+POU: FUNCTION_BLOCK, justification manage state and conditions, reusable. coherent.
+Ambs:
+- criterio exacto para considerar tanque vacío? sensor? A2? It asks exact criteria vacío and sensor. Could map A2 (what empty) but not histéresis exactly. It says “¿Cuál es el criterio exacto para considerar que el tanque de arriba está "vacío"? ¿Se requiere un sensor específico para esto?” This resembles A2 partially. Maybe S.
+- Qué condiciones activan luz? A5 S.
+- Si pozo se queda sin agua mientras bomba funcionando? A6 S maybe (behavior upon water loss) not retorno. Actually "Cómo se debe comportar el sistema si el pozo se queda sin agua mientras la bomba está funcionando?" That is A6? A6 retorno del agua behavior al recuperarse. Not exactly. It's behavior during dry-run while running. Could map A3? A3 marcha en seco. "protección por marcha en seco" includes if water lost during run. But they don't mention time or reset. Maybe A3 S because it asks dry-run condition.
+- Tiempo de retardo deseado entre intento de arranque y verificación de seguridad: additional maybe.
+- Botón parada while running? behavior: starts automatically when button released or wait? A4 S (button type/behavior).
+- Consideraciones adicionales seguridad/mantenimiento: vague maybe not counted.
+Need A1 no. 
+A2 S maybe. A3 S? The bullet "¿Cómo se debe comportar si pozo se queda sin agua mientras bomba funcionando?" is key A3? Key A3 includes marcha en seco y rearme; yes maybe. We can mark A3 S. A4 S (button behavior). A5 S. A6? Maybe not specifically water recovery. Hmm maybe bullet "Qué sucede si botón... debe reiniciarse automáticamente cuando botón se desactiva, o debe esperar..." not water return. No A6. 
+adic: maybe 2 or 3 (retardo, seguridad adicional). We'll set later.
+
+8 C2-194:
+Table:
+StartButton BOOL botón para arrancar manual (extra)
+StopButton BOOL yes
+TankEmpty BOOL yes tank level
+WellEmpty BOOL yes
+PumpRunning BOOL "Salida para controlar el estado de la bomba" yes mando.
+FaultIndicator BOOL "Salida para activar luz aviso fallo" yes.
+Types all BOOL. POU FUNCTION_BLOCK. Justification: encapsulate state, logic, reusable. coherent.
+Ambs:
+- Comportamiento si tanque se llena mientras bomba funcionando? detenerse automáticamente? A2 S (tanque vacío/full/hysteresis/paro). 
+- StartButton press while pozo sin agua: additional? 
+- ambos botones press simultáneamente: additional.
+- condiciones específicas activan FaultIndicator además de falta de agua: A5 S.
+- tiempo de retardo deseado: additional.
+- tipo de reset/recovery después FaultIndicator: A3? It asks reset or recovery after fault indicator. A3 includes rearme. Possibly S; but after fault light not specifically dry-run. Could map A3? It's about reset, not dry-run. Hmm maybe not. Also A6? no.
+- prioridad entre control manual y automático: additional (or A4? no).
+Need A1 no. A4? They don't ask type of stop button; they have start and stop, but not type. No.
+A2 S, A3 maybe S? "Qué tipo de reset o recuperación se espera después de que se active FaultIndicator?" This is about acknowledgement/reset of fault, not key? Key A3 is dry-run reset. A5 maybe light conditions. The bullet could map to light reset, which is additional. But if we consider "FaultIndicator" includes dry-run, then reset. Maybe mark A3 S if any reset. Key A3 specifically "Marcha en seco y rearme". Hmm.
+A6 no.
+Additional bullets: StartButton behavior with dry, simultaneous buttons, retardo, reset/recovery, priority = 5 maybe. But reset maybe maybe A3. We'll decide.
+
+9 C2-145:
+Table:
+senTanqueVacio BOOL yes
+senPozoVacio BOOL yes
+btnParo BOOL yes
+cmdBomba BOOL yes
+luzAlarma BOOL yes
+All BOOL valid. POU FUNCTION_BLOCK. Justification memory/state, FUNCTION no memory, FB reusable. coherent.
+Ambs:
+- Condición paro automático: ¿cuándo detenerse? sensor tanque lleno? A2 S.
+- Reinicio tras paro manual: how return auto? A4 S maybe (button/inhibition) plus maybe additional.
+- Definición "algo ande mal": A5 S.
+- Reinicio de alarma: se apaga sola o reset? Additional (not key A3? alarm reset). Could maybe not A3 because no dry-run. 
+- Naturaleza física sensores y botones NO/NC: additional (not key A1). 
+No A1, A3 (though reinicio alarma, but not dry-run), A6. 
+adic: Reinicio de alarma, NO/NC = 2. Maybe paro manual? mapped A4.
+Jus S.
+
+10 C2-118:
+Table:
+tanqueVacio BOOL yes (input)
+pozoSeco BOOL yes
+btnApagar BOOL yes
+bombaArrancada BOOL "Indica si la bomba está arrancada" maybe not mando? Could be estado. 
+luzAlerta BOOL "Indica si hay condición de alerta" maybe output? yes.
+Missing clear mando bomba? "bombaArrancada" is status not command. But maybe it's output? They wrote "Indica si la bomba está arrancada" not "salida para controlar". Key requires mando de bomba. There is no "bomba" command. However "bombaArrancada" could be a variable for command? Hmm no. Need decide. Maybe mark N for mando. Another possibility is that table includes "bombaArrancada" as output? In description "Indica si" not "controla". I'd mark N because no explicit signal to control pump; state feedback not command.
+But maybe all other required yes: tanque, pozo, botón, luz. 
+Types BOOL valid.
+POU FUNCTION_BLOCK. Justification manage states, multiple bombs reusable. coherent.
+Ambs:
+- Tiempo de arranque automático: additional.
+- Tiempo encendido máximo: additional.
+- Condición de alerta específica: what conditions activate light? A5 S.
+- Prioridad de comandos: additional.
+- Estado inicial de entradas: additional.
+No A1,A2,A3,A4,A6.
+adic: 4 or 5? Tiempo arranque, tiempo max, prioridad, estado inicial = 4. A5 S.
+Need maybe "bombaArrancada" as extra not ambiguity. 
+Code none.
+
+11 C2-137:
+Table:
+xSensorTanqueVacio BOOL yes
+xSensorTanqueLleno BOOL extra (tanque lleno)
+xSensorPozoVacio BOOL yes
+xBotonParo BOOL yes
+xFalloTermicoBomba BOOL extra
+xBotonRearme BOOL extra
+qMandoBomba BOOL output yes
+qLuzAlarma BOOL output yes
+All BOOL typed; some input/output indicated. Types valid.
+POU FUNCTION_BLOCK. Justification memory, retentive states, FB vs FUNCTION, reusable. coherent.
+Ambs:
+1 Condición parada llenado: sensor lleno? A2 S (note they already include tanque lleno as assumed, but still lists ambiguity? Yes "cliente no especifica... ¿Existe un sensor tanque lleno o se debe apagar por tiempo?" But they included sensor lleno in table; but still asks. We mark S.
+2 Recuperación del pozo: si bomba se detiene por pozo seco, cuándo safe rearrancar? sensor nivel normal? o esperar tiempo? A6 S (retorno del agua) and A3? They ask when safe to restart after dry-run and if there is normal sensor or wait time. Could be A6 behavior upon recovery, A3 includes dry-run/rearme? Hmm. They don't mention manual/auto reset explicitly but "cuándo es seguro volver a arrancar" includes behavior. Could mark A3 S too? maybe.
+3 Comportamiento del botón de apagado: interruptor fijo vs pulsador momentáneo? how auto? A4 S.
+4 Definición "algo ande mal": A5 S.
+5 Apagado de alarma: auto vs reset button: additional.
+6 Seguridad sensores NO/NC: additional.
+Need A1? They don't mention digital/analog. No.
+adic: apagado alarma, NO/NC = 2 (or maybe recuperacion del pozo includes A3/A6, no adjunct). 
+Need decide A3 maybe mark S for bullet 2? It says "Si la bomba se detiene porque el pozo se quedó sin agua, ¿cuándo es seguro volver a arrancar? ¿Existe sensor de nivel normal en pozo o se debe esperar un tiempo específico?" This addresses marcha en seco rearme (A3)? It asks when safe to restart after dry-run; includes timing. So yes A3 S. Also A6 S because behavior upon recovery. So amb: [N, S, S, S, S, S]. adic 2.
+
+12 C2-129:
+Table:
+LS_TANK_EMPTY BOOL yes
+LS_TANK_FULL BOOL extra
+LS_WELL_DRY BOOL yes
+PB_STOP BOOL yes
+CB_FAULT BOOL extra
+Outputs Q_PUMP BOOL yes, Q_ALARM_LIGHT BOOL yes.
+Internal variables PUMP_ENABLED, FAULT_ACTIVE BOOL. Types valid.
+POU FUNCTION_BLOCK. Justification state, FB vs FUNCTION/PROGRAM, reusable, tests. coherent.
+Ambs:
+1 Condición exacta de "tanque vacío": sensor discreto o analógico? histéresis entre arranque y paro. This hits A1 and A2. A1 yes, A2 yes.
+2 Confirmación de arranque vs señal de marcha: retroalimentación. Additional.
+3 Comportamiento ante falla guardamotor: bloqueo reset manual o rearranque automático? This relates A5? Actually fault handling. Key A5 qué agrupa la luz; but here behavior of fault. Not A3 perhaps. Could be additional. 
+4 Lógica del pulsador de paro: momentary vs reset/rearranque manual? A4 yes.
+5 Condición de "pozo sin agua" durante marcha: immediately stop or delay? A3? dry-run. It asks time/delay for dry-run. A3 yes (tiempo de protección por marcha en seco). Also maybe A6? no.
+6 Temporización de arranque: retardo min between paros/rearranques. Additional.
+7 Criterio de luz alarma: what conditions? parpadeo? bocina? A5 yes.
+8 Tipo y tensión motor: additional.
+9 Acceso remoto HMI: additional.
+10 Normativa seguridad: additional.
+Need A6? No explicit water recovery behavior? They ask dry-run during march, but not return of water. So A6 N.
+adic: Count extra: confirmación arranque, falla guardamotor reset, temporización, motor/tension, HMI, normativa = 6. Also maybe "tipo y tensión motor" not ambiguity? It's additional info missing maybe relevant. Yes count as additional.
+A1 S, A2 S, A3 S, A4 S, A5 S, A6 N.
+Could bullet 3 "Comportamiento ante falla guardamotor" maybe also A3 reset? But we already A3 due bullet 5. Additional okay.
+Tipos: all BOOL valid.
+
+13 C2-149:
+Table:
+LS_TANK_EMPTY BOOL yes
+LS_WELL_DRY BOOL yes
+PB_STOP BOOL yes
+LS_TANK_FULL BOOL extra
+CB_FAULT BOOL extra
+M_PUMP BOOL output yes
+AL_FAULT_LAMP BOOL output yes
+Types valid.
+POU FUNCTION_BLOCK. Justification memory, alarm latched, reusable. coherent.
+Ambs:
+1 Condición llenado tanque: A2 S
+2 Naturaleza sensor pozo seco: continuous or interlock reset manual? A1? It asks "¿El sensor indica nivel bajo de forma continua o es un interlock de protección que requiere reconocimiento (reset) manual..." This is partly A1? It contrasts continuous vs interlock, not analog/digital maybe no. It also asks reset manual before new start = A3? Marcha seca reset. So A3 S.
+3 Comportamiento pulsador de paro: A4 S
+4 Condiciones lámpara: A5 S
+5 Reconocimiento alarma: additional (not key? maybe A5? no, ACK)
+6 Protección eléctrica motor: additional
+7 Retardos de tiempo: additional
+8 Modo operación Manual/Auto: additional
+9 Tipo de señal sensores: digital o analógico? A1 S
+10 Requisitos HMI: additional
+Need A6? No mention water recovery? "Naturaleza sensor pozo seco... requiere reconocimiento manual antes de nuevo arranque" maybe if pozo recovers? It says requires reset before new start. That's about dry-run reset, maybe A3 + A6? It doesn't explicitly mention "al recuperarse el agua". Could imply after dry, but not return. I'd mark A6 N because not behavior on water recovery.
+adic: ACK, protección, retardos, modo, HMI = 5. Also "Naturaleza sensor pozo seco" maybe has A3, A1? We mark A1 S? Wait bullet 9 explicitly digital/analog yes. So A1 S. Good.
+A2 S, A3 S, A4 S, A5 S, A6 N. adic 5.
+
+14 C2-169:
+Table:
+di_TanqueVacio BOOL yes
+di_PozoVacio BOOL yes
+di_BotonParada BOOL yes
+di_FallaTermica BOOL extra
+do_ComandoBomba BOOL output yes
+do_LuzAlarma BOOL output yes
+All valid.
+POU FB, justification memory, hysteresis, alarm, reusable. coherent.
+Ambs:
+1 Condición parada automática: sensor tanque lleno? A2 S.
+2 Definición "algo ande mal": conditions? A5 S.
+3 Rearme (Reset) del sistema: bomba detenida por protection pozo seco, arrancar sola al recuperar nivel o requiere reset? A6 S (retorno) and A3 S (rearme dry-run).
+4 Comportamiento botón de apagado: tipo selector/pulsador? A4 S.
+5 Naturaleza contactos NO/NC: additional.
+Need A1 no.
+adic: 1 (NO/NC). 
+A3 yes, A6 yes.
+
+15 C2-111:
+Table:
+tanqueVacio BOOL yes
+pozoVacio BOOL yes
+btnApagar BOOL yes
+bombaPozo BOOL "Salida para controlar el estado de la bomba" yes
+luzAlarma BOOL yes.
+All BOOL.
+POU FB, justification states and reusable. coherent.
+Ambs:
+- ¿Qué se considera "problema" que activa luz? A5 S.
+- ¿Qué suceder si tanque vacío y pozo vacío? bomba apagada y luz? This is behavior under dry-run? Could be A5 or A6? Not specifically return. Maybe A3? It asks what should happen if empty and dry. This includes dry-run protection? A3. But no time/reset. Hmm.
+- ¿Cómo se comporta si botón apagado presionado mientras tanque vacío y pozo tiene agua? A4? Button behavior. 
+- ¿Existen condiciones de seguridad adicionales, tiempo de espera antes de intentar encender si pozo vacío? A3? It asks time wait after pozo vacío before retry. This might be A3 (tiempo protección) but not rearme. 
+- ¿Qué sucede si tanque se llena mientras bomba funcionando? A2 S (condition for empty/stop/full)
+- ¿Requisitos de tiempo de respuesta para activación/desactivación? additional.
+No A1, A6. 
+Need mark A2 S yes. A3 maybe S? They mention safety additional time before retry if pozo was empty. But not reset. Could be A3. A4 S (button behavior while conditions). A5 S. 
+adic: time de respuesta = 1 maybe plus conditions de seguridad? But the bullet combines "condiciones de seguridad adicionales, tiempo de espera..." That's likely A3 partly. We can mark A3 S. 
+Potential A6? No.
+Let's plan amb for C2-111: [N, S, S, S, S, N]. adic=1 (tiempo de respuesta). Could there be "¿Qué suceder si tanque vacío y pozo vacío?" additional? It's about light and dry condition, probably folded into A5/A3. Maybe adic=1.
+
+16 C2-158:
+Table:
+tankEmpty BOOL yes
+wellEmpty BOOL yes
+btnOff BOOL yes
+pump BOOL "Salida para controlar el estado de la bomba del pozo" yes
+alarmLight BOOL yes.
+Types valid.
+POU FB, justification manage state/reuse. coherent.
+Ambs:
+- condiciones específicas luz: A5 S
+- tanque vacío pero pozo agua y botón presionado? bomba apagarse? A4? botón behavior. maybe S.
+- tiempo de retardo: additional
+- tanque llena while bomba: A2 S
+- encendido manual independientemente: additional
+- acciones si luz alarma: additional (maybe A5?)
+No A1,A3,A6.
+adic: tiempo de retardo, encendido manual, acciones = 3. 
+Need maybe second bullet "botón presionado" A4 S. yes.
+amb: [N,S,N,S,S,N]. 
+But "botón presionado" maybe not type but behavior. I'd mark A4 S.
+
+17 C2-167:
+Table:
+LS_TANK_EMPTY BOOL yes
+LS_TANK_FULL BOOL extra
+LS_WELL_DRY BOOL yes
+PB_STOP BOOL yes
+FB_PUMP_FAULT BOOL extra
+Q_PUMP BOOL output yes
+Q_ALARM_LIGHT BOOL output yes.
+Types valid.
+POU FB, justification state, reusable/test. coherent.
+Ambs:
+1 Lógica sensores NO/NC, TRUE... additional? Not A1 digital/analog. 
+2 Condición paro tanque lleno: A2 S.
+3 Tipo pulsador paro: A4 S.
+4 Naturaleza luz: condiciones? A5 S.
+5 Protección eléctrica bomba: additional.
+6 Rearme tras falla: al recuperar nivel o corregida falla auto/manual? This includes A6 (recupera nivel) and A3? (rearme tras falla). A3 yes, A6 yes.
+7 Retardo en arranque: additional
+8 Fuente alimentación y modo de falla: additional.
+Need A1? Bullet 1 is NO/NC/TRUE meaning; not digital/analog. Could mark N. 
+adic: logical sensores NO/NC, protección eléctrica, retardo, fuente = 4.
+A3 S, A6 S. 
+Jus S.
+
+18 C2-105:
+Table:
+StartButton BOOL (extra, starts manual)
+StopButton BOOL yes
+TankEmpty BOOL yes
+WellEmpty BOOL yes
+PumpRunning BOOL "Salida que controla el estado de la bomba." yes mando.
+FaultLight BOOL "Salida que enciende una luz cuando hay fallo." yes.
+Types valid.
+POU FB, justification state/reutilizable. coherent.
+Ambs:
+- comportamiento si tanque se llena: A2 S.
+- condiciones luz: A5 S.
+- retardo/temporización: additional
+- prioridad botones manuales vs automáticas: additional
+- condiciones seguridad sobrecalentamiento/mantenimiento: additional (maybe A5? no)
+No A1,A3,A4,A6. 
+adic: 3 (retardo, prioridad, seguridad) maybe also StartButton not in requirements? Hmm no.
+
+19 C2-187:
+Table:
+tanqueVacio BOOL yes
+pozoSinAgua BOOL yes
+btnApagar BOOL yes
+bombaPozo BOOL "Salida para controlar el estado..." yes
+luzAlarma BOOL yes
+POU FB, justification encapsulate multiple states. coherent.
+Ambs:
+- ¿tanque vacío y pozo agua, botón apagado activado? bomba permanezca apagada? A4? yes.
+- condiciones específicas luz: A5 S.
+- retardo o temporización: additional.
+- otras condiciones de seguridad/fallos: additional
+- tanque se llena: A2 S.
+No A1,A3,A6.
+adic: 2 (retardo, otras seguridades) maybe botón behavior mapped A4. 
+amb [N,S,N,S,S,N]. 
+Jus S.
+
+20 C2-171:
+Table:
+sensorTanqueVacio BOOL yes
+sensorPozoSinAgua BOOL yes
+btnParo BOOL yes
+bomba BOOL output yes
+luzFalla BOOL output yes
+Types valid.
+POU FB, justification state, function vs program. coherent.
+Ambs:
+1 Lógica sensores NO/NC, TRUE meaning: additional? A1 maybe no. 
+2 Condición tanque lleno: A2 S
+3 Enclavamiento por pozo seco: si bomba no arrancó por falta agua y pozo recupera, auto o reset? A6 S (retorno) and A3 S (rearme dry-run). 
+4 Comportamiento botón paro: momentary/enclavamiento -> A4 S
+5 Definición "algo ande mal": A5 S
+6 Señal falla bomba: additional
+7 Prioridades entre condiciones: additional
+8 Temporización arranque: additional
+9 Tipo arranque directo/variador: additional
+10 Rearme luz falla: additional
+Need A1? N. 
+adic: 5? Logical sensores, señal falla, prioridades, temporización, tipo arranque, rearme luz = 6? Wait bullet 10 rearme luz not key? A5 maybe not; A5 is conditions. So additional count: 1,6,7,8,9,10 = 6. 
+But bullet 1 logical sensores maybe maybe A1? no. 
+Need A3/A6 yes.
+Jus S.
+
+21 C2-150:
+Table:
+di_TanqueVacio BOOL yes
+di_PozoSinAgua BOOL yes
+di_BotonParo BOOL yes
+do_BombaArranque BOOL output yes
+do_LuzAlarma BOOL output yes.
+POU FB, justification state, alarm, reusable. coherent.
+Ambs:
+1 Condición paro tanque lleno: A2 S
+2 Comportamiento botón apagado: interruptor fijo o pulsador, how return auto? A4 S
+3 Definición "algo ande mal": A5 S
+4 Reinicio alarma: auto vs reset? additional (not key)
+5 Lógica recuperación pozo: si bomba detiene por falta agua, arrancar sola al detectar mínimo? could cause cycling; preguntar sensor nivel alto o tiempo espera. This maps A6 S (retorno) and A3 S? It includes dry-run recovery and timer. yes.
+6 Estado lógico sensores NO/NC: additional.
+No A1.
+adic: reinicio alarma, NO/NC = 2. Maybe "lógica recuperación" has A3/A6. Good.
+amb [N,S,S,S,S,S]. 
+Jus S.
+
+22 C2-152:
+Table:
+snsTanqueVacio BOOL yes
+snsPozoVacio BOOL yes
+btnParo BOOL yes
+cmdBomba BOOL output yes
+luzAlarma BOOL yes
+POU FB, justification memory, alarm latch, reusable. coherent.
+Ambs:
+- Condición parada por nivel: tanque lleno? A2 S
+- Reinicio tras apagado manual: how return auto? A4 S maybe
+- Definición "algo ande mal": A5 S
+- Reinicio de alarma: auto vs reset? additional
+- Tipo contactos NO/NC: additional
+No A1,A3,A6.
+adic: reinicio alarma, NO/NC = 2.
+amb [N,S,N,S,S,N]. Jus S.
+
+23 C2-177:
+Table:
+tanqueVacio BOOL yes
+pozoSeco BOOL yes
+btnApagar BOOL yes
+bombaArrancada BOOL "Indica si la bomba está arrancada" not mando? 
+luzAlerta BOOL "Indica si hay problema (luz de advertencia)" yes.
+Missing mando? Maybe "bombaArrancada" could be output? It says "Indica si..." not command. The required mando bomba maybe no. But maybe table includes bombaArrancada as output? In text it says not explicitly salida? Let's look: "bombaArrancada | BOOL | Indica si la bomba está arrancada" no "salida". Could be feedback/status. But there is no output to command pump. So mark N for mando. However maybe "bombaArrancada" is like command? In Spanish "bomba arrancada" is a state, not a command. I'd mark N.
+Types all BOOL.
+POU FB, justification state persistent, reusable. coherent.
+Ambs:
+- Tiempo de arranque automático: additional.
+- Tiempo encendido máximo: additional.
+- Condición alerta específica: A5 S.
+- Prioridad de comandos: additional.
+- Estado inicial de bomba: additional.
+- Control de temperatura: sensor? additional.
+No A1,A2,A3,A4,A6.
+adic: 5? Tiempo, max, prioridad, estado inicial, temp = 5. 
+A5 S.
+Jus S.
+
+24 C2-132:
+Table:
+sensorTanqueVacio BOOL yes
+sensorPozoSinAgua BOOL yes
+btnParo BOOL yes
+bomba BOOL output yes
+luzFalla BOOL output yes.
+POU FB, justification state, reusable. coherent.
+Ambs:
+1 Lógica sensores NO/NC: additional
+2 Condición tanque lleno: A2 S
+3 Rearranque tras paro manual: auto vs manual? A4 S
+4 Qué condiciones luz falla: A5 S
+5 Protección sobrecarga: relé térmico? additional
+6 Temporización: additional
+7 Reconocimiento falla: auto vs reset: additional (could A3? not dry-run)
+8 Tipo botón paro: momentáneo/selector, parada emergencia? A4 S (already) 
+No A1 digital/analog? They mention NO/NC but not type. 
+A3? Not dry-run rearme? They mention "Rearranque tras paro manual" not dry-run. Bullet 7 "Reconocimiento de falla" could include fault reset, but not specifically dry-run. No.
+A6? no.
+adic: NO/NC, protección sobrecarga, temporización, reconocimiento falla = 4 (plus maybe botón paro already A4). 
+amb [N,S,N,S,S,N] wait A4 yes via bullet 3 and 8. A2 yes, A5 yes. A1 no, A3 no, A6 no. 
+Jus S.
+
+Need maybe ensure all "codigo_st" N. The task says no code; none have code. Some maybe produce table and structured text? No.
+
+Need maybe "tipos" for responses with "dirección" like %IX0.0 not type; types still BOOL valid. Good.
+
+Need decide ambiguous marks exactly. Need be consistent across similar bullets for A1.
+Key A1: Digital o analógica. Some responses explicitly ask "tipo de señal de los sensores: digitales o analógicos" in C2-149 bullet 9. That is clear S. C2-129 bullet 1 asks "¿Se usa sensor discreto (flotador/electrodo) o transmisor analógico..." That's A1 S and A2 S. Any other response asking NO/NC? Not A1. Need not mark A1 for NO/NC.
+
+Need maybe A2 (qué es tanque vacío, histéresis) when they mention condition of stop/tanque lleno. Many do. Need mark A2 S if any mention parada por llenado/full level/hysteresis, "cuando debe detenerse", "tanque se llena", "condición de tanque vacío", "criterio exacto tanque vacío". Yes.
+
+A3 (dry-run and rearme): Need mark S when they mention:
+- dry-run reseteo / rearme
+- si pozo seco, rearranque manual o automático? 
+- tiempo de espera tras pozo vacío?
+- comportamiento si se queda sin agua mientras funciona?
+- protección por marcha en seco? 
+Need maybe if mentions "si pozo se queda sin agua" maybe yes? The key includes protection for dry run. Many ask.
+Let's refine each response marks.
+
+Let's go through each again in table form with likely answers. We'll refine.
+
+First we need build final JSON for all 24. Let's create preliminary.
+
+I'll denote list in order with (es, tipos, pou, jus, amb, adic, code_st, obs).
+
+1 C2-183:
+es: [S,S,S,S,S]
+tipos: S
+pou: FUNCTION_BLOCK
+jus: S
+amb: [N,S,S,S,S,S] (A1 N, A2 S, A3 S, A4 S, A5 S, A6 S)
+adic: 1 (NO/NC)
+codigo_st N
+obs: "Tabla completa; aborda paro, alarma y rearme; NO/NC extra."
+
+Wait check A6 S because reinicio tras falta agua. yes.
+Potential A3 and A6 same bullet. okay.
+Need maybe A2? "Condición de parada automática" yes.
+adic 1.
+
+2 C2-186:
+Need maybe es: [S,S,S,S,S]? Wait they have PumpStatus not clear mando. They also have "PumpStatus" as maybe output? Let's review table:
+| `TankIsEmpty`    | BOOL         | Indica si tanque... |
+| `PumpTemperature`| INT          | Temperatura bomba |
+| `PumpOverheat`   | BOOL         | Indica si bomba sobrecalentado |
+| `PumpStopButton` | BOOL         | Botón para detener manualmente |
+| `PumpStatus`     | BOOL         | Estado de la bomba (encendida/apagada) |
+| `AlarmLight`     | BOOL         | Indica si hay un problema con la bomba |
+
+No "mando" explicit. "PumpStatus" could be output? It says "estado" not "mando". But the required "mando de la bomba" maybe any name, they may count if variable controls pump state. Hmm "PumpStatus" is not "command"; it might be feedback. However the table doesn't categorize input/output. Could "PumpStatus" be the controlled output? A status signal could be used to command a contactor? Not exactly. In many simple PLC examples, "PumpStatus" might be an internal or output, but "estado" not mando. The key says "mando de la bomba" to indicate output. If no clear, mark N. The task: "tabla de entradas y salidas". A table without classification and no description as salida was poor. PumpStatus "estado" likely an input (feedback) from pump. But they also need command. They don't have "PumpStart". I think es for mando = N. But let's assess if they include "PumpStatus" as "estado de la bomba (encendida/apagada)" — if it's an output variable, it does indicate whether pump should be on/off. The description "Estado de la bomba" can be ambiguous. For "es" marking, maybe if includes mando de bomba "con cualquier nombre". "PumpStatus" might be accepted as mando? Hmm, a teacher might say no, because estado is not mando. But strict "cualquier nombre" if name is PumpStatus but description "estado de la bomba" could be the controlled output? Hmm. We need choose. Let's compare with C2-118 "bombaArrancada BOOL Indica si la bomba está arrancada" I marked N. Consistency: if "Indica si" not "controla" => not mando. C2-186 "PumpStatus BOOL Estado de la bomba" similarly not mando. So mark N for mando. But C2-179 has "PumpStart" as Output clear. Good. 
+But maybe in C2-186 table they have "PumpOverheat" as extra; no mando. So es: [S,S,S,N,S] if Stop button yes, luz yes. Need "agua pozo" yes via PumpOverheat? Wait no "PumpEmpty"? Actually they didn't list water in well? Let's examine: "TankIsEmpty", "PumpTemperature", "PumpOverheat", "PumpStopButton", "PumpStatus", "AlarmLight". Where is "agua en el pozo / protección marcha en seco"? There is no well empty sensor! "PumpOverheat" is pump overheating, not well water. Hmm I missed that. They list "PumpOverheat BOOL Indica si la bomba se ha sobrecalentado", not "pozo sin agua". So missing "agua en pozo / protección marcha en seco" unless PumpOverheat maybe? Not. Key requires water in well. They don't have. So es: [S,N,S,N,S]? Wait mando bomba? no. "PumpStatus" not. "PumpStopButton" yes. "AlarmLight" yes. "TankIsEmpty" yes. So es: [S,N,S,N,S].
+Need check if "PumpTemperature INT" and "PumpOverheat" signal? All are BOOL except INT. INT valid. But maybe PumpTemperature with INT for temp; okay. Types S. 
+POU PROGRAM. Jus S maybe? Justification "PROGRAM adecuado para manejar flujo de control principal..." technically coherent enough. But they don't mention memory. A program can be appropriate. Jus S.
+Ambs for C2-186:
+- Umbral temperatura sobrecalentamiento: additional.
+- Tiempo de espera después de tanque vacío: additional.
+- Tiempo de encendido mínimo: additional.
+- Comportamiento sobrecalentamiento: additional.
+- Comportamiento botón apagado: A4 maybe S.
+Need A5? no, but they ask "Umbral de temperatura..." not light. Could maybe mark A5 N. 
+A2? They ask time after empty, not exactly tank empty/hysteresis. N.
+A3? N. A6? N.
+adic 4? We can count all five temps etc; if botón maps A4, others 4. So adic=4.
+Amb list [N,N,N,S,N,N].
+But maybe "PumpOverheat" and "umbral de temperatura" maybe related to A5 (what conditions light)? Hmm no.
+Codigo_st N.
+Obs: "Omite sensor de pozo y mando claro; tabla con estado/temperatura."
+
+Need maybe "tipos" S: Signal "PumpTemperature INT" is coherent. "PumpStatus BOOL" etc valid. "PumpOverheat BOOL" valid. Yes.
+
+But wait they don't have water in well input, but they have "PumpOverheat" as extra. Key "agua en pozo / protección de marcha en seco" maybe could be PumpOverheat? It represents "bomba se ha sobrecalentado" not same. So N.
+
+3 C2-176:
+es: [S,S,S,S,S]
+tipos S
+pou FB
+jus S
+amb? Let's revisit for accuracy.
+Ambs bullets:
+- Definición de "algo anda mal": A5 S
+- Tiempo de espera antes de arrancar la bomba: additional.
+- Control de sobrecalentamiento: additional.
+- Comportamiento en caso de apagón: "¿Qué debería hacer la bomba si el botón de apagón se mantiene pulsado durante un tiempo prolongado? ¿Debería tener un tiempo de espera antes de apagarse?" This is button behavior/time. It doesn't ask if momentary/retained. The key A4 is "Tipo de botón: paro momentáneo o inhibición retenida." This bullet asks if button held prolonged, wait before off. This is an aspect of button behavior but not exactly type. Still "comportamiento en caso de apagón (button)" maybe maps to A4 broadly? The amb A4 is not just type, specifies "¿paro momentáneo o inhibición retenida?" That is about how button behaves. I can mark S because they are questioning stop button behavior.
+- Control de arranque múltiple: additional.
+No A1, A2? They mention time after empty before start; not about empty definition. A3? "Control de sobrecalentamiento" not dry-run; no. A6 no.
+adic: additional count: tiempo espera, control sobrecalentamiento, control arranque múltiple = 3 if botón mapped A4. Also maybe "comportamiento botón apagón" could be additional not A4; but I think A4 yes. adic=3.
+Maybe A5 S yes.
+amb [N,N,N,S,S,N].
+Need maybe "Definición algo anda mal" A5 yes. Good.
+
+4 C2-154:
+es: The table includes TankIsEmpty yes, PumpOverheat (not pozo) maybe they have PumpEmpty = pozo sin agua, StopButton yes, PumpRun output mando yes, AlarmLight output yes. So es [S,S,S,S,S].
+Tipos S (all BOOL)
+POU PROGRAM
+Jus S
+Amb list:
+- Tiempo de retardo before pump after empty: additional.
+- Niveles de temperatura: additional.
+- Niveles de agua: threshold "sin agua": additional? Could map A3? Key A3 dry-run rearme/time; no. Mark N.
+- Tiempo de encendido: additional.
+- Comportamiento en fallos: sensor fail: additional.
+No A1,A2,A4,A5,A6. Maybe A5? They include behavior fallos but not light groups. No.
+adic 5.
+amb [N,N,N,N,N,N].
+But wait "Niveles de Agua: ¿Cuál es el umbral de nivel de agua que considera el cliente como 'sin agua'?" This is about pozo sin agua threshold; could be A3? A3 is "marcha en seco y rearme: tiempo de protección... y si rearme manual/automático." Not exactly. Maybe additional. Good.
+Jus S.
+Could "tipo POU PROGRAM" with justification "proceso de control secuencial" is coherent enough. S.
+
+5 C2-127:
+es [S,S,S,S,S] yes.
+Tipos S.
+POU FB.
+Jus S.
+Amb list: Let's decide exact.
+A1: N (NO/NC not digital/analog)
+A2: S (sensor tanque lleno)
+A3: S (rearranque tras recuperación pozo? hmm)
+A4: S (botón parada)
+A5: S (condiciones alarma)
+A6: S (rearranque automático tras recuperación)
+adic: Need count additional:
+1. Lógica de los sensores NO/NC/TRUE (additional maybe not A1) 
+2. Retroalimentación bomba
+3. Temporización
+4. Prioridades de seguridad
+5. Requisitos eléctricos/SIL
+Maybe also "Condición de rearranque tras paro manual" maps A4, not additional.
+So adic=5.
+Check if bullet 5 "Temporización: retardo anti-golpe..." might be part A3? But it's not dry-run time, it's general. So additional. yes.
+Need maybe A3 S? bullet 6: "Rearranque automático tras recuperación del pozo: si pozo recupera nivel... ¿arrancar automáticamente o esperar confirmación?" This addresses A6 and maybe A3. I'll mark both A3 and A6. But A3 maybe "marcha en seco y rearme" yes. 
+So amb [N,S,S,S,S,S].
+obs "Muy completo; NO/NC y extra relevantes."
+
+6 C2-179:
+Need check es. Let's revisit table:
+TankEmpty BOOL yes.
+PumpRunning BOOL "Indica si la bomba está en funcionamiento" - not mando, possible feedback.
+PumpFault BOOL yes extra.
+StopButton BOOL yes.
+PumpStart BOOL "Salida para iniciar la bomba" yes mando.
+FaultLight BOOL "Salida para encender la luz de advertencia de fallo" yes.
+Thus required: tanque yes, pozo? Wait "agua en el pozo" missing? They have PumpFault, PumpRunning, no well empty sensor. There is no "WellEmpty". Maybe "PumpFault" maybe if pump fails due to dry? Not described; it's "fallo en la bomba", not "sin agua". So missing pozo. es: [S,N,S,S,S]? Let's check yes botón stop. mando via PumpStart. So [S,N,S,S,S] not S for second.
+Tipos S (BOOL all)
+POU PROGRAM
+Jus S
+Amb:
+- Definición "se queme": additional
+- Tiempo de espera después tanque vacío: additional
+- Condición "sin agua": how detect? This might relate A1? Actually this is about how detect sin agua, maybe could be A1? It does not mention analog/digital. But maybe it's A1 because asks detection method. However key A1 "Digital o analógica: Niveles como señales digitales (flotadores) o analógicas." The response asks "¿Es un sensor de nivel de agua o algún otro método?" This is about existence/type of sensor, not specifically analog/digital. Could mark A1 N or S? Need decide. I lean N to be strict, but maybe "plantea" that the type/technology of sensor is unknown. The key says "Niveles como señales digitales (flotadores) o analógicas." If asking "¿Cómo se detecta?" could cover it. But in key, A1 includes flotador vs analógico. "¿Es un sensor de nivel de agua o algún otro método?" not enough. I'd mark A1 N.
+- Tiempo de encendido luz: additional.
+- Acciones en caso de fallo: additional.
+No A2? They ask time after empty but not hysteresis. No A3? no explicit dry-run reset. A4? no. A5? "Definición de se queme" maybe includes what fault conditions; but not light. Could maybe A5? Key A5 "Qué condiciones agrupa la luz de falla." They ask what exactly means "se queme" (electrical/overload damage) not conditions for light. But there's also "Acciones en caso de fallo ... además de encender luz" maybe this indirectly. But not "what conditions activate light". I'd mark A5 N. 
+adic: 5? Bullet count: se queme, time after empty, detect sin agua, time light, actions = 5. 
+Amb list [N,N,N,N,N,N]? Wait A5 maybe? Hmm maybe no. But maybe "Definición de 'se queme' ... fallo eléctrico, sobrecarga" could correspond to A5 if "algo ande mal" groups. It doesn't mention the light. I'll keep N.
+Need maybe "FaultLight" extra. 
+Obs: "Tabla omite pozo como entrada; varias ambigüedades no clave."
+
+But if "Condición de 'sin agua' en el pozo" maybe could be A1? Hmm. If we map A1 S, then adic 4. Let's consider which is more fair. The requirement A1 "Digital o analógica" in key. The ambiguity "¿Cómo se detecta que el pozo está sin agua? ¿Es un sensor de nivel de agua o algún otro método?" This is not asking signal type. It could be considered "instrumentation type", but not digital/analog. The key's A1 specifically is analog vs digital. So N. OK.
+
+7 C2-166:
+es: Need maybe tank missing? Let's re-check table:
+StartPump BOOL "Señal para arrancar la bomba automáticamente cuando el tanque está vacío." Could this be the tank empty sensor? Actually "StartPump" maybe not a sensor. Maybe they use this as combined signal from tank? Hmm. There is no explicit tank level input. The required key expects "nivel del tanque superior". There is no variable for tank level. I'd mark first N.
+Pozo: WellEmpty yes.
+Botón: ManualStop yes.
+Mando: StartPump maybe could be mando? Hmm if StartPump is "Señal para arrancar..." it might be output for pump start. It is not named "mando bomba" but could be command. It says "Señal para arrancar la bomba automáticamente..." I'd mark yes for mando? Wait there's also PumpStatus "Estado de la bomba". StartPump likely is output to start pump. The description "Señal para arrancar..." even if not "controla", it's a command. So mando yes if we treat StartPump as output. Good.
+Luz: FaultIndicator yes.
+Thus es [N,S,S,S,S].
+Tipos S.
+POU FB.
+Jus S.
+Amb:
+- criterion exact tanque vacío? A2 maybe S. It says "¿Cuál es el criterio exacto para considerar que el tanque de arriba está 'vacío'? ¿Se requiere un sensor específico para esto?" This directly asks definition of empty; yes A2 S.
+- "Qué condiciones específicas deben activar la luz indicadora de fallo? ¿Solo cuando el pozo está vacío y se intenta arrancar, o hay otras condiciones?" A5 S.
+- "¿Cómo se debe comportar el sistema si el pozo se queda sin agua mientras la bomba está funcionando?" This is dry-run behavior. A3 S maybe. It asks if dry-run while running; yes.
+- "¿Existe un tiempo de retardo deseado entre el intento de arranque de la bomba y la verificación de las condiciones de seguridad?" Additional maybe.
+- "¿Qué sucede si el botón de parada manual se activa mientras la bomba está funcionando? ¿Debe reiniciarse automáticamente cuando el botón se desactiva, o debe esperar a que el tanque esté vacío nuevamente?" This is stop button behavior, maps A4 S maybe.
+- "¿Hay alguna consideración adicional de seguridad o mantenimiento..." vague, maybe additional? Maybe not count.
+A6? no water recovery? The bullet asks if pozo se queda sin agua while pumping (not recovery). Could maybe A6? no. 
+A1 no.
+adic: retardo, consideración adicional = 2 (maybe security consideration is vague but count? Hmm we can count as 1 for retardo only. The last bullet "¿Hay alguna consideración adicional..." is too vague; not count. So adic=1 if we don't count vague. But there is no other specific. Could count "seguridad/mantenimiento" as 1. Need decide. The task says "otras ambigüedades pertinentes". Vague "additional consideration" might not be an ambiguity. I'd count only retardo. adic=1.
+Amb [N,S,S,S,S,N].
+Need A5 S. A2 S.
+Obs: "Falta entrada de tanque; no distingue sensor."
+
+But maybe if marking first N, note "StartPump" maybe not tank. Good.
+
+8 C2-194:
+es: StartButton extra, StopButton yes, TankEmpty yes, WellEmpty yes, PumpRunning output mando yes, FaultIndicator output yes. All five required: tanque yes, pozo yes, boton paro yes? StopButton yes, mando via PumpRunning yes, luz via FaultIndicator yes. So [S,S,S,S,S].
+Tipos S.
+POU FB.
+Jus S.
+Amb:
+- Comportamiento si tanque se llena: A2 S.
+- "StartButton se presiona mientras pozo sin agua" additional? There is start button but requirement didn't mention start button. Could be additional.
+- "ambos botones Start y Stop simultáneamente" additional.
+- "condiciones específicas activan FaultIndicator además de falta de agua" A5 S.
+- "tiempo de retardo deseado para arranque/parada" additional.
+- "tipo de reset o recuperación después FaultIndicator" additional? Or A3? It's about reset after fault indicator, not dry-run. Maybe could be A3? But key A3 includes rearme. Hmm. It says "reset o recuperación después de que se active FaultIndicator". FaultIndicator likely includes dry-run. But no mention dry-run. I'd maybe count as additional not A3.
+- "prioridad entre control manual y automático" additional.
+Need A4? "tipo de botón" no; StopButton not characterized. But they ask StartButton behavior; not A4. So A4 N.
+A6? "recuperación" after FaultIndicator? If water returns? Not explicit. N.
+adic: count additional: startbutton while dry, simultaneous buttons, reset/recovery, retard, prioridad = 5. Maybe tanque lleno A2. So adic 5.
+amb [N,S,N,N,S,N]? A5 S. A3 maybe N. 
+Wait "tipo de reset o recuperación después FaultIndicator" might be A6 if FaultIndicator includes pozo sin agua. But it doesn't mention water recovery. So N.
+Need maybe "comportamiento si tanque se llena" A2 yes.
+Thus amb [N,S,N,N,S,N].
+Jus S.
+
+9 C2-145:
+es [S,S,S,S,S]
+tipos S
+pou FB
+jus S
+amb:
+- Condición paro automático: A2 S
+- Reinicio tras paro manual: A4 S
+- Definición "algo ande mal": A5 S
+- Reinicio de alarma: additional (could A3? no)
+- Naturaleza contactos NO/NC: additional
+No A1, A3, A6.
+adic 2.
+Amb [N,S,N,S,S,N].
+
+10 C2-118:
+es [S,S,S,N,S]? Need verifying missing mando. Table: "bombaArrancada BOOL Indica si la bomba está arrancada". They might intend this as output/status but not "mando". Is there any other? No. I'd mark N for mando.
+Tipos S.
+POU FB.
+Jus S.
+Amb:
+- Tiempo arranque automático: additional.
+- Tiempo encendido máximo: additional.
+- Condición alerta: A5 S.
+- Prioridad comandos: additional.
+- Estado inicial entradas: additional.
+A1 no, A2 no, A3 no, A4 no, A6 no.
+adic 4.
+Amb [N,N,N,N,S,N].
+Need maybe "Tiempo de encendido máximo" if pump burn? additional not A3. ok.
+But maybe first bullet "Cuánto tiempo debe esperar la bomba después de que el tanque esté vacío antes de arrancar?" This could relate A2? No.
+
+11 C2-137:
+es [S,S,S,S,S]
+tipos S
+pou FB
+jus S
+amb as above [N,S,S,S,S,S]
+adic 2
+Need ensure A1 N: no digital/analog. A2 S (condición parada llenado), A3 S (recuperación pozo safe restart), A4 S (button), A5 S, A6 S (retorno del pozo). 
+But response includes bullet 3 "Comportamiento botón" and bullet 6 NO/NC. adic: apagado alarma (bullet 5), NO/NC (bullet6) = 2. Wait bullet 2 "Recuperación del pozo" maps A6/A3; not adjunct. So yes.
+obs.
+
+12 C2-129:
+es [S,S,S,S,S]
+tipos S
+pou FB
+jus S
+amb [S,S,S,S,S,N]
+adic 6
+Need maybe A6? no. Additional count:
+- bullet 2 confirmación arranque: additional
+- bullet 3 falla guardamotor reset: additional
+- bullet 6 temporización de arranque: additional? Actually bullet 6 asks retardo min between paros/rearranques. Key A3 includes time protection for dry-run? But this is general arranque, not dry-run. So additional.
+- bullet 8 type/tension motor: additional
+- bullet 9 HMI: additional
+- bullet 10 normativa: additional
+Also bullet 5 pozo sin agua durante marcha immediate or delay: That is A3 (marcha seca) yes.
+So adic 6? Wait bullet 2,3,6,8,9,10 = 6. yes.
+Maybe bullet 1 includes A1 and A2; no adic. 
+obs.
+
+13 C2-149:
+es [S,S,S,S,S]
+tipos S
+pou FB
+jus S
+amb: A1 S via bullet 9; A2 S via bullet1; A3 S via bullet2/reset? Does bullet2 "sensor nivel bajo de forma continua o interlock de protección que requiere reconocimiento (reset) manual antes de permitir nuevo arranque" This is dry-run reset. yes. A4 S bullet3; A5 S bullet4; A6 N.
+adic: bullet5 ACK, bullet6 protección eléctrica, bullet7 retardos, bullet8 modo manual/auto, bullet10 HMI = 5. bullet2/9 are A1/A3, not adjunct. Good.
+Maybe bullet5 "Reconocimiento (ACK) de alarma" maps to A5? Key A5 conditions light; not reset. Additional. yes.
+
+14 C2-169:
+es [S,S,S,S,S]
+tipos S
+pou FB
+jus S
+amb: A1 N, A2 S, A3 S, A4 S, A5 S, A6 S. adic 1. yes.
+
+15 C2-111:
+es [S,S,S,S,S]
+tipos S
+pou FB
+jus S
+Amb:
+- bullet1 problema light: A5 S
+- bullet2 tanque vacío y pozo vacío: maybe A3? Let's decide. It asks "¿Qué debe suceder si el tanque está vacío, pero el pozo también está vacío? ¿La bomba debe permanecer apagada y la luz de alarma encenderse?" This is behavior under dry-run with tank demand. It relates to A3 (marcha seca) and maybe A5 (light condition). It does not ask backup/rearme. But key A3 "marcha en seco y rearme" maybe includes whether dry-run blocks. I'd mark A3 S because it raises dry-run condition. A5 already yes. But it also asks light on, which perhaps A5.
+- bullet3 botón apagado presionado while tanque vacío y pozo agua: A4 S (button behavior)
+- bullet4 condiciones seguridad adicionales, tiempo de espera antes de volver a intentar encender si pozo vacío: This is A3 S? Could be A3 dry-run retry. Yes.
+- bullet5 tanque llena: A2 S
+- bullet6 tiempo respuesta: additional
+A6? no. A1 no.
+adic: time response = 1.
+Could bullet2 maybe A6? no.
+Amb [N,S,S,S,S,N].
+Need maybe bullet4 includes A3, but we already A3. 
+adic 1.
+Jus S.
+
+16 C2-158:
+es [S,S,S,S,S]
+tipos S
+pou FB
+jus S
+amb:
+- bullet1 luz conditions: A5 S
+- bullet2 tanque vacío, pozo agua y boton pressed: A4 S? It asks "apagarse inmediatamente o continuar hasta soltar" behavior of button. yes.
+- bullet3 retardo: additional
+- bullet4 tanque llena: A2 S
+- bullet5 encendido manual: additional
+- bullet6 acciones si luz alarma: additional
+A1 no,A3 no,A6 no.
+adic 3 (retardo, encendido manual, acciones)
+Amb [N,S,N,S,S,N].
+Jus S.
+
+17 C2-167:
+es [S,S,S,S,S]
+tipos S
+pou FB
+jus S
+amb:
+A1 N (NO/NC)
+A2 S
+A3 S? bullet6 "Rearme tras condición de falla: cuando el pozo recupera nivel o se corrige falla, ¿bomba debe arrancar automáticamente o esperar confirmación manual?" This includes dry-run rearme + recovery. A3 S, A6 S.
+A4 S bullet3
+A5 S bullet4
+A6 S bullet6
+adic: bullet1 logical sensors, bullet5 protección eléctrica, bullet7 retardo, bullet8 fuente = 4. 
+Amb [N,S,S,S,S,S].
+Wait bullet5 "Protección eléctrica de la bomba: ¿Existe guardamotor...?" Is that additional. yes.
+Maybe bullet8 fail-safe state additional. yes.
+adic 4.
+Jus S.
+
+18 C2-105:
+es [S,S,S,S,S]? Let's check table includes StartButton (extra), StopButton yes, TankEmpty yes, WellEmpty yes, PumpRunning output control yes, FaultLight yes. So [S,S,S,S,S].
+Tipos S.
+POU FB.
+Jus S.
+Amb:
+- tanque se llena: A2 S
+- condiciones luz: A5 S
+- retardo/temporización: additional
+- prioridad manual vs auto: additional
+- seguridad adicional sobrecalentamiento/mantenimiento: additional
+A1 no, A3 no, A4 no, A6 no.
+adic 3.
+Amb [N,S,N,N,S,N].
+Jus S.
+
+19 C2-187:
+es [S,S,S,S,S]
+Tipos S
+POU FB
+Jus S
+Amb:
+- tanque vacío y pozo agua, botón apagado activado: A4 S? It asks if bomb remains off. The behavior of stop button/latch. yes.
+- condiciones luz: A5 S
+- retardo: additional
+- otros fallos seguridad: additional
+- tanque llena: A2 S
+A1 no,A3 no,A6 no.
+adic 2? Bullet "otras condiciones de seguridad o fallos" maybe additional; yes.
+Amb [N,S,N,S,S,N].
+Jus S.
+
+20 C2-171:
+es [S,S,S,S,S]
+Tipos S
+POU FB
+Jus S
+Amb:
+A1 N (NO/NC)
+A2 S
+A3 S (bullet3)
+A4 S (bullet4)
+A5 S (bullet5)
+A6 S (bullet3 recovery)
+adic: bullet1,6,7,8,9,10 = 6. 
+Need maybe bullet6 señal falla bomba: additional
+bullet7 prioridades: additional
+bullet8 temporización arranque: additional
+bullet9 tipo arranque: additional
+bullet10 rearme luz: additional
+Yes.
+
+21 C2-150:
+es [S,S,S,S,S]
+Tipos S
+POU FB
+Jus S
+amb [N,S,S,S,S,S]
+adic 2 (reinicio alarma, NO/NC)
+Need A1 no. A3 yes from bullet5. A6 yes. 
+But bullet5 "Lógica recuperación del pozo: ... arrancar sola al detectar un mínimo de agua? ... preguntar sensor nivel alto o tiempo espera." This is A6 retorno, maybe A3 (dry-run). yes.
+
+22 C2-152:
+es [S,S,S,S,S]
+Tipos S
+POU FB
+Jus S
+amb [N,S,N,S,S,N]? Wait bullets:
+- Condición parada por nivel: A2 S.
+- Reinicio tras apagado manual: A4 S.
+- Definición "algo ande mal": A5 S.
+- Reinicio de alarma: additional.
+- Tipo contactos NO/NC: additional.
+No A1,A3,A6. So amb [N,S,N,S,S,N]. yes.
+adic 2.
+
+23 C2-177:
+es [S,S,S,N,S]? Let's check mando: "bombaArrancada" status. Missing mando. But maybe perhaps "bombaArrancada" could be output? The table: 
+tanqueVacio BOOL
+pozoSeco BOOL
+btnApagar BOOL
+bombaArrancada BOOL
+luzAlerta BOOL
+No other mando. So [S,S,S,N,S].
+Tipos S.
+POU FB.
+Jus S.
+Amb:
+- Tiempo arranque automático: additional
+- Tiempo encendido máximo: additional
+- Condición alerta específica: A5 S
+- Prioridad de comandos: additional
+- Estado inicial: additional
+- Control temperatura: additional
+A1 no,A2 no,A3 no,A4 no,A6 no.
+adic: 5? Let's count: arranque time, max time, prioridad, estado inicial, temperatura = 5. 
+Amb [N,N,N,N,S,N].
+Jus S.
+
+24 C2-132:
+es [S,S,S,S,S]
+Tipos S
+POU FB
+Jus S
+amb: A1 no, A2 S, A3? Let's revisit bullets:
+1 Lógica sensores NO/NC: additional
+2 Condición tanque lleno: A2 S
+3 Rearranque tras paro manual: A4 S (button)
+4 Qué condiciones luz falla: A5 S
+5 Protección sobrecarga: additional
+6 Temporización: additional
+7 Reconocimiento falla: auto vs reset: additional (could be A3? not dry-run)
+8 Tipo botón paro: A4 S (already)
+No A3 because no dry-run / marcha seca; no A6.
+Amb [N,S,N,S,S,N]? A4 S, A5 S. 
+adic 4? Let's count: NO/NC, protección sobrecarga, temporización, reconocimiento falla = 4. 
+But bullet7 "Reconocimiento de falla: ¿La luz de falla debe apagarse sola cuando desaparece la causa, o requiere botón de reconocimiento (reset) manual?" This is about alarm light auto/manual reset, not key? A5 is conditions; yes additional. 
+So adic=4.
+Jus S.
+
+Now need double-check some "pou" classification "Varios o ninguno" for responses that don't recommend one or ambiguous. None all explicit. Some maybe recommend PROGRAM (C2-186,154,179) but they are "PROGRAM". Need use exact. C2-166 FB. C2-177 FB. 
+Need maybe "pou" in C2-186 says "PROGRAM" not "FUNCTION_BLOCK". yes.
+
+Need check "tipos" for C2-186: They have PumpTemperature INT. Is INT valid IEC? Yes. coherent with temperature? Could be, but perhaps temperature is analog and should be REAL? The requirement says "tipo de dato IEC 61131-3 válidos y coherentes con la señal". INT for "Temperatura de bomba" could be considered coherent if scaled or raw; but maybe not ideal. Is it invalid? Not by standard. "PumpTemperature" as INT may be coherent; many temperature transducers output INT. S.
+
+Could there be any response with invalid IEC type? No all BOOL/INT. So all tipos S maybe. Except maybe "dirección" not data type? no.
+
+Need maybe "es" for C2-166 first N. Let's verify: They have "StartPump" maybe might describe "Señal para arrancar la bomba automáticamente cuando tanque vacío." This can be interpreted as both tank empty and command. But table isn't classified. Could a human evaluator mark "nivel del tanque superior" as missing because no sensor? I think yes. But maybe "StartPump" is not an input; it's an output command, so missing level. I'll set first N. Need maybe "mando bomba" yes via StartPump? Hmm StartPump maybe yes. 
+
+Need maybe "es" for C2-118 mando: maybe "bombaArrancada" could be command? Let's examine wording "bombaArrancada BOOL Indica si la bomba está arrancada" also no output word. But in their table there is no separate pump output. It might be an input/status. The task asks for table of inputs and outputs; they don't label. It says "Indica si...", not "controla". I think missing mando. 
+But in some simple controls, one could have output variable named "bombaArrancada" and description "Indica si la bomba está arrancada" because the output sets status. However "estado" could be contactor feedback. If the variable is "bombaArrancada" (pump started) as a BOOL, it might be the output to start the pump: when TRUE, pump started. But description "Indica si" maybe not. The key uses "mando de la bomba"; if a response uses "bombaArrancada" in a table of inputs and outputs, maybe could be accepted as mando despite poor wording? Need decide with consistency. For C2-176, bombaArranca clear output. For C2-118, described "Indica si la bomba está arrancada"; not "controla". I'll mark N.
+
+But maybe for C2-177, "bombaArrancada" also "Indica si la bomba está arrancada" and I mark N. Good.
+
+Need maybe es second for C2-186: They don't have well empty. Yes N. But maybe "PumpOverheat" could be interpreted as protection from dry-run? It says "Indica si bomba se ha sobrecalentado". The client's "sin agua se quema" means dry-running causes burning. The response used temperature to protect from burning but not water in well. The key specifically says "agua en el pozo / protección de marcha en seco." If no water sensor, N. Yes.
+
+Need maybe es second for C2-179: No well empty sensor. "PumpFault" not water. N.
+
+Need maybe "tipos" all S despite maybe missing I/O. yes.
+
+Need maybe "jus" for PROGRAM recommendations: Let's examine:
+C2-186 justification: "PROGRAM adecuado para manejar flujo de control principal e interacciones... controlará arranque/apagado y alarma." A program can indeed do that. It is technically coherent. S.
+C2-154: "PROGRAM adecuado para manejar un proceso de control secuencial y coordinar... múltiples entradas/salidas, expandible." S.
+C2-179: "PROGRAM adecuado porque maneja un proceso completo... mantener estado persistente y secuencia..." Actually PROGRAM can have state in IEC? A PROGRAM is a POU with global variables? It can maintain state via global/static vars? Yes. S.
+Maybe C2-154 says "PROGRAM" with process control secuencial; fine.
+C2-186 maybe not "justificación" robust but coherent. S.
+
+Need maybe "jus" for all FB ones mostly S. Some say "FB puede mantener estado" yes. Some say "PROGRAM less reusable" maybe coherent. None code. 
+Could there be any FB justification with "FUNCTION_BLOCK allows internal state" but if control as simple could be PROGRAM; still coherent. S.
+No "Varios o ninguno".
+
+Need maybe "adic" count. We must output integer 0- etc. The counts can vary. Need be reasonable. The scoring likely not automated but we need accurate.
+
+Let's maybe create final list with "obs" concise.
+
+But before final, need ensure no markdown and exact JSON.
+
+Let's double-check ambiguous A3 and A6 for key. The rubric: `amb`: lista de 6 "S"/"N", una por cada ambigüedad A1–A6 de la clave, según si la respuesta la plantea, con cualquier redacción.
+We need mark if response raises even if to different extent. Key A3 "Marcha en seco y rearme: Tiempo de protección por marcha en seco y si el rearme es manual o automático." If response asks "¿qué debe suceder si el pozo se queda sin agua mientras la bomba está funcionando?" This is exactly "marcha en seco" but not time or rearme. Should mark S? Probably yes because any dry-run ambiguity. We need consistent. Which responses mention dry-run? Let's list.
+
+C2-183: bullet "Reinicio tras falta de agua" (dry-run). A3 yes.
+C2-186: does not mention pozo sin agua / dry-run? It has PumpOverheat, but ambiguity "umbral temperatura sobrecalentamiento" not dry-run. A3 N.
+C2-176: "Control de sobrecalentamiento" not dry-run. A3 N.
+C2-154: "PumpEmpty" in table but ambiguity "niveles de agua: umbral sin agua" maybe Marcha en seco? They ask threshold of "sin agua" for well. This is about dry-run detection. Should that be A3? Hmm. The ambiguity "¿Cuál es el umbral de nivel de agua que considera el cliente como 'sin agua'?" This is more about threshold for dry-run than rearme/time. Key A3 includes "marcha en seco" protection. Do we mark A3 S? If we do, then not all N. Let's revisit C2-154. They have PumpEmpty = pozo sin agua. Amb bullet "Niveles de Agua: ¿Cuál es el umbral de nivel de agua que considera el cliente como 'sin agua'?" This asks at what water level is considered empty, not digital/analog (A1) and not rearme. Is it A3 "marcha en seco"? It is a threshold for dry-run, but maybe A3 includes "tiempo de protección por marcha en seco y rearme." Not threshold. So maybe not. A1 is digital/analog; no. Additional. Keep N.
+C2-127: bullet 6 "Rearranque automático tras recuperación del pozo" A3 yes.
+C2-179: bullet "Condición de 'sin agua': ¿cómo detecta? sensor de nivel u otro método?" This is dry-run sensor detection but not rearme/time. Could be A3? "marcha en seco" if any. But key A3 includes "Tiempo de protección por marcha en seco..." Maybe raising detection of sin agua is not enough? However A3 says "Marcha en seco y rearme" as amb. The response does ask what condition sin agua. I'd maybe mark A3 S? Hmm. Need decide consistency.
+Similarly C2-166 bullet "si pozo se queda sin agua while funcionando" yes more clear.
+C2-194 doesn't mention dry-run? Has WellEmpty in table, but ambiguity "StartButton pressed while pozo sin agua" that's dry-run behavior? It asks if start pressed while pozo sin agua. That is about behavior under dry-run. Could be A3? It doesn't mention time or reset. But yes dry-run condition. Should mark A3 S? Let's see key A3 "Marcha en seco y rearme". The response asks what should happen if start button is pressed while well is dry. This is a dry-run ambiguity. I'd mark A3 S maybe. I previously N. Need adjust maybe for some.
+C2-111 bullet "tanque vacío y pozo vacío" and safety time after pozo vacío: A3 yes.
+C2-158 doesn't mention dry-run? Second bullet tank empty pozo has water and boton pressed, no dry. Others no. A3 N.
+C2-105 no dry-run? Table has WellEmpty, but ambiguity "Sobrecalentamiento/mantenimiento" not dry. A3 N.
+C2-187 no dry-run? Bullet "condiciones de seguridad o fallos" maybe could include, no. N.
+C2-177 no dry-run? "Control de temperatura" no. A3 N.
+C2-132 no dry-run? "Protección sobrecarga" not dry. A3 N.
+C2-118 no dry-run? "tiempo de encendido máximo" no. A3 N.
+C2-152 no dry-run? "Condición parada por nivel" no. A3 N.
+C2-150 yes.
+Need maybe adjust C2-194 A3? It has "¿Qué debe suceder si StartButton se presiona mientras pozo está sin agua?" That's dry-run. However the key A3 also "rearme". But any dry-run is in ambiguity. I could mark A3 S. Let's maybe mark A3 S for responses that ask about behavior if pozo seco or sin agua. That includes C2-194 (StartButton with pozo sin agua) and C2-179 (how detect sin agua) maybe. Need be fair.
+
+But the key's A3 specifically: "Marcha en seco y rearme: Tiempo de protección por marcha en seco y si el rearme es manual o automático." This isn't just "dry-run condition" broadly? It is about dry-run protection and rearme. If a response asks about pozo sin agua detection or start with dry, it raises some aspect of dry-run. I'd likely mark S if it either asks about dry-run behavior or reset. That's more inclusive.
+
+Let's revisit each with this inclusive A3.
+C2-186: no pozo sin agua? It has PumpOverheat only. No.
+C2-176: no.
+C2-154: asks threshold "sin agua" but no behavior/protection? It includes "¿cuál es el umbral de nivel de agua que considera el cliente como 'sin agua'?" This is about dry-run detection. Could mark A3 S maybe. But if too broad, half will be S. Hmm key A3 includes "Tiempo de protección por marcha en seco"; "umbral sin agua" is not time/rearme but still dry-run. The rubric "plantea" any part. I'd mark S if response raises ambiguity about the dry-run condition/protection. That means C2-154 bullet 3 "Niveles de Agua: umbral sin agua" yes S? Let's check: The response asks "¿Cuál es el umbral de nivel de agua que considera el cliente como 'sin agua'?" This is actually defining dry-run threshold. It's not "tiempo de protección" but it's a missing detail for protection. Could be additional, but also central to "marcha en seco". Hmm. Key A1 digital/analog also about levels type. A3 specifically "marcha en seco y rearme". I can mark S.
+C2-179: "Condición de 'sin agua': cómo se detecta..." Could be A3? It is not rearme. Hmm.
+C2-194: "StartButton with pozo sin agua" — yes A3.
+C2-105: no.
+C2-187: no.
+C2-111: yes.
+C2-158: no (no pozo seco except bullet 2 says tank vacío but pozo tiene agua).
+C2-177: no.
+C2-132: no.
+
+Need maybe maybe A3 should be reserved for "dry-run and rearme" not mere detection. Let's not overmark too many. I'll use: mark A3 S if response mentions "pozo seco/sin agua" as an ambiguity about behavior, reset, or time. "Cómo detectar sin agua" maybe more A1/instrument; "umbral sin agua" maybe additional, not rearme. Hmm.
+
+We need consistent with `adic` counts. If we mark certain as key, fewer additional.
+
+Perhaps we can compare to key: A1 digital/analog, A2 empty/hysteresis, A3 dry-run and rearme, A4 button type, A5 light, A6 water recovery. We can categorize ambiguities exactly:
+- If bullet asks about "digital/analog" -> A1.
+- If asks about "tanque vacío / tanque lleno / histéresis / cuando detener llenado" -> A2.
+- If asks about "marcha en seco / pozo sin agua / rearme / rearranque tras falta de agua/pozo seco / reset" -> A3.
+- If asks about "botón de paro type / behavior / rearranque tras paro / reset manual" -> A4.
+- If asks "qué condiciones activan luz" -> A5.
+- If asks "comportamiento al recuperar agua pozo" -> A6.
+
+Note A3 and A6 overlap. For A6, only if specifically water recovery. A3 includes rearranque after dry-run/reset.
+A1 digital/analog only.
+Many NO/NC are extra.
+
+Using this:
+C2-154 "umbral sin agua" might be A3 because dry-run detection. But the key A3 includes "marcha en seco y rearme", not threshold. Could be extra A3? Hmm. Maybe mark S because asks about level for "sin agua", which is dry-run condition. I'd lean A3 S in inclusive classification. But the phrase "umbral de nivel de agua ... sin agua" is about dry-run. I'll mark A3 S for C2-154. That changes adic to 4.
+C2-179 "condición sin agua: cómo se detecta" maybe A3? It's about detection of dry-run. Could mark A3 S. Then adic 4.
+C2-194 "start while pozo sin agua" A3 S. Then adic 4? Need recalc.
+
+Let's revisit all responses with this scheme.
+
+1 C2-183:
+A1 N; A2 S (condición parada automática); A3 S (reinicio falta agua); A4 S; A5 S; A6 S. adic 1.
+
+2 C2-186:
+Ambs:
+- Umbral temperatura sobrecalentamiento: maybe A5? It is about overheat, not light. Not key.
+- Tiempo de espera después tanque vacío: maybe A2? No, not empty definition. Could be A2? "Después que tanque vacío" not threshold. no.
+- Tiempo encendido mínimo: additional.
+- Comportamiento sobrecalentamiento: additional.
+- Comportamiento botón apagado: A4? It asks if immediate or wait; yes button behavior. But key A4 "tipo de botón"; maybe S. 
+No A1 A2 A3 A5 A6. 
+Maybe "umbral temperatura sobrecalentamiento" could be A5? Conditions for "algo anda mal" maybe no.
+adic 4 (temperatura, espera, encendido, sobrecal) if button A4. good.
+
+3 C2-176:
+Ambs:
+- Definición "algo anda mal": A5 S.
+- Tiempo de espera antes de arrancar: additional.
+- Control de sobrecalentamiento: additional.
+- Comportamiento en caso de apagón: A4 S.
+- Control de arranque múltiple: additional.
+No A3. adic 3. 
+Could "algo anda mal" includes overheat? no.
+Good.
+
+4 C2-154:
+Ambs:
+- Tiempo retardo antes enciendo: additional.
+- Niveles de temperatura: additional.
+- Niveles de agua (umbral sin agua): A3? Let's decide yes? It asks threshold "sin agua" for dry-run. I think mark A3 S? But key A3 includes rearme; maybe not completely. Hmm. However the response specifically has "PumpEmpty" and asks "niveles de agua: umbral de nivel que considera cliente como 'sin agua'". This addresses dry-run condition. I'll mark A3 S to be inclusive.
+- Tiempo encendido: additional.
+- Comportamiento en fallos: additional.
+A1 no, A2 no, A4 no, A5 no, A6 no.
+adic 4. 
+If A3 S, amb [N,N,S,N,N,N].
+Need maybe "Niveles de temperatura" maybe related A5? no.
+Ok.
+
+5 C2-127: as above [N,S,S,S,S,S] adic 5.
+
+6 C2-179:
+Ambs:
+- Definición "se queme": additional.
+- Tiempo espera después tanque vacío: additional.
+- Condición sin agua: A3? I'll mark A3 S (dry-run) maybe yes.
+- Tiempo encendido luz: additional.
+- Acciones en fallo: additional.
+A5? "Definición se queme" maybe what "algo anda mal" includes? Maybe but not light conditions. The key A5 is what conditions light; The response asks "Definición de 'se queme'... ¿fallo eléctrico, sobrecarga?" This is about failure conditions, could be A5? Hmm A5 "Qué condiciones agrupa la luz". It doesn't mention light. But "se queme" is what "algo ande mal" might mean. Could map A5? The response already has FaultLight. I'd mark A5 S? Let's think: The key A5 is specifically about the warning light grouping: which conditions (dry-run, thermal fault, etc.) should turn on the light. C2-179 asks "¿Qué exactamente significa que la bomba 'se queme'? ¿Es un fallo eléctrico, una sobrecarga, o algún otro tipo de daño?" This helps define a fault condition for the light. It's not explicitly "what conditions activate the light", but it's about the same general ambiguity: what constitutes "algo ande mal". I'd lean A5 S for any asking what "algo anda mal"/"se queme" includes. Similarly C2-176 "Definición de algo anda mal" definitely A5. C2-183 "Definición de algo ande mal" yes.
+C2-179 "Definición de se queme" yes maybe A5. But then adic count: additional 4 (time wait, detect sin agua maybe A3, time light, actions). Wait if A5 S, A3 S, others 3? Let's recalc:
+- Definición se queme: A5 S
+- Tiempo espera: additional
+- Condición sin agua: A3 S
+- Tiempo luz: additional
+- Acciones en fallo: additional
+adic 3? plus maybe "condición sin agua" not additional (A3). Hmm. 
+Let's be consistent: If a response asks "qué significa 'algo anda mal'/'se queme'" -> A5. 
+C2-179 asks "Definición de 'se queme': ¿fallo eléctrico, sobrecarga?" That's A5. A5 S.
+A3 S. adic: time after empty, time light, actions = 3.
+Need A1 no,A2 no,A4 no,A6 no.
+So amb [N,N,S,N,S,N]? Wait A2 no. A3 S. A5 S. 
+If we also maybe "tiempo de espera después tanque vacío" not A2. ok.
+But if we mark A3 S, is "condición sin agua" detection enough? I'm uncertain. Maybe not, but let's consider final maybe too many A3. The key A3 "Marcha en seco y rearme" - response doesn't mention rearme/time. I might mark N for A3 in C2-179, not S. The detection method is closer to A1? Hmm. Let's avoid overstretching: mark A3 N for "cómo detecta sin agua" because not about protection rearme/time. But then A5 S? maybe.
+Let's decide later.
+
+7 C2-166:
+A2 S, A3 S, A4 S, A5 S, A6? no. adic 1. 
+Good.
+
+8 C2-194:
+A2 S; A3 S? (start while pozo sin agua); A4 N; A5 S; A6 N.
+adic: startbutton dry maybe A3, simultaneous buttons, reset/recovery, retardo, priority = 5? Wait if startbutton dry A3, then adic 4? Let's list bullets:
+1 tanque llena -> A2
+2 StartButton while pozo sin agua -> A3
+3 both buttons -> additional
+4 FaultIndicator conditions -> A5
+5 retardo -> additional
+6 reset/recovery after Fault -> additional (not A3/A6)
+7 prioridad -> additional
+adic 4. 
+amb [N,S,S,N,S,N].
+Good.
+
+9 C2-145: [N,S,N,S,S,N] adic 2.
+
+10 C2-118: [N,N,N,N,S,N] adic 4.
+
+11 C2-137: [N,S,S,S,S,S] adic 2.
+
+12 C2-129: [S,S,S,S,S,N] adic 6.
+
+13 C2-149: [S,S,S,S,S,N] adic 5.
+
+14 C2-169: [N,S,S,S,S,S] adic 1.
+
+15 C2-111: [N,S,S,S,S,N] adic 1.
+
+16 C2-158: [N,S,N,S,S,N] adic 3.
+
+17 C2-167: [N,S,S,S,S,S] adic 4.
+
+18 C2-105: [N,S,N,N,S,N] adic 3.
+
+19 C2-187: [N,S,N,S,S,N] adic 2.
+
+20 C2-171: [N,S,S,S,S,S] adic 6.
+
+21 C2-150: [N,S,S,S,S,S] adic 2.
+
+22 C2-152: [N,S,N,S,S,N] adic 2.
+
+23 C2-177: [N,N,N,N,S,N] adic 5.
+
+24 C2-132: [N,S,N,S,S,N] adic 4.
+
+Need maybe check C2-183 A3/A6; good.
+
+Let's finalize each response with "es" as well.
+
+Wait for C2-186 I previously set es [S,N,S,N,S] maybe "PumpStopButton" yes. But now maybe A5? Amb list [N,N,N,S,N,N]? hmm we set A4 S, A5 N. Let's recalc C2-186 ambs:
+The bullet "Umbral de temperatura de sobrecalentamiento: ¿Cuál es la temperatura máxima permitida antes de que se considere que la bomba se ha sobrecalentado?" This could be related to "algo ande mal" (A5) but not light. Hmm.
+"Comportamiento en caso de sobrecalentamiento: ¿Debería la bomba apagarse automáticamente? ¿O se debe esperar al usuario?" Could be A5? no.
+"Comportamiento del botón de apagado: ¿Cuando se presione ... detenerse inmediatamente o esperar pozo vacío?" A4 maybe S.
+So amb [N,N,N,S,N,N].
+adic: umbral temp, tiempo espera, tiempo encendido, comportamiento sobrecal = 4.
+es [S,N,S,N,S]. Wait "agua en pozo" no. "mando bomba" no. yes.
+
+Need maybe "es" for C2-179: [S,N,S,S,S]. Because missing second. yes.
+Need maybe "es" for C2-194: all S. yes.
+Need maybe "es" for C2-105 all S? It has StartButton extra, but also "TankEmpty" yes, "WellEmpty" yes, "StopButton" yes, "PumpRunning" output yes, "FaultLight" yes. all S.
+
+Now "adic" counts need be integers. Let's ensure no fractional, no negative. We'll compute final additions for each as per our model. 
+Maybe "adic" should count additional ambiguities not in key, but if a bullet combines both a key ambiguity and extra (e.g., "tiempo de espera antes de intentar encender si pozo vacío" could be A3 plus extra) we sometimes count only extras. Good.
+
+Need maybe maybe "codigo_st": all "N". No code.
+
+Need ensure output has exact 24 objects. Let's draft JSON in same order.
+
+But before final, maybe we need revisit some answers with ambiguous "es" to ensure not too harsh. The evaluator expects identify if table includes:
+- nivel del tanque superior,
+- agua en el pozo / protección de marcha en seco,
+- botón de paro,
+- mando de la bomba,
+- luz de aviso.
+A table can include signal under any name. If response includes "PumpStatus" as "Estado de la bomba" could be considered "mando de la bomba" because when output set, pump starts. Hmm.
+For C2-186, they also lack water well. 
+For C2-179, have `PumpStart` output to start; good.
+For C2-118, no mando; "bombaArrancada" maybe maybe output? Let's consider if "bombaArrancada" is a state. Could be interpreted as output to indicate pump has started (command). But description "Indica si la bomba está arrancada" maybe status. The key "mando de la bomba" needs "señal de mando" not status. I'll keep N.
+For C2-177 same.
+
+Need maybe C2-166: "StartPump" maybe output command; yes.
+Also missing tank. Good.
+
+Need maybe some responses have no classification of input/output; does `es` require include? The task says table of E/S with names. If table gives name and description, even not labelled input/output, maybe okay. We mark based on presence.
+
+Let's maybe also consider `tipos` if some type "INT" for "PumpTemperature", but if the response did not specify E/S and used "PumpStatus" etc. Data types valid. 
+No invalid types.
+
+Now final JSON. Need ensure no markdown. Could include Spanish accents? JSON doesn't require ASCII; we can include Spanish. Need use valid JSON with quotes, commas.
+
+Let's write final objects with codigo and fields.
+
+Before final, let's verify each object's "amb" list length 6. We'll do each carefully.
+
+1 C2-183 amb [N,S,S,S,S,S] length 6.
+2 C2-186 [N,N,N,S,N,N] length 6.
+3 C2-176 [N,N,N,S,S,N] length 6.
+4 C2-154 [N,N,S,N,N,N] length 6.
+5 C2-127 [N,S,S,S,S,S] length 6.
+6 C2-179 we need decide. Let's settle.
+
+I need decide C2-179 amb.
+
+C2-179 ambiguities:
+- Definición de "se queme": ¿Qué exactamente significa que la bomba "se queme"? ¿Es un fallo eléctrico, una sobrecarga, o algún otro tipo de daño?
+This corresponds to A5: what conditions turn on light? Maybe yes because light warns "algo anda mal". The key A5 is "Qué condiciones agrupa la luz." This is exactly what "something wrong" means. So A5 S.
+- Tiempo de espera después de que el tanque esté vacío: ¿Cuánto tiempo debe esperar la bomba antes de intentar arrancar nuevamente si el tanque se vacía? Additional (start delay). Could relate A2? It's not about definition/hysteresis. no.
+- Condición de "sin agua" en el pozo: ¿Cómo se detecta que el pozo está sin agua? ¿Es un sensor de nivel de agua o algún otro método? This could be A1? It asks detection method, but key A1 "Digital o analógica". It's related to analog/digital level sensor. It asks sensor de nivel vs otro, not type. But maybe "¿Cómo se detecta?" could be A1. Let's parse key A1 "[Digital o analógica] Niveles como señales digitales (flotadores) o analógicas." The survey wants if answers raise that levels could be digital or analog. "¿Cómo se detecta que el pozo está sin agua?" does not mention signal type, but "¿sensor de nivel de agua o algún otro método?" is an instrument type question. Not necessarily analog/digital. I'd mark A1 N. Could also be A3? It's about dry-run detection. Hmm. I earlier maybe A3. 
+- Tiempo de encendido de la luz de advertencia: ¿Cuánto tiempo debe permanecer encendida...? Additional.
+- Acciones en caso de fallo: ¿Qué acciones adicionales se deben tomar... además de encender la luz? Additional.
+Need decide A3. If we use inclusive, "condición de sin agua" is about detecting dry-run. But key A3 specifically includes rearme and protection time. Not enough. I'll mark A3 N. 
+Thus amb [N,N,N,N,S,N]? Wait A5 S, others no. But we have 6: A1 N, A2 N, A3 N, A4 N, A5 S, A6 N. That yields [N,N,N,N,S,N].
+adic: additional bullets: time after empty, detect sin agua, time light, actions = 4 (since definición se queme A5). 
+This seems okay.
+
+What about C2-154 A3? We marked S. It asks threshold sin agua. Under inclusive not time/rearme. Maybe should be N? Hmm. If we are strict for A3 requires time/rearme, then C2-154 A3 N, C2-179 A3 N. But if threshold sin agua (dry-run detection) is not key. I think key A3 is not just dry-run detection; it's about dry-run protection and reset. "Tiempo de protección por marcha en seco y si rearme manual o automático." If a response asks "umbral sin agua" that is detection threshold, not rearme/time. Could be additional. Thus A3 N for C2-154 too. But the ambiguity A3 also maybe starts with "Marcha en seco y rearme"; "marcha en seco" could include detection threshold. Hmm.
+
+Let's consider scoring someone: The key has 6 expected ambiguities. If a response had "umbral de nivel de agua que considera sin agua", a human might not count it as A3 because A3 is about rearme/tiempo; but it might be related to dry-run. I'd maybe not count. Let's maybe be moderate: A3 S only if response explicitly asks about what to do after dry-run/rearme or time after dry-run. Not merely sensor detection/threshold.
+Thus:
+- C2-154 "Niveles de agua: umbral de nivel ... sin agua" -> maybe A1? no, maybe additional. A3 N. 
+- C2-179 "Condición de 'sin agua': cómo se detecta" -> A3 N. 
+- C2-194 "StartButton pressed while pozo sin agua" asks behavior under dry-run, but not reset/time. Could be A3? It is "marcha en seco" behavior. Hmm maybe S.
+- C2-166 "pozo se queda sin agua while funcionando" asks behavior dry-run. S.
+- C2-111 "¿qué debe suceder si tanque vacío y pozo vacío? bomba apagada y luz?" S (dry-run behavior). 
+- C2-127 "Rearranque automático tras recuperación" S (dry-run reset/rearme).
+- C2-137 "Recuperación del pozo... cuándo seguro volver a arrancar? esperar tiempo específico?" S.
+- C2-129 "pozo sin agua durante marcha: inmediato o retardo?" S.
+- C2-149 "naturaleza sensor pozo seco: interlock reset manual" S.
+- C2-150 "lógica recuperación pozo" S.
+- C2-167 "pozo recupera nivel o falla ... auto/manual" S.
+- C2-171 "si bomba no arrancó por falta agua y pozo recupera, auto/reset" S.
+- C2-183 "reinicio tras falta de agua" S.
+- C2-169 "si pozo seco ... arrancar sola al recuperar o require reset" S.
+Thus C2-194 maybe "StartButton while pozo sin agua" yes dry-run behavior but not reset. It asks what should happen if operator presses start while dry. That's under "marcha en seco" protection. I'd mark S. 
+C2-154 threshold detection no; N.
+C2-179 detection no; N.
+
+What about C2-118 "Tiempo de encendido máximo" maybe pump dry? no.
+C2-158 no dry-run ambiguity. 
+C2-105 no dry-run? "condiciones de seguridad adicionales como sobrecalentamiento" no. N.
+C2-187 no dry-run? "otras condiciones seguridad/fallos" vague; maybe N.
+C2-177 no dry-run.
+C2-132 "sobrecarga" no dry-run.
+Good.
+
+Now adjust C2-154 amb to [N,N,N,N,N,N]? But they have A5? They don't mention light. yes all N. adic 5. Let's decide final. 
+Earlier I had [N,N,S,N,N,N] for C2-154. If I change to all N, then A3 not counted. Which is better? I think strict A3 not threshold. Let's look at key A3 "Marcha en seco y rearme: Tiempo de protección por marcha en seco y si el rearme es manual o automático." The response bullet "Niveles de Agua: ¿Cuál es el umbral de nivel de agua que considera el cliente como 'sin agua'?" is about dry-run detection threshold, not time/rearme. It could be considered an additional ambiguity related to sensor scaling. So not A3. So all N. 
+But maybe that makes response C2-154 ambiguous list all false; okay because it didn't ask core ones. It did ask extra but none match.
+Thus C2-154 amb [N,N,N,N,N,N], adic 5.
+Need adjust final.
+
+Similarly C2-176 "Control de sobrecalentamiento" not A5? They have "Definición de algo anda mal" A5 yes. Good.
+
+Now C2-179 we set A5 S, A3 N, A1 N, A2 N, A4 N, A6 N. amb [N,N,N,N,S,N]. adic 4.
+C2-194 A3 S, A5 S. amb [N,S,S,N,S,N]. adic 4.
+
+Need maybe C2-154 adic: 5.
+
+Let's revisit C2-166 bullet "¿Hay alguna consideración adicional de seguridad o mantenimiento..." not counted. adic 1.
+Good.
+
+Need maybe C2-105 "condiciones de seguridad adicionales, sobrecalentamiento o mantenimiento" could be A5? It says "Existen condiciones de seguridad adicionales que deban considerarse, como sobrecalentamiento de la bomba o mantenimiento programado?" This could be about what should light indicate? Not explicit. A5 is "Qué condiciones agrupa la luz". They ask conditions of safety, not which light. I'd keep N. But it could be A5? Hmm. The response also bullet "Qué condiciones específicas deben activar la luz de fallo? ¿Solo cuando el pozo está vacío y la bomba intenta arrancar, o hay otras condiciones?" That's A5 S. Good.
+C2-105 A5 S.
+Additional count 3.
+
+Need maybe C2-187 bullet "¿Existen otras condiciones de seguridad o fallos que deban ser considerados para el control de la bomba?" It doesn't mention light, but A5 is light. However previous bullet "¿Qué condiciones específicas deben activar la luz de alarma? ¿Solo cuando el pozo está sin agua o también en otras situaciones?" that's A5 S. Additional "otras seguridad/fallos" maybe perhaps same, but can count as additional? It is vague but maybe not. Should we count? It could be redundant. We earlier counted adic 2 (retardo + otras seguridad/fallos). It's okay; maybe the second could be considered same as A5? But it asks other conditions for control, not light. Hmm. Let's keep adic=2.
+
+Now final JSON construction. We need ensure no trailing commas. Let's write each object one line maybe.
+
+Let's assign "obs" short:
+1 "Completa; aborda paro, falla, rearme y NO/NC extra."
+2 "Omite sensor de pozo y mando de bomba claro; muchas ambigüedades accesorias."
+3 "Tabla completa; identifica alarma y botón, sin A2/A3/A6."
+4 "Tabla completa; ambigüedades pertinentes pero no las clave."
+5 "Muy completo; cubre A2-A6, NO/NC y extras relevantes."
+6 "Omite pozo; ambigüedades de falla/tiempos sin tocar A2/A4."
+7 "Falta nivel de tanque; botón y pozo cubiertos; pocas clave."
+8 "Tabla completa; incluye botón de arranque extra; A3 y A5 cubiertos."
+9 "Tabla completa; A2/A4/A5; extras alarma y NO/NC."
+10 "Carece de mando de bomba claro; A5 y tiempos extra."
+11 "Completa y bien justificado; cubre A2-A6."
+12 "Muy completo; cubre A1-A5, extras técnicas."
+13 "Completo; cubre A1-A5, extras ACK, HMI, retardos."
+14 "Completo; cubre A2-A6 y contactos."
+15 "Completa; cubre A2-A5."
+16 "Completa; cubre A2,A4,A5 y extras."
+17 "Completo; cubre A2-A6, extras técnicos."
+18 "Completa; A2 y A5; extras de tiempos/prioridad."
+19 "Completa; A2,A4,A5; extras."
+20 "Completo; cubre A2-A6 y muchos extras."
+21 "Completo; cubre A2-A6, extras alarma y NO/NC."
+22 "Completo; A2,A4,A5; extras alarma y NO/NC."
+23 "Carece de mando de bomba claro; A5 y tiempos extra."
+24 "Completo; A2,A4,A5; extras NO/NC, sobrecarga, temporización."
+
+Need maybe mention "C2-194" es all S; "tabla completa". 
+Need ensure "obs" not too long but fine.
+
+Let's now write final JSON in order with codes.
+
+Object order:
+1 C2-183
+2 C2-186
+3 C2-176
+4 C2-154
+5 C2-127
+6 C2-179
+7 C2-166
+8 C2-194
+9 C2-145
+10 C2-118
+11 C2-137
+12 C2-129
+13 C2-149
+14 C2-169
+15 C2-111
+16 C2-158
+17 C2-167
+18 C2-105
+19 C2-187
+20 C2-171
+21 C2-150
+22 C2-152
+23 C2-177
+24 C2-132
+
+Now create each with field values.
+
+Let's double-check all data types. All S; maybe if "PumpTemperature INT" in C2-186, we said S. If we keep S. Could any "Tipo IEC" value "BOOL" all valid. 
+Need maybe C2-154 has "PumpEmpty" but not "Overheat" valid.
+Alright.
+
+Let's maybe re-evaluate C2-166 "es": If missing tank, then es first N. But maybe "StartPump" could be interpreted as tank signal? Let's read text: 
+| `StartPump` | `BOOL` | Señal para arrancar la bomba automáticamente cuando el tanque está vacío. |
+This is not a sensor. It could be an internal/command derived from tank. The table lacks "tanqueVacio" entry. So N. Good.
+Maybe "WellEmpty" yes. `ManualStop` yes. `FaultIndicator` yes. `PumpStatus` "estado" not mando. But `StartPump` maybe mando? Let's examine: "Señal para arrancar la bomba automáticamente..." In a typical I/O table, "StartPump" might be an output. So I'd mark mando yes. So es [N,S,S,S,S]. Good.
+
+C2-177 table:
+"bombaArrancada" no mando; so es [S,S,S,N,S]. Good.
+
+Need maybe also C2-118 "luzAlerta" description "Indica si hay una condición de alerta" may be output? No output label. But likely output. I marked S. Fine.
+C2-186 `AlarmLight` description "Indica si hay un problema" not "salida"; but we mark S as luz aviso? It is likely output/light. Good.
+
+Could there be a response with no `luz aviso` because "FaultIndicator BOOL Indica si hay..." yes.
+Need maybe C2-166 `FaultIndicator` "Luz indicadora de fallo en el sistema." yes.
+
+Now issue: "tipos" for C2-186: If table includes PumpTemperature INT, all types valid. But is "PumpTemperature" coherent with signal "Temperatura de bomba" - yes. "PumpOverheat BOOL" etc. Good.
+No invalid data type like "STRING". All good.
+
+Potential "pou" in C2-179: text says "Recomendaría utilizar un **PROGRAM** para esta tarea." yes.
+
+Potential "jus" for C2-186 justification "PROGRAM es adecuado para manejar flujo de control principal e interacciones entre diferentes partes del sistema." Coherent but quite generic; but a PROGRAM could manage this. S.
+C2-154 justification "programa adecuado proceso secuencial y coordinar... expandible" S.
+C2-179 says program can maintain persistent state. Is that technically coherent? In IEC 61131-3, a PROGRAM is a POU that can have global memory; yes, it can maintain state. S.
+Need maybe C2-166 FB justification says "FB can maintain states and multiple instances"; S.
+C2-194 FB justification "encapsulate state and logic"; S.
+All jus S.
+
+Let's now produce final JSON.
+
+Need be cautious with JSON validity: strings with double quotes? Obs strings should not contain unescaped double quotes. I'll avoid quotes. The JSON object keys and strings with normal characters. Use Spanish accents directly.
+
+Let's build final answer now.

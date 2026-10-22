@@ -1,0 +1,609 @@
+We need answer only JSON list of 24 objects, same order. Need evaluate each. Need respect fixed funcionals and iec. We need produce just JSON, no markdown. Need be careful.
+
+We need parse input. We have 24 respuestas? Let's count. We'll enumerate.
+
+We need score each based on rubric. We need consider results.
+
+Important: Fixed functional of 3 if passes all 13 steps. Fixed functional 0 and iec 0 for no compila. For compiles but fails? Here all compiles pass all 13; no compiles fail. There are some compiles? Let's list all with codes.
+
+Need verify 24. Let's list codes in order:
+
+1 A4-3724 no compila func 0 iec 0
+2 A4-4106 compiles passes 13 func 3 iec null
+3 A4-2094 no compila func 0 iec 0
+4 A4-8650 no compila func 0 iec 0
+5 A4-8630 no compila func 0 iec 0
+6 A4-5382 compiles passes 13 func 3 iec null
+7 A4-3981 compiles passes 13 func 3 iec null
+8 A4-4874 no compila func 0 iec 0
+9 A4-8399 no compila func 0 iec 0
+10 A4-9812 compiles passes 13 func 3 iec null
+11 A4-2107 no compila func 0 iec 0
+12 A4-1899 no compila func 0 iec 0
+13 A4-3900 no compila func 0 iec 0
+14 A4-5751 no compila func 0 iec 0
+15 A4-5499 no compila func 0 iec 0
+16 A4-1758 no compila func 0 iec 0
+17 A4-3118 compiles passes 13 func 3 iec null
+18 A4-5971 compiles passes 13 func 3 iec null
+19 A4-4944 compiles passes 13 func 3 iec null
+20 A4-6890 no compila func 0 iec 0
+21 A4-8514 no compila func 0 iec 0
+22 A4-3246 compiles passes 13 func 3 iec null
+23 A4-4221 compiles passes 13 func 3 iec null
+24 A4-3284 compiles passes 13 func 3 iec null
+
+Wait count 24 yes. Need output 24 objects in same order.
+
+Need evaluate iec for compiling ones null. For non compiling iec fixed 0. For compiles, iec score 1/2/3. Need assign.
+
+Fixed functional: for compiles all pass -> 3; for no compiles -> 0. Need copy.
+
+Need score coherencia, claridad, mantenibilidad for all. Also for no compiles, functional and iec fixed; just_func_iec ""? Requirement says just_func_iec: una línea, o "" si las dos estaban fijadas. For no compila both fixed, so "" likely. But maybe if only functional fixed, just_func_iec should mention? They said if no compiles functional_fijo/iec_fijo fixed. For compiling functional_fijo=3 fixed, iec_fijo null so just_func_iec should maybe be not ""? Format says "una línea, o \"\" si las dos estaban fijadas". For compiling only functional fixed, but iec not fixed, so need provide one line for just_func_iec (covering funcional maybe fixed? Or both? It says "just_func_iec" likely one line for both? But "si las dos estaban fijadas" no fixed. We need include justification for iec and perhaps functional? The instruction: "just_func_iec": "una línea, o \"\" si las dos estaban fijadas" Hmm if functional fixed but iec not fixed, we need line explaining iec (maybe function fixed). If both not fixed? In our data, either no compila both fixed, or compiles func fixed and iec null. So we provide just_func_iec for compiles only, with iec justification. For no compiles, "".
+
+Need evaluate quality non-compiling code. For non-compiling, coherencia, claridad, mantenibilidad based on code. Need give values 0-3. Need be consistent.
+
+Let's inspect each code.
+
+First A4-3724: code has "tiempoCiclo := ciclo;... rampaParoRapido * REAL(tiempoCiclo / T#1s)". Compilation errors due to REAL() conversion, times division? Actually "REAL(tiempoCiclo / T#1s)" invalid; declared variables. Logic uses lastCVvel but initialized? VAR lastCVvel : REAL; not initialized. In ST, VAR default maybe 0? In CODESYS, variables are initialized to 0 by default? Usually yes, but standard? Default initialization maybe zero. But code using lastCVvel as previous output. It updates lastCVvel at end. Logic: if paroRapido, CVvel := MAX(0.0, lastCVvel - rampaParoRapido * REAL(tiempoCiclo / T#1s)); else SPvel > lastCVvel ... etc. Since lastCVvel is persistent, okay. But no; time conversion invalid. Functional is fixed 0. We score coherencia: despite compilation errors, logic largely coherent; but lastCVvel incomplete? Use lastCVvel correctly? It initializes implicit maybe. Variables: time conversion as TIME_TO_REAL? No. Condition error=0? If SPvel=lastCVvel? In else branch (SPvel <= lastCVvel) they subtract; if equal they still subtract? Let's see: IF SPvel > lastCVvel THEN ... ELSE ... rampaBajada, clamp to SPvel; if equal, CVvel := lastCVvel - rampaBajada; clamp if CVvel < SPvel -> it will become SPvel, so no issue. Coherence okay if lastCVvel default 0. Could be 2/3. But no compiles, logic mostly coherent but contains flawed time conversion. Because no actual execution. Coherencia: not contradictory, initializes? lastCVvel uninitialized but default may be zero. In standard, VAR without init may be undefined? In CODESYS, zeros. Some risk of uninitialized. But many work. I'd assign 2 maybe for logical coherence. Clarity: structure basic, comments, descriptive names. Maybe 2. Maintainability: constants as variables but not declared as constants; values magic partially. They used variables with initialization for ramp values, good. But time conversion not parameter. 2 maybe. Need not over-penalize? Let's think.
+
+But need differentiate quality. We can evaluate all.
+
+A4-4106: compiles passes. Code uses TIME_TO_REAL(ciclo)/1000.0. In CODESYS, TIME_TO_REAL works? They compiled. Good. IEC idiom: TIME_TO_REAL is standard? It likely returns real time in ms? In CODESYS yes. Use target/paso. Coherence: clean; no issues. Clarity: descriptive names, comments. Maintainability: parameters as variables? They don't declare constants; values 40.0, 10.0, 20.0 embedded in code, but variable cicloSeg. Could be 2. iec: compiles, types correct, uses standard conversions but no POU/FB? It is FB. Could be 3? Need rubric: 3 if uses idiomatic constructions (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados). This code doesn't use standard blocks but isn't needed. Does it use "idiomatic" constructs? It uses IF with target etc. It's okay. Could give iec 2 or 3. Need decide consistent. Since compiles unchanged, correct declarations. Idiomatic? No extension. Maybe 3? The rubric: 2: compiles without changes; declarations and types correct. 3: compiles and uses idiomatic standard constructions. Since these are straightforward ST, no need TON etc. Maybe all passing competent could be 2 or 3. Need not over-give 3. We need "IEC" if compiles: 1 if extensions; 2 if declarations/types correct; 3 if additionally idiomatic. For simple FB, idiomatic maybe correct POU, comments, no extensions. But no standard blocks needed. We can assign 3 to better ones that use VAR CONSTANT, TIME_TO_REAL nicely. Hmm.
+
+Could treat iec 2 by default for correct compiles unless clearly idiomatic. But there is no fixed for functional; need consistent.
+
+A4-2094 no compiles: uses CONST inside VAR after variable declarations? Actually in CODESYS, likely invalid; but also "CONST ... END_CONST" maybe invalid in this context? They wrote "(* ── Constantes ... ── *) CONST ... END_CONST" inside implementation? Actually in code, after VAR declaration block they put `CONST ... END_CONST` in executable area, causing errors maybe structure. But logic is coherent. It uses `TIME_TO_REAL(ciclo) / 1000.0`; duplicate check? If paroRapido, if CVvel>0 subtract, elsif CVvel<0 also add, else do nothing; good. Normal mode uses rError etc. Seems good. But no compile due to constants section placement. Coherence high. Clarity good, comments. Maintainability: attempts constants but invalid. Could score 3? But code does not compile. For no compiles, we score quality as code. "Puntúa lo que el código es, no lo que el asistente probablemente quiso hacer." So coherencia maybe 2/3, claridad 3, mantenibilidad 2/3.
+
+A4-8650 no compiles errors TIME cannot convert REAL via `rampaParoRapido * tiempoCiclo`. It has logic: `tiempoCiclo := ciclo;` and multiplies REAL by TIME. No TIME_TO_REAL. Functional fixed 0. Coherence: Main flaw: in normal mode, `IF error > 0 THEN deltaCV := rampaSubida * tiempoCiclo; ELSE deltaCV := rampaBajada * tiempoCiclo; END_IF; CVvel := CVvel + deltaCV; IF CVvel > SPvel THEN CVvel := SPvel; ELSIF CVvel < SPvel THEN CVvel := SPvel; END_IF`. This always clamps to SPvel both above and below after addition. If error >0, delta positive, then if CVvel+delta > SPvel clamp to SPvel else if CVvel<SPvel also clamp to SPvel. This means any error not exactly hit will set to SPvel (if CVvel<SPvel), eliminating ramp. Actually example: SP=50, CV=0, delta=0.1 -> CVvel=0.1; IF CVvel > SPvel false; ELSIF CVvel < SPvel true -> CVvel=SPvel. So instantly jumps. For error<0, delta negative, CVvel decreases; if CVvel < SPvel? If CVvel still above SPvel? Let's simulate CV=50, SP=20, delta=-0.2 -> CV=49.8; IF CVvel>SPvel true -> CVvel=SPvel? It enters first IF and sets to SPvel. So also jumps. This is severely flawed. Coherence: Contains contradictory/conflated conditions? The clamps are redundant/incorrect making ramp ineffective. So coherencia 0 or 1. Functional fixed 0. For no compiles, we can still score coherencia. Since lógica no implementa rampa (dead logic) maybe 0/1. Also `tiempoCiclo` TIME multiplied by REAL invalid. Coherence is inconsistent because the clamp unconditional. I'd assign coherencia 0? Criteria 0: conditions contradictory, variables without initialize with effect, or dead states. This effectively has dead states in normal ramp due to ELSIF; causes it to always jump to SP. So 0 or 1. There is no compilation. I'll maybe 0 for coherencia if severe. Clarity: basic comments, names okay but not enough. 1 or 2. Maintainability: ramp constants declared, but logic needs rewrite. Because flawed. 1.
+
+A4-8630 no compiles uses REAL_TO_REAL invalid. Logic: if paroRapido, decrements and clamps 0; normal if SPvel > CVvel add and clamp; if SPvel < CVvel decrease and clamp. This is mostly coherent. No issue. But if CVvel negative in paro? It only clamps below zero. If CVvel negative and paroRapido active, it adds negative decrement (CVvel + incremento where incremento=-40*dtS) so more negative, clamps to 0. Actually if CVvel <0, CVvel := CVvel + incremento (more negative) then clamp to 0 if <0. It would set to 0, maybe okay. Normal mode clamps if overshoot. Coherence 2. Clarity 2. Maintainability 1/2.
+
+A4-5382 compiles passes. Uses DINT_TO_REAL(TIME_TO_DINT(ciclo))/1000.0, which is robust. Note comment incorrectly says TIME internally milliseconds; time type resolution can be ms but TIME_TO_DINT maybe ns? In CODESYS, TIME_TO_DINT(ciclo) returns ms? Actually CODESYS TIME internally may be ms? The harness passes 10ms and expects increments; all pass. So fine. Logic target and stepUp/down. Uses `stepUp := 40.0 * ciclo_s` for both up/down in paro, good. Coherence 3. Clarity 3? Comments thorough. Maintainability: stepUp/stepDown based on state but slopes embedded; no constants. 2 maybe.
+
+A4-3981 compiles passes. Similar to A4-4106. TIME_TO_REAL. Coherence 3. Clarity 2. Maintainability 1? It doesn't use constants; values embedded. Could 2. IEC 2/3.
+
+A4-4874 no compiles: uses `REAL(ciclo)` invalid. Logic: `cicloSegundos := REAL(ciclo) / 1000.0;` erroneous. Normal mode: if error >0, delta positive and clamp if CVvel+delta>SPvel else CVvel=CVvel+delta. If error <0? It else includes both error <=0, so if CV equal, delta negative, then CV decreases and clamp to SPvel? If error = 0, CVvel = SPvel, delta := -rampaBajada*cicloSegundos; IF CVvel+delta < SPvel THEN CVvel := SPvel; else CVvel := CVvel+delta. Since SPvel=CVvel, CVvel+delta < SPvel true (negative) -> set to SPvel. So no issue for equal. If error <0 normal ramp works. If error >0 as well. Coherent mostly. The use of last? no. Coherence 2. Clarity 2. Maintainability: constants as initialized variables; conversion flawed. 2 maybe.
+
+A4-8399 no compiles REAL_TO_REAL invalid. Logic same as 8630 with direct ramp. Coherent. Clarity 2. Maintainability 2.
+
+A4-9812 compiles passes. Uses VAR CONSTANT block inside VAR? It compiled. Coherence robust. Claridad 3. Maintainability 3? It declares constants for slopes; local vars. Design extensible? They are constants not FB inputs. But it does separate constants. 3 perhaps. iec 3 maybe, because uses VAR CONSTANT and correct types. Good.
+
+A4-2107 no compiles: error in `REAL(tiempoCiclo / T#1s)` similar first. Logic: lastCVvel initialized to 0.0. Uses lastCVvel as previous output, updates. Normal mode uses SPvel > lastCVvel else subtract/bajada. Good. Paro uses lastCVvel. Coherent. Could be 2 or 3. The code is similar to A4-3724 but with var initialization. Since it doesn't compile due to `REAL(...)` conversion; but logic as written if corrected would work? Need check: if paro and CVvel 20 -> lastCVvel - 40*0.01 = 19.6, clamp; okay. Normal when SP lower else subtract with lastCVvel. Works. So coherencia 3? But it has `tiempoCiclo : TIME := T#0s;` assigned `ciclo`. Good. No contradictions. Could assign 2 or 3. Since no compile due syntax only. Clarity: comments, but uses poor comment "Tiempo transcurrido desde la última iteración" not exactly but okay. Names descriptive. 2. Maintainability: constants variables initialization; okay. 2.
+
+A4-1899 no compiles: declares `dt : TIME;` etc; `dtSec := dt / T#1S;` attempting TIME division? This invalid maybe returns REAL? Actually CODESYS TIME / TIME yields REAL? Maybe no? The error says token unexpected dt; maybe due syntax not type? Actually "dtSec := dt / T#1S;" uses `:`? The message says found token unexpected 'dt'. Could be because `dt` is reserved? Maybe not. But code: `dt := ciclo; dtSec := dt / T#1S;` In ST, time division by time can yield REAL? In CODESYS maybe not allowed? It didn't compile. Logic: paro uses MAX(0.0, CVvel - rampaParoRapido * dtSec); normal uses MIN/MAX for SP. Then at end:
+```
+IF CVvel > SPvel THEN CVvel := SPvel;
+ELSIF CVvel < 0.0 THEN CVvel := 0.0;
+END_IF;
+```
+This after paro: if paro active, final clamp `IF CVvel > SPvel THEN CVvel := SPvel` could set CVvel to SPvel (which could be >0) even though paro aims to 0. But due prior MAX(0.0, CVvel-rampa*dt) CVvel<=... Could be >SPvel? If SPvel low or 0, clamp to SPvel maybe okay? But if paro active and SPvel=80, CVvel=20>SPvel? no. If CVvel=20 and SPvel=10, final clamp sets to 10, which would violate permanence at 0 while paro active. But logic? If paro active, target should be 0 ignoring SPvel; final clamp to SPvel if CVvel > SPvel could be problematic. However given initial CV maybe less than SP. But could be from previous state? If paro active and SPvel suddenly lower than CVvel but not zero, then final clamp sets to SPvel while paro still active. Yet harness not maybe. The `ELSIF CVvel < 0.0 -> 0` okay. Coherence conflict. No compile. So coherencia maybe 0/1 due final clamp incorporating SPvel during paro. Also does not prevent zero crossing? Paro clamp okay. It initializes rampas. We can consider this flaw. But since no compiles functional 0. Coherencia 1 maybe. Clarity 2. Maintainability 2.
+
+A4-3900 no compiles: uses `REAL_TO_TIME(ciclo) / 1000.0` invalid, but actually real_to_time invalid for this. Logic same as 8630 but error uses REAL_TO_TIME. Coherence mostly okay. But not compiles. Could 2.
+
+A4-5751 no compiles: similar to 1899 with dt_sec := dt / T#1S. Logic: paro decrements, clamp zero; normal follows with clamp. Then update lastTime but unused. Coherent? In paro active, no final SP clamp, so better. But `dt_sec := dt / T#1S;` maybe invalid. Coherencia 2/3. Clarity 2. Maintainability 2.
+
+A4-5499 no compiles: uses `dt := TIME_TO_REAL(ciclo) / 1000.0;` but error at token? Actually `dt` declared REAL, should compile TIME_TO_REAL maybe? The error says `token inesperado dt` at declaration? Wait message "L?nea 13 (Decl) Encontrado token inesperado 'dt'..." suggests `dt` reserved? Maybe CODESYS parser? Hmm Could be because `dt` is not allowed? Actually `DT` is a type specifier (DATE_AND_TIME?) In IEC 61131, `DT` is keyword reserved. So using `dt` as variable may fail. Code logic is very good: compute dt, objective, deltaMax based on paro, difference compare. Coherent 3. Clarity 2/3. Maintainability 3? Slopes embedded in code. 2.
+
+A4-1758 no compiles: REAL_TO_REAL invalid. Logic same as 8630 but then uses incremento variable for difference. Coherent. Clarity 1/2. Maintainability 1/2.
+
+A4-3118 compiles passes. Good code with VAR constants? It initializes ramps as variables. It has typo `rampaBAja` but consistent. Coherent 3. Clarity 2/3. Maintainability 2. iec 2/3.
+
+A4-5971 compiles passes. Uses VAR CONSTANT, robust. Does not have END_FUNCTION_BLOCK? Actually code ends with `END_IF;` and no END_FUNCTION_BLOCK? Wait the provided code at end:
+```
+(* ── Modo normal: seguir SPvel con rampa de subida/bajada ── *)
+...
+    END_IF;
+    (* CVvel = rObjetivo exacto: no se modifica *)
+
+END_VAR? 
+```
+Let's scroll: A4-5971 code:
+```
+FUNCTION_BLOCK FB_Rampa
+VAR_INPUT ...
+END_VAR
+VAR_OUTPUT ...
+END_VAR
+VAR
+...
+END_VAR
+(* ── Constantes de rampa ... ── *)
+VAR CONSTANT
+...
+END_VAR
+
+...
+IF paroRapido THEN
+...
+END_IF;
+```
+It seems missing `END_FUNCTION_BLOCK`? But result says compiles. Maybe CODESYS not require? Maybe the code snippet is truncated? It ends with `END_IF;` only? Actually last line: `END_IF;` no END_FUNCTION_BLOCK. Yet CODESYS compiles. Hmm maybe in CODESYS, FUNCTION_BLOCK can end without explicit END_FUNCTION_BLOCK? In IEC standard, POU ends with END_FUNCTION_BLOCK. But CODESYS might accept missing? It says compiles, so fine. But for iec, missing END_FUNCTION_BLOCK maybe standard nonconformity? It compiled so maybe accepted. But reason not penalize maybe. Actually in ST code, if provided as body inside CODESYS, maybe END_FUNCTION_BLOCK is optional? We can not assume. Still if compiles. But standard compliance? Missing END_FUNCTION_BLOCK might be outside standard, but code run. Hmm result says compiles; "iec" should reflect code standard quality, perhaps not punish missing end if CODESYS accepts. But statement "conforme a IEC" maybe missing END_FUNCTION_BLOCK not standard. Yet other codes without END_FUNCTION_BLOCK maybe compile? Let's check. A4-5971 maybe no end. It says compiles; could be due implementation accepted.
+
+Need only score.
+
+A4-4944 compiles passes. Uses `ABS(diferencia) <= delta_max` then CVvel := target; else if positive add else subtract. Need examine edge case: delta_max may be 0 if paro false and SPvel=CVvel. In that case ABS(0) <= 0 true -> CVvel := target; no change. In paro true, tasa 40, target 0. If CVvel negative (maybe), diferencia := 0 - (-5)=5 >0, delta_max positive, ABS(diff) <= delta? if diff > delta, else CVvel := CVvel + delta_max (e.g. -5+0.4=-4.6), approaches 0; no overshoot? Actually but if CVvel negative and difference positive (target greater), adding delta reduces negative, good. If CVvel positive, difference negative, subtract delta reduces, clamp? It uses ABS diff <= delta -> set target else subtract delta; prevents below zero? Let's simulate CV=0.1, delta=0.4; ABS(-0.1)=0.1 <=0.4 -> set target 0, good. CV=1, subtract 0.4 ->0.6; eventually. OK. Coherent 3. Clarity 3. Maintainability 2/3. iec 2/3.
+
+A4-6890 no compiles REAL_TO_REAL invalid. Same as 8630. Coherent 2, clarity 2, maint 1/2.
+
+A4-8514 no compiles same.
+
+A4-3246 compiles passes. Similar to 3118 with typo. Coherent 3, clarity 2/3, maint 2.
+
+A4-4221 compiles passes. Simple target/paso. Coherent 3, clarity 2, maint 1/2.
+
+A4-3284 compiles passes. Similar to 3118/3246. Coherent 3, clarity 2/3, maint 2.
+
+Need ensure no functional for compiles but fail? All compile pass 13. So all fixed.
+
+Need assign iec for compiles:
+- A4-4106: CODE uses TIME_TO_REAL(ciclo)/1000.0. In CODESYS, TIME_TO_REAL returns ms? Actually compile. Standard IEC: TIME_TO_REAL function is part of IEC? I think yes? Conversion functions: TIME_TO_REAL? Standard has `TIME_TO_REAL`? IEC 61131-3 defines conversions between TIME and REAL? Let’s recall: Standard functions include `<type>_TO_<type>` for any elementary types? e.g., TIME_TO_DINT, DINT_TO_TIME? But TIME_TO_REAL might be allowed. CODESYS supports. So good. Comments. No POU issues. Could score 2/3.
+
+Maybe assign iec 2 for those using TIME_TO_REAL straightforward; 3 for those using VAR CONSTANT and robust. Let's decide a rubric:
+
+- if compiles cleanly: at least 2. For 3, need idiomatic standard. I can give 3 to a few that are particularly clean and standard:
+  * A4-9812: VAR CONSTANT, comments, no extensions -> 3
+  * A4-5971: VAR CONSTANT -> 3 (but missing END_FUNCTION_BLOCK? Hmm maybe code snippet lacks it; don't penalize if compiles)
+  * A4-4944: UDINT_TO_REAL(TIME_TO_UDINT(ciclo)) perhaps more standard; but it uses ABS. Could be 3.
+  * A4-3118, A4-3246, A4-3284: Slopes as VAR initialized constants, comment, clean. Could be 3.
+  * A4-4106, 5382, 3981, 4221 maybe 3 too? Some are simpler. Need be consistent. The IEC quality does not depend on complexity; they all compile and use correct types. But 3 reserved for idiomatic. Since this is simple one-block task, maybe any correct compiles with appropriate POU and conversions qualifies as 3. But rubric says 2: compiles without changes; declarations and types correct. 3: additionally idiomatic constructs. To discriminate, I can give 3 to those with VAR CONSTANT and full comments; 2 to those with magic numbers but still correct.
+
+Maybe likely expected evaluation: Since task says "Structured Text conforme a IEC 61131-3", most competent answers with proper conversion should get 2; excellent with constants and clean get 3. I can use:
+
+IEC scores:
+- no compiles all 0 fixed.
+- compiles with standard conversions and correct POU: 
+   - A4-4106: 2 (simple, magic numbers)
+   - A4-5382: 2 (uses TIME_TO_DINT/DINT_TO_REAL but magic numbers)
+   - A4-3981: 2
+   - A4-9812: 3 (VAR CONSTANT)
+   - A4-3118: 3? Uses initialized variables but no constants. Maybe 2. Hmm.
+   - A4-5971: 3 (VAR CONSTANT)
+   - A4-4944: 3? It has `UDINT_TO_REAL(TIME_TO_UDINT(ciclo))` standard, comments. Could be 3.
+   - A4-3246: 2 (like 3118)
+   - A4-4221: 2
+   - A4-3284: 2
+
+Need decide. Some compiles with variables initialized for slopes maybe not idiomatic constant, but okay. Could give 2.
+
+Clarity and maintainability also similar.
+
+Let's thoroughly evaluate each for all non-fixed dimensions. Need output compact one-line justifications in Spanish.
+
+Let's set up rubric scoring.
+
+For no-compilation:
+
+1. A4-3724:
+   - coherencia: Logic mostly coherent, but lastCVvel uninitialized (though zero default). However casts/division invalid. Since no compile. "Usa lastCVvel no inicializado y aritmética TIME incorrecta; sin contradicciones graves" maybe 1/2. Could assign 1? Criteria 1: lógica mayormente coherente, redundancias o condiciones muertas sin efecto grave. But uninitialized var with effect. Hmm in ST variables default to zero? IEC 61131-3 maybe initial value is zero unless specified? Actually standard says variables are initialized with default values or configured. In CODESYS, default values. So not severe. But use lastCVvel intended persistent state. I'd score 2 maybe: no contradictions; logic would work if conversion fixed. However time conversion invalid is syntax. Coherencia 2. 
+   - claridad: Has comments, names. But uses `REAL(tiempoCiclo / T#1s)` misleading. 2.
+   - mantenibilidad: Constants as variables with initialization, changes localized but conversion expression inline. 2.
+
+But let's think: "puntúa lo que el código es" no compile. Coherencia in code not about compile. Could be 2. Good.
+
+2. A4-4106 (compiles):
+   - func 3, iec maybe 2/3
+   - coherencia: Clean target/paso, no contradictions. 3 maybe. But use if CVvel<objetivo ... else ...; If CVvel==objectivo and paro false, `paso` maybe 20*cicloSeg because else, but then no update. Fine. 3.
+   - claridad: names descriptive, comments. 3 maybe. It has comments brief but not tons. 2/3. I'd give 2/3? "comentarios útiles" yes. Maybe 3.
+   - mantenibilidad: values 10/20/40 embedded in code, adjustments would require editing them in multiple spots? They appear in assignments to paso, but only in one place each. Still no constants. Could be 2. 
+   - just: iec 2? if not 3.
+
+3. A4-2094 no compile:
+   - Coherence: Logic robust except constants invalid placement. Normal and paro logic good, handles CV negative in paro. 3? But compiles no. Since no compile due to misplaced CONST. "Sin contradicciones, transiciones completas, maneja negativo en paro." Could give 3. Claridad: good comments, sections. 3. Maintainability: intended constants but invalid, aside from that values centralized; but because invalid placement, code as-is unworkable. Might score 2? "parámetros como variables o constantes declaradas" not valid. Actually they attempted constants but not valid. Changes localized? No because invalid. I'd assign 2.
+
+4. A4-8650:
+   - Coherence: Severe normal ramp clamp issue, as described. In normal mode always sets to SPvel due to ELSIF clamp. Could be 0. Also uses TIME directly in multiplication. Let's score 0.
+   - Claridad: Comments and names decent but logic misleading. 1.
+   - Mantenibilidad: Constants as variables, but logic needs rewrite. 1.
+
+5. A4-8630:
+   - Coherence: Good but uses invalid REAL_TO_REAL. In paro if CVvel negative may clamp to zero? Actually CVvel := CVvel + incremento; if CVvel < 0 then 0. If CVvel is e.g. -0.5 and incremento -0.4 = -0.9, clamp to 0, still okay. Normal ramp works. No contradiction. 2.
+   - Claridad: Comments, clean. 2.
+   - Mantenibilidad: Values embedded, no constants. 1/2. I'd give 2? There are no constants; each slope literal appears once. Could modify easy. But better to declare constants maybe 1/2. I'll give 2.
+
+6. A4-5382 compiles:
+   - coherencia: robust, target/step, stepUp=stepDown in paro. 3.
+   - claridad: descriptive names, comments, sections. 3.
+   - mantenibilidad: slopes embedded but target logic separate. 2.
+   - iec: maybe 2 (TIME_TO_DINT + DINT_TO_REAL robust; magic numbers). Could give 2.
+
+7. A4-3981 compiles:
+   - coherencia: target/paso; robust. 3.
+   - claridad: descriptive but less comments. 2.
+   - mantenibilidad: values embedded; no constants. 1/2. I'd 2.
+   - iec: 2.
+
+8. A4-4874 no compiles:
+   - coherencia: Similar to A4-2107 but no lastCVvel? It uses CVvel directly in calculations with delta; no persistent previous separate. CVvel persistent. Normal ramp works. However error >0 else for error <=0; if error=0 and SPvel=CVvel, delta negative and then clamp to SPvel (because CVvel+delta < SPvel). no issue. Paro works. Could 2. But there is an issue: In normal mode if SPvel == CVvel and paro false, it takes decrement branch, but due condition `IF CVvel + deltaCVvel < SPvel THEN CVvel := SPvel; ELSE CVvel := CVvel + deltaCVvel;` with deltaCVvel negative, so CVvel+delta < SPvel true -> sets SPvel; no net change. OK. If SPvel < CVvel, works with clamp. No contradictions. 2.
+   - claridad: Uses comments, names. 2.
+   - mantenibilidad: constants as variables initial; conversion `REAL(ciclo)` invalid. 2.
+
+9. A4-8399:
+   - coherencia: normal/paro works. 2.
+   - claridad: 2.
+   - mantenibilidad: values embedded. 2.
+
+10. A4-9812 compiles:
+   - coherencia: robust; handles negative in paro. 3.
+   - claridad: comments, sections, descriptive names. 3.
+   - mantenibilidad: constants declared, centralized. 3.
+   - iec: 3.
+
+11. A4-2107 no compiles:
+   - coherencia: Similar A4-3724 but lastCVvel initialized. Good. One slight flaw: in normal mode if SPvel = lastCVvel, else branch subtracts ramp; then clamp to SPvel, no net. OK. Paro if lastCVvel <0 maybe not handle, but target 0. Could 2/3. Since uses lastCVvel with initialized zero, no contradictions. I'd give 2/3. Let's be strict: It uses `REAL(tiempoCiclo / T#1s)` invalid, but logical design is fine. Could give 3? Variables initialized. However arithmetic type invalid. Logical consistency unaffected. Hm "variables sin inicializar con efecto" not issue. "transiciones completas" yes. So coherencia 3 maybe. But some may consider if time conversion invalid, logic cannot operate; but rubric coherencia separate. I'll perhaps assign 3 but maybe not all no compiles deserve 3. Let's not over inflate. Could assign 2 for no compiles generally. But there are varying. For A4-2107, code has clear comments and lastCVvel. I'd give 3. But maybe final average. Let's see.
+
+12 A4-1899:
+   - coherencia: As noted, final clamp `IF CVvel > SPvel THEN CVvel := SPvel` after paro can override paro objective if CVvel > SPvel. This is an actual logical defect. Also paro `MAX(0.0, CVvel - rampParo*dtSec)` okay. So contradiction relative to paro? In paro, if CVvel > SPvel and SPvel >0, final clamp to SPvel not 0. But can CVvel be > SPvel while paro active? E.g., previous CVvel=50, SP=80, paro true. CVvel=50<SP=80, not override. After decreasing to 20, still <SP=80. If SPvel is lower and CVvel high, e.g., at paro activation SP=0.05, CV=20, then paro decrements to 19.6; final clamp: CVvel > SPvel true -> CVvel=SPvel=0.05, which would jump but not huge. Then next scan paro: CVvel=0.05, -0.4 clamp to 0; final clamp CVvel 0>SPvel? false. So only one cycle. But not exactly. The final clamp also if SP negative may force? Not likely. Could be considered minor but non ideal. However no compile. Coherence 1 maybe. 
+   - claridad: comments and names, but logic uses `dt` reserved? not okay. 2.
+   - maintainability: constants assigned in code, values in literals. 2.
+
+13 A4-3900:
+   - coherencia: similar 8630. 2.
+   - claridad: comments in Spanish. 2.
+   - mantenibilidad: slopes embedded; 2.
+
+14 A4-5751:
+   - coherencia: paro and normal good. It updates lastTime but unused (dead variable), no effect. `dt := ciclo; dt_sec := dt / T#1S;` type invalid. Logic robust. Could 2/3.
+   - claridad: comments; 2.
+   - mantenibilidad: constants initialized variables; 2.
+
+15 A4-5499:
+   - coherencia: very good target/deltaMax/difference. 3. 
+   - claridad: comments, names but `dt` maybe reserved causing failure. Still comments. 2/3. Could 3.
+   - mantenibilidad: slopes literals, but deltaMax centralized. 2.
+
+16 A4-1758:
+   - coherencia: normal/paro works; uses invalid conversion. 2.
+   - claridad: comments; 2.
+   - mantenibilidad: values embedded; 2.
+
+17 A4-3118 compiles passes:
+   - iec: maybe 2 or 3? 
+   - coherencia: robust, handles paro negative, normal with error. 3.
+   - claridad: comments, but typo `rampaBAja` (minor). 2/3. I'd give 3? The typo is not serious but "rampaBAja" weird. Comments useful. Maybe 2.
+   - mantenibilidad: constants as initialized variables; no VAR CONSTANT but okay. 2.
+
+18 A4-5971 compiles passes:
+   - Coherence: robust, handles negative in paro. 3.
+   - Claridad: comments good. 3.
+   - Maintainability: VAR CONSTANT with slopes. 3.
+   - iec: 3.
+
+19 A4-4944:
+   - Coherence: uses ABS, target/tasa/delta, robust. 3.
+   - Claridad: comments explain. 3.
+   - Maintainability: slopes as variables? It assigns tasa := 40.0 etc in code; no constants. But "tasa" variable changes; changes localized maybe but magical numbers. 2.
+   - iec: 3 maybe.
+
+20 A4-6890:
+   - similar 8630. Coherence 2, clarity 2, maint 2.
+
+21 A4-8514:
+   - same. 2/2/2.
+
+22 A4-3246:
+   - similar 3118. Coherence 3, clarity 2, maint 2, iec 2.
+
+23 A4-4221:
+   - Coherence 3, clarity 2, maint 2, iec 2.
+
+24 A4-3284:
+   - similar 3118. Coherence 3, clarity 2, maint 2, iec 2.
+
+Need ensure values fixed copied: no-compiles func 0, iec 0. Compiles func 3, iec as assigned.
+
+Let's maybe systematically assign scores using a table before final.
+
+But first, let's reconsider IEC fixed rules: "Si funcional_fijo o iec_fijo no son null, copia ese valor exactamente." For compiles, iec_fijo null, so we assign. For no compiles, both functional and iec fixed to 0. `just_func_iec` for no compila should be "" because both fixed.
+
+For compiles, functional_fijo=3 and iec_fijo null, so we set iec and include just_func_iec one line. The line maybe mention "Compila sin cambios; conversión TIME correcta; sin extensiones" or "Uso idiomático de VAR CONSTANT..." etc. Need not mention funcional because fixed? Could mention both as "Funcional fijado; IEC..." but one line. It's okay.
+
+Let's decide final scores.
+
+Maybe need be careful: In final JSON, just_func_iec for compiles must not be empty because only funcional fixed, not iec. Good.
+
+Now detailed per code.
+
+Let's enumerate again with assigned values.
+
+1 A4-3724: funcional 0, iec 0, coherencia 2, claridad 2, mantenibilidad 2, just_func_iec "", just_coherencia "Lógica de rampa coherente salvo conversión TIME inválida y lastCVvel sin inicialización explícita." just_claridad "Nombres descriptivos y comentarios breves; estructura aceptable." just_mantenibilidad "Pendientes como variables inicializadas, pero conversión inline y constantes no centralizadas."
+
+Need perhaps not too long. Final format can handle one line. Good.
+
+2 A4-4106: functional 3, iec 2, coherencia 3, claridad 2/3, mantenibilidad 2. Let's decide claridad 3? The code:
+```
+(* Convertir tiempo... *)
+(* Determinar... *)
+(* Aplicar... *)
+```
+Comments useful. Names descriptive. Yes 3? It is clean. But maintainability 2. I'd give claridad 3. Maybe many compiles get 3 clarity. But no need be too generous. The code is compact, comments good but not excessive. 3. Maintainability 2 because magic values. 
+Just_func_iec: "IEC correcto: FB bien formado y TIME_TO_REAL válido; sin extensiones." If iec=2, justification "Declaraciones y tipos correctos; TIME_TO_REAL compila, aunque sin constantes idiomáticas." 
+Coherencia "Objetivo/paso centralizados; evita sobrepaso y maneja paro rápido correctamente."
+Claridad "Comentarios claros y nombres descriptivos." 
+Mantenibilidad "Pendientes literales en el cuerpo; modificable pero requiere editar varias asignaciones."
+
+But wait if funcional=3 fixed, just_func_iec can maybe say "IEC 2..." Need not mention functional. okay.
+
+3 A4-2094: func 0, iec 0, coherencia 3, claridad 3, mantenibilidad 2? Let's assign. But maybe if no compile due CONST wrong, clarity still excellent. Coherence 3. Maintainability 2. 
+just_coherencia "Lógica de rampa/paro sin contradicciones y con clamps correctos; solo falla sintaxis de CONST." Need mention.
+just_claridad "Muy bien comentado y seccionado; nombres descriptivos."
+just_mantenibilidad "Intenta centralizar pendientes en CONST, pero su ubicación es inválida; valores clave identificables."
+
+Could maintainability 2 or 3? Since they did centralize constants but invalid in code. "Puntúa lo que el código es" code as-is invalid; can't compile. So not 3. 2.
+
+4 A4-8650: func 0, iec 0, coherencia 0, claridad 1, mantenibilidad 1. 
+just_func_iec ""
+just_coherencia "La rampa normal se anula: el ELSIF de clamp fija CVvel a SPvel en cada ciclo; sin rampa real."
+just_claridad "Comentarios presentes pero la lógica contradictoria confunde; nombres básicos."
+just_mantenibilidad "Requiere reescribir la lógica de clamp; constantes declaradas pero insuficientes."
+
+5 A4-8630: func 0, iec 0, coherencia 2, claridad 2, mantenibilidad 2. 
+just_coherencia "Estructura de rampa y paro correcta conceptualmente; falla compilación por REAL_TO_REAL."
+just_claridad "Comentarios breves y nombres claros, aunque concisos."
+just_mantenibilidad "Valores de pendiente embebidos; cambios localizados pero sin constantes."
+
+6 A4-5382: func 3, iec 2, coherencia 3, claridad 3, mantenibilidad 2. 
+just_func_iec "Compila sin cambios; usa TIME_TO_DINT/DINT_TO_REAL correctos, pero literales de rampa en el cuerpo."
+Actually if iec=2: "Compila; tipos y FB correctos; conversión TIME adecuada."
+Coherencia "Objetivo/paso según paro o SP; sin sobrepaso y con caso paro bien cubierto."
+Claridad "Estructura clara, comentarios y nombres descriptivos."
+Mantenibilidad "Pendientes no centralizadas, aunque el cálculo es localizado."
+
+7 A4-3981: func 3, iec 2, coherencia 3, claridad 2 or 3, mantenibilidad 2. Let's say claridad 2? Code has comments but not as thorough. It's clean. I'd give 3? Hmm. We need be consistent. Maybe for compiles, those that are clean with descriptive comments get 3 claridad. A4-3981 has comments: "Calculo del tiempo de ciclo...", etc. Very clean. Give 3. 
+Mantenibilidad 2. 
+just_func_iec "Compila sin cambios; TIME_TO_REAL correcto; declaraciones estándar."
+just_coherencia "Determina objetivo y paso de forma central, evita sobrepaso."
+just_claridad "Comentarios claros y nombres descriptivos."
+just_mantenibilidad "Pendientes literales; no constantes, pero lógica sencilla."
+
+8 A4-4874: func 0, iec 0, coherencia 2, claridad 2, mantenibilidad 2. 
+just_coherencia "Rampa normal y paro coherentes; solo falla sintaxis de conversión REAL(ciclo)."
+just_claridad "Comentarios y nombres adecuados."
+just_mantenibilidad "Pendientes como variables inicializadas; conversión no portable."
+
+9 A4-8399: func 0, iec 0, coherencia 2, claridad 2, mantenibilidad 2.
+Same just.
+
+10 A4-9812: func 3, iec 3, coherencia 3, claridad 3, mantenibilidad 3. 
+just_func_iec "IEC idiomático: VAR CONSTANT, TIME_TO_REAL y FB con clamps; sin extensiones."
+just_coherencia "Maneja paro, subida, bajada y casos negativos sin contradicciones."
+just_claridad "Secciones y comentarios muy claros; nombres descriptivos."
+just_mantenibilidad "Pendientes centralizadas en constantes; lógica sin duplicación."
+
+11 A4-2107: func 0, iec 0, coherencia 3, claridad 2, mantenibilidad 2. 
+just_coherencia "Uso de lastCVvel inicializado y lógica de rampa/paro consistente; falla conversión REAL(TIME)."
+just_claridad "Nombres descriptivos y comentarios, aunque con conversión confusa."
+just_mantenibilidad "Pendientes como variables inicializadas; modificable."
+
+Should coherencia 3 despite no compile? Maybe okay. But I worry all no compiles too high. Let's be a bit more strict: if code doesn't compile, it cannot be "sin contradicciones" maybe still. But some do. I'd assign 2 maybe for most. However A4-2107 and A4-5499 have clearly coherent logic. It's fine.
+
+12 A4-1899: func 0, iec 0, coherencia 1, claridad 2, mantenibilidad 2.
+just_coherencia "Clamp final usa SPvel incluso en paro, lo que puede impedir bajar a 0 o crear saltos."
+just_claridad "Comentarios claros; nombres aceptables."
+just_mantenibilidad "Pendientes asignadas en código; cambio centralizado parcial."
+
+13 A4-3900: func 0, iec 0, coherencia 2, claridad 2, mantenibilidad 2.
+just_coherencia "Lógica de rampa/paro sin contradicciones; falla por conversión TIME inadecuada."
+just_claridad "Comentarios y nombres claros."
+just_mantenibilidad "Pendientes literales; sin constantes."
+
+14 A4-5751: func 0, iec 0, coherencia 2, claridad 2, mantenibilidad 2. 
+Coherence maybe 3? It has lastTime unused but no effect. The `dt_sec := dt / T#1S` invalid. But logic okay. 2/3. Let's assign 2 to maintain variance.
+
+15 A4-5499: func 0, iec 0, coherencia 3, claridad 3, mantenibilidad 2.
+just_coherencia "Lógica objetivo/deltaMax/diferencia sin contradicciones y con clamps; falla solo por palabra dt/reservada."
+Actually error due dt as variable. 
+just_claridad "Muy bien comentado y estructurado."
+just_mantenibilidad "Pendientes literales en lógica, sin constantes."
+
+16 A4-1758: func 0, iec 0, coherencia 2, claridad 2, mantenibilidad 2.
+
+17 A4-3118: func 3, iec 2, coherencia 3, claridad 2 (or 3), mantenibilidad 2.
+Let's decide clarity 3? It has comments for every section, names descriptive, but typo `rampaBAja`. Minor. I'd give 2? Hmm the code is very readable. The typo is just variable name. It still describes. Could be 3. Let's give 2 for minor typo and somewhat repetitive. But clarity maybe not too low. We'll give 3 for code with comments and descriptive names; typo can be mentioned? Not in justification maybe. But maintainability 2.
+
+18 A4-5971: func 3, iec 3, coherencia 3, claridad 3, mantenibilidad 3.
+But note missing END_FUNCTION_BLOCK? Not penalize. If we give iec 3, okay.
+
+19 A4-4944: func 3, iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+just_func_iec "Compila; usa conversiones estándar TIME_TO_UDINT/UDINT_TO_REAL y ABS; sin extensiones."
+But maybe if no constants, iec 3? Hmm. Yes.
+
+20 A4-6890: func 0, iec 0, coherencia 2, claridad 2, mantenibilidad 2.
+21 A4-8514: func 0, iec 0, coherencia 2, claridad 2, mantenibilidad 2.
+
+22 A4-3246: func 3, iec 2, coherencia 3, claridad 3, mantenibilidad 2.
+23 A4-4221: func 3, iec 2, coherencia 3, claridad 2/3, mantenibilidad 2. Give claridad 2? It has comments but less elaborate. 3? We'll maybe assign 2 for less comments? Actually code:
+```
+(* Convertir el tiempo de ciclo a segundos *)
+...
+(* Determinar el objetivo y el paso maximo segun el estado *)
+...
+(* Aproximar la salida al objetivo evitando el sobrepaso *)
+...
+```
+Clean. Give 3. 
+24 A4-3284: func 3, iec 2, coherencia 3, claridad 3, mantenibilidad 2.
+
+Let's ensure not over-score no compiles. Maybe no compiles coherencia max 3 but okay.
+
+Need verify functional/iec fixed exactly:
+- Every no compila: functional = 0, iec = 0 fixed. We'll output 0 and 0.
+- Every compiles: functional = 3; iec set.
+
+Potential issue: For compiles, "Si pasa TODOS los pasos del banco: funcional = 3 (viene fijado)." So yes.
+
+Need ensure "cuando funcional no estaba fijado, que esté entre 0 y 2" In our data none compiles fail steps. All compiles func fixed 3, no compiles fixed 0. So okay.
+When iec no fijado, entre 1 y 3; we give 2/3.
+
+Let's maybe refine iec assignment for simple compiles. Maybe should be 2 for most, 3 for those with constants and robust. We'll do:
+
+- A4-4106: iec 2
+- A4-5382: iec 2
+- A4-3981: iec 2
+- A4-9812: 3
+- A4-3118: 2 (no constants; ramps as variables initialized)
+- A4-5971: 3
+- A4-4944: 3
+- A4-3246: 2
+- A4-4221: 2
+- A4-3284: 2
+
+Could A4-3118/3246/3284 be 3? They use variables initialized with ramp values, no magic? Not constants but values at declaration. It's clear. But not "VAR CONSTANT"; still idiomatic enough? Hmm in IEC, variables initialized are okay. But they are not constants, but they effectively configure. Could give 2. Fine.
+
+Need maybe assign coherencia for A4-5971: Code missing END_FUNCTION_BLOCK but compiles. Robust. yes 3.
+
+Let's also think about A4-9812: uses `VAR CONSTANT` after `VAR` block. It compiles because CODESYS accepts. Good.
+
+Need prepare final JSON exactly. Need no markdown code fence. Need ensure valid JSON, no trailing commas. Use double quotes. Escape Spanish accents? We can use Unicode Spanish directly. Should be fine. Need ensure no extra text.
+
+Let's craft each object carefully.
+
+We'll produce array with 24 objects. Need include fields:
+{"codigo": "...", "funcional": ..., "iec": ..., "coherencia": ..., "claridad": ..., "mantenibilidad": ..., "just_func_iec": "...", "just_coherencia": "...", "just_claridad": "...", "just_mantenibilidad": "..."}
+
+Need one line justifications, but JSON string can contain text. We can write.
+
+Let's draft each.
+
+1 A4-3724:
+- coherencia 2, claridad 2, mantenibilidad 2
+- just_func_iec ""
+- just_coherencia: "Lógica de rampa/paro coherente, pero conversión TIME inválida y lastCVvel sin inicialización explícita."
+- just_claridad: "Nombres descriptivos y comentarios; estructura legible."
+- just_mantenibilidad: "Pendientes declaradas como variables, pero conversión inline reduce robustez."
+
+2 A4-4106:
+- funcional 3, iec 2, coherencia 3, claridad 3, mantenibilidad 2
+- just_func_iec: "Compila sin cambios; declaraciones y conversión TIME_TO_REAL correctas, sin extensiones."
+- just_coherencia: "Objetivo/paso centralizados y clamps que evitan sobrepaso en todos los modos."
+- just_claridad: "Comentarios claros, nombres descriptivos y flujo ordenado."
+- just_mantenibilidad: "Pendientes literales en el cuerpo; falta centralización en constantes."
+
+3 A4-2094:
+- func 0, iec 0, coherence 3, clarity 3, maint 2
+- just_func_iec ""
+- just_coherencia: "Aunque no compila por CONST mal ubicado, la lógica de rampa/paro es coherente y sin contradicciones."
+Wait "Aunque no compila" in coherence okay.
+- just_claridad: "Excelente seccionado y comentarios; nombres descriptivos."
+- just_mantenibilidad: "Intenta centralizar pendientes en CONST, pero su ubicación inválida impide aprovecharlo."
+
+4 A4-8650:
+- func 0, iec 0, coherencia 0, claridad 1, maint 1
+- just_func_iec ""
+- just_coherencia: "El ELSIF de clamp fija CVvel a SPvel en cada ciclo, anulando la rampa normal."
+- just_claridad: "Comentarios presentes, pero la lógica engañosa y nombres básicos."
+- just_mantenibilidad: "Requiere reescritura de la lógica de clamp; constantes no ayudan a evitar eso."
+
+5 A4-8630:
+- func 0, iec 0, coherencia 2, clarity 2, maint 2
+- just_coherencia: "Rampa y paro bien planteados con clamps; falla de compilación solo por REAL_TO_REAL."
+- just_claridad: "Comentarios breves y nombres claros."
+- just_mantenibilidad: "Valores de pendiente embebidos; cambios posibles pero sin constantes."
+
+6 A4-5382:
+- func 3, iec 2, coherencia 3, clarity 3, maint 2
+- just_func_iec: "Compila sin cambios; conversión TIME_TO_DINT/DINT_TO_REAL correcta, sin extensiones."
+- just_coherencia: "Objetivo y pasos de subida/bajada/paro coherentes, con clamps anti-sobrepaso."
+- just_claridad: "Muy claro, bien comentado y con nombres descriptivos."
+- just_mantenibilidad: "Pendientes literales, aunque centralizadas en un solo bloque de decisión."
+
+7 A4-3981:
+- func 3, iec 2, coherencia 3, clarity 3, maint 2
+- just_func_iec: "Compila sin cambios; declaraciones correctas y TIME_TO_REAL válido."
+- just_coherencia: "Determina objetivo y paso de forma central; sin sobrepaso."
+- just_claridad: "Comentarios claros y nombres descriptivos."
+- just_mantenibilidad: "Pendientes literales; sin constantes parametrizadas."
+
+8 A4-4874:
+- func 0, iec 0, coherencia 2, clarity 2, maint 2
+- just_coherencia: "Lógica normal/paro coherente con CVvel persistente; falla sintaxis por REAL(ciclo)."
+- just_claridad: "Comentarios y nombres adecuados."
+- just_mantenibilidad: "Pendientes como variables inicializadas; conversión no estándar."
+
+9 A4-8399:
+- func 0, iec 0, coherencia 2, clarity 2, maint 2
+- just_coherencia: "Rampa/paro con clamps correctos conceptualmente; falla por REAL_TO_REAL."
+- just_claridad: "Comentarios breves y legibles."
+- just_mantenibilidad: "Pendientes literales en cada rama; cambio localizado."
+
+10 A4-9812:
+- func 3, iec 3, coherencia 3, clarity 3, maint 3
+- just_func_iec: "IEC idiomático: FB correcto, VAR CONSTANT, TIME_TO_REAL; sin extensiones."
+- just_coherencia: "Cubre paro, subida, bajada y valor negativo de CVvel sin contradicciones."
+- just_claridad: "Muy bien seccionado, comentado y con nombres descriptivos."
+- just_mantenibilidad: "Pendientes centralizadas en constantes; lógica sin duplicación."
+
+11 A4-2107:
+- func 0, iec 0, coherencia 2 or 3? We chose 3 earlier? Let's decide final: coherencia 2 maybe because no compile and `REAL(tiempoCiclo / T#1s)` invalid. But logical coherence high. Hmm maybe 2 to be safe. But "lastCVvel" initialized, good. I'll assign 2? Could assign 3 but then many no compiles high. Let's see coherencia values distribution: no compiles high for 2094, 5499, maybe 2107. It's okay. But maybe not all. I'd set 2 for 2107 because logic uses lastCVvel but the else branch includes equal case; not severe. Hmm.
+
+Let's decide final coherencia for A4-2107 = 2. Justification: "Usa lastCVvel inicializado y lógica sin contradicciones; falla conversión REAL(TIME) antes de ejecutar." Actually coherence separate. Could be 3. The rubric: 3 robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas. It handles simultaneous? paroRapido priority. It seems robust. But no compile due conversion. It doesn't have negative CV handling if lastCVvel negative in paro? Not required. I'll give 3? Hmm.
+
+Given evaluator: If no compiles, funcional and iec fixed; other criteria still judged. Coherence can be 3 if logically complete. A4-2107 indeed logically complete. I'll assign 3 to reward good logic. But maybe "variables sin inicializar" not issue. Let's final coherencia 3. 
+Maint 2, clarity 2.
+
+12 A4-1899:
+- coherencia 1, clarity 2, maint 2
+- just_coherencia: "Clamp final depende de SPvel incluso en paro rápido, lo que puede impedir el objetivo 0 en ciertos estados."
+Wait if paro and CVvel > SPvel, final clamp to SPvel; if SPvel >0, yes. But maybe only one cycle. Still.
+- clarity: "Comentarios y nombres claros." 2.
+- maint: "Pendientes asignadas en código; cambios localizados parcialmente." 2.
+
+13 A4-3900:
+- coherencia 2, clarity 2, maint 2.
+14 A4-5751:
+- coherencia 2, clarity 2, maint 2.
+15 A4-5499:
+- coherencia 3, clarity 3, maint 2.
+16 A4-1758:
+- coherencia 2, clarity 2, maint 2.
+17 A4-3118:
+- func 3, iec 2, coherencia 3, clarity 3, maint 2.
+18 A4-5971:
+- func 3, iec 3, coherencia 3, clarity 3, maint 3.
+19 A4-4944:
+- func 3, iec 3, coherencia 3, clarity 3, maint 2.
+20 A4-6890:
+- coherencia 2, clarity 2, maint 2.
+21 A4-8514:
+- coherencia 2, clarity 2, maint 2.
+22 A4-3246:
+- func 3, iec 2, coherencia 3, clarity 3, maint 2.
+23 A4-4221:
+- func 3, iec 2, coherencia 3, clarity 2? Let's set clarity 3? It is clean but fewer comments. Use 3. Maintain 2.
+24 A4-3284:
+- func 3, iec 2, coherencia 3, clarity 3, maint 2.
+
+Could maybe lower coherencia for A4-5751 because `dt_sec := dt / T#1S` invalid and lastTime unused; but logical okay. 2.
+
+Need ensure justifications for no compiles don't imply functional. Good.
+
+Let's produce JSON. But before final, need check if any `just_func_iec` for fixed functional but iec null should be non-empty for compiles. Yes.
+
+Let's craft final with valid JSON. Ensure no trailing commas after last object but JSON allows no trailing.
+
+Potential issue: In JSON strings, accented characters fine. Use no line breaks inside strings? We can include one line strings.
+
+Let's write entire JSON.
+
+Need check lengths maybe okay.
+
+Let's start:
+
+[
+{"codigo":"A4-3724","funcional":0,"iec":0,"coherencia":2,"claridad":2,"mantenibilidad":2,"just_func_iec":"","just_coherencia":"Lógica de rampa/paro coherente, pero conversión TIME inválida y lastCVvel sin inicialización explícita.","just_claridad":"Nombres descriptivos y comentarios; estructura legible.","just_mantenibilidad":"Pendientes declaradas como variables, pero conversión inline reduce robustez."},
+...
+]
+
+Need ensure for A4-3724 "lastCVvel sin inicialización explícita." In CODESYS default maybe zero but okay.
+
+Let's proceed.
+
+Double-check math for compiles? all passed. Good.
+
+Need ensure JSON output doesn't include markdown. We'll output raw JSON.
+
+Let's draft.
+
+I'll use Unicode accents; that's okay. Could avoid line breaks for readability. JSON can have spaces.
+
+Now final.

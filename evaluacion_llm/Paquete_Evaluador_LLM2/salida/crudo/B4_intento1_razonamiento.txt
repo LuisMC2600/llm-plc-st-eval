@@ -1,0 +1,1139 @@
+We need answer only JSON list. Need evaluate 24 items. Need inspect each. Must produce valid JSON no markdown. Need compute scores. Let's parse task.
+
+We need act as evaluator. Rubrics. We need output for each: codigo, funcional, iec, coherencia, claridad, mantenibilidad, just_func_iec, just_coherencia, just_claridad, just_mantenibilidad.
+
+Need note functional fixed: if compiles and passes all 10 => funcional=3 fixed. If not compile => funcional=0 iec=0 fixed. If compiles but fails: functional according to rubric (0/1/2), not fixed. Since result codesys says passes/fails. Need inspect protocols. For failures assign 0-2. Need not use 3 for failures. For IEC if compiles no fixed: 1-3. Need evaluate standard. Likely all compile with standard ST.
+
+Need ensure for each just_func_iec one line or "" if both fixed? The instructions: "just_func_iec": "una línea, o \"\" si las dos estaban fijadas". So if both funcional_fijo and iec_fijo are fixed? Actually "si funcional_fijo o iec_fijo no son null, copia ese valor exactamente." And just_func_iec "una línea, o \"\" si las dos estaban fijadas" maybe if both fixed. In our data, functional fixed for passing all; iec_fijo null. Or both null for failing compile? None not compile. So most have functional fixed, iec null => need just_func_iec? It says if functional_fijo and iec_fijo fixed both? The wording says "si las dos estaban fijadas" means both fixed. If one fixed, can provide a brief justification for iec? But the field is just_func_iec maybe describes both. Need use null? They only allow string. For items with functional_fijo=3 and iec null, just_func_iec should be one line explaining iec? The instruction says "just_func_iec: una línea, o \"\" si las dos estaban fijadas". Since not both fixed, provide one line. But might be okay with "Funcional fijado; IEC..." We'll do.
+
+Need evaluate each.
+
+Let's understand harness steps:
+
+0: btn all false esp false. Expected? They have espFwd/espRev but likely harness check after setting? Cases:
+1: btnFwd true, expected fwd true rev false. 
+2: btnFwd false, expected fwd remains true rev false (enclavamiento).
+3: btnRev true (while fwd active), expected fwd true rev false (inversion prohibited; must first stop).
+4: btnRev false btnParo true expected fwd false rev false.
+5: btnParo false btnRev true expected fwd false rev true.
+6: btnFwd true while btnRev still true? Wait step 5 btnRev true, step 6 btnFwd true, expected fwd false rev true. Both buttons active with motor rev active, active direction should block.
+7: btnFwd false btnRev false btnParo true expected both false.
+8: btnParo false btnFwd true btnRev true from rest. Expected no coexistance but not specified which direction can win. Must not fwd AND rev. They also maybe no expected direction? Protocol says "No se exige un sentido concreto, solo que no coexistan". In harness no esp fields setting? It likely only checks fwd AND rev false, not which output. 
+9: all false btnParo true expected fwd false rev false.
+
+So key.
+
+Need analyze each code's functional behavior to see failures. Some fail due allowing direct reversal (steps 3,6) or state initialization causing stop issues. Need assign funcional.
+
+Let's list each.
+
+1 B4-8136: Compiles fails 4 steps 3,4,7,9. Code:
+FUNCTION_BLOCK FB_Giro
+VAR_INPUT ... VAR_OUTPUT ... VAR estado: INT := 0;
+CASE estado OF
+0: IF btnFwd THEN estado:=1; ELSIF btnRev THEN estado:=2; END_IF
+1: fwd:=TRUE; rev:=FALSE; IF btnParo THEN estado:=0; ELSIF btnRev THEN estado:=2; END_IF
+2: fwd:=FALSE; rev:=TRUE; IF btnParo THEN estado:=0; ELSIF btnFwd THEN estado:=1; END_IF
+END_CASE;
+
+Obviously direct reversal from state 1 with btnRev => estado 2; step3 fails because rev true. Also state 0 does not assign outputs, outputs retain? In CODESYS VAR_OUTPUT maybe retain previous? On first cycle fwd/rev initial false. In paro? Step4 from state2 (maybe after direct rev?) btnParo state2 then fwd false rev true? Wait CASE state2 executes fwd:=FALSE; rev:=TRUE; then IF btnParo estado:=0; outputs still rev TRUE during this scan, expected false at paro. Step4 fails. Step7 paro from state2 similarly rev true. Step9 paro from state? step8 maybe direct? Since fail. Functional: not only edge, nominal? Let's see nominal step1 from state0 btnFwd => estado1 but in same scan doesn't assign fwd? Wait CASE when estado=0 before case, btnFwd true sets estado=1, but output assignments skip. Thus fwd remains false in scan 0? Harness likely waits? But step1 maybe multiple scans until stable? If harness sets and evaluates after? It might call each step for some cycles? It fails steps 3,4,7,9 not 1. Probably maintains enough. Nominal passes step1 and 2. But inversion direct allowed and paro outputs not immediate. Fails safety edge. Functional likely 0 or 1? Rubric 1: works nominal but fails in edge. It fails majority and safety relevant. Step3 direct reversal prohibited: danger. Step4/7/9 paro failing. Step4 expected stop, actual rev active while btnParo? At scan: state2 if btnParo => estado=0 but rev true. If harness checks after scan, fails. Risk: motor not stopping immediately. That is serious. Functional probably 0? The rubric 0: no implementa la lógica pedida o falla en el caso nominal. Nominal maybe passes step1/2 and step5? It may fail step4/7/9 but paro after rev? Let's simulate: step0 state 0 idle outputs maybe default false? After step1: scan with btnFwd true state=1, no output this scan. If harness waits until outputs? It passes step1 likely because maybe outputs assigned next scan. But if one scan only it would fail. CODESYS harness likely each step for one scan? It reports fails 4. If step1 pass, maybe harness allows settling? Hmm.
+
+Functional safety fails: direct reverse and paro not immediate. I'd assign 0 or 1. For "falla en caso nominal?" The nominal case includes paro. Step4 paro after forward? Actually step3 failed because direct reverse signal made rev true; then step4 paro expected false but code state2 rev true. So yes nominal paro fail after direct reverse path. But from normal forward step? If only step1-2 then step4 without btnRev, state1 btnParo state0 but fwd true during paro scan, would also fail step4 expected false? Wait harness step4 follows step3 where btnRev true and they expect fwd true rev false then paro. If a correct program holds fwd until paro. For this faulty code after step3 state2, rev true. Step4 rev remains true. So fail. But if it somehow stopped from state1 with btnParo, would fwd true in the same scan because fwd assigned before IF; CASE state1: fwd true; rev false; IF btnParo estado0. Thus after scan fwd still true. So any paro fails. Thus nominal paro fail. This is not just edge. Therefore funcional 0. But harness reports pass step0? Step1/2 maybe output eventually? But step4 fails. It fails 4/10. The criterion maybe nominal includes starting, stopping; it stops fail. So funcional 0.
+
+Need also note if no state assignment for output on transition from 0 means step1? They maybe passes step1 due harness cycles? But still.
+
+2 B4-1620: passes all, functional fixed 3. Code: If btnParo => fwd false rev false. ELSIF btnFwd AND NOT rev => fwd true. ELSIF btnRev AND NOT fwd => rev true. Then safety IF fwd and rev false both. Need analyze with both from rest: btnParo false, btnFwd true btnRev true: first ELSIF btnFwd and NOT rev true => fwd true. rev not set maybe false. No conflict. Pass. With motor rev active and btnFwd true: btnParo false, btnFwd AND NOT rev? rev true so false; elsif btnRev AND NOT fwd? fwd false so true (btnRev still true from step5? step6 btnFwd true only, btnRev? Step6 case: from step5 btnRev true; step6 "btnFwd := TRUE; esp..."; It doesn't set btnRev false? In protocol step6 only btnFwd := TRUE; btnRev remains TRUE from step5? Because inputs are assigned each step; step5 btnParo false btnRev true. Step6 sets btnFwd true but no btnRev false; so btnRev may remain true. The protocol text: step6: btnFwd := TRUE; espFwd := FALSE; espRev := TRUE; No btnRev assign. Thus btnRev remains TRUE from step5. So both buttons active. Code: IF btnParo false. ELSIF btnFwd AND NOT rev => rev true so false. ELSIF btnRev AND NOT fwd => fwd false, btnRev true => rev true. So rev stays true. Pass. OK.
+
+IEC: uses basic IF, comments. Compiles. Is it idiomatic? Maybe not using TON etc but simple. 2 maybe. It compiles and correct types. Could be 3? Need standard: simple IF, no state variable, but acceptable. Rubric: 3 uses idioms (standard blocks like TON, R_TRIG, CTU well instantiated). No standard blocks needed. 2 compiler no changes declarations types correct. Could be 3 for clean standard ST but not necessarily extension. We need consistent. For all passing compiled simple, IEC maybe 2 or 3. The rubric says 3: "compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." A FUNCTION_BLOCK with BOOL variables is adequate. Could assign 3 if no issues. But "bloques estándar ... bien instanciados" examples when needed. Since no timers needed. But perhaps we can give 3 for clean standard comments. Need be careful not to give too many 3s? It's okay. For simple tasks, most compose standard. However for "iec" 2 maybe "compila sin cambios; declaraciones y tipos correctos" and 3 "además idiomático". Is this simple FB idiomatic? It's idiomatic for seal-in logic. So maybe 3. But some use comments with Spanish accents? Not problem. We can score 2/3.
+
+Need evaluate other dimensions.
+
+Need maybe for all passing items functional fixed 3. Need not assign functional despite challenges. IEC we can assign 2 or 3.
+
+Let's assess all with detailed reasoning.
+
+Let's create table.
+
+Important: The input order 24. Need preserve codigo.
+
+Let's enumerate.
+
+1: B4-8136 (fail 4) functional assess 0? Need likely 0. IEC 2 maybe? It compiles with correct declarations; uses CASE and variables. But has non-idiomatic output assignment only in state 1/2 not 0 causing issues, but IEC syntax standard. IEC 2. Coherencia: variables initialized? estado init 0. But state 0 lacks outputs; outputs not assigned in paro resulting stale. Contradictions? Direct reversal intentional state transitions. Not contradictory but incomplete. Could be 1 or 2. Rubric coherencia 0: conditions contradictory, variables without init effect, dead states preventing operate. 1: mostly coherent, with redundancies or dead conditions no serious. 2: no contradictions; init correct; transitions complete. Here init not fully correct? estado :=0 ok, outputs not set in all states. The state machine transitions incomplete? It has outputs not assigned in state0, so not all outputs defined every cycle. In ST, output retain. This is a flaw but maybe not "dead". Could score 1. However if any state no output, motor can retain while parado? Actually state0 should be parado but it doesn't set fwd/rev false. That's incoherent initial state. But not contradicting. "variables sin inicializar con efecto" not issue. Could be 1 for incomplete. Claridad: Names descriptive, comments, structure state machine. But comments incorrectly say "Parado" but not setting outputs. Could be 2. Mantenibilidad: state machine with magic INT states, no constants; modifications localized? 1 maybe. It uses magic numbers 0,1,2 but simple. Could be 2? Rúbrica: 0 magic everywhere; 1 partially parameterized; 2 parameters as variables/constants; 3 extensible. Here magic numbers but comments. It is modifiable with effort. Probably 1.
+
+2 B4-1620 passes. IEC? Need decide 2 or 3. I think 3 because it uses seal-in idiom with comments and safety interlock; no non-standard. But maybe we might want consistent with other simpler. Let's see. Could set iec 2 for most simple; 3 for those with nice structured comments/idioms. Need differentiate. The code is correct but no state variable; maybe robust. We'll assign 2 or 3. The final rubric: "Cumplimiento IEC 61131-3. 0: no compila; 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." Does this code use POU adecuado? It is FUNCTION_BLOCK as required, inputs/outputs properly declared. But no TON etc. For such simple task, it is idiomatic. I'd assign 3 to good ones. But if all passers get 3 maybe it's fine; they all comply. Yet "3 excelente" maybe reserved for the best. Need not too many? The output should be scores, not balance.
+
+Potential concern: code "FUNCTION_BLOCK FB_Giro ... END_FUNCTION_BLOCK" standard. Some use comments (* *), some //. // might not be allowed in CODESYS? But CODESYS accepts // comments. standard allows? IEC 61131-3 ST comments are (* *), but many CODESYS accept // as extension. The instructions say "usa extensiones fuera del estándar." If code uses //, does that count as extension? In CODESYS, // is accepted; in IEC 61131-3 ST standard, comments are (* *). The standard maybe also permits //? Actually IEC 61131-3 ST supports comments as (* *); single-line comment // is not part of standard? It is a common extension. The presence of // in some code might mean iec=1 if strict. But result codesys compiles; however strict IEC: // is not standard. Need evaluate "Cumplimiento IEC 61131-3". The rúbrica includes "usa extensiones fuera del estándar". Is // an extension? It's outside standard. But CODESYS supports it. Should we penalize? The task says conforme IEC, but can use comments breves. In ST standard, comment is (* *). Many assistants used //. We need be consistent. If being a careful evaluator, you might not penalize // because CODESYS ST supports it? But "IEC 61131-3" strict: // is not part of IEC 61131-3 ST. However in the provided codes, both comment styles. The result codesys compiles. The proper standard comments are (* *). If we assign iec=1 for //, then many would get 1. The rubric says 1 if "usa extensiones fuera del estándar." So yes strict could. But "compila sin cambios; declaraciones y tipos correctos" = 2. However if uses // extension, maybe iec=1. Need decide. The user's protocol mentions "compila" in CODESYS. It says "Cumplimiento IEC 61131-3. 0: no compila; sintaxis o declaraciones inválidas. 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar". Since CODESYS compiles without changes, but if uses //, it's a CODESYS accepted extension. Strict IEC maybe penalize. But "compila solo tras correcciones menores" not the case. "usa extensiones fuera del estándar" yes for //. Would a careful docent penalize //? It might be minor; original task did not explicitly forbid //, but said conforme a IEC 61131-3. I'd likely not harshly penalize // if code compiles and CODESYS target accepts, but "extensiones fuera del estándar" could reduce to 1. Need think.
+
+We need likely assign for iec: codes using (* *) comments maybe 2/3; codes using // comments maybe 1 because // comments are not standard. But is that too strict? Many ST examples in CODESYS use //; IEC standard allows comments? Let's verify. IEC 61131-3 textual comments: (* ... *). Single-line // is not in standard? I think in ST, comments are (* ... *), and // might be accepted in CODESYS but not standard. If we enforce, many get iec=1. But the result says "Compila" meaning CODESYS compiler not strict IEC. The rubric mentions "o usa extensiones fuera del estándar" not necessarily every //. Could be.
+
+However the user expects "Puntúa como lo haría un docente cuidadoso y de forma consistente". The score for iec should differentiate maybe by comment style. But the most important for IEC is syntax. I might generally give iec=2 to most compilations with correct declarations; iec=3 to those using (* *) and maybe very clean; iec=1 to those using //? Hmm.
+
+Need look at all item comments. Some use (* *), some //. For those using //, maybe iec=1 because extension. But if we do, among passers many 1. But the "Cumplimiento IEC" rubric says 1 if uses extension outside standard. The code with // indeed uses extension. But maybe if we consider // as "corrección menor"? Not exactly. However if I mark iec=1 for all //, the passing codes with // may be "funcional 3, iec 1". That seems perhaps too harsh but justified.
+
+Let's see all comments:
+1 B4-8136 uses (* *) for all, CASE. So iec 2 maybe no extension.
+2 B4-1620 uses (* *), simple IF. iec 2 or 3.
+3 B4-8880 uses // and state. If strict, iec=1. But maybe they use // comments not code syntax. 
+4 B4-9178 uses (* *), xRunning. 
+5 B4-2076 uses //. 
+6 B4-2916 uses // after each var and (* *) for logic? It uses "// Botón..." and (* *). Mixed.
+7 B4-1844 uses (* *). 
+8 B4-9939 uses // comments.
+9 B4-9793 uses (* *).
+10 B4-5174 uses (* *).
+11 B4-1107 uses (* *).
+12 B4-2313 uses // and (* *). It uses CASE. 
+13 B4-4978 uses (* *). 
+14 B4-6326 uses (* *). 
+15 B4-2461 uses (* *). 
+16 B4-9948 uses (* *). 
+17 B4-7421 uses // and (* *) for logic? It uses // in variables and (* * for logic). 
+18 B4-1969 uses (* *). 
+19 B4-9599 uses (* *). 
+20 B4-3739 uses // and (* *)? Actually // comments.
+21 B4-1794 uses (* *). 
+22 B4-9025 uses (* *). 
+23 B4-7211 uses (* *)? It uses // for variables and (* *) for logic? Actually code has // Botón, (* * for logic). 
+24 B4-5930 uses //.
+
+If we use strict, many IEC 1. But the rubric also says "2: compila sin cambios; declaraciones y tipos correctos." It doesn't mention comments style. "3: ... construcciones idiomáticas del estándar." Could mark 2 for // because compiles in CODESYS. Need not over-strict. But the evaluator prompt explicitly: "IEC 61131-3. 1: ... o usa extensiones fuera del estándar." Hmm.
+
+Let's consider the purpose: The code is being evaluated by a harness in CODESYS. In CODESYS ST, // is supported extension. But the task is "conforme a IEC 61131-3". If a code uses // comments, maybe non-standard, but compiles. We can assign 1 for that. But would "Cumplimiento IEC" being 1 for an otherwise correct program be too punitive? The rubric defines it. Need use.
+
+However for "iec_fijo" no fixed. We need provide.
+
+Maybe we can compromise: give iec=2 to programs with // because although non-standard comment style, CODESYS accepts, as extension, so maybe 1. But I need be consistent. Let's examine other possible non-standard extensions: Some code uses CASE, standard. "ELSIF" standard. No time types. Some have "estado: INT;" not initialized in some codes with state, leading uninitialized? But CODESYS initializes INT to 0? According to IEC, variables without initialization can be undefined? In PLC, variables initialized to 0 by default? Actually IEC 61131-3 default initial value for basic types is 0 (if not explicitly initial value?) I think declarations without initial value use default 0 in many systems. So not non-standard.
+
+Maybe we can give iec=2 to all compiling codes, because no syntax corrections needed. For those with very standard (* *), maybe 3. The // comments might not be considered extension because even if comments are non-standard, the code syntax and declarations are standard. The rúbrica 1 "o usa extensiones fuera del estándar" yes. But one could argue // is not a code extension but comments. Still syntax.
+
+Need evaluate not only iec but coherencia, clarity, maintainability. We can write justifications accordingly.
+
+Need ensure final JSON only, no markdown. Need produce 24 objects.
+
+Let's assess each in detail.
+
+I will create an internal evaluation.
+
+Project: Motor reversal with cross interlock.
+
+Functional behavior details:
+
+Code B4-8136 already.
+
+Code B4-9939 (fail 3 steps 2,3,6). Code:
+VAR estado : INT; // no init
+// Inicialización del estado
+estado := 0;             // executed every scan!
+IF btnParo THEN estado:=0;
+ELSIF btnFwd AND (estado = 0) THEN estado:=1;
+ELSIF btnRev AND (estado = 0) THEN estado:=2;
+END_IF
+CASE estado OF ...
+
+Important: They set estado :=0 every scan before reading. That breaks latching. In scan after btnFwd from rest, IF sees estado=0 after setting 0, btnFwd true => estado=1; CASE outputs fwd true. Next scan with btnFwd false but state was 1? But their code starts by setting estado:=0 unconditionally, so it loses latch. Then IF btnFwd false btnRev false btnParo false, estado stays 0. CASE outputs false. Thus step2 expected fwd remain true but fails. Step3? After step2 fwd false, step3 btnRev true -> estado=2, rev true; invert direct? Actually from false state, btnRev true sets rev true instead of prohibited? Step3 expected fwd still true, but code fwd false rev true. Fails. Step6? With rev active? But estado being reset each scan maybe? Step5 from rest btnRev true => estado=2 rev true (maybe after scan). Step6: start estado:=0, btnFwd true and btnRev true? Because btnFwd true btnRev remains true from step5. IF btnFwd AND estado=0 => estado=1 (since btnParo false); then CASE outputs fwd true rev false. Expected fwd false rev true. Fails. So functional: fails nominal latch step2 and safety. This is functional 0? It fails basic maintain after release; no latching, so nominal step2 fails. Step1 maybe passes. According rubric failure in case nominal (step2) -> 0. So funcional=0. (If not fixed). Need use 0.
+
+Code B4-9793 (fail 2 steps 3,6): It uses estado : INT := 0; parado:BOOL:=TRUE. Logic three IF? Actually:
+IF btnParo THEN estado:=0; parado:=TRUE; fwd:=FALSE; rev:=FALSE;
+ELSIF parado AND btnFwd THEN estado:=1; parado:=FALSE; fwd:=TRUE; rev:=FALSE;
+ELSIF parado AND btnRev THEN estado:=2; parado:=FALSE; fwd:=FALSE; rev:=TRUE;
+END_IF
+
+(* Estado 1... *)
+IF btnParo THEN estado:=0; parado:=TRUE; fwd:=FALSE; rev:=FALSE;
+ELSIF btnRev THEN estado:=2; fwd:=FALSE; rev:=TRUE;
+END_IF
+
+(* Estado 2... *)
+IF btnParo THEN estado:=0; parado:=TRUE; fwd:=FALSE; rev:=FALSE;
+ELSIF btnFwd THEN estado:=1; fwd:=TRUE; rev:=FALSE;
+END_IF
+
+Need understand. The first block handles starts when parado. Then second and third allow direct reversal if btnRev/btnFwd irrespective of parado and state. Specifically while fwd active, second IF if btnRev then estado:=2; fwd false rev true (without setting parado false but already false). So step3 fails (direct reverse). While rev active, third IF if btnFwd then estado:=1; fwd true rev false; but note second IF also then IF btnParo? For step6: btnParo false, btnRev may remain true, btnFwd true. At start maybe state? For step5 rev true parado false. Step6 btnFwd true btnRev true. First block: not btnParo, not parado? parado false so skip. Second IF: btnRev true => estado:=2; fwd:=FALSE; rev:=TRUE. Third IF: btnFwd true => estado:=1; fwd:=TRUE; rev:=FALSE. So outputs fwd true rev false. Expected fwd false rev true. Fails. So direct reversal inconsistent. Functional 0? It also maybe no latch? Parado variable maybe false after start. Step2? With fwd latched? Step2 btnFwd false, parado false, state stays? Does second/third if? no btnRev/btnParo. Outputs from prior? The second/third IF don't assign fwd/rev if no btnRev/btnFwd. But outputs retain? In ST, last assigned value from previous scan? Variables retain. But fwd/rev not driven in every branch; if btnFwd released, second/third IF no assignments; they retain true/false. So step2 passes. Step3 direct reversal maybe second IF sets rev true. So fail 3,6. This code fails safety direct reversal. Functional 0 or 1? Nominal steps 1,2,5 pass; but direct reversal is a key edge; that may be serious risk. Rubric 1 says "funciona en caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." Direct reversal is explicit requirement, not just edge? But it's a limit case. However fail steps 3 and 6 are inversion attempt with active motor. That is explicit prohibited. Could be 1? But also the code's logic with two separate IFs may produce simultaneous outputs? When both buttons from rest? Step8: from rest btnFwd true btnRev true. First IF: parado true btnFwd => estado1 fwd true rev false parado false. Then second IF: btnParo false, btnRev true => estado2 fwd false rev true. Third IF: btnParo false, btnFwd true => estado1 fwd true rev false. Final fwd true rev false. No simultaneous. Pass step8. Step9 maybe? After step8 state1, btnFwd false btnRev false btnParo true; first IF sets fwd false rev false parado true, second IF btnParo true ... fwd false rev false, third IF btnParo true ... fwd false rev false. Pass step9. So only direct reversal failures. Functional maybe 1 because it fails inversion without paro. But if direct reversal is a core safety rule, maybe 1 not 0. However it also uses uninitialized state? estado init 0. Outputs maybe initially false. I'd assign functional 1 or 0? The rubric 0: "no implementa la lógica pedida o falla en el caso nominal." It implements and passes nominal. So 1 fits: works nominal but fails edge (direct inversion). But direct inversion is a demanded rule. Yet 1 says edge cases: flancos, reset, paro de emergencia. Direct inversion without stop is an edge? The sentence explicitly "para invertir el sentido de giro, es obligatorio pasar primero por el paro." That is a central safety constraint. But harness fail only 2 of 10, mostly edge. I'd give 1. Need remember instruction: "Si compila pero falla pasos: funcional 0, 1 o 2 según la rúbrica, usando qué pasos fallan y el protocolo." For fail steps 3,6: They are direct inversion attempts; not nominal. So 1 likely. If fail also step4? no. So 1.
+
+Code B4-5174: fails steps 3,4,7,9. It is same as B4-8136 but maybe no outputs in state0? Actually state0 no outputs; state1/2 assign outputs, direct reversal via ELSIF btnRev/btnFwd. Step3 direct reverse fail, step4 paro outputs rev true, etc. Similar to B4-8136. Functional 0 because paro fails. It fails 4 steps including step4 paro. So funcional 0.
+
+Code B4-2313 (fail steps 3,6): Code:
+CASE estado OF
+0: if btnFwd then estado1; elsif btnRev then estado2; end_if
+1: IF btnParo then estado0; ELSIF btnRev then estado2; END_IF
+2: IF btnParo then estado0; ELSIF btnFwd then estado1; END_IF
+END_CASE
+CASE estado OF
+0: fwd false; rev false
+1: fwd true; rev false
+2: fwd false; rev true
+END_CASE
+This one sets outputs in state0, but direct reversal in state1/2. Fails steps 3 and 6 exactly due direct reversal. Step4 from state? Step3 direct reversed to state2; step4 btnRev false btnParo true => estado0; output CASE state0 sets fwd false rev false, so step4 passes. Step7 from state2 (after step6 still rev active? Step6 fails expected fwd false rev true but code changed to fwd true rev false; step7 paro sets state0 outputs false, passes). Step9 paro from state? pass. So functional: nominal pass? Steps1,2,4? Step4 passes yes because state0 outputs false after state0 transition? Need check scan order: In first CASE state1 with btnParo true sets estado0, then second CASE sees estado0 and sets outputs false. Good. So only direct inversion fails. Step3 (btnRev while fwd) code changes to rev, fails. Step6 (btnFwd while rev) changes to fwd, fails. This is central requirement but edge. Functional 1 or maybe 2? Rubric 2: "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." Direct inversion with motor running is a safety risk; not falla menor. So 1. It passes password and stop. Not dangerous? It causes motor reverse without stopping, specifically forbidden and potentially dangerous. So 1.
+
+Code B4-3739 (fail step 3 only): Code state machine with state0 sets outputs false, state1 output true, but allows direct reversal ELSIF btnRev. It fails step3. Step6? Let's see step6 from rev state2: state2 IF btnParo false; ELSIF btnFwd true => actually code state2: IF btnParo THEN estado := 0; ELSIF btnFwd THEN estado := 1; END_IF; This allows direct reverse to forward! Wait step6 expected fwd false rev true but code would change to state1 fwd true rev false. That should fail step6 too, but result says fails only step3. Why? Maybe harness does not set btnFwd at step6? It says step6: btnFwd := TRUE; espFwd := FALSE; espRev := TRUE; But maybe input btnRev remains from previous? Hmm. Let's re-read code B4-3739:
+CASE estado OF
+0: fwd false rev false; IF btnFwd THEN estado1; ELSIF btnRev THEN estado2;
+1: fwd true rev false; IF btnParo THEN estado0; ELSIF btnRev THEN estado2;
+2: fwd false rev true; IF btnParo THEN estado0; ELSIF btnFwd THEN estado1;
+END_CASE.
+Step6 from step5 rev true. Step6 btnFwd true (btnRev maybe still true because not reset). In state2: IF btnParo false; ELSIF btnFwd true => estado1. Then after CASE? State1 outputs would be assigned only next scan; wait in this scan, state2 initially, so sets fwd false rev true, then IF sets estado=1, but after that no second CASE. Thus outputs stay rev true for this scan. Harness may check immediate? If step6 expected fwd false rev true, it would pass. On next scan state1 with btnFwd true btnRev still true: state1: outputs fwd true rev false; IF btnParo false; ELSIF btnRev true => estado2. So outputs fwd true rev false. If harness step6 waits multiple scans, maybe fails. It reported only step3 fail, so maybe harness checks one scan per step after transition. Hmm interesting. For other code with second CASE after transitions maybe different.
+
+But based on reported failures, B4-3739 only fails step3. Step3 from state1 with btnRev true: state1 outputs fwd true rev false, IF btnRev true => estado2. Output this scan fwd true rev false? Wait code state1: sets fwd true rev false; then IF btnParo false; ELSIF btnRev true => estado2. There is no output assignment after IF. So outputs remain fwd true rev false. Expected step3 fwd true rev false. So it should pass step3! But reported fail step3. Maybe because harness holds step and looks at next scan after setting? If so step3 after first scan state2 outputs rev true; fail. Step6 from state2 with btnFwd true: first scan state2 outputs rev true; IF btnFwd true => estado1. Harness maybe next scan sees state1 outputs fwd true rev false; if step6 expected rev true, fail. But reported not fail step6. Inconsistency likely due how harness sequences steps and expected after settling? Maybe it may not have state variable persistence? Need not resolve: use result codesys as ground truth for which steps fail.
+
+Given B4-3739 fails only step3 (direct reversal forward->rev) but not step6? Weird. Maybe because step5 sets btnRev true, step6 btnFwd true, but code in state2 with btnFwd true goes to state1. If harness checks fwd/rev after one scan, rev still true pass. If next scan maybe not. The harness may only check after one scan. Then step3 fails because? Step3 from state1 with btnRev true in code: state1 outputs fwd true, then transition to estado2; outputs still fwd true on that scan, should pass. Unless the harness executed step2 with btnFwd false and code's state? At step2 state1? Step1 btnFwd true from state0: state0 IF btnFwd true estado1; outputs case state0 fwd false rev false first scan. Harness may settle next scan. End of step1 maybe state1 outputs true. Step2 holds state1 outputs true. Step3: state1 btnRev true: set fwd true rev false; then transition estado2. If check after scan, outputs true false, expected true false: pass. But reported fail. Maybe harness reads final output after scan, perhaps the transition assignment state doesn't affect output until next scan, so pass. Then why fail? Wait code B4-3739 not B4-2313? Let's reread B4-3739 code:
+CASE estado OF
+0: 
+    fwd := FALSE;
+    rev := FALSE;
+    IF btnFwd THEN estado := 1;
+    ELSIF btnRev THEN estado := 2;
+    END_IF
+1:
+    fwd := TRUE;
+    rev := FALSE;
+    IF btnParo THEN estado := 0;
+    ELSIF btnRev THEN estado := 2;
+    END_IF
+2:
+    fwd := FALSE;
+    rev := TRUE;
+    IF btnParo THEN estado := 0;
+    ELSIF btnFwd THEN estado := 1;
+    END_IF
+END_CASE
+This is exactly same as B4-2313, which failed steps 3,6. But B4-3739 reported fails only step 3. Wait there might be difference: B4-3739 uses // comments and "estado : INT := 0;" yes. B4-2313 has two CASE assigning outputs after transitions, which changes behavior. B4-2313 fail steps 3,6. B4-3739 only fail 3. Hmm let's compare: B4-2313:
+CASE estado OF
+0: IF btnFwd... no output
+1: IF btnParo... elsif btnRev...
+2: IF btnParo... elsif btnFwd...
+END_CASE
+CASE estado OF
+0: fwd false...
+1: fwd true...
+2: ...
+END_CASE
+This after first scan step3: state1, first CASE sets estado2, second CASE uses estado2 now and outputs rev true. So fail step3. Step6: state2, first CASE sets estado1, second CASE outputs fwd true, fail step6. 
+B4-3739: no second CASE; state1 sets outputs before transition, so step3 would pass immediate. However result says fails only step3. Maybe harness step durations vary? Could be code B4-3739 actually fails step3 because on next scan? But if immediate one scan each step, should pass. If it cycles until stable, B4-3739 would fail both step3 and step6 because output after second scan would wrong. But reported only step3 indicates maybe different.
+
+Let's not over-rely on intricacies; use provided result: fail step3 only. Need score functional. It fails one step (direct inversion from fwd to rev) but passes others including step6. Maybe due transient? Should score 1? It fails one edge. But if step6 not fail, no risk? The explicit direct reversal from rev to fwd maybe should also fail but didn't due timing. Nonetheless code has a logical flaw: state machine allows direct reversal both ways. Even if harness didn't catch step6, code risk. Functional per "using steps failed" might be 1. Because fails one case and code logic allows direct inversion. Could 0? It passes nominal and most edges, but direct reversal risk is serious. Rubric 2: correct in nominal and most edge; failures minor without risk. This failure is not minor, so 1. If only one step fail but safety critical, 1.
+
+Need evaluate all.
+
+Let's go through each item:
+
+1 B4-8136:
+- Funcional: 0 (fails paro and direct reversal, risk). Just if not fixed? Both no fixed. Need just_func_iec line. We'll do "Falla paro y reversa prohibida; salidas no asignadas en parada."
+- IEC: maybe 2. It compiles; standard CASE/IF; declarations correct.
+- Coherencia: 1. State machine lacks assignments in state0; transitions direct reversal; but initial state init.
+- Claridad: 2. Descriptive names and comments but missing behavior in state0; state machine clear.
+- Mantenibilidad: 1. Magic state INTs; modification possible but scattered transition logic.
+
+2 B4-1620:
+- Funcional fixed 3. IEC maybe 3? Let's decide. It uses standard seal-in and safety. Could be 3.
+- Coherencia: 3? Robust interlock complete; no contradictions; safe with simultaneous inputs (btnFwd priority). It also handles lost buttons? Latch? Wait code logic: fwd := (btnFwd OR fwd?) No it uses ELSIF. It doesn't explicitly keep fwd true when buttons released? Wait code: IF btnParo THEN fwd:=FALSE... ELSIF btnFwd AND NOT rev THEN fwd:=TRUE; ELSIF btnRev AND NOT fwd THEN rev:=TRUE; END_IF. This does NOT have self-retention! It sets fwd true only when btnFwd active; if btnFwd released, none of the ELSIF true? Actually fwd output retains its prior value? In ST, variables assigned to outputs may retain? Let's think: In a FUNCTION_BLOCK, VAR_OUTPUT fwd is a variable; if not assigned in a scan, it retains prior value. In CODESYS, outputs retain last assigned or initial. So when btnFwd released, no assignment to fwd, it remains TRUE because not assigned FALSE. That is a latch via retention, but not via explicit feedback. Is that acceptable? Yes, output retains. It passes harness. But careful: If both buttons false after btnFwd release, the IF no assignment, fwd stays true from previous scan. Thus self-maintained. It succeeds. Why not assign false? Because outputs are static. So okay.
+Safety IF: if fwd and rev both true, set both false. It also does not explicit if btnParo release and both false, both remain false. fine.
+Coherencia: The logic is quite robust. It prioritizes paro, prevents direct reversal because when fwd true and btnRev true, second ELSIF not true because rev false? Wait btnRev true and NOT fwd? fwd true so false, so no assignment, fwd retains true. good. Step8 both from rest: btnFwd first. Could be robust. No states dead.
+- Claridad: 2? Comments and sections. No state var but brief. 2 or 3? It has comments for interlock. It doesn't explain why both buttons from rest picks fwd? Actually no comment. Maybe 2.
+- Mantenibilidad: 2? Simple, no constants; parameters are inputs/outputs. Could be 2. No magic numbers. 3 for extensibility? Not particularly. 2.
+
+3 B4-8880 passes. Code:
+FB with // comments, estado : INT; no init? Actually no init. It begins fwd := FALSE; rev := FALSE; each scan before logic. Then IF btnParo estado0; ELSIF btnFwd AND estado=0 estado1; ELSIF btnRev and estado0 estado2. CASE assigns. It uses estado uninitialized (but default 0) and resets outputs each scan. This is state machine; works. Comments use //. 
+- Funcional fixed 3.
+- IEC: This code uses // comments, but syntax standard otherwise. Should we assign 1 due to //? If strict maybe 1. But since compiles, maybe 2. Need determine. For a careful evaluator, one could mark 2 because only comments style extension, not syntax. Hmm. Rubric says "o usa extensiones fuera del estándar." I think if we assign iec=1 for //, need just "Comentarios // no estándar". But also the code declares estado without initialization; default 0 is system-defined? Not IEC? Default initial value for variables in IEC is 0? Actually in IEC 61131-3, variables of basic types are default-initialized to 0 unless explicitly initialized? I think yes? I know CODESYS initializes to 0. Fine.
+
+But if I mark all // as iec=1, then scores like B4-8880 functional 3, iec1. Is that too low? The user says "Cumplimiento IEC 61131-3. 0: no compila... 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos." Since the code compila sin cambios in CODESYS, but uses // extension outside standard. That is 1. I'll likely assign iec=1 where // appears. But some codes use (* *) comments despite using // variable? Could segregate.
+
+Need look at B4-8880: all comments use //. Thus iec=1.
+
+But the instruction about "iec_fijo": if null, we assign. Need use 1 if extension. However maybe CODESYS default accepts //; if compiling with IEC compiler, // might be accepted as extension. Yes.
+
+But maybe marking // as extension is too pedantic; yet "docente cuidadoso" includes that. I'll use it but not for all? Let's maybe decide: Use iec=2 for codes that compile and use // comments? Wait rubric 2 says "compila sin cambios; declaraciones y tipos correctos." This can be true even with //. The extension phrase in 1 is "usa extensiones fuera del estándar." It is an extension. But if we consider comments not part of program semantics, maybe lesser. I think to be consistent, should maybe penalize only when there are non-standard constructs affecting code, not comments. But the rubric says "extensiones fuera del estándar" broadly. Hmm.
+
+Given the task asks "conforme a IEC 61131-3" and each code includes comments. A strict evaluator might penalize //. But maybe the test harness is CODESYS, so // is accepted. I can give iec=2 for most and perhaps 3 when (* *). But if I give 1 for //, there will be many. The instruction says "puntúa como lo haría un docente cuidadoso"—I'd indeed note // as non-standard, but maybe not fail to 1 because compiles without changes on target. The rubric's 1 is severe. "Compila solo tras correcciones menores, o usa extensiones fuera del estándar." It is a direct match. So 1.
+
+Let's check B4-1620 uses all (* *), no //. So IEC 3. Good.
+
+Need maybe for code using // and (* *) mixed, extension exists -> iec1. Many codes.
+
+But I'm concerned about final score distribution: some functional fail codes with (* *) get iec=2; pass codes with // get iec=1. That's okay because IEC is syntax/comments.
+
+Let's decide for each IEC accordingly:
+- Uses // anywhere: if no (* *)? But code with // comments still standard code. We can assign 1.
+- If uses only (* *) comments, can assign 2 or 3. Need perhaps differentiate 3 for well-structured and no issues. Maybe all only(* *) can be 2, and the better ones 3. But the rubric's 3: "usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." There's no TON etc needed. Most use FB appropriately. Could give 3 for all (* *) that are not problematic. But then many 3. It is fine.
+
+Let's maybe define:
+- If comments use //, iec=1 unless there is some mix? 
+- Else iec=2, with 3 for code that is particularly clean with FB named appropriately and maybe explicit interlocks with comments? Hmm.
+
+Need evaluate not only comments but declarations. Some code declares estado:INT without initial value; maybe not issue. Some code uses `estado := 0;` every scan before logic, causing functional issue but standard. No non-standard.
+
+Maybe we can give iec=2 to all compile as baseline; 3 to those with (* *) comments and clean. Actually IEC 2: declared and types correct. That's every compiles. IEC 3: additionally idiomatic (POU adecuado, etc). Since all are FUNCTION_BLOCK, inputs/outputs BOOL, yes. Which ones are "idiomáticas"? State machines with CASE are idiomatic. Interlock with feedback is idiomatic. A simple state machine with `estado : INT` and CASE but no constants is idiomatic enough. So maybe many 3.
+
+But if they use // comments, maybe 2 at most. Hmm.
+
+Let's focus on final justifications. Could be concise.
+
+Need evaluate functional for fail codes:
+- B4-8136: fail 3,4,7,9 => functional 0.
+- B4-9939: fail 2,3,6 => step2 latch fail, functional 0.
+- B4-9793: fail 3,6 => direct reversal, functional 1.
+- B4-5174: fail 3,4,7,9 => functional 0.
+- B4-2313: fail 3,6 => direct reversal, functional 1.
+- B4-3739: fail 3 => direct reversal, functional 1 (but code likely also direct reverse step6 maybe not caught; still risk).
+- B4-7211: fail 3,6 => both direct? Need analyze.
+
+B4-7211 code:
+fwd := NOT btnParo AND NOT rev AND NOT btnRev AND (btnFwd OR fwd);
+rev := NOT btnParo AND NOT fwd AND NOT btnFwd AND (btnRev OR rev);
+
+Fails steps 3,6. Step3 from fwd active, btnRev true. fwd equation: NOT btnParo true, NOT rev? rev currently false? true. NOT btnRev? btnRev true => false. So fwd becomes false. rev equation: NOT btnParo true, NOT fwd? fwd current? old fwd true? In ST, equations maybe evaluated using old values for all? If simultaneous; after fwd assignment maybe rev uses new fwd? In CODESYS, variables assignments occur sequentially? ST is sequential? Actually assignment statements execute sequentially; rev equation uses fwd value that was just assigned false if order? It's not clear; but if fwd new false, then rev: NOT btnParo true AND NOT fwd true AND NOT btnFwd? btnFwd false (step3 btnFwd? step3 sets btnRev true while fwd had been latched from step1? Step2 btnFwd false, step3 btnRev true; btnFwd remains false). So rev true. Thus direct invert. Step6 from rev active, btnFwd true. fwd equation uses rev current? old rev true -> false; rev equation uses NOT btnFwd false, so rev false. Then fwd? Wait fwd assignment uses NOT rev old true, so false; rev becomes false. Outputs maybe false? But if sequential, fwd false, rev false? Actually step6 btnFwd true btnRev true maybe? Code fwd: NOT btnParo true, NOT rev (old rev true) false -> fwd false. rev: NOT btnParo true, NOT fwd (new fwd false) true, NOT btnFwd false => rev false. Both false. Expected fwd false rev true. Fails. Step8 both from rest: old both false. fwd: NOT paro true, NOT rev true, NOT btnRev? btnRev true => false, so fwd false. rev: NOT fwd true, NOT btnFwd false => false. Both false. Does not coexist, pass step8. 
+Functional: direct reversal and step6 weird both off (motor stops when btnFwd pressed while rev active) which is not safe? At least direct reversal prohibited but maybe motor just stops? Actually if both off, no simultaneous, but expected rev remains true. This is functional failure. It fails 2 steps (3,6) both inversion attempts. Nominal works. Functional 1? It fails direct inversion. But code adds `NOT btnRev`/`NOT btnFwd` to avoid simultaneous from rest, but causes releasing? It might fail if both buttons active from rest? It passes step8 because both off (no coexist). So okay. I'd assign 1 (works nominal but fails required attempts). 
+- B4-7211 functional 1.
+
+Other failing code? We have lists:
+1 B4-8136 fail 4
+8 B4-9939 fail 3 (actually fail 3 steps 2,3,6)
+9 B4-9793 fail 2
+10 B4-5174 fail 4
+12 B4-2313 fail 2
+20 B4-3739 fail 1
+23 B4-7211 fail 2
+
+Need verify there are no non-compiling. All compile.
+
+Need maybe functional score for B4-3739 only fail one step. But its code has no second CASE; could be a timing issue. Still score 1.
+
+Now clear structural, maintainability, coherencia.
+
+We need give integer 0-3 for each. Need not overthink; but should be consistent. Let's define baseline for all:
+- Coherencia:
+  - 3 for code with complete interlock, no contradictions, robust simultaneous input handling. Simple state machine with direct reversal likely has contradiction with requirement, so lower.
+  - 2 for no contradictions, initializations, complete transitions but maybe no huge robustness.
+  - 1 for incomplete logic or initializations issues.
+  - 0 for conditions contradictory/no operation.
+- Claridad:
+  - 3 for modularization, comments explaining why; but these are simple FBs, not much modularization. Could give 2 mostly, 3 for those with excellent section comments (B4-9025, B4-9599 with safety comments).
+  - 1 for poor names/comments.
+  - 2 for descriptive names and sections, useful comments.
+- Mantenibilidad:
+  - 2 for parameters via inputs, no magic numbers, localized changes.
+  - 3 for no duplication, extensible design; maybe some FB with state variables separate.
+  - 1 for magic state numbers.
+
+Need consider final scoring for each.
+
+Let's go item by item in order, evaluating each.
+
+I will create detailed internal notes.
+
+Item 1: B4-8136.
+Code:
+FB_Giro with VAR_INPUT/OUTPUT. VAR estado : INT := 0.
+CASE estado OF
+0: (* Parado *) IF btnFwd THEN estado:=1; ELSIF btnRev THEN estado:=2; END_IF; 
+1: (* Giro horario *) fwd:=TRUE; rev:=FALSE; IF btnParo THEN estado:=0; ELSIF btnRev THEN estado:=2; END_IF;
+2: (* Giro antihorario *) fwd:=FALSE; rev:=TRUE; IF btnParo THEN estado:=0; ELSIF btnFwd THEN estado:=1; END_IF;
+END_CASE.
+
+Observations:
+Functional: Fail 4. Already 0.
+IEC: Comments (* *), standard. But maybe because it has state variable without constants, but compiles. 2. Could be 3? It uses CASE but no outputs in state 0. That's not IEC issue. I'd give iec=2.
+Coherencia: Init estado ok; but state0 doesn't assign outputs -> outputs may retain, so stop/stop not explicitly clearing; direct reversal implemented. This is more than minor. Score 1. 
+Claridad: Names descriptive, comments for estados; but not comments that outputs not assigned; structure recognized. 2.
+Mantenibilidad: State machine with magic INT; no constants; to change states add labels. 1.
+
+Justifications:
+just_func_iec: "Compila con IEC estándar; funcional falla directa y paro." But because funcional not fixed? Actually both not fixed. Need one line. "Compila y usa ST estándar, pero falla la lógica de paro y reversa." maybe not quite iec. Could be "Código compila con tipos correctos; la lógica falla paro y reversa." But just_func_iec maybe one line for functional and iec. Could say "Compila con sintaxis estándar, pero la máquina de estados no cubre salidas en paro y permite reversa directa." Fine.
+just_coherencia: "La salida no se asigna en estado 0 y hay transiciones directas entre sentidos; estado inconsistente con los requisitos."
+just_claridad: "Estructura CASE clara y nombres descriptivos, aunque el estado 0 incompleto no se documenta."
+just_mantenibilidad: "Estados enteros mágicos sin constantes; cambios requieren revisar cada transición."
+
+Item 2: B4-1620.
+Functional fixed 3.
+IEC: code uses (* *), standard. It doesn't use explicit state; outputs retain. Could be 3? It is simple but idiomatic for latching with priority and safety. I'd give 3.
+Coherencia: Need evaluate. It has:
+IF btnParo THEN fwd:=FALSE rev:=FALSE;
+ELSIF btnFwd AND NOT rev THEN fwd:=TRUE;
+ELSIF btnRev AND NOT fwd THEN rev:=TRUE;
+END_IF
+IF fwd AND rev THEN fwd:=FALSE rev:=FALSE;
+END_IF
+Potential issue: if both buttons pressed from rest, fwd gets priority. That's acceptable. If motor running fwd, pressing rev has no effect because ELSIF btnFwd? step3 btnRev true, btnParo false, btnFwd false? It goes to first ELSIF btnFwd and not rev? false. second ELSIF btnRev and not fwd? fwd true so false. No assignment; fwd retains true. good. If motor running rev, pressing fwd (step6 while btnRev still true) first ELSIF btnFwd and NOT rev? rev true false; second ELSIF btnRev and NOT fwd? fwd false true => rev assigned true (retains) good. If both inputs false after release, no assignment; retains. Paro priority clears. Safety final clears any simultaneous. Good. Could coherencia 3: robust; no contradictions; initial output? VAR_OUTPUT default false (though not explicit). Could maybe initial outputs uncertain? In CODESYS output bool defaults false. Safe. 3.
+Claridad: Comments per section, yes. But maybe no "why" beyond "Paro". It has "Marcha horaria: solo si rev no esta activa..." and "Enclavamiento de seguridad..." Good. It doesn't modularize, but simple. 2 maybe. We can give 2.
+Mantenibilidad: No magic, very localized. Could be 2 or 3. It doesn't have parameters for latching logic but simple. 2.
+Justifications:
+just_func_iec: since funcional fixed and iec not fixed, one line "Compila y usa construcción estándar de enclavamiento con paro de manera idiomática." 
+just_coherencia: "Interlocks completos: paro prioritario, arranques condicionados y limpieza si ambas salidas coinciden."
+just_claridad: "Comentarios por secciones y nombres descriptivos; estructura lineal clara."
+just_mantenibilidad: "Cambios localizados y sin valores mágicos, aunque la lógica de retención es implícita."
+
+Item 3: B4-8880.
+Functional fixed 3. Code uses // comments. State variable no init. It initializes outputs false each scan, then state logic. Estado defaults 0? In PowerOn maybe 0. 
+IEC: due // => 1? Need decide. I'll likely assign 1? Hmm. It also declares `estado : INT;` without initial; not an IEC violation. Comments // extension. I'll mark iec=1 with justification "Usa comentarios //, extensión CODESYS fuera del estándar IEC; compila." 
+But wait if I mark iec=1 for this, maybe many. Need be consistent. Let's list which items use //. If I mark 1, final scores will have many iec=1. Acceptable.
+
+Let's see if there are other extensions: CODESYS allows `CASE` standard. `ELSIF` standard. no.
+
+Code coherencia: It has `estado` uninitialized. It sets outputs false at start each scan, then updates estado based on estado = 0. Since estado default 0 (but not explicit) okay. It has CASES complete. No direct reversal because state transitions only if estado=0. So robust. It handles simultaneous from rest by checking order btnFwd then btnRev. Coherencia 3? It does not use state variable with explicit persistence issue? It uses `estado` not initialized but default expected. Are there any dead states? no. The initial assignment fwd false rev false every scan before case ensures outputs clear when no state? Then case sets output. Coherent. Could 3. 
+Claridad: // comments but well named. However state variable not initialized explicit maybe not commented. 2.
+Mantenibilidad: Magic INT state 0/1/2; no constants, but state transitions central. 1 or 2. Many state-machine codes with INT states. Use comments legends; 1 maybe. I'd use 1 if no named constants. But rubric for maintenance: 1 "modificable con esfuerzo; constantes parcialmente parametrizadas." That fits magic INT states. 2 "parámetros como variables o constantes declaradas; cambios localizados." They didn't declare constants. So 1.
+Just:
+just_func_iec: "Compila, pero los comentarios // son extensión no estándar de CODESYS." (and functional fixed) 
+just_coherencia: "Máquina de estados completa sin transiciones prohibidas; inicialización implícita de estado."
+just_claridad: "Nombres descriptivos y comentarios, aunque breves."
+just_mantenibilidad: "Estados con números mágicos; lógica centralizada pero sin constantes."
+
+But maybe if we assign iec=1 for //, need not use `iec=1` for all with // including some code that uses // only for comments. We'll be consistent.
+
+Item 4: B4-9178.
+Functional fixed 3. Code uses (* *) comments. 
+Code:
+VAR xRunning:BOOL := FALSE.
+IF btnParo THEN fwd false rev false xRunning false
+ELSIF btnFwd AND NOT xRunning THEN fwd true rev false xRunning true
+ELSIF btnRev AND NOT xRunning THEN rev true fwd false xRunning true
+END_IF
+No safety final? It relies xRunning. Does it retain outputs after buttons released? Since xRunning true, if btnFwd false and btnRev false, no assignment; outputs retain from previous cycle. Good. If xRunning true and btnRev pressed while fwd active: btnParo false; ELSIF btnFwd AND NOT xRunning? false; ELSIF btnRev AND NOT xRunning? false; no assignment; fwd retains true. Good. Step8 both from rest: xRunning false, btnFwd true => sets fwd true; rev false; xRunning true. Pass. 
+IEC: uses (* *), standard, can give 3? It is a good state flag instead of INT; simple. 3.
+Coherencia: 3: explicit xRunning, paro priority, no direct reversal, robust simultaneous input. It doesn't have a final safety interlock, but assignments ensure exclusive outputs. xRunning prevents opposite start. No dead state. 3.
+Claridad: Comments good; logic sections. 2 or 3. It has a comment block explaining. But no modularization; ST simple. 2. Could 2.
+Mantenibilidad: Uses boolean state xRunning instead of magic; changes localized; but no extension. 2 or 3. I'd give 2.
+Just...
+Item 5: B4-2076.
+Functional fixed 3. Code uses // comments. State INT.
+State machine: state0 outputs false, if btnFwd state1 elsif btnRev state2; state1 outputs true, if btnParo state0 (no direct reverse); state2 outputs true, if btnParo state0. Good. 
+IEC: uses // -> 1 maybe.
+Coherencia: Very coherent, no direct reversal. 3.
+Claridad: Clear with state comments. 2.
+Mantenibilidad: Magic INT states, no constants. 1.
+Item 6: B4-2916.
+Functional fixed 3. Code:
+fwd := (btnFwd OR fwd) AND NOT rev AND NOT btnParo;
+rev := (btnRev OR rev) AND NOT fwd AND NOT btnParo;
+Uses // comments? It uses // for VAR_INPUT comments and (* *) for logic. Mixed, includes // extension. Need iec1 maybe.
+Functional: This is classic equation. Does it pass step8 from rest both buttons? Let's simulate: old fwd false rev false. fwd new = (true OR false) AND NOT false AND NOT false = true. rev new = (true OR false) AND NOT fwd(new true?) Sequential? If fwd assigned first, rev uses new fwd true => false. So fwd true rev false. Pass. Step3 from fwd active btnRev true: old fwd true rev false. fwd new = (false OR true) AND NOT false AND NOT false = true. rev new = (true OR false) AND NOT fwd(new true) = false. Pass. Step6 from rev active btnFwd true: old fwd false rev true. fwd new = (true OR false) AND NOT rev(old true) = false. rev new = (btnRev? step5 btnRev true OR rev true) AND NOT fwd(new false) = true. Pass. So good.
+IEC: mixed comments with // => perhaps 1.
+Coherencia: 3, complete interlock, robust, though if both from rest fwd priority. 
+Claridad: Good comments. 2 or maybe 3? It has clear comments explaining logic. 2.
+Mantenibilidad: No magic, changes localized. 2 or 3. Since simple equations, 2.
+Item 7: B4-1844.
+Functional fixed 3. Code:
+fwd := (btnFwd OR fwd) AND NOT btnParo AND NOT rev;
+rev := (btnRev OR rev) AND NOT btnParo AND NOT fwd;
+Uses (* *) comments. Good. 
+IEC: 3 maybe. 
+Coherencia: 3. 
+Claridad: 2. 
+Mantenibilidad: 2.
+Item 8: B4-9939.
+Functional not fixed (fail) determined 0. Code uses // comments. State machine but erroneous reset `estado := 0;` every cycle. 
+IEC: // extension? Yes maybe 1. But if already functional 0? Still separate. 
+Coherencia: `estado := 0` every scan contradicts latching; output case uses state after logic. This is contradictory to intended latching. Could score 1? It has initialization reset incorrectly. Variables initialized? estado set 0 each scan; parado? Not used. This is serious. Coherencia 1 maybe? Rubric 0: conditions contradictorias, variables sin inicializar con efecto, or dead states. Here resetting state each scan effectively dead state; motor can't latch. So coherencia 0 maybe. But it still operates for one scan, so not completely dead. "variables sin inicializar con efecto" not. However the state variable initialization is assigned every scan, making previous state lost. That's a contradiction with latching. I'd score 1 because logic mostly coherent but with significant redundancy/condition muerta? However label "estado :=0 cada scan" is not just redundancia; it kills latch, but still some transitions. I'd assign 1 maybe but could be 0. Need rubrics:
+0: "condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar."
+1: "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave."
+Here reset each cycle does have efecto grave: no latch and causes step2 fail. So coherencia 0. 
+Claridad: Comments good; names ok; but misleading "Inicialización del estado" as if power-on; not clear it resets every scan. I'd still 2? Hmm. The error is not a clarity issue; comments do not explain. Could 1 due incorrect comments? But naming fine. I'd give 2 maybe. 
+Mantenibilidad: Magic states, no constants; also impossible to fix by just constants? 1.
+Item 9: B4-9793.
+Functional 1. Code uses (* *). 
+Coherencia: It has separate IF blocks contradicting state; can leave state and outputs inconsistent? It sets parado false on start but doesn't update `parado` in second/third IF for direct reversal. The logic is messy. Maybe score 1.
+Claridad: Comments ok but logic split into three IFs, not obvious. 1 maybe.
+Mantenibilidad: Magic states but variables; 1.
+IEC: standard comments ( (* *) ) and compiles. 2 maybe 2. It uses IF, no ext. 2.
+Item 10: B4-5174.
+Functional 0. Code uses (* *) comments. Similar B4-8136 but maybe no outputs in state0? Actually code state0 does not assign outputs, state1/2 assign. Direct reversal. 
+IEC: 2 or 1? (* *) standard. 2. 
+Coherencia: 1 (incomplete outputs). 
+Claridad: 2. 
+Mantenibilidad: 1.
+Item 11: B4-1107.
+Functional fixed 3. Code identical to B4-1620 but maybe same with `ELSIF` etc and safety final. Uses (* *). 
+IEC: 3. 
+Coherencia: 3. 
+Claridad: 2. 
+Mantenibilidad: 2.
+Item 12: B4-2313.
+Functional 1. Code uses // and some (* *) comments. State machine with separate CASE assignment. Direct reversal. 
+IEC: if // -> 1 maybe. 
+Coherencia: State machine complete with separate outputs; but direct reversal contradicts requirement. Transitions complete though. Could score 1 or 2. Since logic is coherent but violates requirement intentionally; not contradictory internally, but unsafe. "Coherencia lógica" is about internal contradictions, not requirement. Direct reversal is coherent but not desired. Outputs set in all states. Init estado 0. No dead states. Could be 2: no contradictions, init correct, transitions complete. But direct reversal is an undesired transition, not dead. The rubric "sin contradicciones; inicialización correcta; transiciones completas" yes. But "interlocks completos" no. So 2 maybe. However it allows direct reversal; not robust. Could be 1? "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." The direct reversal is effect grave. But coherencia rubric doesn't explicitly penalize unsafe desired? "comportamiento seguro ante entradas simultáneas" is for 3. 2 could still allow no interlocks but complete transitions. I'd give 2 for B4-2313 because it has no internal contradictions; state and outputs complete. But for others with same direct and no outputs maybe 1. 
+Claridad: Good comments, two CASE separation; 2.
+Mantenibilidad: Magic states; 1.
+Item 13: B4-4978.
+Functional fixed 3. Code uses (* *). State INT. 
+Code:
+IF btnParo state0; ELSIF btnFwd AND estado=0 state1; ELSIF btnRev AND estado=0 state2.
+fwd := (estado=1); rev := (estado=2).
+This is coherent; no direct reversal. It initializes estado? Not explicitly; default 0. Fine.
+IEC: 2 or 3. Since comments (* *), standard. It uses comparisons to boolean outputs. 3 maybe. 
+Coherencia: 3. Robust? It relies on estado initial but complete outputs each scan. Does it maintain outputs after release? state stays 1 after btnFwd release (no IF assignment when false; estado remains 1), outputs set by state each scan. Good.
+Claridad: 2.
+Mantenibilidad: Magic INT state, but simple; no constants. Could 1 or 2. I'd give 1.
+Item 14: B4-6326.
+Duplicate of 13. Functional fixed 3. IEC 3? 
+coherencia 3, claridad 2, mantenibilidad 1.
+Item 15: B4-2461.
+Functional fixed 3. Code same as B4-1844 with (* *). 
+IEC 3. 
+Coherencia 3. 
+Claridad 2. 
+Mantenibilidad 2.
+Item 16: B4-9948.
+Functional fixed 3. Code same as feedback equation, (* *). 
+IEC 3. 
+Coherencia 3.
+Claridad 2.
+Mantenibilidad 2.
+Item 17: B4-7421.
+Functional fixed 3. Code uses // for VAR comments and (* *) for logic. Same equations as B4-2916. 
+IEC: because //, maybe 1. But I need decide. If I assign iec=1 for // comments, yes. But the code's logic comments use (* *). Use of // in variable declarations. 
+Coherencia 3. 
+Claridad 2 (comments good). 
+Mantenibilidad 2.
+Item 18: B4-1969.
+Functional fixed 3. Code same as B4-4978 with (* *). 
+IEC 3 maybe? 
+Coherencia 3.
+Claridad 2.
+Mantenibilidad 1.
+Item 19: B4-9599.
+Functional fixed 3. Code uses (* *). Similar to B4-9178 but adds final safety interlock. 
+IEC 3. 
+Coherencia 3: robust, double protection. 
+Claridad 2 or 3. It has section separators and comments. Could 3? The rubric for clarity 3: "modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué." It is a single FB, not modularization beyond FB. But in small task, it's okay. Comments explain why. I'd maybe 2. 
+Mantenibilidad: 2 or 3. Design extensible? Uses xRunning bool; no duplication. I'd give 2.
+Item 20: B4-3739.
+Functional 1. Code uses // and (* *) mixed. Direct reversal in states. 
+IEC: // -> 1.
+Coherencia: State machine with outputs only in state cases; if transition direct reversa but outputs set before transition. In terms of internal logic, no contradictions; but transitions complete. It doesn't set outputs in state0? Wait it does: state0 fwd false rev false; yes. Good. Init estado 0. Direct reversal not dead. Could be 2. But not safe. Maybe 1 because direct reversal effectively unsafe transition, but internal coherent. I'll assign 1? Let's see clarity: comments with //; clear names. 
+Claridad: 2 maybe. 
+Mantenibilidad: 1.
+Item 21: B4-1794.
+Functional fixed 3. Code uses (* *). 
+Code:
+VAR stateFwd, stateRev BOOL;
+IF btnParo THEN stateFwd false stateRev false;
+ELSIF btnFwd AND NOT stateRev THEN stateFwd true;
+ELSIF btnRev AND NOT stateFwd THEN stateRev true;
+END_IF
+fwd := stateFwd AND NOT stateRev;
+rev := stateRev AND NOT stateFwd;
+This is quite good. It uses separate stateFwd/stateRev. It doesn't set stateFwd false when starting rev? Wait if stateFwd false, stateRev false, btnRev true -> stateRev true. If motor fwd, stateFwd true, stateRev false, btnRev true -> first IF false; second ELSIF btnFwd AND NOT stateRev? btnFwd false; third ELSIF btnRev AND NOT stateFwd? stateFwd true => false. So stateFwd remains true. good. If both from rest, fwd priority. Step8: stateFwd true rev false. Good. Then outputs interlock ensures exclusivity. 
+IEC: 3. 
+Coherencia: 3. 
+Claridad: 2 maybe. Comments for sections, but no why. 
+Mantenibilidad: 2 or 3. Uses explicit booleans; no direct output in logic; separation outputs. Nice. I'd give 3 maybe for extensible? It separates outputs from state. But simple. Rúbrica 3: "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)." It doesn't have parameters beyond inputs, but no duplication. Could 3. However not enough to ext. I'd maybe 2.
+Item 22: B4-9025.
+Functional fixed 3. Code uses (* *). Similar B4-9599 with safety. 
+IEC 3.
+Coherencia 3.
+Claridad 3? It has clear "──" sections and safety comments. Maybe clarity 3 because comments explain porqué and structured. 
+Mantenibilidad 2 or 3. I'd give 3? It uses xRunning bool, centralizes transitions, safety. No duplication. Could 3.
+Item 23: B4-7211.
+Functional 1. Code uses // variable comments and (* *) for logic? Let's inspect: 
+VAR_INPUT
+    btnFwd  : BOOL; // Botón para giro...
+...
+(* 
+   Lógica...
+*)
+fwd := ...;
+rev := ...;
+Mixed //. IEC 1. 
+Coherencia: It has equations with NOT btnRev and NOT btnFwd to avoid simultaneous, but this creates conditions where pressing opposite button while running can stop both? Let's analyze internal coherence. The equations are logically coherent but overconstrained: fwd requires NOT btnRev, so if user presses rev while fwd active, fwd goes off. Because rev equation also requires NOT btnFwd and maybe NOT fwd, but if fwd goes false, rev may start. This violates direct reversal requirement; also if btnFwd and btnRev both from rest, both off. It is internally coherent but not robust. Could be 1. 
+Claridad: Comments good, names. 2.
+Mantenibilidad: No magic, equations. 2 or 1? It uses direct equations; modifications easy but coupled. 2 maybe.
+Item 24: B4-5930.
+Functional fixed 3. Code uses //. State machine same as B4-8880 but with `fwd := FALSE; rev := FALSE;` before login; no direct reversal. 
+IEC: // -> 1 maybe.
+Coherencia: 3.
+Claridad: 2.
+Mantenibilidad: 1 (magic INT states). 
+
+Need decide final scores for IEC. Let's maybe be more nuanced: Not all // should be iec=1 if includes // in comments only. Could still assign iec=2 because declarations types correct; but the rubric explicitly says extension. Hmm. The prompt says "o usa extensiones fuera del estándar." If we mention comments //, it is an extension. The user likely expects that strictness, but maybe not. It may be safer to assign iec=2 for most compiling codes because CODESYS accepts //; iec=1 only if CODESYS-specific syntax. But we need consistency. Let's look at the task: They say "Trabajas conforme al estándar IEC 61131-3." They might evaluate comments as part of code. The protocol "Lectura de código por el docente." Do we penalize //? Standard IEC 61131-3 indeed supports comments with (* *). `//` is not standard? Let me recall: IEC 61131-3 current edition (3rd) actually supports single-line comments with `//`? Hmm wait, I need be accurate. The ST language in IEC 61131-3: comments are `(* ... *)`. `//` may be not standard in ST, but is widely implemented. I think standard CODESYS supports `//` as an extension. 
+Maybe the expected evaluator might not mark every `//` as 1, because the result codesys "Compila" and the rubric for IEC 2 "compila sin cambios; declaraciones y tipos correctos" focuses not comments. 3 if idiomatic. I might ignore `//` as a minor style not affecting compliance? The prompt specifically says "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." It doesn't say "extensiones de comentarios" maybe no. The user is asking to "puntúa como docente cuidadoso". A careful evaluator might note `//` but maybe not fail to 1 because comments are not code. But "código" includes comments. 
+
+I'm uncertain. Let's look at expected consistency: Many models produce // because common. If we mark iec=1 for all of them, the scores differentiate by comment style. Could be valid. 
+However the "iec_fijo" for non-compiling is 0; for compiling no fixed. If compiles but uses extension -> 1. They explicitly included that. In our data, all compile. If all use `//` but are otherwise standard, marking 1 follows the rule. 
+I'll implement strict: any `//` comment means iec=1, unless there are stronger non-standard? But comments only. Let's decide for all.
+
+Need ensure if code uses no // but maybe doesn't use standard blocks? IEC 2 baseline, 3 for idiomatic. But maybe if code has `estado: INT` and CASE, it uses magic but standard. 2 maybe. 
+If I use strict, the final iec values:
+1 B4-8136 (* *) -> 2
+2 B4-1620 (* *) -> 3 or 2
+3 B4-8880 // -> 1
+4 B4-9178 (* *) -> 3 or 2
+5 B4-2076 // -> 1
+6 B4-2916 mixed // -> 1
+7 B4-1844 (* *) -> 3
+8 B4-9939 // -> 1
+9 B4-9793 (* *) -> 2
+10 B4-5174 (* *) -> 2
+11 B4-1107 (* *) -> 3
+12 B4-2313 mixed // -> 1
+13 B4-4978 (* *) -> 3 or 2
+14 B4-6326 (* *) -> 3 or 2
+15 B4-2461 (* *) -> 3
+16 B4-9948 (* *) -> 3
+17 B4-7421 mixed // -> 1
+18 B4-1969 (* *) -> 3
+19 B4-9599 (* *) -> 3
+20 B4-3739 mixed // -> 1
+21 B4-1794 (* *) -> 3
+22 B4-9025 (* *) -> 3
+23 B4-7211 mixed // -> 1
+24 B4-5930 // -> 1
+
+This is okay. But perhaps too many 3s for all (* *). Maybe some codes with state machine and no direct reversal but no constants still are idiomatic; yes.
+
+Could we differentiate IEC 2 vs 3:
+- 2 for code that compiles and declarations are correct but no particular standard blocks; 3 if uses POU adecuado and maybe more idiomático. All are FUNCTION_BLOCK. Some codes use state variables, CASE; some use latch equations. Both idiomatic. But "POU adecuado" means FUNCTION_BLOCK as required, yes all. The standard blocks examples not applicable. We can give 3 to all no extension. That may make IEC less varied but fine.
+- For code failing due logic? IEC not affected; still 2 maybe not 3 if not clean? They all compile. I'd maybe give 2 to fail codes with logic not output in state0? That is not IEC. But if they use standard CASE and comments, 2. Good. 
+- For passing codes, 3 for those using no // and state machine/latch. That's okay.
+
+Need decide for B4-8880 etc with //: If strict, IEC 1. The code also uses comparisons `estado = 0` and CASE. Good.
+
+Potential issue: If we mark iec=1 for code using //, we should mention "extensión CODESYS en comentarios". For mixed comments, same.
+
+Now need consider if any code uses `//` but is maybe CODESYS not standard. We'll set.
+
+Need check "just_func_iec" for items with functional fixed. If functional fixed, maybe "Funcional fijado; IEC..." Not sure. They asked "una línea, o \"\" si las dos estaban fijadas". For items with functional fixed but iec not fixed, a line is okay. 
+But just_func_iec should likely cover both funcional and iec? The name suggests one line. We can mention IEC. 
+For fail items with both null, need mention both.
+
+Need produce valid JSON. Need ensure no trailing comma. Use double quotes. No markdown. 
+
+Before final, let's revisit functional scoring for fail codes:
+- B4-8136: fail steps 3,4,7,9. Step4/7/9 are paro expected off. Since code doesn't assign outputs in state0 but when btnParo in state1/2, outputs still old. It fails stop. This is serious. Functional 0.
+- B4-9939: fail steps 2,3,6. Step2 latch fail. Functional 0.
+- B4-9793: fail steps 3,6. Step3 direct reverse, step6 maybe direct. This is core safety. Could score 1. 
+- B4-5174: fail steps 3,4,7,9. Same as B4-8136 and also paro. 0.
+- B4-2313: fail steps 3,6. Direct reversal. Could score 1.
+- B4-3739: fail step3 only. Direct reversal. Could score 1.
+- B4-7211: fail steps 3,6. Direct reversal. Could score 1.
+
+Now what about B4-8880 functional fixed 3, though code initializes estado uninitialized and uses //. It passes harness. Okay.
+
+Need maybe compute "mantenibilidad" for state-machine codes. We used 1 mostly. Some codes with state variables but no constants. 
+However for B4-8880, state variable has no init explicit; magic states. Maintenance questionable. 1.
+For B4-4978, state variable no init; magic. 1.
+For B4-9939, 1.
+For B4-2076, 1.
+For B4-2313, 1.
+For B4-3739, 1.
+For B4-5930, 1.
+What about B4-8136 with estado init maybe 1.
+B4-5174 with estado init 1.
+B4-9793 with estado and parado variables no constants, but multiple IFs; maintenance 1.
+Okay.
+
+Claridad for B4-9793 maybe 1 due messy logic and comments not clearly describing direct reversal? It has comments "Estado 1...", but logic split. I said 1. Let's refine.
+
+Claridad for B4-9939: comments good but inaccurate "Inicialización del estado" causing confusion; maybe 1. But still readable. I'll maybe set 1 for code that resets state each scan because comment misleading. But the rubric 1 "comments ausentes o incorrectos". The comment "Inicialización del estado" is misleading (it runs every scan). That is an incorrect comment about behavior. So clarity 1. 
+For B4-8136: comments simple but missing output in state0; no incorrect. 2.
+For B4-5174: same. 2.
+For B4-9793: comments express state but not complete; 1.
+For B4-2313: separate output assignment, comments clear; 2.
+For B4-3739: clear; 2.
+For B4-7211: comments good; 2.
+
+Now coherencia for B4-9939: 0 because state reset effectively dead state? Need decide final. Rubric 0 includes "estados muertos que impiden operar." The motor cannot latch (operate with held output) but it can start when button held. The state variable reset each scan is like a dead state because état always 0 before evaluation. Does that "impiden operar" fully? It prevents latching, causing step2 fail. So 0 maybe. We'll set coherencia 0.
+But "variables sin inicializar con efecto" no. Still 0.
+
+Coherencia for B4-8136: state0 not assigning outputs means previous output may remain while state0? Actually when transitioning from state1/2 to state0 due btnParo, state0 in same scan may not assign outputs, but outputs are still old (because assignment in state1/2 happened earlier in same scan before transition). So it fails stop. That is an actual unintended dead/unsafe behavior due missing assignments. Not just redundant. Could coherencia 0? Let's think: The state machine's state0 says "Parado" but outputs not driven to false. That's a contradiction between state and outputs. It is an internal inconsistency. Rubric 0 includes "condiciones contradictorias ... que impiden operar." This could be considered state/output contradiction; important. I earlier assigned 1. Perhaps should be 0? It fails paro, an essential operation. It doesn't implement stop correctly. "Coherencia lógica" 0: conditions contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar. The state0 not clearing outputs is a dead/incorrect state that prevents safe stop. It may be 0. But the rubric for coherencia is separate from functional; internal inconsistency. I think 0 may be justified for B4-8136 and B4-5174 (same) because state "Parado" leaves outputs unaffected. Let's examine: In state0, if outputs were previously false (initial) then no issue; if state1/2 transition to 0, outputs still previous in same scan. But next scan, state0 executes and still doesn't assign, so outputs remain previous indefinitely until another state. So state0 is not "parado". That's a state/output contradiction. I'd lean to coherencia 0 or 1. The rubric 1 says "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." The effect is grave. So 0.
+But have we assigned coherencia 0 for B4-9939; maybe B4-8136 too. So final:
+- B4-8136 coherencia 0.
+- B4-5174 coherencia 0.
+What about B4-9793: It has multiple IFs, direct reversal; internal contradictions maybe state variables parado not updated in direct reversal, but outputs maybe. Could be 1. 
+B4-2313 has no internal contradiction, direct reversal not desired; coherencia 2.
+B4-3739 no contradiction; maybe 2.
+
+Need maybe for B4-9793 coherencia: It has `parado` variable and state transitions; second/third IF allow direct reversal without updating `parado`. The `parado` flag becomes inconsistent with actual state. It may not be used after. There is redundancy/dead. But not gravement? It creates hazard. Could be 1. 
+B4-7211 equations are internally coherent but overconstrained. Coherencia 2? It has no contradictory state; but it fails to maintain outputs under opposite button. The logic is complete assignments each scan; no uninitialized variables. It doesn't produce simultaneous outs because NOT rev/ NOT fwd. It's actually safe in exclusivity but doesn't maintain. I'd give 2 maybe because initialization complete, all inputs handled. But it is not robust due failure. The rubric for coherencia 3 requires robust behavior safe; this is 2 perhaps. 
+B4-8880 etc good.
+
+Let's determine coherencia for B4-8880 (pass): 3, because complete and no direct reversal. 
+B4-9178: 3.
+B4-2076: 3.
+B4-2916: 3.
+B4-1844: 3.
+B4-1107: 3.
+B4-4978: 3.
+B4-6326: 3.
+B4-2461: 3.
+B4-9948: 3.
+B4-7421: 3.
+B4-1969: 3.
+B4-9599: 3.
+B4-1794: 3.
+B4-9025: 3.
+B4-5930: 3.
+Some maybe 2 if no explicit init for estado? E.g. B4-8880/4978/6326/1969 state variable est not initialized explicit. They rely on default. Is that "inicialización correcta"? In IEC default 0; okay. Could be 3. 
+B4-2076 has estado init 0. 
+B4-9939 0.
+B4-8136 0.
+B4-5174 0.
+B4-9793 1.
+B4-2313 2.
+B4-3739 2.
+B4-7211 1? Let's think. It doesn't have contradicting conditions, but if both buttons pressed, equations force both outputs off due cross-coupling; maybe undesirable but internally coherent. I'd score 2 for no contradictions. However step3 direct reverse: it doesn't impose "no direct reversal" but logic itself doesn't dead. It is conceptually coherent. I'd set 2. 
+So for all code with direct reversal not caught but otherwise coherent: B4-2313, B4-3739, B4-7211 maybe 2. 
+For B4-9793, I'll set 1 due confusion.
+
+Let's also assess "claridad" for B4-2313 (comments // mixed but clear) 2.
+For B4-3739 (comments //, clear) 2.
+For B4-7211 (comments // but explanatory) 2.
+
+Now maintenance:
+Need maybe for B4-1794 and B4-9025/9599 maybe 3? 
+Rúbrica:
+- 3: "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)."
+Most are single FB with inputs already. No duplication. Could give 3 to ones with boolean state and no magic. 
+But to avoid over-inflating, maybe reserve 3 for A) code with explicit state variables and output mapping separated (B4-1794) but no magic; B) code with final safety double check (B4-9025, B4-9599) maybe no duplication; C) perhaps B4-1620/1107 etc. 
+The user wants careful consistent. Let's define:
+- Magic INT state => maint 1.
+- Latch equations or boolean state without constants => maint 2.
+- Except code with separate output mapping/comments/no magic and maybe safety => maint 3 for B4-1794, B4-9025, B4-9599? And maybe B4-9178? 
+B4-9178 uses boolean xRunning, no magic, good; but not much extensible. Could be 2.
+B4-1620 uses seal-in via output retention, no separate state; changes localized; 2.
+B4-1107 same; 2.
+B4-1844/2461/9948/7421/2916 equations: 2.
+B4-4978/6326/1969 state INT magic: 1.
+B4-8880 state INT magic: 1.
+B4-2076 state INT magic: 1.
+B4-9939 state INT magic: 1.
+B4-9793 state INT magic + messy: 1.
+B4-2313 state INT magic: 1.
+B4-3739 state INT magic: 1.
+B4-8136 state INT magic but init: 1.
+B4-5174 state INT magic: 1.
+B4-7211 equations no magic; 2.
+B4-5930 state INT magic: 1.
+B4-1794 boolean states: 3.
+B4-9025 boolean xRunning + safety: 3.
+B4-9599 boolean xRunning + safety: 3.
+B4-9178 boolean xRunning: 2 or 3? Could 3 because simple, no duplication. I'd maybe 2.
+What about B4-9025/9599 with xRunning bool; yes 3.
+
+Claridad:
+- 3 for B4-9025? It has section separators, explanatory comments. But no modularization; simple FB. The rubric 3 "además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué." In this task, the FUNCTION_BLOCK itself is a POU; there is no additional separation possible. The code separates logic from outputs? Not explicitly. B4-1794 separates stateFwd/stateRev from outputs, which is a kind of separation. Could give clarity 3 to B4-1794 and maybe B4-9025/9599? 
+Need be cautious: clarity is about readability. Most codes are clear. We can give 2 to most, 3 to exceptional.
+Let's maybe assign clarity 2 to all except B4-9025, B4-9599, B4-1794? 
+For B4-9025, comments with "──" sections and why. 3.
+B4-9599 similar and safety. 3.
+B4-1794 separates state from outputs and comments "garantia hardware". 3.
+Maybe B4-9178 clear block comments. 2.
+B4-1620 clear but not super explanatory. 2.
+B4-9793 messy -> 1.
+B4-9939 misleading initialization -> 1.
+Others 2.
+
+Now need decide IEC 3 vs 2 for codes with (* *). If I assign iec=3 to all no-//, then B4-8136 (fail) also gets 3? It compila, uses standard, but not necessarily idiomatic? It uses CASE and states. Maybe iec 2 or 3. We can reserve 3 for no-// plus coherent/idiomatic, but IEC does not depend on logic. Use:
+- B4-8136: uses standard CASE, init; maybe 2. (not perfect idiomatic because CASE outputs not in all states, but that's logic not IEC). Probably 2.
+- B4-5174: 2.
+- B4-9793: 2.
+- B4-2313 uses // -> 1.
+- B4-3739 mixed // -> 1.
+- B4-7211 mixed // -> 1.
+- Passers:
+  - B4-1620: 3.
+  - B4-9178: 3.
+  - B4-1844: 3.
+  - B4-1107: 3.
+  - B4-2461: 3.
+  - B4-9948: 3.
+  - B4-4978: 3 or 2. It uses (* *), but state variable no init; still standard. 3.
+  - B4-6326: 3.
+  - B4-1969: 3.
+  - B4-1794: 3.
+  - B4-9025: 3.
+  - B4-9599: 3.
+  - B4-5930 (//) -> 1.
+  - B4-8880 // ->1.
+  - B4-2076 // ->1.
+  - B4-2916 mixed // ->1.
+  - B4-7421 mixed // ->1.
+Maybe B4-2916 logic comments (* *) but variables with //; yes 1.
+What about B4-7211 mixed // and (* *). yes 1.
+
+Need ensure IEC for B4-7211 if it fails functional but compiles. Since uses // extension -> 1.
+
+Now check functional for B4-9793 maybe 1. It uses (* *), so iec2. Good.
+
+Let's formulate justifications in Spanish, one line each.
+
+Need be careful with "just_func_iec": for items with both functional_fijo and iec_fijo? None both fixed except maybe no compile none. All iec_fijo null. Functional fixed for passers. So for items with functional fixed and iec null, just_func_iec should mention IEC only maybe plus "funcional fijado". We'll include e.g. "Compila y usa sintaxis IEC estándar; funcional fijada en 3." That's okay. 
+For items with both null (fail items), mention functional and IEC: "Compila con sintaxis estándar, pero falla paro/reversa; funcional 0, IEC 2."
+
+Need keep justifications one line. We'll ensure not too long.
+
+We need output 24 objects in exact order. Let's list codes in order:
+1 B4-8136
+2 B4-1620
+3 B4-8880
+4 B4-9178
+5 B4-2076
+6 B4-2916
+7 B4-1844
+8 B4-9939
+9 B4-9793
+10 B4-5174
+11 B4-1107
+12 B4-2313
+13 B4-4978
+14 B4-6326
+15 B4-2461
+16 B4-9948
+17 B4-7421
+18 B4-1969
+19 B4-9599
+20 B4-3739
+21 B4-1794
+22 B4-9025
+23 B4-7211
+24 B4-5930
+
+Need assign exact numeric values.
+
+Let's make a final table with scores.
+
+I need decide final scores for each.
+
+Let's set:
+
+1 B4-8136:
+funcional: 0
+iec: 2
+coherencia: 0
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila con ST estándar, pero no cubre paro ni bloquea la reversa directa." 
+just_coherencia: "El estado 0 no asigna salidas; la máquina de estados contradice el paro y deja salidas retenidas." 
+just_claridad: "Nombres descriptivos y comentarios breves; la omisión de salidas en paro no está explicada." 
+just_mantenibilidad: "Estados enteros mágicos sin constantes; modificaciones requieren tocar cada transición."
+
+Need include "funcional 0, IEC 2" enough. Fine.
+
+2 B4-1620:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 2
+mantenibilidad: 2
+just_func_iec: "Compila sin extensiones y usa un enclavamiento estándar idiomático con salidas declaradas correctamente."
+just_coherencia: "Interlocks completos y sin contradicciones; paro prioritario y bloqueo mutuo asegurado."
+just_claridad: "Secciones y comentarios útiles, aunque la retención por ausencia de asignación no se explica."
+just_mantenibilidad: "Lógica simple y localizada sin valores mágicos; fácil de ajustar."
+
+3 B4-8880:
+funcional: 3
+iec: 1
+coherencia: 3
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila en CODESYS, pero los comentarios // son una extensión no estándar IEC."
+just_coherencia: "Máquina de estados completa y sin transiciones prohibidas; inicialización por defecto asumida."
+just_claridad: "Nombres claros y comentarios breves; el estado inicial implícito no está documentado."
+just_mantenibilidad: "Estados enteros sin constantes; el cambio de estados toca la lógica completa."
+
+4 B4-9178:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 2
+mantenibilidad: 2
+just_func_iec: "Compila sin extensiones y emplea un FB estándar con variable de marcha booleana correcta."
+just_coherencia: "Paro prioritario, arranque sólo en reposo y salidas excluyentes; sin estados muertos."
+just_claridad: "Comentarios de bloque claros y nombres descriptivos; la estructura es lineal y legible."
+just_mantenibilidad: "Lógica centralizada con variable booleana; cambios simples pero poco extensible."
+
+5 B4-2076:
+funcional: 3
+iec: 1
+coherencia: 3
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila, pero usa comentarios // como extensión de CODESYS, fuera del estándar IEC."
+just_coherencia: "Máquina de estados con salidas definidas en cada estado y transiciones sólo por paro."
+just_claridad: "Código legible con comentarios de estado; nombres descriptivos."
+just_mantenibilidad: "Números mágicos para estados sin constantes; cambios menos localizados."
+
+6 B4-2916:
+funcional: 3
+iec: 1
+coherencia: 3
+claridad: 2
+mantenibilidad: 2
+just_func_iec: "Compila, pero usa comentarios // (extensión CODESYS) mezclados con la sintaxis estándar."
+just_coherencia: "Ecuaciones de enclavamiento completas: paro prioritario y bloqueo mutuo en todo ciclo."
+just_claridad: "Comentarios explican cada condición; nombres adecuados."
+just_mantenibilidad: "Sin valores mágicos; lógica por ecuaciones, aunque acoplada."
+
+7 B4-1844:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 2
+mantenibilidad: 2
+just_func_iec: "Sintaxis IEC estándar y compilación sin cambios; enclavamientos idiomáticos con (* *)."
+just_coherencia: "Interbloqueo simétrico correcto con paro prioritario; sin estado contradictorio."
+just_claridad: "Comentarios breves y nombres descriptivos; fácil de leer."
+just_mantenibilidad: "Sin valores mágicos y lógica localizada; modificaciones sencillas."
+
+8 B4-9939:
+funcional: 0
+iec: 1
+coherencia: 0
+claridad: 1
+mantenibilidad: 1
+just_func_iec: "Compila, pero usa // no estándar; funcionalmente el reset cada ciclo rompe el enclavamiento."
+just_coherencia: "Asignar estado:=0 en cada scan anula la retención y contradice la máquina de estados."
+just_claridad: "El comentario 'Inicialización del estado' resulta incorrecto porque se ejecuta cada ciclo."
+just_mantenibilidad: "Estados enteros mágicos y lógica frágil; difícil de mantener."
+
+Need decide functional 0 vs maybe 0. yes.
+
+9 B4-9793:
+funcional: 1
+iec: 2
+coherencia: 1
+claridad: 1
+mantenibilidad: 1
+just_func_iec: "Compila con ST estándar, pero falla al permitir reversa directa en pasos 3 y 6."
+just_coherencia: "Varios IF independientes dejan estado y salidas inconsistentes; hay lógica redundante y contradictoria."
+just_claridad: "Mezcla de bloques por estado dificulta seguir la transición; comentarios no aclaran el riesgo."
+just_mantenibilidad: "Estados mágicos y lógica repetida; cambios con alto riesgo de efectos laterales."
+
+10 B4-5174:
+funcional: 0
+iec: 2
+coherencia: 0
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila con sintaxis estándar, pero falla la prohibición de reversa y el paro."
+just_coherencia: "El estado 0 no asigna salidas, por lo que el paro no garantiza fwd/rev apagados."
+just_claridad: "Máquina de estados visible y nombres adecuados, aunque el estado 0 está incompleto."
+just_mantenibilidad: "Estados enteros sin constantes; lógica de transiciones dispersa."
+
+11 B4-1107:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 2
+mantenibilidad: 2
+just_func_iec: "Compila sin extensiones y usa enclavamiento estándar idiomático más interbloqueo final."
+just_coherencia: "Bloqueo mutuo robusto, paro prioritario y verificación final; sin estados muertos."
+just_claridad: "Comentarios por sección y nombres descriptivos; el detalle de seguridad está explicado."
+just_mantenibilidad: "Lógica simple y cambios localizados; sin constantes mágicas."
+
+12 B4-2313:
+funcional: 1
+iec: 1
+coherencia: 2
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila, pero usa // (extensión) y falla la reversa directa en pasos 3 y 6."
+just_coherencia: "Máquina de estados completa con salidas asignadas, pero tiene transiciones directas no seguras."
+just_claridad: "Separación entre transiciones y salidas clara; comentarios útiles."
+just_mantenibilidad: "Estados numéricos mágicos sin constantes; cambios de secuencia poco localizados."
+
+13 B4-4978:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila sin extensiones y usa una máquina de estados estándar correcta."
+just_coherencia: "Transiciones sólo desde paro y salidas derivadas del estado; sin contradicciones."
+just_claridad: "Nombres claros y comentarios breves; la inicialización implícita no se documenta."
+just_mantenibilidad: "Estados enteros mágicos; la lógica es simple pero poco parametrizada."
+
+14 B4-6326:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila sin extensiones y declara tipos correctos en una máquina de estados estándar."
+just_coherencia: "Lógica coherente, salidas calculadas cada ciclo y sin transiciones prohibidas."
+just_claridad: "Nombres descriptivos y comentarios breves; estructura directa."
+just_mantenibilidad: "Estados enteros sin constantes; cambios requieren revisar toda la lógica."
+
+15 B4-2461:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 2
+mantenibilidad: 2
+just_func_iec: "Compila sin extensiones; usa ecuaciones de enclavamiento idiomáticas y tipos BOOL correctos."
+just_coherencia: "Interbloqueo simétrico y paro prioritario; sin ambigüedad ante entradas simultáneas."
+just_claridad: "Comentarios breves y nombres adecuados; legible."
+just_mantenibilidad: "Sin valores mágicos; lógica compacta y localizada."
+
+16 B4-9948:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 2
+mantenibilidad: 2
+just_func_iec: "Usa sintaxis estándar IEC y enclavamiento idiomático sin extensiones."
+just_coherencia: "Bloqueo mutuo simétrico correcto, con prioridad de paro."
+just_claridad: "Comentarios claros; nombres descriptivos."
+just_mantenibilidad: "Sin constantes mágicas; lógica por ecuaciones fácil de ajustar."
+
+17 B4-7421:
+funcional: 3
+iec: 1
+coherencia: 3
+claridad: 2
+mantenibilidad: 2
+just_func_iec: "Compila, pero emplea comentarios // como extensión CODESYS no IEC."
+just_coherencia: "Ecuaciones de enclavamiento robustas; garantiza exclusión mutua y prioridad de paro."
+just_claridad: "Comentarios útiles y nombres descriptivos; mezcla de estilos de comentario."
+just_mantenibilidad: "Sin valores mágicos; lógica compacta, aunque acoplada."
+
+18 B4-1969:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila sin extensiones y usa una máquina de estados IEC correcta."
+just_coherencia: "Salidas derivadas del estado cada ciclo; no hay transición directa entre sentidos."
+just_claridad: "Nombres y comentarios breves; fácil de seguir."
+just_mantenibilidad: "Estados enteros sin constantes; cambios de secuencia poco parametrizados."
+
+19 B4-9599:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 3
+mantenibilidad: 3
+just_func_iec: "Compila sin extensiones y usa estructura estándar idiomática con interbloqueo final."
+just_coherencia: "Doble barrera: arranque sólo en reposo y verificación final de no simultaneidad."
+just_claridad: "Secciones comentadas con separadores y explicación del porqué de cada bloque."
+just_mantenibilidad: "Estado booleano explícito y sin duplicación; diseño limpio y extensible."
+
+20 B4-3739:
+funcional: 1
+iec: 1
+coherencia: 2
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila, pero usa // y falla la reversa directa en el paso 3."
+just_coherencia: "Máquina de estados completa, aunque permite transición directa fwd→rev no segura."
+just_claridad: "Nombres y comentarios adecuados; la lógica CASE es fácil de inspeccionar."
+just_mantenibilidad: "Estados enteros mágicos sin constantes; cambios requieren tocar transiciones."
+
+21 B4-1794:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 3
+mantenibilidad: 3
+just_func_iec: "Compila sin extensiones y usa un patrón estándar idiomático con estados internos separados."
+just_coherencia: "Estados booleanos explícitos, paro prioritario y salidas filtradas; sin estados muertos."
+just_claridad: "Separación clara entre lógica de estados y salidas; comentarios explican la garantía de seguridad."
+just_mantenibilidad: "Sin valores mágicos, sin duplicación y con mapeo de salidas localizado."
+
+22 B4-9025:
+funcional: 3
+iec: 3
+coherencia: 3
+claridad: 3
+mantenibilidad: 3
+just_func_iec: "Compila sin extensiones y usa ST estándar idiomático con doble seguro."
+just_coherencia: "Paro prioritario, arranque en reposo y verificación final de no simultaneidad; robusto."
+just_claridad: "Secciones con separadores y comentarios que explican el porqué; muy legible."
+just_mantenibilidad: "Estado booleano sin duplicación y cambios localizados; diseño extensible."
+
+23 B4-7211:
+funcional: 1
+iec: 1
+coherencia: 2
+claridad: 2
+mantenibilidad: 2
+just_func_iec: "Compila, pero usa //; funcionalmente falla la reversa/inversión en pasos 3 y 6."
+just_coherencia: "Ecuaciones completas sin salidas simultáneas, pero sobrecondicionadas y pierden la dirección esperada."
+just_claridad: "Comentarios útiles y nombres adecuados; condiciones densas pero legibles."
+just_mantenibilidad: "Sin valores mágicos; lógica por ecuaciones, aunque acoplada."
+
+24 B4-5930:
+funcional: 3
+iec: 1
+coherencia: 3
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila, pero usa comentarios // como extensión CODESYS no estándar."
+just_coherencia: "Máquina de estados con salidas definidas y transiciones sólo desde paro; coherente."
+just_claridad: "Nombres claros y comentarios breves; el estado implícito no se explica."
+just_mantenibilidad: "Estados enteros sin constantes; cambios no parametrizados."
+
+Need verify all integer values within 0-3. funcional for fail items none 3. fixed pass items 3. Good.
+iec values:
+1 B4-8136 2
+2 B4-1620 3
+3 B4-8880 1
+4 B4-9178 3
+5 B4-2076 1
+6 B4-2916 1
+7 B4-1844 3
+8 B4-9939 1
+9 B4-9793 2
+10 B4-5174 2
+11 B4-1107 3
+12 B4-2313 1
+13 B4-4978 3
+14 B4-6326 3
+15 B4-2461 3
+16 B4-9948 3
+17 B4-7421 1
+18 B4-1969 3
+19 B4-9599 3
+20 B4-3739 1
+21 B4-1794 3
+22 B4-9025 3
+23 B4-7211 1
+24 B4-5930 1
+
+Need maybe for B4-8880 with // comments, the code also uses `estado : INT;` no initialization. Does IEC standard default initialization apply? In IEC 61131-3, variables are initialized to default initial values (e.g., 0 for INT, FALSE for BOOL). Good. 
+For B4-8136 and B4-5174, coherencia 0. Check if they have "estado : INT :=0" so variable initialized. But state0 no output. good.
+
+Need reconsider functional for B4-5174: It reports fail steps 3,4,7,9. It has direct reversal, step4 paro. We assigned 0. yes.
+B4-8136 reports fail steps 3,4,7,9. yes.
+
+Need ensure "funcional_fijo" and "iec_fijo" copying: For items with functional_fijo=3, we output funcional 3. For items with null, we assigned. For iec_fijo all null, assigned. Good.
+
+Need maybe "just_func_iec" if one fixed? For pass items functional fixed, but we're providing justification including funcional (fijado). That's okay. The instruction says "una línea, o \"\" si las dos estaban fijadas". Since iec not fixed, not empty. Good.
+
+Need ensure output is JSON list valid, no analytical text. I'll write in final. Use correct quoting. Need avoid line breaks inside strings? JSON can have line breaks? We'll keep strings single-line. 
+Need ensure no markdown code block. 
+Need maybe include exactly 24 objects.
+
+Let's maybe double-check item 8 B4-9939: It uses // comments and also "estado :=0" each scan. I assigned iec1. Functional 0. But maybe since fail step2 latch, functional could be 0. Yes.
+For B4-9793 functional 1: It fails steps3,6 direct inversion. We said 1. It doesn't fail step2? Step2 from fwd release: logic first block does nothing if parado false; second/third IF do no assignments; outputs retain; so pass. Step4? It does pass because first IF btnParo clears. So nominal safety stop? Step4 pass. Only direct reversal. 1.
+For B4-7211 functional 1: It fails steps3,6. In step6, pressing fwd while rev active maybe outputs false instead of expected rev; that's not dangerous but fail. 1.
+For B4-3739 functional 1: fails step3. It still allows direct reversal via code. 1.
+For B4-2313 functional 1: direct reversal. good.
+Need maybe if "functional" for B4-2313 could be 2 because only direct reversal fails but most edge pass? Harness fails 2/10. Rúbrica 2: "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." Direct reversal risk is not minor. So 1.
+For B4-9793: same.
+
+Need perhaps "funcional" for B4-9793 maybe 1 not 0. yes.
+
+Potential issue: B4-2313 uses // comments in VAR_INPUT and some // comments, plus (* *) logic. I assign iec1. 
+What about B4-7211 uses // in variable declarations and (* *) logic. I assign iec1. 
+What about B4-5930 uses // comments only. I assign iec1. 
+This is consistent.
+
+Now let's think about IEC compliance with comments: If the code uses `//` but otherwise standard, maybe `iec=1` but our justifications say "extension CODESYS no estándar". Good. 
+
+Could there be any code using `//` that is actually accepted in latest IEC? Hmm. The standard CODESYS '//' might not be standard. If I'm wrong, final scores harsh. But okay.
+
+Need maybe mention for `iec=3` "sin extensiones" but if CODESYS itself is an implementation, all code may be CODESYS syntax. But okay.
+
+Now should I maybe not include functional in `just_func_iec` for fixed functional items because "la funcional estaba fijada"? We can mention "Funcional fijada en 3; compile..." But line says just_func_iec one line. We can say "Compila sin extensiones y es idiomática." 
+For fixed functional, no need mention functional. But with both not fixed, must mention both. 
+Maybe for items with fixed functional, `just_func_iec`: "Compila sin extensiones y es idiomático; funcional fijada." fine.
+Let's adjust some justifications to be clear. But current ones okay.
+
+Need final response as raw JSON. I'll ensure no trailing spaces. Let's produce.
+
+Wait, the user instructed "Responde ÚNICAMENTE con una lista JSON válida ... sin texto antes ni después y sin bloque de código markdown". We'll output plain JSON. Need use double quotes for strings; no backticks. Good.
+
+Let's maybe include "just_func_iec": "Compila sin extensiones y usa ST estándar idiomático; funcional fijada." etc.
+
+Let's now finalize.

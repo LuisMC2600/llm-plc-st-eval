@@ -1,0 +1,1173 @@
+Necesito responder únicamente con JSON válido de 24 objetos, en el mismo orden. Debo puntuar según rúbrica. Hay que procesar cada respuesta.
+
+Necesito leer y analizar todo. Debo ser cuidadoso. Los campos "funcional_fijo" y "iec_fijo": si no son null copiar exactamente. Si null, decidir. Para las que compilan y pasan todos, funcional fijo 3. Para las que no compilan, funcional e iec fijos 0. Aquí no hay no compila? Todas compilan o "Compila sola, pero no se pudo simular". Algunas interfaz no conforme. Para no simulables funcional null? resultado: Compila sola, pero no se pudo simular: ... funcional_fijo null. Entonces funcional entre 0-2, nunca 3. Debo analizar código.
+
+Vamos a inspeccionar cada una. Debo conocer protocolo. Harness pasos. Hay 24 respuestas. Las que pasan 15 pasos: funcional 3 fijo. iec null: debo evaluar iec 1-3. Las que fallan: funcional fijo null, iec null. Debo evaluar.
+
+Primero entender el harness para fallas. Los pasos importantes:
+0 reposo txReq F, rxData 0, 0.20s expected (F,F,F,-,-) reposo.
+1 txReq T, 0.20s expected (T,F,F,1,100) flanco intento1.
+2 txReq F, 0.20s expected (T,F,F,1,-) 0.40s: aún intento1 (plazo corto) (desde inicio en paso1: 0.20s; paso2: 0.20s total 0.40s, si timer 500ms no vence)
+3 txReq F, 0.25s expected (T,F,F,2,-) 0.65s: intento2 (plazo largo / sin reintento) Entonces en paso2 a 0.40s y paso3 a 0.65s, timer 500ms vence durante paso3, y se espera que pase a intento2. Correcto: en paso3, después de 0.25s más (total 0.65s) timer vence, inicia intento2, nIntentos=2. La evaluación al final del paso: nIntentos=2. 
+4 txReq F, pulso rxOk, rxData=100 0.20s expected (F,T,F,2,-) eco correcto: termina ok conserva nIntentos=2. 
+5 F 0.30s expected (F,T,F,2,-) ok permanece.
+6 T 0.10s expected (T,F,F,1,100) nuevo intercambio ok se borra.
+7 F, pulso rxOk rxData=55 0.10s expected (T,F,F,2,-) eco erróneo: falla intento 1 (inmediato al recibir rxOk con dato incorrecto) y pasa intento2. Ojo: rxOk pulso un scan al inicio, timer no vence (solo 0.10s), debe evaluar rxOk y dato incorrecto, falla y nIntentos=2.
+8 T 0.10s expected (T,F,F,2,-) flanco txReq durante intercambio se ignora. Como txReq estaba F en paso7, luego T en paso8, flanco, ocupado sigue TRUE, nIntentos 2.
+9 T 0.50s expected (T,F,F,3,-) vence intento2. En paso9, timer de intento2 iniciado en paso7 (fallo en intento1) y con 0.10s de paso8 + 0.50s paso9 = 0.60s, vence, pasa a 3. Ojo txReq se mantiene T en pasos 8 y 9; no hay flanco nuevo porque estuvo T. Correcto.
+10 T 0.40s expected (F,F,T,3,-) vence intento3: error. El timer de intento3 iniciado en paso9, con 0.40s no vence, pero el harness duración 0.40, eexpected error al final. Wait: Si el intento3 se inició en paso9? Veamos: en paso9, tIntento2 vence al final y cambia a intento3, nIntentos=3. En el mismo paso, comenzó intento3? La implementación típica: al detectar tIntento.Q, incrementa nIntentos a 3, y el temporizador se reinicia. En el próximo scan timer IN TRUE se activa. Entonces en paso10 (0.40s) el timer intento3 no ha vencido (0.40s < 0.5s). Entonces expected debería ser ocupado TRUE, nIntentos 3, no error. Pero el protocolo dice paso10 expected (F,F,T,3,-) vence el intento 3: error. ¿Por qué? Veamos nota: duración paso 10 es 0.40s, pero venía el temporizador del intento3 iniciado en paso9? En paso9 duración 0.50s. Si el fallo de intento2 ocurre al final de paso9, el intento3 se inicia al final. Duración paso10 0.40s, no suficiente. ¿Cómo esperan error? Quizás hay un detalle: txReq permanece T. El protocolo original: paso9: txReq T, 0.50s expected nIntentos=3. Al final de paso9, el timer de intento2 vence y se inicia intento3, nIntentos=3. Paso10: txReq T, 0.40s expected error. Para que timer intento3 expire en 0.40s, debe haber comenzado hacer 0.10s antes? Revisar: En el paso8, duración 0.10s con txReq T, se ignora flanco. Si la implementación al recibir eco erróneo en paso7 no reinicia el timer inmediatamente? Veamos en implementaciones correctas: paso7, rxOk erróneo, falla intento1, incrementa nIntentos a 2, resetea timer. El harness duración 0.10s. En siguiente scans el timer comienza. Paso8 duración 0.10s, timer intento2 acumula 0.10s. Paso9 duración 0.50s, timer intento2 vence al final (0.60s), incrementa a 3 y resetea timer. Paso10 duración 0.40s, timer intento3 acumula 0.40s (sin incluir el scan final? Debe incluir duración 0.40). Si vence a 0.50s, no debería. Sin embargo el protocolo esperado en paso10 es error. Tal vez el harness evalúa en un momento después de la duración total y el paso10 0.40s es desde el inicio del paso hasta el final, y el intento3 comenzó antes? Revisar línea: paso 10: txReq := TRUE; pulsoStep := FALSE; rxData := 0; tEspera := T#400MS; expected ocupado := FALSE; ok := FALSE; eErr := TRUE; eN := 3. Comentario: "vence el intento 3: error". Para que venza en 0.4s, el temporizador debe haber iniciado antes del paso10, posiblemente inmediatamente al detectar fallo en paso9, no al final? En CODESYS TON: si IN TRUE y PT 500ms, Q TRUE cuando elapsed >= PT. Llamado cada scan. Si al final del paso9 se hace timer(IN:=FALSE), luego en siguientes scans se pone TRUE. El paso9 duración 0.50s, en ese tiempo, al detectar tIntento.Q transcurre un scan antes de terminar el paso? Prueba evaluado cada x ms. El harness espera que al final del paso9 nIntentos=3. Luego paso10 duración 0.40s. Hmm.
+
+Veamos las respuestas correctas que pasan 15 pasos. Muchas implementaciones correctas: al detectar fallo por timeout en nIntentos<3, hacen nIntentos++ y reinician timer con IN:=FALSE, luego en el próximo scan (aún dentro del mismo paso9?) tIntento(IN:=TRUE) comienza. Entonces la duración del intento3 comienza en el paso9, justo después del fallo. Por eso al final del paso10 con 0.40s más, ya llevaba 0.50s? Posible: el fallo del intento2 ocurre en un scan dentro del paso9, no exactamente al final. En paso9 duración 0.5s, el fallo ocurre a los 0.5s de iniciado intento2. Iniciado intento2 al final del paso7? El timer del intento2 empezó desde paso7? En correctas: paso7 al detectar rxOk erróneo, resetean timer al final, nIntentos=2. Luego pasos 8 y 9 transcurren. En paso7, el fallo se detecta al inicio (rxOk pulso un scan). Luego se incrementa a intento2, timer IN se pone FALSE. En el siguiente scan dentro del paso7, timer IN se pone TRUE. Entonces el timer de intento2 comienza en el paso7 (después del pulso). Al final de paso7: timer lleva casi 0.1s. Paso8: 0.1s, total 0.2s. Paso9: 0.5s, total 0.7s. Entonces timer intento2 vence durante paso9, no al final; al vencer, se incrementa a intento3 y se resetea, y el timer intento3 comienza en scans posteriores del mismo paso9 (quedan ~0.2s de paso9). Entonces al final paso9, timer intento3 lleva ~0.2s. Paso10: 0.4s más, total ~0.6s, vence error. Por eso expected. Entonces es consistente.
+
+Ahora evaluar. Debo generar JSON. Necesito mantener 24. Vamos una por una.
+
+Primero, lista de respuestas en orden:
+
+1 A3-3230
+2 A3-6022
+3 A3-6512
+4 A3-7512
+5 A3-3622
+6 A3-3184
+7 A3-4953
+8 A3-3351
+9 A3-5168
+10 A3-6493
+11 A3-4439
+12 A3-9003
+13 A3-4115
+14 A3-8801
+15 A3-7866
+16 A3-1699
+17 A3-8606
+18 A3-8784
+19 A3-1381
+20 A3-5401
+21 A3-7343
+22 A3-6370
+23 A3-8583
+24 A3-4983
+
+Necesito asignar. Para cada una, revisar código, funcionalidad.
+
+Criterios:
+funcional:
+- No compila: 0 (ninguno)
+- Pasa todos: 3 fijo.
+- Compila pero no simulable: 0-2 (nunca 3). Son 4, 9, 20? A3-7512, A3-5168, A3-5401 (3). A3-5401 etc. A3-7512: variables todas VAR (no entradas), no simulable. Debo evaluar funcionalidad leyendo código. A3-7512 código no salidas? En VAR interno declara entradas/salidas. En CODESYS, un FB con entradas/salidas en VAR no es acceso externo, por lo que no simular. La lógica: variables interna, inicializa, etc. ¿Es funcionalmente correcto? Tiene problemas: txData inicializado? IF NOT ocupado then txData:=100; intentoActual:=0; intentoExitoso:=FALSE; ok:=FALSE; error:=FALSE; END_IF. Al inicio ocupado es FALSE, por lo que se resetea ok/error cada ciclo. No mantiene ok/error activos hasta siguiente intercambio? Veremos. Detección flanco: IF txReq AND NOT txReqPrev THEN IF NOT ocupado THEN iniciar. Luego lógica. Parece intenta, pero hay un bug: al inicio cuando ocupado FALSE, IF NOT ocupado se ejecuta todo el tiempo y resetea ok/error. Si inicia intercambio y luego ok TRUE, al ciclo siguiente IF NOT ocupado: txData:=100; intentoActual:=0; intentoExitoso:=FALSE; ok:=FALSE; error:=FALSE. Por tanto ok no permanece. Entonces falla ok permanece. También timer no reinicia bien. nIntentos? Puede fallar. No es 3. Puntúo funcional 1? Veamos más. Cumple inicio, tal vez caso nominal. Caso nominal: txReq flanco inicia, txData 100, ocupado TRUE, nIntentos=1, timer. Si rxOk y rxData=100, ok TRUE, ocupado FALSE. En siguiente ciclo, IF NOT ocupado resetea ok FALSE, error FALSE. Entonces ok no permanece, falla protocolo. Falla en caso límite (ok permanece). También "IF NOT ocupado THEN txData:=100 ..." se ejecuta en reposo, es raro. Si no hay intercambio, txData=100, no debería? El enunciado: txData coloca 100 al inicio. En reposo no importa? Podría evaluar en paso0 no eTx. Pero txData 100 en reposo si evalúan tal vez no. En harness paso0 no evalúan txData (-). OK.
+
+El timer: al iniciar: timer(IN:=TRUE). En el ciclo siguiente, ocupado TRUE, timer(IN:=TRUE); if timer.Q entonces ... else if rxOk... Está bien. Si timer venció, incrementa intentoActual. Si >3 error, else nIntentos := intentoActual; timer(IN:=TRUE, PT:=T#500MS); Para resetear TON, debe llamar con IN FALSE un ciclo; acá lo llaman TRUE constantemente sin resetear, por lo que TON no se reinicia. Al vencer timer.Q, intentoActual++ y vuelven timer(IN:=TRUE, PT), pero Q queda TRUE hasta que IN baje. TON en estándar: si IN TRUE y PT, después de ET=PT, Q TRUE; si IN sigue TRUE, Q permanece TRUE; no se reinicia solo a menos que IN FALSE. Entonces una vez timer.Q TRUE, la condición IF timer.Q se cumple cada ciclo y incrementa intentoActual sin fin, hasta >3, error. No implementa reintentos correctamente. Por lo tanto funcionalidad mala. Diría funcional 1? Casos límite fallan, reintentos no. Nominal? Si rxOk llega antes del vencimiento, ok se activa pero se resetea al ciclo siguiente, por lo que no cumple "ok permanece". Entonces falla caso nominal también si evaluamos permanencia. Pero el harness no simulable. La rúbrica funcional 0: no implementa lógica pedida o falla en caso nominal. 1: funciona en caso nominal pero falla en límites. Aquí si ok no permanece, caso nominal evaluado en un instante correcto, si rxOk justo en ciclo, ok TRUE; pero próximo scan se borra, así que falla "permanece". Yo diría 1 bajo: arranca, pero no persistencia y temporizador roto. Aunque hay bug severo. No es 0? No compila? No, compila. Falla en caso nominal? Si medimos en el ciclo exacto, la salida ok puede estar TRUE al instante, pero se borra, así que un harness detecta fallo. Sin embargo, no simulable. Decidir. Recomiendo funcional 1 (implementa lógica nominal en parte, pero falla límites evidentes y persistencia). Podría ser 0 por temporizador roto. Veamos código: cuando timer.Q se cumple, incrementa intentos en cada scan; error se activa. Si mientras ocupado y no timer.Q, rxOk ok funcionará. Nominal (eco correcto) al ciclo exacto: ok TRUE, ocupado FALSE. Luego al siguiente escaneo (fuera del instante) ok FALSE. La mayoría harness evalúa al final, pero rxOk pulso un scan, si ok se borra en el siguiente scan, fallará. Por tanto caso nominal no cumple. Podría ser 0. La rúbrica 0: no implementa la lógica pedida o falla en el caso nominal. Diría funcional 0 o 1. Necesito ser consistente. A3-7512 no simulable. Quizá funcional 0 porque no cumple temporización ni mantenimiento. Pero la lógica básica de inicio y éxito instantáneo está. Hmm.
+
+A3-5168 similar: variables VAR internas, no simulable. Usa TIME() función no estándar? TIME() no es estándar IEC 61131-3? No hay función TIME() estándar? En CODESYS hay TIME()? Puede compilar (SysTime? No). En ST estándar no hay TIME() para reloj. Extensión. Pero evalúa tiempo transcurrido. La lógica:
+IF NOT ocupado THEN
+  IF txReq AND NOT txReqPrev THEN iniciar... tiempoInicio := TIME();
+  END_IF
+ELSE
+  tiempoTranscurrido := TIME() - tiempoInicio;
+  IF rxOk AND (rxData = VALOR_PRUEBA) THEN ok TRUE ocupado FALSE
+  ELSIF tiempoTranscurrido >= TIEMPO_MAXIMO THEN
+    intentoActual := intentoActual + 1;
+    IF intentoActual > MAX_INTENTOS THEN error TRUE ocupado FALSE
+    ELSE nIntentos := intentoActual; tiempoInicio := TIME();
+    END_IF
+  END_IF
+END_IF
+txReqPrev := txReq;
+
+Problemas: txReqPrev se actualiza dentro de IF NOT ocupado? En realidad al final. En reposo, txReq AND NOT txReqPrev detecta flanco; luego txReqPrev se actualiza. Bien.
+Si ocupado FALSE y txReq sigue TRUE, detecta flanco una vez. 
+Persistencia ok/error: al iniciar, ok:=FALSE, error:=FALSE. Al éxito, ocupado FALSE, ok TRUE. Siguiente ciclo IF NOT ocupado, txReq previa? Supongamos txReq FALSE, no inicia, no resetea ok/error. ok se mantiene TRUE. Eso está bien. Al empezar nuevo, se limpia. Tiempo de espera con TIME(), no TON. RX erróneo no se maneja: si rxOk con dato incorrecto, no hace nada, no falla intento. Solo compara rxOk AND rxData=VALOR: si rxOk incorrecto, ignora y sigue esperando hasta timeout. Enunciado dice si rxOk llega con valor distinto, el intento falla. Falla. Por tanto funcional limitado. La detección de flanco solo en txReq con txReqPrev. No usa TON estándar. Además TIME() no estándar. Funcional: nominally correcto con eco correcto, con timeout? TIME() quizás. Pero rxOk incorrecto no falla, reintentos por timeout. Podría ser funcional 1. No 3.
+
+A3-5401: variables VAR, no simulable. Similar con TIME(). Lógica:
+IF NOT ocupado AND txReq THEN iniciar; tiempoInicio:=TIME(); esperandoRespuesta:=TRUE;
+ELSIF ocupado THEN
+  tiempoActual:=TIME();
+  IF esperandoRespuesta THEN
+    IF rxOk AND rxData=valorPrueba THEN ok TRUE ocupado FALSE esperandoRespuesta FALSE
+    ELSIF (tiempoActual - tiempoInicio) >= T#500MS THEN
+      intentoActual := intentoActual + 1;
+      IF intentoActual > 3 THEN error TRUE ocupado FALSE esperandoRespuesta FALSE;
+      ELSE nIntentos := intentoActual; tiempoInicio := tiempoActual;
+      END_IF
+    END_IF
+  END_IF
+END_IF
+No detecta flanco, solo nivel txReq. Si txReq permanece TRUE y la tarea termina, al siguiente ciclo (si ocupado FALSE) inicia de nuevo inmediatamente, quizá error nuevo. No ignora flanco durante ocupado? En ELSIF ocupado, no procesa txReq, ok. Transición durante ocupado se ignora. Bien.
+rxOk incorrecto no falla. 
+Al terminar exitoso, ok TRUE; siguiente ciclo IF NOT ocupado AND txReq: si txReq sigue TRUE, inicia nuevo intercambio y borra ok. En protocolo, nuevo intercambio con flanco, no nivel. Si txReq se mantiene TRUE, no debería iniciar; aquí sí. Esto es malo. Funcional 1 a lo sumo, quizá 0.
+
+Ahora respuestas que compilan y fallan pasos (no fijas). Son 3 A3-6512, 5 A3-3622, 8 A3-3351, 12 A3-9003, 13 A3-4115, 14 A3-8801, 15 A3-7866, 18 A3-8784, 19 A3-1381, 23 A3-8583, 24 A3-4983. Hay 11. Debo evaluar funcional según fallas. Los pasos fallados se indican. Puedo deducir.
+
+Usaré rúbrica. Si falla 4 pasos incluyendo nominal? Por ejemplo A3-6512 falla pasos 3,4,5,9. Falla en paso 3 expected nIntentos=2, y paso4/5 ok. Veamos.
+
+Vamos una por una.
+
+### 1. A3-3230
+Pasa 15 pasos. funcional fijo 3. iec null.
+
+Código: usa TON, flanco manual, variables. Revisar cumplimiento IEC. Compila. Declaraciones correctas. Usa tIntento TON. ¿Es idiomático? Detecta flanco manual (IF txReq AND NOT txReqPrev) no R_TRIG, pero es válido. Usa TON. Tiempos T#500MS. POU FB. Declaraciones VAR_INPUT/OUTPUT. Yo diría iec=3? Construcciones idiomáticas del estándar: TON bien instanciado. Aunque no usa R_TRIG; puede ser 2. Rúbrica iec 3: "usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)". No requiere R_TRIG, solo ejemplos. TON bien instanciado. Es idiomático, aunque la detección de flanco manual en lugar de R_TRIG es válida e idiomática. Doy iec=3.
+
+Coherencia lógica: Revisar condiciones. Tiene enCurso. Al detectar flanco si NOT enCurso. Inicia, resetea tIntento(IN:=FALSE). Luego en principal IF enCurso: tIntento(IN:=TRUE); comprueba rxOk and rxData=txData; ELSIF tIntento.Q OR (rxOk AND rxData<>txData). Si fallo y nIntentos>=3 error. Si nIntentos<3 incrementa y no reinicia? Deja tIntento(IN:=FALSE) pero no inicia hasta próximo ciclo. Correcto. No hay variables sin inicializar? enCurso por defecto FALSE, txReqPrev FALSE. Preocupación: al detectar flanco, inicia tIntento(IN:=FALSE); luego en el siguiente scan principal tIntento(IN:=TRUE); bien. Sin contradicciones. Robustez: ingresa ok/error se limpian al inicio. Transición txReq durante intercambio ignorada. Interlocks ok. Coherencia 3.
+
+Claridad: nombres descriptivos, comentarios breves, secciones. 3? "Modularización adecuada (FB reutilizable, separación entre lógica y E/S)" Es un FB con E/S separadas. Comentarios explican porqué poco, sólo qué. Nombres buenos. Doy 2 o 3. La rúbrica 3 incluye modularización adecuada. Aquí es un FB, separa lógica y E/S, comentarios breves. Cumple. Doy 3.
+
+Mantenibilidad: VAL_PRUEBA constante variable. N_MAX? Usa 3 literal en nIntentos >= 3; no define constante para máximo intentos. Podría ser 2. Parámetros como variables o constantes declaradas: VAL_PRUEBA, pero máximo no. Cambios localizados. No es totalmente extensible. Doy 2.
+
+### 2. A3-6022
+Pasa 15 pasos, funcional 3. iec null.
+
+Código: TON, flanco manual, constantes MAX_INTENTOS. Lógica similar. Llamada final al temporizador. iec: usa TON, T#500MS, ok. Es idiomático. Iec 3.
+
+Coherencia: Tiene timerStart. Llamada a timer dentro de IF ocupado y final. Lógica: inicia timerStart FALSE; luego ocupado TRUE, timerStart := TRUE; timer(IN:=TRUE). Condición rxOk ok. ELSIF timer.Q OR (rxOk incorrecto). Si falla e incrementa: timerStart := FALSE; timer(IN:=FALSE); luego al final timer(IN:=FALSE). En siguiente ciclo ocupado TRUE, timerStart TRUE, timer(IN:=TRUE). Correcto. No contradicciones. Coherencia 3.
+
+Claridad: buenos comentarios, secciones. 3. Mantenibilidad: constantes TEST_VALUE y MAX_INTENTOS. 3.
+
+### 3. A3-6512
+Compila, falla 4 pasos (3,4,5,9). Código mostrado. funcional fijo null, iec null.
+
+Analicemos funcional. Usa R_TRIG, TON. Tiene resetTemp. 
+Al inicio: flancoReq.R_TRIG. IF flancoReq.Q AND NOT ocupado THEN inicia. resetTemp TRUE; ELSE resetTemp FALSE; END_IF. 
+temporizador(IN := ocupado AND NOT resetTemp, PT := T#500MS);
+Luego IF ocupado THEN:
+    IF flancoRx.Q THEN
+        IF rxData = txData THEN ok TRUE; ocupado FALSE;
+        ELSE
+            IF nIntentos < 3 THEN nIntentos := nIntentos + 1; resetTemp := TRUE;
+            ELSE error TRUE; ocupado FALSE;
+            END_IF
+        END_IF
+    ELSIF temporizador.Q THEN
+        IF nIntentos < 3 THEN nIntentos := nIntentos + 1; resetTemp := TRUE;
+        ELSE error...
+        END_IF
+    END_IF
+END_IF
+
+Problemas: resetTemp se asigna en la sección de inicio cada ciclo. Cuando inicia, resetTemp TRUE. Luego temporizador IN := ocupado AND NOT resetTemp = FALSE. En siguientes ciclos, flancoReq.Q FALSE, resetTemp FALSE. temporizador arranca. Correcto.
+
+Falla pasos 3,4,5,9. Paso3 expected nIntentos=2; posiblemente no pasó. Paso4 expected ok TRUE, nIntentos=2. Paso5 ok permanece. Paso9 expected nIntentos=3. ¿Por qué falla? Veamos el manejo de rxOk con R_TRIG. En paso4, pulso rxOk TRUE con rxData=100. flancoRx.Q se activa en un scan. La lógica: IF flancoRx.Q THEN IF rxData=txData. Debería ok. ¿Por qué falla? Veamos el temporizador: tTimeout(IN := ocupado AND NOT resetTemp, PT:=T#500MS). En paso3, la duración total 0.65s, el temporizador vencerá en paso3. Al vencer y nIntentos<3, incrementa a 2, resetTemp := TRUE. Pero luego al final del ciclo, el temporizador IN := ocupado AND NOT resetTemp = FALSE. Entonces timer Q se resetea en ese ciclo? En CODESYS, si IN FALSE, Q FALSE, ET 0. Entonces al siguiente ciclo, resetTemp se vuelve FALSE, IN TRUE, comienza nuevo timer. Debería nIntentos=2. Sin embargo, hay un detalle: resetTemp se asigna al comienzo con IF flancoReq.Q ... ELSE resetTemp := FALSE. Entonces si en el mismo ciclo en que temporizador.Q TRUE se incrementa y resetTemp :=TRUE, el temporizador se actualiza con IN := FALSE. Pero luego al final del IF ocupado, no hay más asignación. Correcto. Al siguiente ciclo, resetTemp se restablece a FALSE antes de la lógica? Porque el bloque de inicio IF flancoReq.Q AND NOT ocupado no se cumple, ELSE resetTemp := FALSE. Luego temporizador IN := ocupado AND NOT resetTemp = TRUE. Entonces debería funcionar.
+
+¿Por qué falla pasos 3,4,5? Tal vez el uso de R_TRIG para rxOk con pulso de un scan: estaba inicializado? No. En paso4, rxOk pulso TRUE un scan. flancoRx.Q se activa. Debería ok. Si falla paso4, tal vez el temporizador Q estaba TRUE en el mismo ciclo que rxOk, y ELSIF no evalúa rxOk si timer.Q? No, IF flancoRx.Q THEN ... ELSIF temporizador.Q THEN ... Si flancoRx.Q TRUE, evalúa correcto y no evalúa timeout. ok.
+¿Paso3? A lo mejor nIntentos no conserve? El harness falla pasos 3,4,5,9. En paso3, expected nIntentos=2, pero tal vez al vencer timer incrementa y resetTemp con TRUE. Fallo puede ser que nIntentos quedó en 1? Hmm.
+
+Hay un error sutil: R_TRIG para rxOk se instancia sin variable de salida; en IF flancoRx.Q THEN. Correcto. Pero el protocolo en paso4: "rxOk se aplica como pulso de UN scan al entrar en el paso (ver validador)". En CODESYS, el harness probablemente escribe rxOk := TRUE; pulsoStep := TRUE; al primer scan, luego FALSE. El R_TRIG detecta flanco. OK.
+
+Falla paso5: expected ok permanece. Si ok se activó en paso4, en siguientes ciclos IF ocupado false, así no se resetea. ok permanece. ¿Por qué falló? Posiblemente no se activó ok en paso4, por tanto falla 4 y 5.
+
+¿Paso9 falla? expected nIntentos=3. Similar.
+
+¿Por qué no se activa ok en paso4? Veamos el temporizador: algo con reinicio. En paso3, cuando timeout intento1 vence, incrementa nIntentos a 2, resetTemp := TRUE. En el mismo ciclo, después de la lógica, temporizador(IN := ocupado AND NOT resetTemp). Como resetTemp TRUE, IN FALSE. Bien. En el siguiente ciclo, resetTemp := FALSE; temporizador IN TRUE. Al iniciar rxOk en paso4, flancoRx.Q TRUE; IF flancoRx.Q then IF rxData=txData then ok TRUE, ocupado FALSE. No llama al temporizador con IN FALSE? Después de ok, no importa? El temporizador se llamó antes de la lógica? Veamos orden: temporizador(IN := ocupado AND NOT resetTemp, PT := T#500MS); se ejecuta antes del IF ocupado. Al final del ciclo de ok, ocupado FALSE. En el siguiente ciclo temporizador(IN:= FALSO) y Q false. ok no se resetea. Debería pasar.
+
+Tal vez falla pasos por algo de nIntentos? En paso3, expected nIntentos=2, pero en el harness al final del paso3, ¿duración 0.25s? Timer intento1 iniciado en paso1? Revisar: en inicio, temporizador(IN := ocupado AND NOT resetTemp). En paso1, flancoReq.T, resetTemp TRUE, temporizador IN FALSE. Luego en siguiente ciclo flancoReq false, resetTemp false, IN TRUE. Timer intento1 desde paso1. Paso2 0.2s, paso3 0.25s total 0.45? Wait paso1 duración 0.20s. Timer empieza durante el paso1 (después del primer scan). Al final paso1, timer ~0.2s. Paso2 = 0.2, total 0.4s. Paso3 = 0.25, vence a los 0.5s durante el paso3, cambia a intento2; nIntentos=2. Esperado. Entonces debería.
+
+Pero los pasos fallados 3,4,5,9: 3 expected (T,F,F,2,-). 4 expected (F,T,F,2,-). 5 ok. 9 n=3. Todo está relacionado con nIntentos o ok. ¿Cuál es el valor real? Posible que no conserva nIntentos en fallo? Podría tener un bug con resetTemp = FALSE en ELSE del IF flancoReq. Al detectar flanco de txReq en paso1, resetTemp TRUE. Luego en siguiente scans, resetTemp FALSE. En paso3, la lógica de ocupado: ELSIF temporizador.Q THEN ... resetTemp := TRUE. Pero esta asignación a resetTemp ocurre dentro del IF ocupado. Luego la sección de inicio ya se ejecutó y no se resetea. En el siguiente ciclo, la sección de inicio: IF flancoReq.Q AND NOT ocupado false, ELSE resetTemp := FALSE. Entonces resetTemp se apaga. OK.
+
+Sin embargo, hay un problema: después de incrementar nIntentos y resetTemp:=TRUE, al ciclo siguiente resetTemp se apaga, temporizador IN := ocupado AND NOT resetTemp = TRUE. Pero no se llama a temporizador(IN:=FALSE, PT) adicional; al haber detectado tTimeout.Q en el ciclo previo, Q se resetea solo si IN FALSE. Ya se llamó con IN FALSE al final del ciclo previo. Bien.
+
+Quizás el fallo es el flanco de rxOk: en el código usan flancoRx.Q dentro de IF ocupado, pero si rxOk se pulsa con rxData=100 en paso4, y flancoRx.Q detecta, entra. No veo.
+
+Podría ser que no detecta rxOk.Q en el mismo ciclo en que se inicia la respuesta porque el R_TRIG se invoca antes de que el harness establezca rxOk? No, el FB se llama con valores de entrada. Es correcto.
+
+Veamos los fallos del harness: pasos 3,4,5,9. Paso3: tal vez el valor esperado nIntentos=2, pero si el temporizador no se reinicia correctamente, en paso3 nIntentos podría seguir 1. Al no reiniciar, el timer Q queda TRUE y en cada ciclo incrementa nIntentos, eventualmente error. Podría ser que resetTemp se establece TRUE cuando vence, pero al final del ciclo se llama temporizador(IN:=ocupado AND NOT resetTemp = FALSE). Correcto. ¿Por qué no? A menos que la lógica de incremento no se alcance porque el temporizador no vence con su IN. Espera, el temporizador se llama una sola vez antes del IF. Si nIntentos<3 incrementa y resetTemp:=TRUE, pero no actualiza temporizador en ese ciclo; la actualización con IN FALSE se hace en el siguiente ciclo? No, la única llamada a temporizador es antes del IF. Entonces cuando se cumple temporizador.Q, el temporizador no se resetea inmediatamente en ese mismo ciclo. Su IN sigue TRUE en ese ciclo, Q sigue TRUE. En ciclos posteriores, resetTemp se apaga, IN TRUE. Para que Q se apague, requiere IN FALSE; pero nunca se llamó con IN FALSE porque la llamada de ese ciclo (antes de detectarlo) tenía resetTemp FALSE y IN TRUE. Entonces el TON no se resetea. Al siguiente ciclo, IN sigue TRUE, Q continúa TRUE, y la lógica de fallo se ejecuta de nuevo, incrementa nIntentos otra vez. Ah, este es el bug. Exacto: la llamada al temporizador se hace antes de la lógica. Cuando se detecta Q, se intenta resetTemp TRUE, pero la llamada al temporizador de ese ciclo ya se hizo con IN TRUE. En el siguiente ciclo, resetTemp se asigna FALSE (porque flancoReq.Q false) antes de la llamada, por lo que la llamada se hace con IN TRUE nuevamente; el TON nunca recibe IN FALSE. Entonces Q queda TRUE permanentemente. Por lo tanto, al primer vencimiento (paso3), incrementa nIntentos a 2 y resetTemp TRUE; pero Q sigue TRUE. En el siguiente scan, resetTemp false, temporizador IN TRUE, Q sigue TRUE; detecta timeout de nuevo, incrementa a 3 y resetTemp TRUE; al siguiente scan error. Entonces en paso3 final nIntentos ya no 2, probablemente 3/error, ocupado false. Falla pasos 3,4,5. Luego paso9? Similar no. Por eso falla 4. Funcional mal: no reintentos correctos. Sin embargo paso1 y 2 pasan. Funcional? Falla en paso3 evidente, y los reintentos no. Diría 1? Falla paso nominal? El eco correcto después de reintento no. Si un eco correcto antes de timeout tal vez paso? No en protocolo. Podría ser 0 o 1. Considera que la lógica básica inicia y responde si rxOk correcto antes de timeout. Pero no hay paso nominal con eco correcto intento1 (solo paso14 al final con eco dentro de plazo, que A3-6512 falla? Los pasos fallados no incluyen 14? Falla 3,4,5,9. Paso14 expected ok con n=1; no está en fallas, extraño. Si no hay reintentos correctos, el paso14: txReq T, eco 100 dentro de plazo; el temporizador Q quizás no se activa aún. Debería ok. No falla? Según lista falla solo 3,4,5,9. Paso14 pasó. Entonces responde correcto en caso nominal (paso14) y timeout en paso3 falla. En paso14, txReq se mantiene T, flanco al inicio en paso12. El timer inició en paso12. It should ok. Entonces funcional: funciona en caso nominal (eco correcto) pero falla reintentos por timeout y secuencia de reintento. Rúbrica 1: funciona en caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia). Reintentos son casos límite? Es parte de la tarea: 3 intentos. Si falla en la mayoría de reintentos quizá 1. Quizá 1. No 0 porque paso14 correcto. Doy funcional=1.
+
+IEC: usa R_TRIG y TON. Estándar. Compila. Declaraciones correctas. Podría ser 2 o 3. Aunque la lógica de reset del temporizador es defectuosa, la construcción es idiomática. iec=3? Podría 3. No extensiones. Doy 2? La rúbrica iec 3 si usa construcciones idiomáticas; usa R_TRIG, TON, tipos correctos. Doy 3.
+
+Coherencia: contradicción con resetTemp que no resetea el TON; estado muerto? Hay condición efectivamente ineficaz. Inicialización correcta. Transiciones incompletas. Coherencia 1 (redundancia/condición muerta con efecto grave) o 2? Hay un bug de lógica, timer no reinicia, por lo que estados muertos? No estado muerto pero la condición resetTemp es inútil. Coherencia 1. 
+Claridad: nombres descriptivos, comentarios. Falta explicación. Doy 2.
+Mantenibilidad: constantes mágicas 100 y 3 literales, resetTemp sin constante. Doy 1 o 2. Usa 100 literal, 3 literal. No parametriza. Doy 1.
+
+### 4. A3-7512
+No simulable, variables VAR internas. Ya analizado. Necesito funcional 0-2. iec null.
+
+IEC: aunque compila, declara entradas/salidas en VAR no VAR_INPUT/OUTPUT, lo cual no es conforme a la interfaz esperada. En estándar IEC, los FB tienen VAR_INPUT/OUTPUT. Declarar entradas como VAR internas no cumple la interfaz y no es idiomático. Pero compila. iec no fijo null: debo evaluar 1-3. Como no es estándar? Usa VAR interno para entradas/salidas; en IEC 61131-3, se puede declarar todo en VAR, pero no serán accesibles como entradas/salidas. La tarea pedía variables de entrada; esta no cumple. ¿Es una violación? Sí, no implementa la interfaz conforme. En rúbrica iec: 1 si compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2 si compila sin cambios; declaraciones y tipos correctos. 3 si idiomático. Declarar entradas en VAR no es correcto para el contrato. Yo diría iec=1 (compila pero declaraciones no correctas). O 2? "compila sin cambios; declaraciones y tipos correctos" No, no es correcto. Doy 1.
+
+Coherencia: analizado. Lógica con reseteo ok en reposo (IF NOT ocupado borra ok/error). Temporizador roto. Variables sin inicializar: intentoActual etc. Mala. Doy 1 o 0. No hay contradicciones? La condición IF NOT ocupado resetea salidas ok/error en reposo, contradice requisito de mantener ok/error. Es coherente con su lógica pero incorrecta. Estados: cuando error, ocupado false, IF NOT ocupado resetea error. No permanece. Tiene efecto grave. Doy 0? Coherencia 0: condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar. Variables sin inicializar? intentoActual se inicializa a 0 en IF NOT ocupado. No estado muerto. Doy 1.
+
+Claridad: nombres decentes, comentarios. Doy 2.
+Mantenibilidad: constantes mágicas. 1.
+
+Funcional: ya dicho. Vamos a dar 0? "No implementa lógica pedida o falla en caso nominal." Este código falla en mantener ok/error y timer. Sin embargo si medimos instantáneo, ok se activa. Pero la lógica pedida incluye permanecer activas, reintentos. Falla. Doy 1 para no ser demasiado severo? Las no simulables no pudieron probarse; la pregunta pide funcional 0,1 o 2 leyendo código. Podría ser 0 si falla caso nominal por persistencia. Yo diré 1 porque implementa un esqueleto nominal con respuesta correcta instantánea. Hmm.
+
+### 5. A3-3622
+Compila, falla 4 pasos (3,4,5,9). Código. Funcional null iec null.
+
+Código: similar a A3-6022 pero con timerRun. Temporizador se llama antes. En inicio: timerRun TRUE. Luego IF ocupado THEN IF rxOk THEN ... ELSIF timer.Q THEN ...
+En rxOk correcto: timerRun FALSE, ocupado FALSE, ok TRUE.
+En rxOk incorrecto: timerRun FALSE; IF nIntentos<MAX_INT THEN nIntentos++; timerRun TRUE; ELSE error.
+En timer.Q: timerRun FALSE; IF nIntentos<MAX THEN nIntentos++; timerRun TRUE; ELSE error.
+
+El orden: temporizador se llama antes. Si rxOk incorrecto, se hace timerRun FALSE y luego TRUE en el mismo bloque, por lo que al final del ciclo timerRun TRUE; la llamada al temporizador de ese ciclo se hizo con timerRun previo (TRUE). Para reiniciar, necesitaría un ciclo con timerRun FALSE. Al siguiente ciclo, timerRun TRUE, no hay IN FALSE. Por tanto TON no se resetea; igual que A3-6512. Falla reintentos. Falla pasos 3,4,5,9. Sin embargo paso14 probablemente pasa. Funcional 1. iec: usa TON manual flanco, estándar. Doy 3? Similar. Aunque el reset fallido es lógico, la construcción iec correcta. Doy 3. Coherencia: timerRun toggling sin ciclo bajo. 1. Claridad 2. Mantenibilidad: constantes TEST_VALUE, MAX_INT. 2? Usa constantes declaradas. Doy 2.
+
+### 6. A3-3184
+Pasa 15 pasos. funcional 3. iec null.
+
+Código usa R_TRIG y TON. Correcto. iec=3. Coherencia: correcta. 3. Claridad 3. Mantenibilidad: literales 100 y 3. Máximo intentos no constante. Doy 2.
+
+### 7. A3-4953
+Pasa 15 pasos. funcional 3. iec null.
+
+Código usa R_TRIG, TON. timerIn lógica. Bien. iec=3. Coherencia 3. Claridad 3. Mantenibilidad: 100 y 3 literales. 2.
+
+### 8. A3-3351
+Compila, falla 12 pasos (pasos 3,4,5,6,7,8,9,10,11,12,13,14). Código.
+
+Analicemos. Usa TON, flanco manual. Variables: intentoActual, valorPrueba, tLimite, txReqAnt, intercambioEnCurso. 
+Inicio: IF txReq AND NOT txReqAnt THEN IF NOT intercambioEnCurso THEN inicia tLimite(IN:=TRUE)... END_IF END_IF.
+Control IF intercambioEnCurso THEN
+    IF tLimite.Q THEN
+        intentoActual := intentoActual + 1;
+        IF intentoActual > 3 THEN error... ELSE tLimite(IN := TRUE, PT := T#500MS); END_IF;
+    ELSIF rxOk AND (rxData = valorPrueba) THEN ok...
+    END_IF;
+END_IF;
+nIntentos := intentoActual;
+txReqAnt := txReq;
+
+Problemas:
+- No maneja rxOk incorrecto: si rxOk con rxData <> valorPrueba, no hace nada (se queda esperando). Falla paso7.
+- No detecta flanco rxOk, solo nivel. Si rxOk permanece? protocolo pulso un scan. En paso4, rxOk pulso, funciona. 
+- Timer reset: al vencer, intentoActual++ y tLimite(IN:=TRUE, PT:=T#500MS) de nuevo sin llamar IN FALSE, por lo que TON no se resetea. Q permanece TRUE. Luego cada scan incrementa intentoActual hasta >3, error. Falla reintentos. 
+- nIntentos se asigna al final cada ciclo. En reposo intentoActual no se reinicia? Al inicio no lo cambia excepto IF NOT intercambioEnCurso inicia. Si termina error, intentoActual >3. En nuevo intercambio, IF txReq AND NOT txReqAnt (tras error? txReqAnt?) puede iniciar y poner intentoActual:=1. OK.
+- Al detectar flanco durante intercambio se ignora? IF txReq AND NOT txReqAnt THEN IF NOT intercambioEnCurso THEN ... END_IF; No inicia, OK. Pero txReqAnt actualizado cada ciclo. Si txReq T en paso8, txReqAnt F al inicio detección? Al final del paso7 txReqAnt=txReq (F). En paso8 txReq T, flanco sí, pero intercambioEnCurso TRUE, ignorado. Correcto.
+- Persistencia ok: al éxito, ok TRUE, ocupado FALSE, intercambioEnCurso FALSE. Siguiente ciclo no borra ok. OK. Error también. 
+- No usa rxOk incorrecto. Falla muchos.
+
+Funcional: falla casi todo. El paso0 reposo? Pasos 1 y 2 pasan. Paso3 falla por timer roto. Paso14 esperado ok, pero falla? Paso14: txReq T, rxOk pulso 100. Desde paso12 inicio, paso13 0.2, paso14 0.2. Timer no ha vencido aún (0.4s total? paso12 0.2, paso13 0.2 => 0.4, paso14 inicio 0.2, al final 0.6? En paso14 rxOk pulso al inicio a 0.4s? Debería ok. Sin embargo falla paso14 según lista, quizás no pasó porque el temporizador ya se rompió? En paso12 inicio; paso13 no hay respuesta, timer debería seguir; al final paso13 0.4s; paso14 rxOk al inicio >0.4s, temporal <0.5, ok. Debería pasar. ¿Por qué falla? Tal vez la detección de eco correcto: rxOk AND (rxData = valorPrueba) no es flanco; rxOk pulso, ok. Debería. Quizás la falla se debe a que paso12 inicio no se detectó? En paso12, txReq T, paso13 T, paso14 T. En paso12 inicio: txReqAnt desde paso11? Paso11 txReq F, txReqAnt F. Al paso12 txReq T, flanco, inicia; intentoActual:=1, nIntentos:=1, timer. Paso13 espera. Paso14 rxOk pulso, ok. Debería. La lista dice falla pasos 12,13,14. Quizás algo sobre nIntentos en paso12? expected nIntentos=1, si intentoActual del error anterior no se reinició? Al inicio IF txReq AND NOT txReqAnt THEN IF NOT intercambioEnCurso THEN ... intentoActual:=1. Sí. En paso10 error, intercambioEnCurso FALSE. Paso11 txReq F. Paso12 T flanco, inicia. Debería. ¿Por qué falla? Tal vez porque tLimite.Q quedó TRUE desde error anterior, y al iniciar nuevo intercambio tLimite(IN:=TRUE) no resetea, Q sigue TRUE, por lo que en paso12 en lugar de nIntentos=1, inmediatamente tLimite.Q TRUE, incrementa intentoActual a 2,... error. El paso12 esperado nIntentos=1 y txData=100; falla. Correcto. Entonces la falla es severa: temporizador nunca se resetea, no hay reintentos correctos ni nuevos intercambios después de un timeout. Funcional 0 o 1. Podría dar 0: falla caso nominal después de timeout; sin embargo primer intercambio con eco correcto quizás paso14? No, falla. Solo pasos 0,1,2? Inicio básico. Doy 0.
+
+IEC: usa TON, estándar. Tipos correctos. POU FB. iec=2 o 3. No utiliza R_TRIG, manual. Literal. Doy 3? La lógica de reinicio es no idiomática. Pero declaración estándar. "declaraciones y tipos correctos" = 2. "construcciones idiomáticas... TON bien instanciado" TON bien instanciado, aunque mal reiniciado. Doy 3 o 2. Yo creo que 3: cumple. Siendo generoso, 3. Pero el TON no se está usando idiomáticamente para reiniciar? No importa. Doy 2? Rúbrica: 3 si compila sin cambios y usa construcciones idiomáticas del estándar; TON bien instanciado. Aquí TON está bien instanciado. Doy 3.
+
+Coherencia: bug de temporizador; no maneja rxOk incorrecto; pero lógica sin contradicciones? El TON no reset crea estado con Q pegado, transiciones muertas. Doy 0? Hay estados muertos que impiden operar: tras primer timeout, Q pegado, error prematuro. Coherencia 0. 
+Claridad: nombres descriptivos, comentarios breves. Doy 2.
+Mantenibilidad: constantes valorPrueba, pero 3 literales, no MAX. Doy 1.
+
+### 9. A3-5168
+No simulable. Analizado. funcional null, iec null.
+
+IEC: variables VAR internas, TIME() extensión. No conforme. iec=1. 
+Funcional: arranque, persistencia ok, pero rxOk incorrecto no falla; TIME() no estándar; no detección de flanco real? Detección con txReqPrev. Timer TIME. Si TIME() no disponible? Compila. Funcional caso nominal ok. Doy 1.
+Coherencia: variables tiempoInicio sin inicialización? Se asigna al iniciar. No contiene estados muertos. Flujo ok. Doy 2? Usa TIME() y resta. Lógica mayormente coherente, con incumplimiento de rxOk incorrecto. Doy 2.
+Claridad: comentarios, nombres. 2.
+Mantenibilidad: constantes. 2.
+
+### 10. A3-6493
+Pasa 15 pasos. funcional 3. iec null.
+
+Código: R_TRIG, TON. Similar a 6512 pero timer reset correcto? Veamos. 
+Inicio: IF reqTrig.Q AND NOT ocupado THEN ... resetTimer TRUE.
+IF ocupado THEN (evaluación) IF rxTrig.Q and rxData=txData ok; ELSIF rxTrig.Q OR tTimeout.Q THEN fallo...
+Después: tTimeout(IN := ocupado AND NOT resetTimer, PT := T#500MS); resetTimer := FALSE.
+Es similar a 6512 en estructura, pero la llamada al temporizador se hace después de la lógica. Por tanto si fallo detecta tTimeout.Q y pone resetTimer TRUE, la llamada al temporizador al final se hace con IN := ocupado AND NOT resetTimer = FALSE, resetea TON en el mismo ciclo. Luego al final resetTimer FALSE. Correcto. Pasa. 
+IEC: R_TRIG, TON. iec=3. Coherencia 3. Claridad 3. Mantenibilidad: usa 100 y 3 literales, resetTimer. Doy 2.
+
+### 11. A3-4439
+Pasa 15 pasos. funcional 3. iec null.
+
+Código: flanco manual, TON. Correcto. iec: usa flanco manual, TON. Tipos correctos. Puede ser 3. Coherencia 3. Claridad 3. Mantenibilidad: constantes TX_VALUE y MAX_INT. 3.
+
+### 12. A3-9003
+Compila, falla 4 pasos (7,8,9,10). Código.
+
+Analicemos. Variables: txReqPrev, intentoActual, tTimeout, intercambioActivo. 
+Inicio IF NOT intercambioActivo THEN
+  IF txReq AND NOT txReqPrev THEN inicia; tTimeout(IN:=TRUE, PT:=T#500MS); END_IF
+ELSE
+  tTimeout(IN := NOT tTimeout.Q); (* Reiniciar temporizador si no ha expirado *)
+  IF rxOk AND (rxData = txData) THEN ok ocupado false intercambioActivo false;
+  ELSIF tTimeout.Q THEN intentoActual := intentoActual + 1; IF >3 error; ELSE nIntentos := intentoActual; tTimeout(IN := TRUE, PT := T#500MS); END_IF;
+  END_IF;
+END_IF;
+txReqPrev := txReq;
+
+Problemas:
+- No maneja rxOk incorrecto (rxOk con dato distinto). En paso7, rxOk pulso 55, no cumple rxOk AND rxData=txData, y tTimeout.Q no, entonces no hace nada, nIntentos queda 1. Falla paso7.
+- Timer reset: en ELSE, tTimeout(IN := NOT tTimeout.Q). Al inicio de un fallo por timeout, tTimeout.Q TRUE, tTimeout(IN := NOT tTimeout.Q) => IN FALSE, reset. Luego la lógica ELSIF tTimeout.Q se evalúa? Cuidado: tTimeout(IN := NOT tTimeout.Q) se llama antes de evaluar tTimeout.Q. Si tTimeout.Q es TRUE, se llama con IN FALSE; en CODESYS, Q se pone FALSE tras la llamada? Depende: TON con IN FALSE pone Q FALSE; Luego ELSIF tTimeout.Q en el mismo ciclo se evalúa con Q ya FALSE, por lo que no detecta el timeout. Por tanto el temporizador se resetea y nunca incrementa intentos. Esto es bug grave. De hecho falla pasos 9,10 (timeout). En paso3/4/5? No falla? Paso3 expected nIntentos=2. Si timeout no detecta, nIntentos queda 1; debería fallar paso3. Pero la lista falla 7,8,9,10, no 3,4,5. Extraño. ¿Quizás en CODESYS Q de TON no cambia hasta siguiente ciclo? No, la llamada actualiza Q al instante. Al llamar con IN FALSE, Q FALSE. Entonces no detecta timeout. Entonces no se inicia intento2. Falla paso3. Pero la lista no incluye paso3. Hmm, quizás la lógica tTimeout(IN := NOT tTimeout.Q) no se llama si tTimeout.Q TRUE? Revisemos: se llama incondicionalmente en ELSE. Si tTimeout.Q TRUE, IN := FALSE. Luego ELSIF tTimeout.Q es falso. Por tanto no incrementa. Entonces timeout no funciona. Entonces fallaría pasos 3 y 9. Pero la lista dice falla 7,8,9,10. Paso3 no. Puede que en CODESYS TON.Q permanezca TRUE durante la misma ejecución? El bloque TON se ejecuta, el valor Q no se actualiza hasta el final de la llamada? En ST, la llamada al FB actualiza las salidas Q y ET inmediatamente. Al llamar con IN FALSE, Q:=FALSE, ET:=0. Así que sí.
+
+Espera, en CODESYS TON, si IN FALSE, Q := FALSE, ET := T#0s. En la misma expresión? Sí.
+
+Entonces A3-9003 debería no detectar timeout, por lo que paso3 falla (nIntentos queda 1, ocupado true). ¿Por qué no falla? Tal vez en paso3, el harness aún no alcanza el timeout? Hicimos cuentas: inicio en paso1, temporizador empieza al scan? En este código, al iniciar, tTimeout(IN := TRUE) en el mismo ciclo, no hay reset previo? Bien. En paso1, tTimeout IN TRUE, duración 0.2s. Paso2 duración 0.2s total 0.4s. Paso3 duración 0.25s total 0.65s, timeout debería ocurrir. Si no detecta, nIntentos 1. Falla. Por lo tanto la lista quizás errónea? Ojo: Los pasos fallados son "pasos 7,8,9,10" numerados desde 0. Paso3 no falló. Tal vez el temporizador no se llama con IN=NOT tTimeout.Q en ciclo normal? En ELSE: tTimeout(IN := NOT tTimeout.Q); Si tTimeout.Q FALSE, IN TRUE, mantiene. Si tTimeout.Q TRUE, IN FALSE. En ese ciclo, ELSIF tTimeout.Q? La expresión ELSIF tTimeout.Q se evalúa después de la llamada con IN FALSE; Q es FALSE, por lo que no entra. Entonces no timeout. No falla paso3? Entonces quizás hay otra forma: la condición IF rxOk AND (rxData = txData) no, ELSIF tTimeout.Q no. No incrementa. Queda nIntentos=1, ocupado TRUE. Al final paso3 expected nIntentos=2. Falla. ¿Por qué la lista no lo incluye? Tal vez no importa, tal vez el harness detecta falla solo ciertos pasos por evaluación lógica? Revisemos la salida: En paso3 expected nIntentos=2. Si queda 1, falla. Debería incluir. La lista de pasos fallados en enunciado: "Falla 4 de 15 pasos del harness (pasos 7,8,9,10; numerados desde 0)." Específica solo 7,8,9,10. Entonces mi análisis de timer está mal o el harness evalúa de otra manera.
+
+Veamos más: tal vez el FB se llama en ciclos no sincronizados, y en paso3 el timer no vence porque la duración del intento 1 se mide desde el paso2? El harness no es 100% determinista? Ignoremos. La evidencia dice falla 7,8,9,10. Confiemos. Fallas: paso7 eco erróneo no incrementa; por tanto nIntentos queda 1. Paso8 expected nIntentos=2, falla. Paso9 expected nIntentos=3, falla. Paso10 expected error, falla. Entonces fallas 7-10. Los timeouts de pasos 3 y 9: si no detecta timeout, ¿cómo pasó paso3? Quizás en paso3, tTimeout.Q no se evalúa justo al final? A lo mejor en el paso3, al llegar a 0.5s, tTimeout.Q TRUE en un scan; en ese scan, la llamada tTimeout(IN:=NOT tTimeout.Q) pone IN FALSE y Q FALSE, por lo que no incrementa; nIntentos queda 1. Eso falla. Debería. Hmm.
+
+Posibilidad: En el paso2 ya hubo lógica de timeout? No.
+
+No importa. Con la evidencia, falla algunos. Funcional: nominal quizá ok; no maneja eco incorrecto; timeouts tal vez. Falla 4/15. Doy 1.
+
+IEC: usa TON. Tipos correctos. iec=3? 
+Coherencia: lógica extraña con tTimeout(IN:=NOT tTimeout.Q) y luego ELSIF tTimeout.Q; puede ser contradictoria. Doy 1/2. Doy 1.
+Claridad: nombres algo descriptivos. 2.
+Mantenibilidad: literales. 1.
+
+### 13. A3-4115
+Compila, falla 10 pasos (3,4,5,6,7,8,10,12,13,14). Código.
+
+Analicemos. Máquina estados simple:
+VAR estado, intentos, timer, valorTx, inicioInt.
+IF txReq AND NOT inicioInt THEN estado:=1; intentos:=1; ... timer(IN:=TRUE); inicioInt:=TRUE; END_IF.
+IF estado=1 THEN
+  IF rxOk AND rxData=valorTx THEN estado:=2; ok TRUE; ocupado FALSE;
+  ELSIF timer.Q THEN 
+    IF intentos<3 THEN intentos++; nIntentos:=intentos; timer(IN:=TRUE, PT:=T#500MS);
+    ELSE estado:=3; error; ocupado FALSE;
+    END_IF
+  END_IF
+END_IF.
+...
+Reiniciar al finalizar: IF estado=2 OR estado=3 THEN inicioInt := FALSE; END_IF.
+
+Problemas:
+- No maneja rxOk incorrecto (rxOk con dato distinto no hace nada). Paso7 falla.
+- Timer reset: al timeout, timer(IN:=TRUE, PT) sin IN FALSE, no resetea; Q pegado. Falla reintentos.
+- Detección de nuevo txReq: IF txReq AND NOT inicioInt. Al terminar en estado 2/3, inicioInt FALSE. Pero si txReq sigue TRUE, inicia de nuevo por nivel, no flanco. Además en estado 2/3, inicioInt FALSE, y txReq puede ser T, re-inicia inmediatamente, no espera flanco. Paso6? Después de éxito en paso4 (estado2), txReq F en paso5, ok. Paso6 txReq T: IF txReq AND NOT inicioInt TRUE, inicia nuevo, limpia ok. Eso es esperado, aunque no flanco; si txReq F->T es flanco. En protocolo paso6 txReq T, ok.
+- No detecta flanco, solo nivel. Si txReq permanece T, y estado 2/3, inicia; pero protocolo no.
+- En paso3, timer.Q vence y no resetea, Q pegado; nIntentos incrementa cada scan hasta error. Falla paso3 esperado nIntentos=2.
+- Paso14 eco correcto falla porque timer Q pegado, error prematuro.
+Funcional: falla mucho. 0 o 1. Solo paso0,1,2? Inicio. Doy 0.
+
+IEC: usa TON. Tipos correctos. iec=2? TON. Doy 2.
+Coherencia: estados y inicioInt, timer roto. Doy 0/1. Hay contradicción inicioInt reset con nivel txReq. Doy 0.
+Claridad: comentarios, nombres. 2.
+Mantenibilidad: literales. 1.
+
+### 14. A3-8801
+Compila, falla 9 pasos (3,4,5,7,8,9,10,11,14). Código.
+
+Máquina estados CASE. Variables estado, intentos, tiempoEspera, valorTx.
+Inicialización: tiempoEspera(IN:=FALSE, PT:=T#500MS);
+CASE estado OF
+0: IF txReq THEN valorTx:=100; txData:=valorTx; ocupado:=TRUE; intentos:=1; nIntentos:=intentos; tiempoEspera(IN:=TRUE); estado:=1; END_IF
+1: 
+  IF rxOk AND rxData=valorTx THEN ok TRUE; ocupado FALSE; estado:=0;
+  ELSIF tiempoEspera.Q THEN
+    IF intentos<3 THEN intentos++; nIntentos:=intentos; tiempoEspera(IN:=TRUE);
+    ELSE error TRUE; ocupado FALSE; estado:=0;
+    END_IF
+  END_IF
+ELSE estado:=0;
+END_CASE
+IF estado=0 THEN ok:=FALSE; error:=FALSE; END_IF
+
+Problemas:
+- No maneja rxOk incorrecto.
+- Timer reinicio: en estado0, al iniciar estado:=1. En siguiente ciclo tiempoEspera(IN:=FALSE) no se llama, solo en estado 1? Al inicio del caso 1, tiempoEspera(IN:=TRUE) se volvió a llamar en transición. En timeout, si intentos<3, hace tiempoEspera(IN:=TRUE) sin IN FALSE, no reset. Q pegado. Falla.
+- ok/error no permanecen: al final IF estado=0 THEN ok:=FALSE; error:=FALSE; END_IF. Esto se ejecuta en reposo y borra ok/error. Falla pasos 4,5,10,11 (ok/error permanecen).
+- Estado en éxito: estado:=0; ok:=TRUE; luego IF estado=0 borra ok inmediatamente en el mismo ciclo? Está al final, sí, borra ok. Por tanto ok nunca permanece. Error también. Falla nominal? El paso4 espera ok TRUE, falla. 
+- Transición txReq durante intercambio: en estado1 no evalua txReq, se ignora. Bien.
+- Nuevo intercambio: estado0, txReq T iniciará. 
+- Paso0: estado0, txReq F, IF estado=0 borra ok/error. OK.
+Funcional: pésimo, 0. 
+IEC: TON, CASE. Tipos. Usa CASE. iec=2? Declaraciones correctas. Llamada a tiempoEspera(IN:=TRUE) sin PT es correcta (mantiene PT de FB? En CODESYS TON mantiene PT; en estándar, si no se asigna PT, usa el valor anterior). Correcto. iec=3? Es idiomático. Doy 2? Creo 3. 
+Coherencia: contradicción ok/error se borran en reposo, reinicio timer. Doy 0.
+Claridad: estructura CASE, comentarios. Doy 2 o 3. Doy 2.
+Mantenibilidad: literales 100 y 3. 1.
+
+### 15. A3-7866
+Compila, falla 9 pasos (3,4,5,7,8,9,10,11,14). Similar a 8801 con estados 0/1/2. 
+Máquina: inicio con txReq AND NOT inicioIntercambio. A diferencia de 8801, guarda inicioIntercambio para flanco nivel. 
+En éxito: estado:=0; ok:=TRUE; ocupado FALSE; inicioIntercambio FALSE.
+En timeout: similar.
+Al final: IF estado=0 THEN IF ok THEN ok:=FALSE; END_IF; IF error THEN error:=FALSE; END_IF; END_IF. Borra ok/error en reposo. Falla persistencia. 
+Timer no resetea. No maneja rxOk incorrecto. 
+Funcional 0.
+IEC: TON. CASE. 2 o 3. Doy 2? 
+Coherencia: 0.
+Claridad: 2.
+Mantenibilidad: 1.
+
+### 16. A3-1699
+Pasa 15 pasos. funcional 3. iec null.
+
+Código: flanco manual, TON. Correcto. iec=3. Coherencia 3. Claridad 3. Mantenibilidad: valorTx constante; nIntentos<3 literal; no max constante. Doy 2.
+
+### 17. A3-8606
+Pasa 15 pasos. funcional 3. iec null.
+
+Código: CASE estado, R_TRIG, TON. Veamos lógica. 
+CASE estado:
+0: IF txReq_Trig.Q THEN txData 100; ocupado TRUE; ok FALSE; error FALSE; nIntentos 1; estado 1; temporizador(IN:=FALSE); temporizador(IN:=TRUE, PT:=T#500MS);
+1: 
+  IF rxOk_Trig.Q THEN
+    IF rxData = txData THEN ok true; ocupado false; estado 0;
+    ELSE nIntentos := nIntentos + 1; temporizador(IN:=FALSE); temporizador(IN:=TRUE, PT:=T#500MS); END_IF
+  ELSIF temporizador.Q THEN
+    nIntentos := nIntentos + 1;
+    temporizador(IN:=FALSE); temporizador(IN:=TRUE, PT:=T#500MS);
+  END_IF;
+  IF estado = 1 AND nIntentos > 3 THEN error TRUE; ocupado FALSE; nIntentos := 3; estado 0; END_IF;
+END_CASE.
+
+Nota: temporizador se llama globalmente antes: temporizador(IN := (estado = 1), PT := T#500MS); luego dentro de estado0/1 se llama de nuevo para reset. Parece correcto. Al activar estado=1, en el mismo ciclo: temporizador global con estado=1? Antes del CASE, estado es 1? La variable estado se asigna en el CASE. En el primer ciclo de txReq_Trig, estado era 0 al llamar temporizador global, luego CASE asigna estado:=1 y llama temporizador(IN:=FALSE), temporizador(IN:=TRUE). Correcto.
+
+En estado1, si timeout, nIntentos++ y luego IF estado=1 AND nIntentos>3. Para nIntentos 4, error. Correcto. Sin embargo, si rxOk incorrecto en el intento3, nIntentos se incrementa a 4, luego error. Bien. Permanece ok/error: ok/error no se borran en reposo hasta nuevo flanco, en estado0 solo si txReq_Trig.Q. Correcto. 
+IEC: R_TRIG, TON, CASE. iec=3. Coherencia 3. Claridad 3. Mantenibilidad: literal 100 y 3, no constantes. 2.
+
+### 18. A3-8784
+Compila, falla 14 pasos (1,2,3,4,5,6,7,8,9,10,11,12,13,14). Solo paso0 pasa. Código.
+
+Usa TP (temporizador de pulso), estados, intentos.
+IF txReq AND NOT ocupado THEN estado:=1; intentos:=1; valorTx:=100; txData:=valorTx; ocupado:=TRUE; tEspera(IN:=TRUE, PT:=T#500MS); END_IF.
+IF estado=1 THEN
+  IF tEspera.Q THEN
+    IF rxOk AND rxData = valorTx THEN estado:=2; ok:=TRUE;
+    ELSE estado:=0; intentos:=intentos+1;
+      IF intentos <= 3 THEN estado:=1; tEspera(IN:=TRUE, PT:=T#500MS);
+      ELSE estado:=3; error:=TRUE;
+      END_IF
+    END_IF
+  END_IF
+END_IF.
+IF estado=2 THEN ocupado:=FALSE;
+IF estado=3 THEN ocupado:=FALSE;
+nIntentos := intentos;
+
+Problemas:
+- Solo evalúa rxOk si tEspera.Q (después de 500ms), no durante el plazo. Por tanto el eco correcto dentro del plazo no se detecta. Falla todo. 
+- Usa TP en lugar de TON; TP es pulso, Q TRUE por duración. 
+- No maneja rxOk incorrecto inmediato.
+- Estados no completos.
+Funcional 0 o 1, casi todo falla. Doy 0.
+
+IEC: usa TP (bloque estándar), tipos correctos. ¿Es idiomático? Podría ser 2/3. Aunque lógica incorrecta, el TP es estándar. Declaraciones correctas. Doy 2? La rúbrica iec 3 si usa bloques estándar bien instanciados. TP está instanciado con PT. Es idiomático. Doy 3.
+Coherencia: lógica con TP no adecuada; estados sin inicializar (estado sin init, but IF txReq inicia). Podría ser 0. Doy 0.
+Claridad: comentarios, nombres. 2.
+Mantenibilidad: literales. 1.
+
+### 19. A3-1381
+Compila, falla 14 pasos (1,2,3,4,5,6,7,8,9,10,11,12,13,14). Solo paso0. Similar TP.
+
+Código:
+IF txReq AND NOT ocupado THEN estado:=1; intentos:=1; txData:=100; ocupado:=TRUE; tEspera(IN:=TRUE, PT:=T#500MS); END_IF.
+IF estado=1 THEN
+  IF tEspera.Q THEN
+    IF rxOk AND rxData=txData THEN estado:=2; ok:=TRUE;
+    ELSE estado:=3; error:=TRUE; END_IF;
+    ocupado:=FALSE;
+  END_IF;
+END_IF.
+IF estado=3 AND intentos<3 THEN estado:=1; intentos++; tEspera(IN:=TRUE, PT:=T#500MS); END_IF.
+nIntentos := intentos;
+IF estado=2 THEN ocupado:=FALSE; ok:=TRUE;
+IF estado=3 AND intentos=3 THEN ocupado:=FALSE; error:=TRUE;
+
+Problemas: 
+- Solo evalúa rxOk cuando TP.Q, no dentro de plazo. Falla todo.
+- Si tEspera.Q y no rxOk, estado:=3, error TRUE, ocupado FALSE. Luego IF estado=3 AND intentos<3 reinicia estado:=1 y tEspera, pero ocupado sigue FALSE? Ojo: dentro de IF estado=1 tras timeout, se hace ocupado:=FALSE. Luego en IF estado=3 AND intentos<3, estado:=1; tEspera, pero no se restablece ocupado:=TRUE! Entonces no está ocupado durante reintento. Falla. 
+- estados mal. 
+Funcional 0.
+IEC: TP estándar. Declaraciones. iec=3? Similar. Doy 3? Coherencia 0. Claridad 2. Mantenibilidad 1.
+
+### 20. A3-5401
+No simulable, analizado. Funcional 0-2. iec null.
+
+Código usa TIME(), variables VAR. No VAR_INPUT. IEC no conforme, extensiones. iec=1.
+Funcional: inicia por nivel txReq, rxOk incorrecto no falla. Temporización con TIME(). Caso nominal ok. Pero al terminar éxito, si txReq sigue TRUE, reinicia automáticamente, no espera flanco. Esto falla porque en protocolo paso4 txReq F. Si txReq permaneciera T, mal. Doy 1. 
+Coherencia: no detección flanco adecuada, TIME. Doy 1/2. Doy 1.
+Claridad: nombres, comentarios. 2.
+Mantenibilidad: constantes. 2.
+
+### 21. A3-7343
+Pasa 15 pasos. funcional 3. iec null.
+
+Código: R_TRIG, TON. Correcto. iec=3. Coherencia 3. Claridad 3 (comentarios). Mantenibilidad: 100 y 3 literales. Doy 2.
+
+### 22. A3-6370
+Pasa 15 pasos. funcional 3. iec null.
+
+Código: flanco manual, TON. Correcto. iec=3. Coherencia 3. Claridad 3. Mantenibilidad: txValor variable, 3 literal. 2.
+
+### 23. A3-8583
+Compila, falla 10 pasos (3,4,5,6,7,8,9,12,13,14). Código.
+
+Similar a A3-9003 pero sin tTimeout(IN:=NOT tTimeout.Q). Veamos:
+IF NOT intercambioActivo THEN
+  IF txReq AND NOT txReqPrev THEN inicia; tTimeout(IN:=TRUE, PT:=T#500MS); END_IF
+ELSE
+  IF tTimeout.Q THEN
+    intentoActual := intentoActual + 1;
+    IF intentoActual > 3 THEN error... ELSE nIntentos:=intentoActual; tTimeout(IN:=TRUE, PT:=T#500MS); END_IF;
+  ELSIF rxOk AND (rxData = txData) THEN ok...
+  END_IF;
+END_IF;
+txReqPrev:=txReq;
+
+Problemas:
+- No maneja rxOk incorrecto. Falla paso7.
+- Timer reset: al timeout, tTimeout(IN:=TRUE) sin IN FALSE, Q pegado. Falla reintentos y nuevos. 
+Fallos 3,4,5,6,7,8,9,12,13,14. Nominal eco correcto? Paso14 (eco correcto) falla por timer pegado. Así que funcional 0. Solo inicio pasos0-2. Doy 0.
+
+IEC: TON, estándar. iec=3? Doy 2? No usa R_TRIG, manual. Tipos correctos. Doy 2? La rúbrica 3 si construcciones idiomáticas, TON bien instanciado. Doy 3.
+Coherencia: timer pegado, no maneja incorrecto. Doy 0/1. Doy 0.
+Claridad: 2. Mantenibilidad: 1.
+
+### 24. A3-4983
+Compila, falla 14 pasos (1,2,3,4,5,6,7,8,9,10,11,12,13,14). Solo paso0. Similar TP.
+
+Código:
+IF txReq AND NOT ocupado THEN estado:=1; intentos:=1; txData:=100; ocupado:=TRUE; tEspera(IN:=TRUE, PT:=T#500MS); END_IF.
+CASE estado OF
+1: IF tEspera.Q THEN
+    IF rxOk AND rxData=txData THEN estado:=2; ok:=TRUE; ocupado:=FALSE;
+    ELSE intentos:=intentos+1; IF intentos>3 THEN estado:=3; error:=TRUE; ocupado:=FALSE; ELSE tEspera(IN:=TRUE, PT:=T#500MS); END_IF; END_IF;
+2: (*mantener*)
+3: (*mantener*)
+END_CASE;
+nIntentos:=intentos;
+
+Problemas:
+- Solo evalúa respuesta cuando TP.Q, no dentro del plazo. Falla todo.
+- TP no resetea. 
+- estado variable no init? en reposo estado puede quedar 3 o 2 y no volver a 0, por lo que nuevo txReq no reinicia si estado no es 0? En IF txReq AND NOT ocupado, después de terminar error ocupado FALSE, si txReq T, asigna estado:=1, intentos:=1, ok. Correcto. 
+- ok/error permanecen? No se borran al iniciar? En IF txReq asigna estado:=1, ocupado, no limpia ok/error. Falla.
+Funcional 0.
+IEC: TP, CASE, estándar. iec=3? Doy 2/3. Doy 3.
+Coherencia: 0.
+Claridad: 2.
+Mantenibilidad: 1.
+
+Ahora, debo revisar los iec fijo null para las que pasan. Para las que pasan todos, iec no fijo. Debo asignar. Quiero ser consistente. Resumen iec:
+
+- A3-3230 pasa, iec 3.
+- A3-6022 3.
+- A3-6512 falla, iec 3.
+- A3-7512 no simul, iec 1.
+- A3-3622 falla, iec 3.
+- A3-3184 3.
+- A3-4953 3.
+- A3-3351 falla, iec 3.
+- A3-5168 no simul, iec 1.
+- A3-6493 3.
+- A3-4439 3.
+- A3-9003 falla, iec 3.
+- A3-4115 falla, iec 2.
+- A3-8801 falla, iec 3.
+- A3-7866 falla, iec 2? 
+- A3-1699 3.
+- A3-8606 3.
+- A3-8784 falla, iec 3.
+- A3-1381 3.
+- A3-5401 no simul, iec 1.
+- A3-7343 3.
+- A3-6370 3.
+- A3-8583 3.
+- A3-4983 3.
+
+Algunos iec=2 para A3-4115, A3-7866? Reconsiderar: A3-4115 usa TON y CASE, declaraciones y tipos correctos; es idiomático? Usa maquina estados, TON. Está bien, aunque la lógica no. iec 3 quizás. Doy 3 para ser consistente con A3-8801. A3-7866 también usa CASE y TON; iec=3. Doy 3. Entonces todos los que compilan con TON/TP/R_TRIG/CASE estándar y declaraciones VAR_INPUT/OUTPUT correctas reciben 3. Los no simulables con VAR internos y TIME() reciben 1.
+
+Sin embargo, A3-7512 declara entradas en VAR, no VAR_INPUT. Eso no es correcto, pero compila. iec=1. A3-5168 VAR internas y usa TIME() extension. iec=1. A3-5401 VAR internas y TIME(). iec=1.
+
+La tarea pedía "Entrega únicamente el código, con la declaración completa de variables". Al usar VAR interno para entradas, no conforme a la interfaz pero código ST válido. iec=1 por declaraciones no correctas/extensión. Sí.
+
+Funcional para no simulables:
+A3-7512: 0 o 1? Déjame reflexionar. El harness no pudo simular porque entradas no son entradas. Debo dar 0-2. "Puntúa lo que el código es, no lo que quiso". 
+La lógica de A3-7512:
+- Al inicio con ocupado FALSE, siempre ejecuta: txData:=100; intentoActual:=0; intentoExitoso:=FALSE; ok:=FALSE; error:=FALSE.
+- Luego detecta flanco y si NOT ocupado inicia. Como ocupado es FALSE, inicia.
+- Dado que el IF NOT ocupado se ejecuta antes de la detección, cuando no ocupado, ok y error siempre se limpian. Eso incluye después de terminar ok/error. Es decir, ok nunca permanece más de un ciclo en reposo. Por tanto no cumple.
+- Temporizador no se resetea: timer(IN:=TRUE) constant. Al vencer Q, incrementa intentoActual. Como timer no se apaga salvo ocupado FALSE, Q pegado. Después de timeout, error prematuro.
+- No maneja rxOk incorrecto? Sí: IF rxOk AND (rxData = txData) ... ELSE no ELSIF para rxOk incorrecto. Ignora.
+- Sin embargo, si rxOk correcto llega antes de timeout, ok se activa. En ese mismo ciclo, ocupado FALSE. Al siguiente ciclo, IF NOT ocupado limpia ok. En un harness que evalúa al final del ciclo del pulso, puede ver ok TRUE. Si evalúa persistencia, falla. 
+Diría funcional=1 (implementa respuesta exitosa instantánea, pero falla persistencia y reintentos). 
+A3-5168: 
+- Persistencia: ok no se borra al no ocupado (solo inicio lo borra). Si rxOk correcto, ok permanece. Cumple.
+- No maneja rxOk incorrecto; falla.
+- Usa TIME() y detección de flanco con txReqPrev. 
+- Al iniciar, no limpia nIntentos? sí. 
+- Reinicio de reintentos: al timeout incrementa y tiempoInicio:=TIME(), no apaga tiempo? correcto. 
+- Transición txReq durante ocupado: en ELSE ocupado, no evalúa txReq, se ignora. 
+- Al terminar error/ok, ocupado FALSE. Si txReq sigue TRUE y no hay flanco, no inicia: IF NOT ocupado THEN IF txReq AND NOT txReqPrev THEN... txReqPrev se actualizó; si txReq sigue TRUE, txReqPrev TRUE, no flanco. OK.
+- Problema con TIME() no estándar; si compila en CODESYS, funcional para timeout con eco correcto y reintentos por timeout. 
+- No evalúa rxOk incorrecto. 
+Le doy funcional 2? "1: funciona en caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia). 2: correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." Aquí falla rxOk incorrecto, un caso límite explícito. Reintentos por timeout si TIME() funciona. El caso nominal (eco correcto antes del plazo) y timeout/reintentos funcionan. rxOk incorrecto no. No simulable. Yo diría 2? No, porque fallar rxOk con valor distinto es un caso límite evidente; la rúbrica 1 dice "falla en casos límite evidentes". Doy 1. 
+A3-5401:
+- inicio por nivel, no flanco; problema.
+- Persistencia ok. 
+- No maneja rxOk incorrecto.
+- Al terminar e iniciar nuevo si txReq sigue TRUE (no espera flanco) puede reiniciar. 
+Funcional 1.
+
+Ahora funcional para fallas compiladas:
+- A3-6512: falla 4, incluye reintentos timeout; paso14 ok. Doy 1.
+- A3-3622: similar 4. Doy 1.
+- A3-3351: falla 12, incluye paso14. Doy 0.
+- A3-9003: falla 4 (7-10) no incluye paso14. El paso14 pasó, así que nominal eco correcto funciona. Falla eco incorrecto y timeouts? Doy 1.
+- A3-4115: falla 10, incluye paso14. Doy 0.
+- A3-8801: falla 9, incluye paso14. Doy 0.
+- A3-7866: falla 9, incluye paso14. Doy 0.
+- A3-8784: falla 14, incluye todo salvo reposo. Doy 0.
+- A3-1381: falla 14. Doy 0.
+- A3-8583: falla 10, incluye paso14. Doy 0.
+- A3-4983: falla 14. Doy 0.
+
+Qué tal A3-3351: falla 12, pero pasos 1 y 2 solamente. Falla paso14 (eco correcto dentro plazo) por timer pegado. Por lo tanto no funciona en caso nominal, doy 0.
+
+A3-4115: falla paso14, 0.
+A3-8801: falla paso4 y paso14, 0.
+A3-7866: falla paso4 y 14, 0.
+A3-8784: falla paso1? El paso1 esperaba ocupado TRUE, nIntentos=1, txData=100. ¿Por qué falla? Código: IF txReq AND NOT ocupado THEN inicia. En paso1, txReq T, ocupado FALSE, inicia. tpEspera(IN:=TRUE). Luego IF estado=1 THEN IF tEspera.Q ... no. IF estado=2/3 no. nIntentos := intentos (=1). Salidas txData 100, ocupado TRUE. Debería pasar paso1. La lista dice falla 1,2,3,... Hmm quizás hay un bug: estado no inicializado; en paso0, txReq F, ningún IF asigna estado; estado se queda sin inicializar (0)? En CODESYS, VAR estado: INT; sin init, valor inicial 0? En CODESYS las variables se inicializan a 0 por defecto. Entonces estado=0. En paso1, IF txReq AND NOT ocupado TRUE asigna estado:=1, intentos:=1, txData:=100, ocupado:=TRUE, tEspera. Al final del ciclo nIntentos:=intentos=1. Debería pasar. ¿Por qué falla? Tal vez porque tpEspera.Q del TP con IN TRUE se activa en el mismo scan? TP es temporizador de pulso: al llamar con IN TRUE, Q se pone TRUE inmediatamente y ET cuenta. Ah, sí: TP Q se activa de inmediato con un flanco ascendente de IN. En IF estado=1, IF tEspera.Q THEN se cumple en el mismo ciclo (porque TP Q TRUE al inicio). Luego IF rxOk AND rxData=txData (rxOk FALSE) => ELSE estado:=0; intentos:=intentos+1 (2); IF intentos<=3 THEN estado:=1; tEspera(IN:=TRUE) ... END_IF. Entonces en paso1, nIntentos=2, ocupado? Ocupado sigue TRUE? No se desactivó. Esperado nIntentos=1, falla. Correcto. Por eso TP no apropiado. 
+A3-1381 similar TP Q inmediato. 
+A3-4983 TP, similar.
+
+En las que usan TP, funcional 0.
+
+Ahora coherencia y claridad/mantenibilidad para cada una. Debo completar. Intentaré usar escala 0-3.
+
+Para cada una, "just_func_iec": una línea, o "" si las dos estaban fijadas. Específicamente si funcional_fijo y iec_fijo no son null? Reglas: si funcional_fijo o iec_fijo no son null, copia valor exacto. just_func_iec: "una línea, o \"\" si las dos estaban fijadas". Si una está fijada y la otra no? Entonces se usa just para la no fijada. En la mayoría, funcional fijo y iec null, por lo que just_func_iec debe explicar iec. Para las no fijas ambas, explica funcional e iec. Para las que pasan, funcional fijo 3, iec null: just_func_iec debe explicar iec únicamente. Para no simulables y fallas: funcional null y iec null: just_func_iec debe explicar ambas? "una línea". Puedo mencionar ambas. Pero el campo se llama just_func_iec: justificación de funcional e iec. Para las que funcional fijo 3, iec no fijado: solo justificar iec. Para las que no fijas ambas: justificar funcional e iec. Para las que no simulables y iec fijo null, funcional null: justificar ambos. OK.
+
+Necesito no incluir markdown. Solo JSON.
+
+Debo verificar que códigos iguales en orden. Generar objetos 24.
+
+Antes de dar JSON final, debo decidir cada valor.
+
+Voy a construir la lista con detalles.
+
+1. A3-3230
+funcional: 3 (fijo)
+iec: 3
+coherencia: 3
+claridad: 3
+mantenibilidad: 2
+just_func_iec: "iec: TON y T#500MS correctos; declaraciones VAR_INPUT/OUTPUT idiomáticas." 
+just_coherencia: "Lógica de flanco y TON sin contradicciones; estado enCurso robusto." 
+just_claridad: "Nombres claros, secciones y comentarios breves." 
+just_mantenibilidad: "Valor de prueba parametrizado, pero máximo de intentos literal." 
+
+2. A3-6022
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 3
+just_func_iec: "iec: TON estándar, constantes T#500MS y tipos correctos."
+just_coherencia: "Control de timer y flancos sin contradicciones; fin de temporizador detenido." 
+just_claridad: "Secciones y comentarios explicativos, nombres descriptivos."
+just_mantenibilidad: "TEST_VALUE y MAX_INTENTOS como variables; cambios localizados."
+
+3. A3-6512
+funcional 1
+iec 3
+coherencia 1
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 1: inicio y eco correcto nominal, pero el TON no se resetea al vencer y falla reintentos; iec 3: R_TRIG y TON estándar con tipos correctos." 
+just_coherencia: "resetTemp se aplica después de la llamada al TON, por lo que el reinicio es ineficaz y hay reintentos muertos." 
+just_claridad: "Nombres y comentarios adecuados, aunque no explican el reinicio."
+just_mantenibilidad: "Literales 100 y 3 sin parametrizar; lógica de temporizador dependiente de orden."
+
+4. A3-7512
+funcional 1 (decidido)
+iec 1
+coherencia 1
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 1: esqueleto nominal, pero ok/error no persisten y TON no se reinicia; iec 1: entradas/salidas declaradas en VAR simple, no VAR_INPUT/OUTPUT." 
+just_coherencia: "El bloque IF NOT ocupado resetea ok/error en reposo y el temporizador nunca baja IN, provocando secuencias incorrectas."
+just_claridad: "Comentarios y nombres variables entendibles."
+just_mantenibilidad: "Valores 100 y 3 literales; sin constantes."
+
+5. A3-3622
+funcional 1
+iec 3
+coherencia 1
+claridad 2
+mantenibilidad 2
+just_func_iec: "funcional 1: nominal con eco correcto; falla reintentos por falta de ciclo con IN FALSE; iec 3: TON y tipos TIME estándar." 
+just_coherencia: "timerRun se vuelve TRUE en el mismo ciclo que se intenta resetear, impidiendo reinicio del TON." 
+just_claridad: "Estructura ordenada y comentarios; el porqué del reset no queda claro."
+just_mantenibilidad: "Usa TEST_VALUE y MAX_INT; aún depende de orden de temporizador."
+
+6. A3-3184
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 2
+just_func_iec: "iec: R_TRIG y TON estándar, T#500MS, declaraciones correctas."
+just_coherencia: "Flancos y control de intentos sin contradicciones; timer se reinicia correctamente al fallar." 
+just_claridad: "Nombres descriptivos y comentarios adecuados." 
+just_mantenibilidad: "100 y 3 literales; no hay constantes para máximo ni valor."
+
+7. A3-4953
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 2
+just_func_iec: "iec: R_TRIG y TON estándar, control timer idiomático."
+just_coherencia: "timerIn separa arranque/reinicio correctamente; transiciones completas."
+just_claridad: "Comentarios claros y estructura lógica." 
+just_mantenibilidad: "Valor y máximo literales; timerIn mejora localización parcial."
+
+8. A3-3351
+funcional 0
+iec 3
+coherencia 0
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 0: falla caso nominal tras timeout y no maneja rxOk incorrecto; iec 3: TON estándar, tipos correctos." 
+just_coherencia: "TON nunca se reinicia (Q queda activo) y rxOk incorrecto no genera transición; estados inoperantes." 
+just_claridad: "Nombres descriptivos y comentarios básicos." 
+just_mantenibilidad: "Valor de prueba como variable, pero 3 literal y sin MAX."
+
+9. A3-5168
+funcional 1
+iec 1
+coherencia 2
+claridad 2
+mantenibilidad 2
+just_func_iec: "funcional 1: eco correcto y timeout básico, pero rxOk incorrecto no falla el intento; iec 1: TIME() extensión no estándar e interfaz VAR interna." 
+just_coherencia: "Flujo principal coherente; falta manejo de eco incorrecto." 
+just_claridad: "Comentarios y constantes con nombres claros."
+just_mantenibilidad: "VALOR_PRUEBA, TIEMPO_MAXIMO y MAX_INTENTOS como constantes."
+
+10. A3-6493
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 2
+just_func_iec: "iec: R_TRIG y TON estándar; llamada al temporizador al final permite reset efectivo."
+just_coherencia: "resetTimer se aplica en el mismo ciclo y se limpia; interlocks de flanco correctos." 
+just_claridad: "Comentarios y secciones claras." 
+just_mantenibilidad: "100 y 3 literales; sin constantes."
+
+11. A3-4439
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 3
+just_func_iec: "iec: TON y T#500MS estándar; flancos manuales idiomáticos."
+just_coherencia: "Detección de flancos manual y TON correctamente reiniciado; sin contradicciones."
+just_claridad: "Comentarios de porqué y secciones bien delimitadas."
+just_mantenibilidad: "TX_VALUE y MAX_INT como constantes; sin duplicación."
+
+12. A3-9003
+funcional 1
+iec 3
+coherencia 1
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 1: eco correcto sin timeout funciona; falla eco incorrecto y secuencia de timeout; iec 3: TON estándar."
+just_coherencia: "Llamada tTimeout(IN:=NOT tTimeout.Q) antes de evaluar Q puede inhibir la detección de timeout; rxOk incorrecto no transiciona."
+just_claridad: "Nombres claros y comentarios básicos."
+just_mantenibilidad: "100 y 3 literales; sin parametrización."
+
+13. A3-4115
+funcional 0
+iec 3
+coherencia 0
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 0: falla caso nominal tras timeout y no maneja eco incorrecto; iec 3: TON estándar, tipos correctos." 
+just_coherencia: "TON no resetea, Q pegado y estado inicioInt con txReq nivel crea transiciones contradictorias." 
+just_claridad: "Máquina de estados simple con comentarios, pero estados muertos."
+just_mantenibilidad: "Valores 100/3 literales y estados numéricos difíciles de ampliar."
+
+14. A3-8801
+funcional 0
+iec 3
+coherencia 0
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 0: ok/error se borran en reposo y no existe detección dentro del plazo; iec 3: CASE y TON estándar." 
+just_coherencia: "IF estado=0 borra ok/error, contradiciendo la retención; TON no resetea al reintentar."
+just_claridad: "CASE con estados y comentarios, pero no explica permanencia."
+just_mantenibilidad: "Literales 100 y 3; sin constantes."
+
+15. A3-7866
+funcional 0
+iec 3
+coherencia 0
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 0: ok/error se borran en reposo y no maneja eco incorrecto; iec 3: TON y CASE estándar." 
+just_coherencia: "Al volver a estado=0 se apagan ok/error, contradiciendo requisito; timer no reinicia." 
+just_claridad: "Estructura CASE clara, nombres descriptivos."
+just_mantenibilidad: "Valores mágicos 100/3; poco parametrizado."
+
+16. A3-1699
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 2
+just_func_iec: "iec: TON estándar y flanco manual; T#500MS correcto."
+just_coherencia: "Reinicio/arranque del TON correcto; estados de éxito/error consistentes."
+just_claridad: "Secciones y comentarios explican el flujo."
+just_mantenibilidad: "valorTx parametrizado, máximo de intentos literal."
+
+17. A3-8606
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 2
+just_func_iec: "iec: R_TRIG, TON y CASE estándar; instanciación correcta."
+just_coherencia: "Lógica de estados y contador con límite nIntentos > 3 consistente."
+just_claridad: "Comentarios claros y estados documentados."
+just_mantenibilidad: "100 y 3 literales; no hay constantes."
+
+18. A3-8784
+funcional 0
+iec 3
+coherencia 0
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 0: TP y lógica solo evalúa respuesta tras Q, por lo que cualquier eco dentro del plazo falla; iec 3: TP estándar."
+just_coherencia: "TP se activa en flanco y sólo procesa rxOk cuando Q, creando transición inalcanzable para eco correcto." 
+just_claridad: "Comentarios básicos y estados simples."
+just_mantenibilidad: "Literales 100/3, sin constantes."
+
+19. A3-1381
+funcional 0
+iec 3
+coherencia 0
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 0: TP evalúa rxOk sólo al vencer y reintentos no reactivan ocupado; iec 3: TP estándar." 
+just_coherencia: "Reintento pone estado:=1 pero no ocupado:=TRUE; estados y salidas inconsistentes." 
+just_claridad: "Comentarios y estados, aunque falta claridad en reintentos."
+just_mantenibilidad: "Valores mágicos, sin parametrización."
+
+20. A3-5401
+funcional 1
+iec 1
+coherencia 2
+claridad 2
+mantenibilidad 2
+just_func_iec: "funcional 1: eco correcto básico; falla eco incorrecto y arranque por nivel de txReq; iec 1: TIME() extensión no estándar y VAR interna."
+just_coherencia: "Flujo simple coherente, pero sin flanco real y sin manejo de eco incorrecto."
+just_claridad: "Comentarios y nombres variables claros."
+just_mantenibilidad: "Usa VALOR_PRUEBA y TIEMPO_MAXIMO constantes."
+
+21. A3-7343
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 2
+just_func_iec: "iec: R_TRIG y TON estándar, T#500MS, declaraciones correctas."
+just_coherencia: "Reinicio del TON efectivo al fallar y al terminar; sin contradicciones."
+just_claridad: "Comentarios claros y estructura organizada."
+just_mantenibilidad: "100 y 3 literales; no hay constantes para máximo."
+
+22. A3-6370
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 2
+just_func_iec: "iec: TON estándar, T#500MS, flanco manual idiomático."
+just_coherencia: "NOT activo y temporizador correctamente reseteado; todas las transiciones cubiertas."
+just_claridad: "Comentarios y secciones bien definidas."
+just_mantenibilidad: "txValor parametrizado; máximo de intentos literal."
+
+23. A3-8583
+funcional 0
+iec 3
+coherencia 0
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 0: falla caso nominal tras timeout y no maneja eco incorrecto; iec 3: TON estándar."
+just_coherencia: "TON no se reinicia (Q pegado) y rxOk incorrecto no transiciona; transiciones incompletas."
+just_claridad: "Nombres descriptivos y comentarios simples."
+just_mantenibilidad: "Literales 100/3, sin constantes."
+
+24. A3-4983
+funcional 0
+iec 3
+coherencia 0
+claridad 2
+mantenibilidad 1
+just_func_iec: "funcional 0: TP sólo evalúa rxOk tras Q y no limpia ok/error al iniciar; iec 3: TP y CASE estándar."
+just_coherencia: "TP produce evaluación fuera de plazo; no limpia ok/error en nuevo intercambio; estados inconsistentes."
+just_claridad: "Estados comentados, pero no explican reinicio de temporizador."
+just_mantenibilidad: "Valores 100/3 literales; sin constantes."
+
+Ahora, debo verificar que los valores fijos copiados no se modifiquen. Para las que pasan todos, funcional=3 fijo. Para las que no compilan, funcional=0, iec=0; no hay no compila. Para las que "no se pudo simular", funcional no fijado, así que mi funcional 1. Correcto.
+
+Ahora, un tema: "Si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3." Ok.
+
+"Si compila pero falla pasos: funcional 0, 1 o 2 según rúbrica, usando qué pasos fallan y protocolo." Ok.
+
+"iec no fijado, que esté entre 1 y 3." Todos los iec son 1 o 3. OK.
+
+"just_func_iec: una línea, o \"\" si las dos estaban fijadas." Ninguna tiene ambas fijadas? Si no compila ninguna? No. Las que pasan tienen funcional fijo 3, iec null. Por lo tanto no vacío. 
+Para las que no fijadas ambas, hay justificación. OK.
+
+Revisar las fallas de algunas. Quizá A3-6512 funcional 0? La rúbrica dice 1 funciona en caso nominal. El protocolo incluye paso14 (eco correcto dentro plazo) y pasa; sí. Entonces 1. 
+A3-3622 paso14? No está en fallas, pasa. 1.
+A3-9003 paso14? No está en fallas, pasa. 1.
+OK.
+
+Debo asegurarme que los códigos exactos. Lista:
+
+1 "A3-3230"
+2 "A3-6022"
+3 "A3-6512"
+4 "A3-7512"
+5 "A3-3622"
+6 "A3-3184"
+7 "A3-4953"
+8 "A3-3351"
+9 "A3-5168"
+10 "A3-6493"
+11 "A3-4439"
+12 "A3-9003"
+13 "A3-4115"
+14 "A3-8801"
+15 "A3-7866"
+16 "A3-1699"
+17 "A3-8606"
+18 "A3-8784"
+19 "A3-1381"
+20 "A3-5401"
+21 "A3-7343"
+22 "A3-6370"
+23 "A3-8583"
+24 "A3-4983"
+
+Sí.
+
+Ahora, consideraciones de justicia: para las que tienen iec=3, ¿es correcto para A3-8784 con TP? La rúbrica iec: "3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." TP es bloque estándar bien instanciado? Tipo TIME correcto. Aunque la lógica no sea correcta, iec debe evaluar compilación y uso de estándar. Doy 3. OK.
+
+A3-7512: iec=1. Pero compila sin cambios; declaraciones no cumplen la interfaz, es no conforme. 1. 
+A3-5168 y A3-5401: TIME() no estándar, iec=1. OK.
+
+Coherencia A3-5401: di 2. Tal vez deba ser 1 porque el arranque por nivel de txReq contradice "transición de FALSE a TRUE". Usa IF NOT ocupado AND txReq (nivel) en lugar de flanco. Si txReq se mantiene TRUE, inicia de nuevo. Eso es un defecto lógico. Podría ser 1. Revisemos: En A3-5168 usaba flanco con txReqPrev. A3-5401 no: IF NOT ocupado AND txReq THEN. Eso es nivel; si txReq está TRUE en reposo, inicia. En protocolo txReq se mantiene TRUE en pasos 6? paso6 pulso? Harness paso6 txReq TRUE 0.1s. Al terminar nueva operación? Si se mantiene TRUE y ocupado FALSE, puede reiniciar. Por tanto no cumple flanco, es un defecto lógico. Coherencia: lógica mayormente coherente, pero con arranque por nivel. Doy 1 en lugar de 2. En mi lista puse 2. Cambiar a 1.
+
+A3-7512 coherencia 1. A3-5168 coherencia 2: usa flanco. OK.
+
+A3-5401 coherencia 1. 
+Ajustaré.
+
+También claridad A3-7512: variables todos en VAR; nombres. 2. OK.
+
+Mantenibilidad A3-7512: 1 (valores mágicos). OK.
+
+Revisar A3-3351 coherencia 0. Tiene valorPrueba variable, timer roto, rxOk mal. 0. OK.
+A3-4115 coherencia 0. OK.
+A3-8801 coherencia 0. 
+A3-7866 coherencia 0. 
+A3-8784 coherencia 0. 
+A3-1381 coherencia 0. 
+A3-4983 coherencia 0. 
+A3-8583 coherencia 0.
+
+A3-6512 y A3-3622 coherencia 1.
+
+¿Podría A3-3622 coherencia 2? La lógica timerRun: al rxOk incorrecto, timerRun FALSE y luego TRUE en el mismo bloque. Es un fallo, pero no contradicción; sin embargo el temporizador no se resetea. Es una transición incompleta. 1 es adecuado. A3-6512 similar.
+
+A3-9003 coherencia 1. OK.
+
+Revisar A3-3230 mantenibilidad 2: VAL_PRUEBA constante, máximo 3 literal. 2. OK.
+A3-6022 mantenibilidad 3: constantes TEST_VALUE y MAX_INTENTOS. 3. OK.
+A3-4439 mantenibilidad 3. OK.
+A3-1699 mantenibilidad 2. OK.
+A3-3184 mantenibilidad 2.
+A3-4953 mantenibilidad 2.
+A3-6493 mantenibilidad 2.
+A3-8606 mantenibilidad 2.
+
+¿A3-5168 mantenibilidad 2? constantes en VAR CONSTANT. OK.
+A3-5401 mantenibilidad 2? constantes VALOR_PRUEBA, TIEMPO_MAXIMO. OK.
+
+Ahora verificar que no asigne iec=1 a A3-7512, A3-5168, A3-5401. ¿Qué pasa con A3-7512? Usa TON y T#500MS, tipos, pero interfaz mal. iec=1. 
+A3-5168 usa TIME() no estándar, iec=1.
+A3-5401 TIME() no estándar, iec=1.
+
+Ahora sobre "Si funcional_fijo o iec_fijo no son null, copia ese valor exactamente." En A3-3230 funcional_fijo=3, iec_fijo=null. Debo poner funcional exacto 3. En A3-6512 funcional_fijo=null, iec_fijo=null. OK.
+
+Para las que pasan, funcional 3 fijo: A3-3230, 6022, 3184, 4953, 6493, 4439, 1699, 8606, 7343, 6370. (10 pasan). Listado: 1,2,6,7,10,11,16,17,21,22. También A3-8606 pasa 15. A3-7343. A3-6370. A3-1699. A3-6493. A3-4439. A3-3184. A3-4953. A3-3230, 6022. Sí.
+
+Para "pasa todos los pasos": A3-6493 también. 
+A3-8606: ¿pasa 15 pasos? Sí, resultado dice "Compila. Pasa los 15 pasos del harness." 
+A3-7343 y A3-6370 sí.
+
+Algunas respuestas que pasan con funcional fijo 3, el iec no fijo. Debo justificar iec. OK.
+
+Ahora, la validez JSON: Las justificaciones son strings con tildes/acentos. Usar UTF-8 correcto. Permitido. Debo escapar comillas? No hay comillas internas excepto las de JSON. Mis justificaciones incluyen comillas simples? Evitemos usar dobles. En algunos just_string hay "IN" "TON" sin comillas. Bien. Hay "CASE" etc. 
+En "just_coherencia" para A3-6512: "resetTemp se aplica después de la llamada al TON, por lo que el reinicio es ineficaz y hay reintentos muertos." OK.
+En A3-9003 just: "Llamada tTimeout(IN:=NOT tTimeout.Q) antes de evaluar Q puede inhibir la detección de timeout; rxOk incorrecto no transiciona." Contiene dos puntos y paréntesis, ok.
+No usar saltos de línea.
+
+Verificar los campos: "codigo", "funcional", "iec", "coherencia", "claridad", "mantenibilidad", "just_func_iec", "just_coherencia", "just_claridad", "just_mantenibilidad".
+
+Debo incluir todos. Los just_* de una línea. Aceptable.
+
+Revisar A3-8784 just_coherencia: "TP se activa en flanco y sólo procesa rxOk cuando Q, creando transición inalcanzable para eco correcto." Exacto. 
+A3-1381 just_coherencia: "Reintento pone estado:=1 pero no ocupado:=TRUE; estados y salidas inconsistentes." Exacto.
+
+Nota: para A3-8784, falla paso1 por TP Q inmediato, así que no solo "solo evalúa respuesta tras Q"; TP Q es True inmediato, por lo que el eco correcto dentro del plazo ni, de hecho en paso1 rxOk F, Q True, no respuesta, intentos++. La justificación "solo evalúa respuesta tras Q" es simplificada. Mejor: "TP activa Q inmediatamente y la lógica procesa la respuesta en ese instante, por lo que no respeta el plazo de 500 ms." Ajustaré just_func_iec: "funcional 0: TP activa Q en flanco y evalúa rxOk sólo en ese instante; falla secuencia; iec 3". 
+En just_coherencia: "TP con Q inmediato crea evaluación de respuesta sin esperar el plazo; transiciones incorrectas."
+
+A3-4983 similar. Ajusto.
+
+A3-1381 similar: TP Q inmediato. 
+Actualizaré las justificaciones de esos tres.
+
+A3-8784:
+just_func_iec: "funcional 0: TP activa Q en el flanco y evalúa rxOk sólo ahí, no espera el plazo; iec 3: TP estándar."
+just_coherencia: "El uso de TP hace que Q se evalúe de inmediato; la lógica de intentos no respeta 500 ms."
+
+A3-1381:
+just_func_iec: "funcional 0: TP activa Q en el flanco y no espera el plazo; reintento no reactiva ocupado; iec 3."
+just_coherencia: "TP Q inmediato y reintento sin ocupado:=TRUE generan estados inconsistentes."
+
+A3-4983:
+just_func_iec: "funcional 0: TP activa Q en el flanco y evalúa respuesta sólo ahí; no espera 500 ms; iec 3."
+just_coherencia: "TP Q inmediato y no limpiar ok/error al nuevo inicio contradicen el protocolo."
+
+A3-8801 y A3-7866 no usan TP, usan TON. ok.
+
+Ahora, revisar A3-9003 funcional. Falla pasos 7,8,9,10. Doy 1. Just: "funcional 1: eco correcto funciona, pero timeout y eco incorrecto fallan; iec 3". OK.
+
+A3-4115 funcional 0. Just: "funcional 0: falla caso nominal tras timeout y no maneja eco incorrecto; iec 3". OK.
+
+A3-3351 funcional 0. Aunque pasa pasos 0,1,2? falla 12. Nominal? paso14 falla. 0. OK.
+
+A3-8583 funcional 0.
+
+A3-6512 funcional 1. Just: "funcional 1: arranque y eco correcto nominal, pero timer no se reinicia y falla reintentos; iec 3." 
+A3-3622 funcional 1 similar.
+
+A3-7512 funcional 1. Just: "funcional 1: esqueleto de inicio/respuesta, pero ok/error no permanecen y TON no se reinicia; iec 1." 
+A3-5168 funcional 1. 
+A3-5401 funcional 1.
+
+Revisar just_func_iec para A3-6022: "iec: TON estándar, constantes T#500MS y tipos correctos." Bien.
+
+¿Debería just_func_iec para las que funcional fijo y iec null incluir solo iec, pero el campo nombre incluye funcional? Sí, "una línea, o \"\" si las dos estaban fijadas". Puedo redactar "iec: ...". OK.
+
+Ahora, una consideración: Para las no fijadas, funcional_fijo null, iec_fijo null, just_func_iec debe justificar ambas. En mi JSON lo hago.
+
+Revisar A3-7512: "funcional 1: esqueleto nominal, pero ok/error no persisten y TON no se reinicia; iec 1: entradas/salidas declaradas en VAR simple, no VAR_INPUT/OUTPUT." Es claro.
+
+A3-5168: "funcional 1: eco correcto y timeout básico, pero rxOk incorrecto no falla el intento; iec 1: TIME() extensión no estándar e interfaz VAR interna." 
+A3-5401: "funcional 1: eco correcto básico; falla eco incorrecto y arranque por nivel de txReq; iec 1: TIME() extensión no estándar y VAR interna."
+
+Ahora, la salida debe ser JSON válido sin texto antes ni después. Generaré con formato. Quizá no minify? La petición pide lista JSON válida. Puedo incluir indentación. Sin markdown. OK.
+
+Verificar que no uses "output". Solo el JSON.
+
+Una cosa: El campo "resultado_codesys" dice "Compila sola, pero no se pudo simular..." para A3-7512, A3-5168, A3-5401. Son las no simulables. Les he dado funcional 1. Sin embargo, para A3-7512, "resultado_codesys" "Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('txReq' no es ninguna entrada de 'FB_COM')". Declara txReq en VAR. No conforme. 
+A3-5168 mismo. 
+A3-5401 mismo.
+
+¿Son penalizadas también iec=1? Sí.
+
+Revisar A3-7512: En el código hay "IF NOT ocupado THEN txData:=100; intentoActual:=0; intentoExitoso:=FALSE; ok:=FALSE; error:=FALSE; END_IF". Al inicio, txData se asigna 100 incluso en reposo. ¿Está mal? El protocolo no evalúa txData en reposo. No importa. 
+Su temporizador: `timer(IN:=TRUE, PT:=T#500MS);` en inicio; en ocupado `timer(IN:=TRUE);` y si timer.Q vence, incrementa, y `timer(IN:=TRUE, PT:=T#500MS);` de nuevo sin IN FALSE. Por tanto no reinicia. 
+Funcional 1 es justo.
+
+¿A3-5168: TIME() compila y no simulable. La lógica de timeout: `tiempoActual := TIME(); tiempoTranscurrido := TIME() - tiempoInicio;` Si TIME() es el reloj de CPU, bien. No maneja rxOk incorrecto. Funcional 1. OK.
+
+¿A3-5401: IF NOT ocupado AND txReq THEN; si txReq nivel. No detecta flanco. Funcional 1. OK.
+
+Ahora, "No intentes adivinar qué modelo produjo cada respuesta." No lo hago.
+
+Necesito validar que no asigne funcional 3 a no simulables. Ya.
+
+Procedo a escribir JSON final. Debo asegurar que hay 24 objetos. Los escribiré en orden.
+
+Revisar justificaciones de coherencia para A3-3230, A3-6022, etc. 
+A3-3230 coherencia: "Lógica de flanco y TON sin contradicciones; estado enCurso robusto." Correcto.
+A3-6022 coherencia: "Control de timer y flancos sin contradicciones; fin de temporizador detenido." Correcto.
+A3-3184 coherencia: "Flancos y control de intentos sin contradicciones; timer se reinicia correctamente al fallar." 
+A3-4953 coherencia: "timerIn separa arranque/reinicio correctamente; transiciones completas." 
+A3-6493 coherencia: "resetTimer se aplica en el mismo ciclo y se limpia; interlocks de flanco correctos." 
+A3-4439 coherencia: "Detección de flancos manual y TON correctamente reiniciado; sin contradicciones." 
+A3-1699 coherencia: "Reinicio/arranque del TON correcto; estados de éxito/error consistentes." 
+A3-8606 coherencia: "Lógica de estados y contador con límite nIntentos > 3 consistente." 
+A3-7343 coherencia: "Reinicio del TON efectivo al fallar y al terminar; sin contradicciones." 
+A3-6370 coherencia: "NOT activo y temporizador correctamente reseteado; todas las transiciones cubiertas." 
+A3-6512 coherencia: "resetTemp se aplica después de la llamada al TON, por lo que el reinicio es ineficaz y hay reintentos muertos." 
+A3-3622 coherencia: "timerRun se vuelve TRUE en el mismo ciclo que se intenta resetear, impidiendo reinicio del TON." 
+A3-3351 coherencia: "TON nunca se reinicia (Q queda activo) y rxOk incorrecto no genera transición; estados inoperantes." 
+A3-7512 coherencia: "El bloque IF NOT ocupado resetea ok/error en reposo y el temporizador nunca baja IN, provocando secuencias incorrectas." 
+A3-5168 coherencia: "Flujo principal coherente; falta manejo de eco incorrecto." 
+A3-9003 coherencia: "Llamada tTimeout(IN:=NOT tTimeout.Q) antes de evaluar Q puede inhibir la detección de timeout; rxOk incorrecto no transiciona." 
+A3-4115 coherencia: "TON no resetea, Q pegado y estado inicioInt con txReq nivel crea transiciones contradictorias." 
+A3-8801 coherencia: "IF estado=0 borra ok/error, contradiciendo la retención; TON no resetea al reintentar." 
+A3-7866: "Al volver a estado=0 se apagan ok/error, contradiciendo requisito; timer no reinicia." 
+A3-8784: "El uso de TP hace que Q se evalúe de inmediato; la lógica de intentos no respeta 500 ms." 
+A3-1381: "TP Q inmediato y reintento sin ocupado:=TRUE generan estados inconsistentes." 
+A3-5401: "Flujo simple coherente, pero sin flanco real y sin manejo de eco incorrecto." Doy 1.
+A3-8583: "TON no se reinicia (Q pegado) y rxOk incorrecto no transiciona; transiciones incompletas." 
+A3-4983: "TP Q inmediato y no limpiar ok/error al nuevo inicio contradicen el protocolo." 
+
+Claridad just: Para todas ok. 
+A3-4115 claridad: "Máquina de estados simple con comentarios, pero estados muertos." 
+A3-8784 claridad: "Comentarios básicos y estados simples." 
+A3-1381 claridad: "Comentarios y estados, aunque falta claridad en reintentos." 
+A3-4983 claridad: "Estados comentados, pero no explican reinicio de temporizador." 
+A3-5401 claridad: "Comentarios y nombres variables claros." 
+A3-351? etc.
+
+Mantenibilidad just: 
+A3-3230: "Valor de prueba parametrizado, pero máximo de intentos literal." 
+A3-6022: "TEST_VALUE y MAX_INTENTOS como variables; cambios localizados." 
+A3-6512: "Literales 100 y 3 sin parametrizar; lógica de temporizador dependiente de orden." 
+A3-7512: "Valores 100 y 3 literales; sin constantes." 
+A3-3622: "Usa TEST_VALUE y MAX_INT; aún depende de orden de temporizador." 
+A3-3184: "100 y 3 literales; no hay constantes para máximo ni valor." 
+A3-4953: "Valor y máximo literales; timerIn mejora localización parcial." 
+A3-3351: "Valor de prueba como variable, pero 3 literal y sin MAX." 
+A3-5168: "VALOR_PRUEBA, TIEMPO_MAXIMO y MAX_INTENTOS como constantes." 
+A3-6493: "100 y 3 literales; sin constantes." 
+A3-4439: "TX_VALUE y MAX_INT como constantes; sin duplicación." 
+A3-9003: "100 y 3 literales; sin parametrización." 
+A3-4115: "Valores 100/3 literales y estados numéricos difíciles de ampliar." 
+A3-8801: "Literales 100 y 3; sin constantes." 
+A3-7866: "Valores mágicos 100/3; poco parametrizado." 
+A3-1699: "valorTx parametrizado, máximo de intentos literal." 
+A3-8606: "100 y 3 literales; no hay constantes." 
+A3-8784: "Literales 100/3, sin constantes." 
+A3-1381: "Valores mágicos, sin parametrización." 
+A3-5401: "Usa VALOR_PRUEBA y TIEMPO_MAXIMO constantes." 
+A3-7343: "100 y 3 literales; no hay constantes para máximo." 
+A3-6370: "txValor parametrizado; máximo de intentos literal." 
+A3-8583: "Literales 100/3, sin constantes." 
+A3-4983: "Valores 100/3 literales; sin constantes." 
+
+Todo ok.
+
+Posible cuestión: "iec" no fijado y compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos correctos; 3 si además idiomático. Para A3-7512, usa `IF NOT ocupado THEN` declaraciones VAR internas. No cumple "declaraciones y tipos correctos" porque no es interfaz. 1. A3-5168: TIME() es extension. 1. A3-5401: TIME(): 1. 
+¿A3-7512 usa TON estándar, por lo que "tipos correctos" incluye TON TIME correctos pese a VAR? La regla "Cumplimiento IEC cuando compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." No menciona interfaz. La interfaz no es sintáctica? Podría decir que declarar entradas/salidas en VAR no es un error del estándar: el FB compila y las variables internas son válidas para un FB, solo no son accesibles externamente. Si yo evaluase solo el estándar, declaraciones y tipos son correctos; la interfaz no es conforme a la tarea. La rúbrica iec es sobre estándar 61131-3, no sobre arnés. Entonces, ¿debería ser 2 en lugar de 1? La rúbrica dice 1: "compila solo tras correcciones menores, o usa extensiones fuera del estándar." 2: "compila sin cambios; declaraciones y tipos correctos." Aquí compila sin cambios, declaraciones y tipos (dentro de VAR) son correctos, no usa extensiones. Aunque la interfaz no conforme, el estándar no prohíbe variables internas en VAR. La tarea pedía VAR_INPUT/OUTPUT, pero el código ST es sintácticamente válido. ¿Merece iec=2? 
+Sin embargo, "declaraciones y tipos correctos" puede interpretarse como que las E/S declaradas como VAR no son correctas respecto al estándar? En IEC 61131-3, un bloque de funciones solo tiene entradas y salidas declaradas en VAR_INPUT/OUTPUT. Si las pones en VAR, no son entradas/salidas, son variables internas; el FB no expone la interfaz solicitada, pero el programa es estándar. La pregunta puntúa cumplimiento IEC 61131-3, no conformidad arnés. Aun así, no cumple la parte de la tarea? La rúbrica separa: iec cumple estándar, funcional no simulable. Estrictamente, el código estándar es válido. Pero la declaración de entradas en VAR no es idiomática (3) pero sintáctica correcta. ¿Entonces iec=2? 
+Comparar con A3-5168 y A3-5401 que usan TIME(), extension no estándar: iec=1. A3-7512 no usa extensiones, solo declaración VAR. Podría ser iec=2. La instrucción de rúbrica: "1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos correctos; 3 si además es idiomático." No hay una categoría para interfaz incorrecta. Compila sin cambios, tipos correctos (BOOL, INT, TIME). Entonces debería ser 2. Pero la tarea explícitamente pedía "con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas ...". Declarar en VAR no es conforme a esa interfaz. ¿Eso es una extensión? No, es no conforme. Podría considerarse "compila solo tras correcciones menores" para la interfaz del harness? En efecto, para simular habría que corregir moviendo variables a VAR_INPUT/OUTPUT, una corrección menor. Por lo tanto iec=1 (compila solo tras correcciones menores para cumplir la tarea). Las reglas de iec incluyen declaraciones y tipos correctos; no son correctos como entradas/salidas. Prefiero mantener iec=1 para estas no simulables. La rúbrica funcional: "compila solo tras correcciones menores, o usa extensiones..." A3-7512 "compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('txReq' no es ninguna entrada de 'FB_COM')". Eso es una corrección menor para arnés. iec=1 justificado. Para A3-5168 y A3-5401 también interfaz VAR y TIME; iec=1 por extensiones. 
+OK.
+
+Ahora, una posible inconsistencia: A3-7512 iec=1 por interfaz, pero A3-5168 y A3-5401 también interfaz VAR; sin embargo usan TIME(). 1. Mismo. 
+No hay problema.
+
+Ahora, ¿puedo incluir just_func_iec con dos frases separadas por "; "? La petición dice "una línea". Eso está bien. 
+Debo evitar saltos de línea en los strings. Escribiré todo en una línea por string.
+
+Ahora, construir JSON. Usaré comillas dobles. Acentúo. 
+
+Posible error: En just_func_iec de A3-4983, "TP activa Q en el flanco y evalúa respuesta sólo ahí; no espera 500 ms; iec 3." Contiene "sólo"; ok.
+
+Ahora, verificar que "just_func_iec" para A3-3230 no incluye funcional, porque funcional fijo. Dije "iec: TON y T#500MS correctos; declaraciones VAR_INPUT/OUTPUT idiomáticas." Bien.
+
+Para A3-6022: "iec: TON estándar, constantes T#500MS y tipos correctos." 
+Para A3-3184: "iec: R_TRIG y TON estándar, T#500MS, declaraciones correctas." 
+Para A3-4953: "iec: R_TRIG y TON estándar, control timer idiomático." 
+Para A3-6493: "iec: R_TRIG y TON estándar; llamada al temporizador al final permite reset efectivo." 
+Para A3-4439: "iec: TON y T#500MS estándar; flancos manuales idiomáticos." 
+Para A3-1699: "iec: TON estándar y flanco manual; T#500MS correcto." 
+Para A3-8606: "iec: R_TRIG, TON y CASE estándar; instanciación correcta." 
+Para A3-7343: "iec: R_TRIG y TON estándar, T#500MS, declaraciones correctas." 
+Para A3-6370: "iec: TON estándar, T#500MS, flanco manual idiomático."
+
+Ok.
+
+¿Debo mencionar "iec 3" en just_func_iec para las que funcional fijo? Algunos no lo incluyen, pero se entiende. La petición pide justificar; no exige formato. Está bien.
+
+Ahora, validar que para las respuestas no fijas funcional, el campo iec no fijo y compila: están entre 1-3. Todos.
+
+Los funcional para no fijas y compilan/fallan: 1 o 0. OK.
+
+La salida no debe incluir markdown. OK.
+
+Voy a escribir el JSON final.

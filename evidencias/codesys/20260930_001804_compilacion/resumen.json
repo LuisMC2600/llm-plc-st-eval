@@ -1,0 +1,14 @@
+﻿{
+    "salida":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\results_codesys\\compilacion_piloto.csv",
+    "fecha":  "20260930_001804",
+    "duracion_min":  3.3,
+    "sha256_plantilla_antes":  "119B6A663B32E0ABEC287A55E8E9F5523B48AC8E4DB47AE449F0F5511690D8DF",
+    "respuestas":  144,
+    "sha256_script":  "0C7C7211DAC766A01421A16F5141C4C23ED9927BA80B10D51F008FED2FF655A3",
+    "codigo_salida":  0,
+    "sha256_plantilla_despues":  "119B6A663B32E0ABEC287A55E8E9F5523B48AC8E4DB47AE449F0F5511690D8DF",
+    "compila_NA":  0,
+    "compila_1":  134,
+    "compila_0":  10,
+    "sha256_csv":  "95DAF4D255C093DB378A8D273DFE69A0CE1C6007E9F7AA7FC1465E7DC0860111"
+}

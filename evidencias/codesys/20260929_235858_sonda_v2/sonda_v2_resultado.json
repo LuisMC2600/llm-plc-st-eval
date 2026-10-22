@@ -1,0 +1,400 @@
+[
+  {
+    "estado": "INFO", 
+    "detalle": "python=CODESYS.exe | plantilla existe=True", 
+    "paso": "entorno"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "sys.argv=['C:\\\\Users\\\\LUIS C\\\\Downloads\\\\1 Trabajo de Grado\\\\llm-plc-st-eval\\\\codesys\\\\sonda_scripting_sp22_v2.py'] | env SONDA_PARAM=None | archivo params.json existe=False", 
+    "paso": "D. parametros"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptProject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006C [Project(Project=0, stPath=C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\Plantilla_Simulacion.project)]>", 
+    "seg": 3.0, 
+    "paso": "projects.open(plantilla)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006D [ScriptObject{ScriptRecipeManContainer, NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, ScriptApplicationSymbolConfigExtension, NoLibManObject, LibManObjectContainer, ScriptNoProjectInfoMarker, ScriptApplication, ScriptNonTextualObject, ScriptIecLanguageObjectContainerObject, ScriptExternalFileOb", 
+    "seg": 0.040000000000000001, 
+    "paso": "proyecto.active_application"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006E [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptNonTextualObject, ScriptExternalFileObjectMarker`1, NoTaskConfigObject, ScriptTaskObject, ScriptNoTransientObjectMarker, NoImagePoolObject, NoTextListObject, N", 
+    "seg": 0.059999999999999998, 
+    "paso": "find MainTask"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.13, 
+    "paso": "MainTask.interval = 't#10ms'"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006F [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptTextualDeclarationImplementationObject, ScriptIecLanguageMemberContainer, ScriptExternalFileObjectMarker`1, NoTaskConfigObject, NoTaskObject, ScriptNoTransient", 
+    "seg": 0.23999999999999999, 
+    "paso": "A. create_pou(FUNCTION, return_type='BOOL')"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.20000000000000001, 
+    "paso": "A. FUNCTION declaracion"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.029999999999999999, 
+    "paso": "A. FUNCTION implementacion"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "05581bd1-66d3-4251-aff2-047cc8e9adf7=Offline Help", 
+    "paso": "B. categorias de mensajes"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x0000000000000070 [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptTextualDeclarationImplementationObject, ScriptIecLanguageMemberContainer, ScriptExternalFileObjectMarker`1, NoTaskConfigObject, NoTaskObject, ScriptNoTransient", 
+    "seg": 0.01, 
+    "paso": "B. create_pou(FB_ConError)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "B. FB_ConError declaracion"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "B. FB_ConError implementacion"
+  }, 
+  {
+    "estado": "FALLA", 
+    "detalle": "TypeError: clear_messages() takes exactly 1 argument (0 given)", 
+    "traza": "Traceback (most recent call last):\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22_v2.py\", line 49, in paso\n    r = funcion()\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22_v2.py\", line 142, in <lambda$11>\n    paso(\"B. clear_messages\", lambda: system.clear_messages())\nTypeError: clear_messages() takes exactly 1 argument (0 given)\n", 
+    "seg": 0.19, 
+    "paso": "B. clear_messages"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 1.6299999999999999, 
+    "paso": "B. app.build() con error"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "[('Offline Help', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000071 [No hay ayuda sin conexi?n instalada]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000072 [------ Proceso de compilaci?n iniciado: Aplicaci?n: Device.Application -------]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000073 [Tipificar c?digo...]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000074 [Compilaci?n terminada -- 0 errores, 0 advertencias]>'), ('Comprobaciones adicionales ", 
+    "seg": 0.040000000000000001, 
+    "paso": "B. mensajes tras build con error"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "[Offline Help] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000071 [No hay ayuda sin conexi?n instalada]> || [Compilar] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000072 [------ Proceso de compilaci?n iniciado: Aplicaci?n: Device.Application -------]> || [Compilar] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000073 [Tipificar c?digo...]> || [Compilar] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000074 [Compilaci?n terminada -- 0 errores, 0 advertencias]> || [Comprobaciones adicionales de c?digo] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000075 [Comprobaciones adicionales de c?digo ...]> || [Comprobaciones adicionales de c?digo] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000076 [Comprobaciones adicionales de c?digo completadas -- 0 error(es)]>", 
+    "paso": "B. primeros mensajes"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "FontColor, ToString, call_details_handler, has_details_handler, icon, length, number, object, position, position_offset, position_text, prefix, project, severity, text", 
+    "paso": "dir(objeto_mensaje)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "_3S.CoDeSys.Core.Messages.Severity.Information", 
+    "seg": 0.0, 
+    "paso": "B. mensaje.severity"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "No hay ayuda sin conexi?n instalada", 
+    "seg": 0.0, 
+    "paso": "B. mensaje.text"
+  }, 
+  {
+    "estado": "FALLA", 
+    "detalle": "AttributeError: 'ScriptMessage' object has no attribute 'description'", 
+    "traza": "Traceback (most recent call last):\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22_v2.py\", line 49, in paso\n    r = funcion()\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22_v2.py\", line 156, in <lambda$13>\n    paso(\"B. mensaje.%s\" % attr, lambda a=attr: getattr(m0, a))\nAttributeError: 'ScriptMessage' object has no attribute 'description'\n", 
+    "seg": 0.0, 
+    "paso": "B. mensaje.description"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "0L", 
+    "seg": 0.0, 
+    "paso": "B. mensaje.position"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.0, 
+    "paso": "B. mensaje.object"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.070000000000000007, 
+    "paso": "B. borrar FB_ConError"
+  }, 
+  {
+    "estado": "FALLA", 
+    "detalle": "TypeError: clear_messages() takes exactly 1 argument (0 given)", 
+    "traza": "Traceback (most recent call last):\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22_v2.py\", line 49, in paso\n    r = funcion()\n  File \"C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22_v2.py\", line 158, in <lambda$15>\n    paso(\"B. clear_messages\", lambda: system.clear_messages())\nTypeError: clear_messages() takes exactly 1 argument (0 given)\n", 
+    "seg": 0.0, 
+    "paso": "B. clear_messages"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.26000000000000001, 
+    "paso": "B. app.build() limpio"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "[('Offline Help', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000077 [No hay ayuda sin conexi?n instalada]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000078 [------ Proceso de compilaci?n iniciado: Aplicaci?n: Device.Application -------]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000079 [Tipificar c?digo...]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x000000000000007A [Compilaci?n terminada -- 0 errores, 0 advertencias]>'), ('Comprobaciones adicionales ", 
+    "seg": 0.0, 
+    "paso": "B. mensajes tras build limpio"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000007D [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptTextualDeclarationImplementationObject, ScriptIecLanguageMemberContainer, ScriptExternalFileObjectMarker`1, NoTaskConfigObject, NoTaskObject, ScriptNoTransient", 
+    "seg": 0.01, 
+    "paso": "create FB_Sonda"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "FB decl"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "FB impl"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000007E [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptTextualDeclarationImplementationObject, ScriptIecLanguageMemberContainer, ScriptExternalFileObjectMarker`1, NoTaskConfigObject, NoTaskObject, ScriptNoTransient", 
+    "seg": 0.01, 
+    "paso": "create PRG_Sonda"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "PRG decl"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.029999999999999999, 
+    "paso": "PRG impl"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.040000000000000001, 
+    "paso": "MainTask.pous.add('PRG_Sonda')"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.23000000000000001, 
+    "paso": "build final"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "[('Offline Help', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x000000000000007F [No hay ayuda sin conexi?n instalada]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000080 [------ Proceso de compilaci?n iniciado: Aplicaci?n: Device.Application -------]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000081 [Tipificar c?digo...]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000082 [Compilaci?n terminada -- 0 errores, 0 advertencias]>'), ('Comprobaciones adicionales ", 
+    "seg": 0.01, 
+    "paso": "mensajes build final"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x0000000000000085 [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, ScriptDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptNonTextualObject, ScriptExternalFileObjectMarker`1, ScriptExternalFileObjectContainer, NoTaskConfigObject, NoTaskObject, ScriptNoTransientObjectMarker, NoI", 
+    "seg": 0.0, 
+    "paso": "find Device"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.089999999999999997, 
+    "paso": "set_simulation_mode(True)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptDriverOnline.OnlineApplication object at 0x0000000000000086 [_3S.CoDeSys.ScriptDriverOnline.OnlineApplication]>", 
+    "seg": 0.01, 
+    "paso": "C1. create_online_application"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 2.0600000000000001, 
+    "paso": "C1. login"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.029999999999999999, 
+    "paso": "C1. reset(ResetOption.Cold)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.029999999999999999, 
+    "paso": "C1. start"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 1.01, 
+    "paso": "C1. delay 1000"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "DINT#110", 
+    "seg": 0.16, 
+    "paso": "C1. read_value ciclos"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "['INT#1', 'DINT#129']", 
+    "seg": 0.20000000000000001, 
+    "paso": "C1. read_values [veredicto, fb.cuenta]"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.01, 
+    "paso": "C1. set_prepared_value hab=FALSE"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.029999999999999999, 
+    "paso": "C1. write_prepared_values"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.5, 
+    "paso": "C1. delay 500"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "['DINT#132', 'DINT#206']", 
+    "seg": 0.27000000000000002, 
+    "paso": "C1. fb.cuenta congelada?"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.20999999999999999, 
+    "paso": "C1. stop"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 1.05, 
+    "paso": "C1. logout"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "5.58 s", 
+    "paso": "C1. duracion iteracion"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "<_3S.CoDeSys.ScriptDriverOnline.OnlineApplication object at 0x0000000000000087 [_3S.CoDeSys.ScriptDriverOnline.OnlineApplication]>", 
+    "seg": 0.0, 
+    "paso": "C2. create_online_application"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.44, 
+    "paso": "C2. login"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "C2. reset(ResetOption.Cold)"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.029999999999999999, 
+    "paso": "C2. start"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 1.0, 
+    "paso": "C2. delay 1000"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "DINT#110", 
+    "seg": 0.17000000000000001, 
+    "paso": "C2. read_value ciclos"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "['INT#1', 'DINT#130']", 
+    "seg": 0.20999999999999999, 
+    "paso": "C2. read_values [veredicto, fb.cuenta]"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.0, 
+    "paso": "C2. set_prepared_value hab=FALSE"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.02, 
+    "paso": "C2. write_prepared_values"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.51000000000000001, 
+    "paso": "C2. delay 500"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "['DINT#130', 'DINT#206']", 
+    "seg": 0.28999999999999998, 
+    "paso": "C2. fb.cuenta congelada?"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.20999999999999999, 
+    "paso": "C2. stop"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.92000000000000004, 
+    "paso": "C2. logout"
+  }, 
+  {
+    "estado": "INFO", 
+    "detalle": "3.80 s", 
+    "paso": "C2. duracion iteracion"
+  }, 
+  {
+    "estado": "OK", 
+    "detalle": "None", 
+    "seg": 0.089999999999999997, 
+    "paso": "proyecto.close() sin guardar"
+  }
+]

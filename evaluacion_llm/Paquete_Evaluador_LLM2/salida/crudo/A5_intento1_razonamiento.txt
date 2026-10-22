@@ -1,0 +1,1673 @@
+We need respond only JSON list. Need evaluate 24 programs. Need careful. We have to act as evaluator. Need produce JSON object per response with fields codigo, funcional, iec, coherencia, claridad, mantenibilidad, just_func_iec, just_coherencia, just_claridad, just_mantenibilidad.
+
+Need follow fixed rules:
+- If funcional_fijo or iec_fijo not null, copy exact.
+- If no compila: funcional=0, iec=0 (already fixed) for those. Others can score reading code.
+- If pasa todos pasos: funcional=3 fixed.
+- If compila but falla pasos: funcional 0,1,2 according rubric using protocol. If compiles but cannot simulate interface no conforme: functional 0-2 reading, never 3. Here all compiles failures probably run harness. Need parse results.
+
+Need read all. We can structure.
+
+Need be consistent. Need inspect each code. The task: FB_Registro with TYPE ST_Evento, fields codigo INT, marca TIME. Block accumulates tiempo from ciclo every execution. On rising edge nuevoEvento, registers evento and accumulated time into buffer array [0..19] circular. First event position 0, next consecutive, when full overwrite oldest. indice outputs last event registered position, -1 while none. nEventos valid count 0-20. Need time accumulates. Protocol uses virtual TIME cycle 10ms, steps due to calls/events. The harness checks: step 0: 5 calls no event -> indice -1, nEventos 0. Step 1: event 11 with nuevoEvento sostenido 3 llamadas -> register one at buffer[0]=11 + marca (time accepted? after? harness? checks maybe time content? It says for last event se acepta marca = g*10 or (g-1)*10. The issue? Let's derive harness structure:
+Step 0 5 calls sin evento -> (-1,0)
+Step 1 nEv=1, libres=0, sost=3, cod0=11, eIdx=0, eN=1, pM=0, cM=11, p2=-1,c2=0. It probably calls FB; nuevoEvento True for 3 scans? one event on first rising? Might pass if code only registers during first true. Need check.
+
+Step 2: 2 llamadas sin flanco -> (0,1)
+Step3: 19 events (12..30) -> (19,20), buffer[19]=30 + marca; buffer[0]=11
+Step4: 1 event 31 -> overwrites oldest -> (0,20), buffer[0]=31, buffer[1]=12
+Step5: 2 events 32,33 -> (2,20), buffer[2]=33, buffer[3]=14
+
+Need evaluate compiles, failures.
+
+Let's list all 24 with code, result, fijos.
+Need produce as JSON array same order.
+
+I need inspect each code carefully for functional, IEC, coherencia, claridad, mantenibilidad.
+
+Let's map:
+
+1 A5-1851: Compila. Falla 6/6 pasos.
+funcional_fijo null, iec null. It compiles; fails all steps. Need determine why fails all. Code includes TYPE inside after VAR block? Wait: code:
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT...
+END_VAR
+VAR_OUTPUT...
+END_VAR
+VAR...
+END_VAR
+
+(* Definición de la estructura ST_Evento *)
+TYPE ST_Evento :
+STRUCT
+...
+END_STRUCT
+END_TYPE
+
+(* Acumulación del tiempo *)
+...
+END_FUNCTION_BLOCK
+
+In CODESYS, TYPE declarations must be at top-level before POU? They include inside FUNCTION_BLOCK implementation? It compiled? Interesting. But TYPE inside implementation may be invalid? CODESYS maybe allows? It compiled? But maybe harness output buffers are not accessible? Wait "Compila. Falla 6 de 6 pasos" not compiler. Why fails all steps? Let's analyze code:
+VAR_OUTPUT
+    buffer ...
+    indice : INT; (* no init *)
+    nEventos : INT; (* no init *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0s;
+    eventoAnterior : BOOL := FALSE;
+END_VAR
+
+Type declaration after VAR. It compiles? It may define ST_Evento after using it? Actually VAR_OUTPUT uses ST_Evento before TYPE. CODESYS may compile maybe due declaration was accepted? Hmm.
+
+Logic:
+tiempoAcumulado += ciclo;
+IF nuevoEvento AND NOT eventoAnterior THEN
+    indice := (indice + 1) MOD 20;
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+    IF nEventos < 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+END_IF;
+eventoAnterior := nuevoEvento;
+
+Since indice and nEventos are VAR_OUTPUT but not initialized. In CODESYS variables default to 0. So at first event: indice := (0+1) MOD 20 = 1. Should first event be at 0, so fails step1 expected indice=0; buffer[0] maybe not event 11. nEventos initial 0 -> 1. Index output wrong. Step0 no event: indice remains 0 not -1. nEventos 0. So fails. The fact fails 6/6 likely because step0 expects indice -1, got 0; step1 expected index 0 got 1, etc. So functional 0 because fails nominal and limits. But must apply rubric. It compiles but fails all. Functional maybe 0 (does not implement lógica pedida fully due initial index not -1 and first position wrong). Need note fixed? funcional_fijo null. So we set 0, maybe because fail in nominal.
+
+IEC: compiles. Uses MOD maybe valid? CODESYS supports MOD. Declares TYPE in implementation section after POU? Does this compile? It did. But is that IEC standard? IEC 61131-3 generally TYPE declarations at top level, not inside POU. However CODESYS may not care? Wait maybe the code in JSON "codigo_st" includes TYPE inside FUNCTION_BLOCK after VAR declarations before body. It compiled according to metadata. If compiles without changes, but not idiomatic; maybe IEC score 1 or 2. Need evaluate: "Cumplimiento IEC 61131-3. 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: además idiomático (POU adecuado, tipos TIME correctos, bloques estándar...)" Here compiles in CODESYS but type declaration inside FB maybe non-standard? Yet result says compiles. Could be accepted as extension with TYPE in implementation. Also variable declarations not initialized to required -1. Types TIME correct. Could set iec 1 due use of non-standard location for TYPE? But if result compiles as CODESYS, the standard IEC likely requires TYPE before function block declaration. Need consider if this is an extension "TYPE inside implementation". I'd set iec 1 maybe. Need be consistent. But rubric: 2 if compile without changes; declarations and types correct. But are declarations correct? It placed TYPE after VAR; but CODESYS may accept. The declaration of ST_Evento after usage maybe maybe CODESYS forward reference? Hmm.
+
+Let's see other solutions with similar TYPE after FB; some compile? A5-7771 compiles but type inside after VAR (yes compile) and A5-7832 compiles? Actually TYPE inside method? The compiler accepted type after var? Maybe CODESYS allows? In IEC, TYPE is not allowed inside POU; so maybe not standard but CODESYS compiled. The instructions say "Puntúa lo que el código es, no lo que el asistente probablemente quiso hacer." If compiles under CODESYS, but "conforme IEC 61131-3" maybe not. For IEC criterion, if compiles but uses extensions outside standard -> 1. That seems for most with TYPE after POU.
+
+Need establish scoring for all.
+
+Let's list all with result details and fijos.
+
+1 A5-1851: compiles fail all, f null, iec null.
+
+2 A5-9329: no compila, f 0, iec 0.
+
+3 A5-6029: compiles passes all, f 3, iec null.
+
+4 A5-4425: compiles fail all, f null, iec null.
+
+5 A5-3558: no compila 3 errors, f0 iec0.
+
+6 A5-7727: no compila 1 error, f0 iec0 (though code has no END_FUNCTION_BLOCK maybe but error only TYPE semicolon? Actually code ends without END_FUNCTION_BLOCK? It has END_FUNCTION_BLOCK yes.)
+7 A5-7771: compiles fail all, f null, iec null.
+
+8 A5-3414: no compila 3 errors, f0 iec0.
+
+9 A5-4442: no compila 1 error, f0 iec0.
+
+10 A5-5130: compiles passes all, f3, iec null.
+
+11 A5-3386: no compila 1 error, f0 iec0.
+
+12 A5-7063: compiles passes all f3, iec null.
+
+13 A5-4556: no compila 1 error, f0 iec0 (code incomplete missing END_FUNCTION_BLOCK? It stops after prev; maybe implicit error? But message line 1 semicolon).
+14 A5-8849: no compila 1 error, f0 iec0.
+
+15 A5-7832: compiles fail all, f null, iec null.
+
+16 A5-2051: compiles passes all f3 iec null.
+
+17 A5-8294: compiles fail all, f null, iec null.
+
+18 A5-1206: compiles passes all f3 iec null.
+
+19 A5-2632: no compila 1 error, f0 iec0.
+
+20 A5-6758: compiles passes all f3 iec null.
+
+21 A5-1636: compiles passes all f3 iec null.
+
+22 A5-2042: compiles fail all, f null, iec null.
+
+23 A5-9447: no compila 1 error, f0 iec0.
+
+24 A5-2012: compiles fail 1 of 6 pasos (paso 0). f null, iec null. Need functional maybe 1 or 2? It fails only step0 (indice -1). Since output indice initial is default 0 not -1, no events. Other steps pass. That's a boundary case. According rubric: 1: works nominal but fails boundary (initial state). 2: correct nominal and most limits, minor failure. Here it fails initial state. But does it fail step0 only? It passes step1-5, yes. Could score 1 or 2. Need see rubric: 1: funciona en caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia). Actually step0 (no events) is case nominal? The first case: output indice -1 while none. It is a required state. Failing that maybe important but not dangerous. But if all other functional steps pass, maybe "correct in nominal and majority of edge; fail minor" could be 2. But they explicitly fail step0, which is specified. Need decide. Rule: "Si compila pero falla pasos: funcional 0,1,2 según la rúbrica, usando qué pasos fallan y protocolo." This program has only index -1 missing. That's a boundary (empty) not nominal event registration. "1: funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)". No event might be a limit. So 1? But "2: correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." Here passes all cases except initial empty, a clear edge. There is no risk, minor. Could be 2. Need choose. Since the task includes "indice vale -1 mientras no se haya registrado ninguno", failing this is not a minor irrelevant? But harness step0 exactly checks. The rubric's 1 says "funciona en el caso nominal pero falla en casos límite evidentes". The nominal case might be registering events. If it fails only no event, that's a boundary. It does work in nominal event registration? We need verify step1-5 pass. But if first event outputs indice 0 due initial default? Wait code A5-2012 uses posActual initialized 0, indice not initialized (0). On first event, buffer[posActual].codigo=event; indice:=posActual; posActual becomes 1. So at first event indice 0 correct. Step0 before any event, indice is 0 not -1; hence fail. So no event case is the only failure. That's "case boundary" maybe 1. In many rubrics, missing -1 initial explicit is a minor defect but not severe. Could assign 1 or 2. The user says "Puntúa como lo haría un docente cuidadoso y de forma consistente". If a program passes almost all cases but fails explicit initial state, I might give 1 because it fails a defined case, but maybe 2 because it's a small edge. Let's revisit later.
+
+Need evaluate each criteria.
+
+Given result final must be JSON, no markdown.
+
+Need produce justifications one line each. Need be concise.
+
+Let's examine each code to assign scores.
+
+First, develop scoring rubric interpretation:
+
+- Corrección funcional:
+  - 0: no implementa lógica pedida or falla en caso nominal.
+  - 1: funciona en caso nominal but fails boundary.
+  - 2: correct nominal and most boundary; fails minor no risk.
+  - 3: correct all tested.
+
+- Cumplimiento IEC:
+  - 0 if no compile.
+  - 1 if compile after minor corrections, or uses extensions outside standard.
+  - 2 if compile without changes; declarations/types correct.
+  - 3 if idiomático, POU adecuado, TIME correct, standard blocks.
+
+- Coherencia lógica:
+  - 0: contradictory conditions, uninitialized variables with effect, dead states preventing operation.
+  - 1: mostly coherent with redundancies or dead conditions without serious effect.
+  - 2: no contradictions; initialization correct; complete transitions.
+  - 3: robust interlocks complete, no unreachable states, safe simultaneous inputs.
+
+- Claridad estructural:
+  - 0: no structure, cryptic names, no comments.
+  - 1: basic structure, poor names/comments absent/incorrect.
+  - 2: descriptive names, ordered sections, useful comments.
+  - 3: modularization adequate, comments explain why.
+
+- Mantenibilidad:
+  - 0: magic values everywhere; impossible modify without rewriting.
+  - 1: modify with effort; partial constants.
+  - 2: params as variables/constants declared; localized changes.
+  - 3: extensible design, input params, no duplication.
+
+Need read each code, not model. Need maybe detect common bug.
+
+Let's analyze each code in detail.
+
+I'll process in order, considering functional and iec.
+
+We should also note "calidad" scores for non-compiling code still need other criteria. For non-compiling, func/iec fixed 0. We need score coherencia/claridad/mantenibilidad reading code. Even if code doesn't compile, syntax might be close. Need evaluate as code.
+
+Let's go through each.
+
+**1. A5-1851**
+Code:
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT ... GOOD.
+VAR_OUTPUT buffer, indice, nEventos with no init.
+VAR tiempoAcumulado = T#0s, eventoAnterior=FALSE.
+TYPE ST_Evento after VAR, inside POU. Comment. Logic accumulates. On rising edge:
+indice := (indice + 1) MOD 20;
+buffer[indice].codigo := evento;...
+if nEventos<20 then nEventos++.
+eventoAnterior:=nuevoEvento.
+
+Issues:
+- indice/nEventos defaults 0 not -1. Functional fails step0, step1 wrong index.
+- Types probably correct.
+- TYPE declared inside POU after usage. compiles in CODESYS but non-standard.
+- Comments brief. Names decent.
+- Coherencia: event counter and index logic? Because without init, first event at pos 1 not 0; after that circular. But no flags. initial state wrong, dead? Not dead. Missing init cause effect. Maybe coherencia 1 or 0. The condition "variables sin inicializar con efecto" says 0. Here indice and nEventos are uninitialized (well default 0) causing wrong output. Does "sin inicializar con efecto" mean missing explicit init with effect? In IEC, VAR_OUTPUT defaults to 0 if not init. They may have assumed? We can penalize coherence. But not contradictory. Initialization incorrect causing failure. According to rubric: 0 for uninitialized variables with effect. That could be 0. However "variables sin inicializar con efecto" maybe variables used before assignment (but default) in logic. indice not initialized to -1, impact. Could give coherencia 1 or 0. Need be consistent.
+
+Given the logic itself is coherent if initial states were corrected. Redundancy? No. I'd assign coherencia 1 (mostly coherent but initialization defect) rather than 0. Because not contradictory/dead states, but uninitialized with effect. The rubric says 0: "variables sin inicializar con efecto". Strictly, that is present. But maybe it's not uninitialized because IEC default applies, but wrong initial. "sin inicializar" maybe yes. Need decide.
+
+Maybe functional already penalizes. For coherence, I'd use 1: initial values wrong but no logical contradictions. But could be 0. The template examples? We'll choose.
+
+Claridad: comments and names descriptive, but TYPE declaration bizarre inside POU. Structure not standard but recognizable. I'd score 2 maybe. But no comments for why. "Secciones ordenadas" yes. Use (* *) comments. Names good. Maybe 2.
+
+Mantenibilidad: constants no magic except 20, -1. 20 literal repeated in array and mod, but not declared as constant. Could be 1. The code uses direct constants, but small. If thinking, can modify with effort. Score 1.
+
+Need also set iec. I think 1: compiles in CODESYS but TYPE declaration inside POU is non-standard. However also output init missing not IEC noncompliance, but no blocks. I'd set iec 1. Let's be consistent: for compiles with TYPE inside POU maybe mostly we'll score iec 1 unless no issues? Need compare to passing programs. Some passing A5-6029 uses TYPE at top, no R_TRIG. It is standard and idiomatic? It compiles, uses manual flanco and initializes outputs. That might be iec 3? We'll decide later.
+
+For A5-1851: just_func_iec one line: "Compila pero falla todos los pasos por índice inicial 0 y primer evento en posición 1; TYPE declarado dentro del POU." Maybe just one line. We need not over explain but include.
+
+Need maybe assign funcional 0? It fails all, including nominal. So 0.
+
+**2. A5-9329**
+No compila; f0 iec0 fixed.
+Code:
+TYPE
+    ST_Evento : STRUCT
+        codigo : INT;  (* Código del evento *)
+        marca : TIME;  (* Marca de tiempo del evento *)
+    END_STRUCT;
+END_TYPE
+This error: "L?nea 1 Se esperaba END_TYPE' en lugar de ';'" Why? Actually TYPE line then ST_Evento : STRUCT ... END_STRUCT; There's extra semicolon after END_STRUCT? In IEC, should END_STRUCT (no semicolon? or semicolon allowed?) CODESYS expects END_STRUCT no ;? The error line 1 says expected END_TYPE instead of ';'. Hmm. Actually likely because "END_STRUCT;" should be "END_STRUCT" no semicolon? Then END_TYPE. The code has END_STRUCT; causing parse. So doesn't compile.
+
+Logic: FB with outputs init -1 etc. Uses MOD. Missing? It has no final END_FUNCTION_BLOCK? It does have END_FUNCTION_BLOCK? Actually code ends "END_FUNCTION_BLOCK". But missing semicolon after END_IF? There is no semicolon after END_IF (not required). It uses "END_IF" no semicolon. Logic is same as correct if it compiled. It initializes indice=-1. This would work if type semicolon fixed. But no compile.
+
+Other criteria:
+Coherencia: Logic is coherent, with proper init. I'd score 2 (initialization correct, transitions complete). Maybe 2 because no contradictions. Could be 3? No super robust but fine. We'll see.
+
+Claridad: Declarations top, comments good, names clear. Score 2 or 3? It includes clear structure though no modularization. 2.
+
+Mantenibilidad: constant 20, etc. No named constants. 1 or 2? It has some literal constants but logically simple. Maybe 1 or 2. Need be consistent.
+
+Since no compila, functional/iec fixed. We can give coherencia 2, claridad 2, mantenibilidad 1. Just line.
+
+**3. A5-6029**
+Compiles, passes all. f fixed 3. iec null.
+Code: TYPE top correct.
+FUNCTION_BLOCK. inputs, outputs init -1/0. VAR tiempoAcumulado, prevNuevoEvento. Logic:
+tiempo += ciclo;
+IF nuevoEvento AND NOT prevNuevoEvento THEN
+    indice := indice + 1;
+    IF indice > 19 THEN indice := 0;
+    END_IF;
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+    IF nEventos < 20 THEN nEventos := nEventos + 1; END_IF;
+END_IF;
+prevNuevoEvento := nuevoEvento.
+This passes.
+IEC: standard TYPE at top, standard ST no non-standard. It doesn't use R_TRIG but manual flanco is fine. Types correct. Could be 3? Idiomatic: POU adecuado, TIME correct, no standard blocks needed. Manual detection is idiomatic. I'd give iec 3 maybe. But check if no semicolon issues. Comments using (* *). Good.
+
+Coherencia: initialization correct, transitions complete, circular wrap. Could be 3? It has no unreachable states, safe for simultaneous? It handles only flanco. The accumulated time always happens before event, consistent. nEventos saturates. Initial -1. No issues. I'd give coherencia 3? Possível. But "robust interlocks complete, behavior safe simultaneous inputs" not much. It's simple but robust. Score 2 or 3. Let's develop: Most passing code with good init and R_TRIG maybe coherencia 3? This manual flanco with correct init. No contradictions. I'd maybe give 2 to many; but choose top.
+
+Need evaluate "nombres descriptivos, secciones ordenadas, comentarios útiles." Code has comments but sparse; names clear. I'd give clarity 2. Mantenibilidad: uses literal 20 and 19 multiple times. But not bad. Could be 1 or 2. It declares no constants. "modificable con esfuerzo; constantes parcialmente parametrizadas." Magic numbers 20, 19, 0. For buffer size modifications need several changes. That suggests mantenibilidad 1. Could use constant but not. So 1 for many correct programs. But maybe "parámetros como variables o constantes declaradas" none. "20" and "19" are magic. So 1.
+
+Need calibrate with others.
+
+**4. A5-4425**
+Compiles fail all. Code:
+FUNCTION_BLOCK inputs, outputs (indice no init, nEventos no init)
+VAR tiempoAcumulado, eventoAnterior.
+TYPE ST_Evento after VAR inside POU (like A5-1851).
+Logic:
+IF nuevoEvento AND NOT eventoAnterior THEN
+    IF indice = -1 THEN
+        indice := 0;
+    ELSE
+        indice := (indice + 1) MOD 20;
+    END_IF;
+    buffer[indice]...
+    IF nEventos < 20 THEN nEventos++...
+END_IF;
+eventoAnterior:=nuevoEvento.
+
+Since indice default 0 not -1, first event uses (0+1)MOD20 =1, misses pos0. Step0 outputs 0 not -1. Fails all. Functional 0.
+IEC: compiles, but TYPE inside POU after use. Maybe 1. Could set iec 1.
+Coherencia: logic includes IF indice=-1 branch but due no init, branch dead initially (unreachable) because indice defaults 0. That's a dead condition / contradictory with default. Score 1 maybe 0. The condition is not contradictory; it would be reachable if initialized to -1. But as written with default 0, branch never used until wrap? Actually after 20 events, indice gets 19 then (19+1)MOD20=0; IF indice=-1 never true because always >=0. So dead branch. That may be 1 (dead condition without severe? Actually causes failure). I'd give coherencia 1. 
+Claridad: names good, comments. But TYPE inside POU odd. Score 2. Mantenibilidad 1.
+
+**5. A5-3558**
+No compila. Errors: "Se esperaba ,, AT o :' en lugar de 'VAR_OUTPUT'" "Se esperaba ... en lugar de 'VAR'" due "END_VAR_INPUT" and "END_VAR_OUTPUT"? Code uses VAR_INPUT ... END_VAR_INPUT, VAR_OUTPUT ... END_VAR_OUTPUT. That is invalid; correct END_VAR. Thus no compile. Logic uses indice := (indice+1) MOD 20, init indice=-1, nEventos=0. TYPE top correct. Comments use // not standard ST? (CODESYS supports //; IEC maybe not? Probably allowed in CODESYS extension but not ST). The no compile due END_VAR_INPUT/OUTPUT. Other criteria:
+Coherencia: Logic coherent with init; it would work if syntax fixed. Score 2? But has no final END_FUNCTION_BLOCK? Actually includes END_FUNCTION_BLOCK. Fine.
+Claridad: comments with // maybe; but structure clear. It uses // comments, not IEC standard? ST standard comments are (* *). In CODESYS // is extension. It has names good. Score 1 or 2. In terms of clarity, names and comments are okay. I'd score 2.
+Mantenibilidad: 1.
+Need note iec fixed 0 because no compile. But I can't change.
+
+**6. A5-7727**
+No compila 1 error. Code:
+TYPE
+    ST_Evento :
+    STRUCT
+...
+    END_STRUCT;
+END_TYPE
+Same TYPE semicolon issue. Logic:
+FUNCTION_BLOCK; outputs indice no init, nEventos no init.
+VAR timeAcumulado, nuevoEventoAntes, nextPos (init default 0).
+Logic:
+tiempo += ciclo;
+IF nuevoEvento AND NOT nuevoEventoAntes THEN
+    buffer[nextPos].codigo := evento;
+    buffer[nextPos].marca := tiempoAcumulado;
+    indice := nextPos;
+    IF nEventos<20 THEN nEventos++...
+    nextPos := nextPos+1; IF nextPos>19 THEN nextPos:=0;
+END_IF;
+nuevoEventoAntes:=nuevoEvento;
+IF nEventos = 0 THEN indice := -1; END_IF;
+END_FUNCTION_BLOCK
+This uses nextPos. If compiled, first event nextPos=0, index 0, nEventos increments 1; nEventos=0 after event? no, after event nEventos=1, so after IF nEventos=0 false, index remains 0. Good. Initial step no event: nextPos 0, nEventos 0, index forced -1. Works. It would pass but no compile due TYPE semicolon. Fixed f0 iec0.
+Other scores: Coherence? Logic is coherent; note comment says "Inicialización implícita ..." and explicit init; no issues. Maybe 2 or 3. There is no END_FUNCTION_BLOCK? It does at end yes. We'll give 2. Claridad: good comments with explanations, structure. 2 or 3? It has comments explaining why. Maybe 2 because no modularization. Could be 3? It has good separation. But constant 20/19. We'll give clarity 2. Mantenibilidad 1.
+
+**7. A5-7771**
+Compiles fail all. Code:
+FUNCTION_BLOCK inputs
+VAR_OUTPUT buffer, indice, nEventos no init.
+VAR tiempoAcumulado, posBuffer.
+TYPE inside after VAR? Then METHOD FB_Registro : VOID ... END_METHOD. Wait it defines METHOD inside POU? Actually the code is:
+FUNCTION_BLOCK FB_Registro
+...
+VAR
+...
+END_VAR
+
+TYPE
+    ST_Evento :
+...
+END_TYPE
+
+METHOD FB_Registro : VOID
+...
+END_METHOD
+But no END_FUNCTION_BLOCK? There is METHOD maybe within FUNCTION_BLOCK? In CODESYS, methods belong inside FB declaration? It compiled? Let's analyze.
+This is strange: It compiled in CODESYS? It says "Compila. Falla 6/6". It may compile as FB with method? The METHOD name same as FB, unusual but accepted maybe as constructor-like? Actually in CODESYS, you can have METHOD inside FUNCTION_BLOCK. But this code declares TYPE after VAR inside FB? It compiled. Need score.
+
+Logic in METHOD:
+IF tiempoAcumulado = T#0s THEN
+    indice := -1;
+    nEventos := 0;
+    posBuffer := 0;
+END_IF;
+tiempoAcumulado := tiempoAcumulado + ciclo;
+IF nuevoEvento THEN
+    buffer[posBuffer].codigo := evento;
+    buffer[posBuffer].marca := tiempoAcumulado;
+    indice := posBuffer;
+    IF nEventos < 20 THEN nEventos++...
+    posBuffer := (posBuffer + 1) MOD 20;
+END_IF;
+END_METHOD
+
+Issues:
+- Registers on every execution while nuevoEvento TRUE, not flanco. Protocol step1 holds nuevoEvento 3 llamadas, so it will register same event 3 times? nEventos becomes 3, index 2; fail. Actually if called 3 scans with newEvento true, code registers each call. Step1 expected one event. So fails all. 
+- The initialization IF tiempoAcumulado = T#0s: on first call, sets index -1 etc. But if timeAcumulado later becomes T#0s? only at start. Step0: it initializes indice -1, nEventos 0, posBuffer 0. Then time += 10ms; no event -> indice -1. That step0 might pass. But fails step1 due register repeatedly. Functional 0.
+IEC: compiles but TYPE inside POU and METHOD maybe standard? METHODS in IEC 61131-3? Method is part of OOP extension maybe not classic. This is CODESYS extension. Score 1.
+Coherencia: logic coherent but missing flanco, repeated events due held input. It uses time-based init which may trigger? There's a potential dead/duplicate issue. Score 1.
+Claridad: comments //, names decent, but method structure weird. Score 1 or 2. I'd give 1 maybe because METHOD named FB_Registro, conceptual structure confusing. But comments exist. Maybe 2.
+Mantenibilidad: 1.
+
+**8. A5-3414**
+No compila 3 errors similar to A5-3558 (END_VAR_INPUT/OUTPUT). Code uses // comments, TYPE top, logic correct except indice init? Wait code:
+VAR_OUTPUT
+    buffer...
+    indice : INT := -1;
+    nEventos : INT := 0;
+END_VAR_OUTPUT
+VAR
+    tiempoAcumulado...
+    nuevoEventoPrev...
+END_VAR
+...
+IF (nuevoEvento AND NOT nuevoEventoPrev) THEN
+    indice := (indice+1) MOD 20; // But initial -1 -> (0) MOD 20? In IEC, -1+1=0, okay. 
+...
+No END_FUNCTION_BLOCK? It has END_FUNCTION_BLOCK yes.
+If compiled, would it pass? The initial indice=-1, on first event (-1+1)MOD20=0, correct. nEventos increments. Time accumulates before event. It should pass. But no compile due END_VAR_INPUT/OUTPUT.
+Other: coherencia 2, clarity maybe 1 because uses // but structure clear, comments. I'd score 2. Mantenibilidad 1.
+
+**9. A5-4442**
+No compila 1 error: "Se esperaba ';' en lugar de 'tiempoAcumulado'" at line 3 impl. Code:
+TYPE ST_Evento : STRUCT ... END_STRUCT END_TYPE
+FB VAR_INPUT ... END_VAR
+VAR_OUTPUT ... END_VAR
+VAR ... END_VAR
+BEGIN
+// no? Actually it has // comments and BEGIN? The code shown includes:
+// Cuerpo del bloque de función
+BEGIN
+    // Actualizar...
+    tiempoAcumulado := tiempoAcumulado + ciclo;
+...
+Maybe the issue? It says expected ';' in place of tiempoAcumulado. Perhaps because comments using // after BEGIN? Wait no, syntax error at impl line 3 col 1 "tiempoAcumulado". Maybe because the comments line after BEGIN? In CODESYS ST, after declarations you don't use BEGIN; when using FUNCTION_BLOCK declaration? Actually the code has "BEGIN" after VAR? It does and this may cause error. Let's look: It declares FB, VAR_INPUT, VAR_OUTPUT, VAR, then
+// Cuerpo del bloque de función
+BEGIN
+    // Actualizar ...
+    tiempoAcumulado := ...
+The compiler says expected ';' instead of 'tiempoAcumulado' perhaps because in a POU with textual declaration, implementation starts after VAR... without BEGIN? Wait standard ST: FUNCTION_BLOCK name ... VAR ... END_VAR ... statement; ... END_FUNCTION_BLOCK. Some dialects allow BEGIN? In CODESYS, for FB, no BEGIN is used. The "BEGIN" after declarations is for SFC/AS? So this code has invalid BEGIN. It doesn't compile.
+Logic with init indice=-1, uses MOD. It would work. Fixed f0 iec0.
+Coherencia 2. Clarity maybe 1 or 2 due misleading BEGIN, but comments. I'll give 1? But structure includes BEGIN incorrectly. In noncompiling, clarity structural might be 1 (basic structure but incorrect). Could be 2? It has clear comments, names. But the erroneous BEGIN reduces clarity. Maybe 1.
+
+**10. A5-5130**
+Compiles passes all. f3 fixed. iec null.
+Code: TYPE ST_Evento top correct. FB inputs outputs init -1/0. VAR detectorFlanco : R_TRIG; tiempoAcumulado.
+Logic:
+tiempo += ciclo;
+detectorFlanco(CLK := nuevoEvento);
+IF detectorFlanco.Q THEN
+    indice := (indice + 1) MOD 20;
+    buffer...
+    IF nEventos<20 THEN nEventos++...
+END_IF;
+END_FUNCTION_BLOCK.
+
+This is good. Uses R_TRIG standard block. Types correct. IEC 3. Coherencia: robust with R_TRIG; initialization correct; circular; saturation. Score 3 maybe. Clarity: names descriptive, comments. Score 3? It modularizes? Not FB, but uses standard R_TRIG. It's concise. Comments are brief, no why. Maybe clarity 2. Mantenibilidad: 20 and 19? It uses MOD 20, no numeric 19. Buffer size changes require adjusting array declaration and mod. No constant. Maybe 2? Hmm.
+
+**11. A5-3386**
+No compila 1 error same TYPE semicolon. Code:
+TYPE
+    ST_Evento : STRUCT ... END_STRUCT; 
+END_TYPE
+FB outputs indice, nEventos no init. VAR prev, posicion init 0.
+Logic:
+tiempo += ciclo;
+IF nuevoEvento AND NOT eventoPrevio THEN
+    buffer[posicion].codigo := evento;
+    buffer[posicion].marca := tiempoAcumulado;
+    indice := posicion;
+    IF nEventos<20 THEN nEventos++...
+    posicion := (posicion +1)MOD20;
+END_IF;
+eventoPrevio := nuevoEvento;
+END_FUNCTION_BLOCK
+If compiled, would fail step0 because indice default 0 not -1? Wait first event posicion=0, indice=0 correct. Step0 no event, indice default 0, expected -1. So if compile fixed, would fail only step0. Also nEventos default 0. But no compile.
+Other:
+Coherencia: coherent with default posicion; initial index missing but not fatal for rest. Score 1 or 2. Since no init for indice causing initial violation but event logic fine. I would give 2? No contradictions, but initialization not fully correct. The rubric for coherence 2 requires initialization correct. It isn't. So maybe 1. Hmm. But outputs default 0 not -1. That's an initialization defect. Yet for all event sequences, works except no-event. So coherence maybe 1 because initialization not correct. Let's be consistent: A5-1851 had worse first event issue; we gave 1. A5-2012 similar output missing init but passes all except step0; we're deciding functional 1/2. Coherencia for A5-2012 maybe 1 or 2. Missing indice initial -1 is an initialization defect. Should score 1 for those that don't explicitly initialize indice to -1 but still work because default 0? Actually default 0 helps first event; missing -1 empty. The algorithm's state representation is inconsistent in no-event. I'd give coherencia 1 if missing init has visible effect. But maybe not severe.
+Claridad: comments clear but uses TYPE semicolon issue. No //, uses (* *). Score 2. Mantenibilidad 1.
+
+**12. A5-7063**
+Compiles passes all. f3 fixed.
+Code similar to A5-6029 but uses comments with numbered steps. TYPE top, outputs init -1/0. Logic uses indice+1 and wrap IF. Good.
+IEC: 3? Standard, manual flanco, types correct. I'd give 3.
+Coherencia: 3.
+Claridad: numbered comments, clear. 2 or 3. It has comments explaining what, not why. Maybe 2.
+Mantenibilidad: 1.
+
+**13. A5-4556**
+No compila 1 error same TYPE semicolon. Code incomplete: ends with "nuevoEventoPrev := nuevoEvento;" but no END_FUNCTION_BLOCK? Actually code stops with that line no END_FUNCTION_BLOCK. The compiler error only reported line 1? Could be because maybe after end of code missing END_FUNCTION_BLOCK but compiler gave first; metadata says 1 error. Anyway.
+Logic: TYPE inside? Top type semicolon. FB outputs indice no init, nEventos no init. VAR siguientePosicion. Logic:
+tiempo += ciclo;
+IF nuevoEvento AND NOT nuevoEventoPrev THEN
+    siguientePosicion := (indice + 1) MOD 20; // indice default 0 not -1. On first event, siguientePosicion =1, not 0. But comment claims indice -1? Actually indice not init -1, so first event at 1, fail. If indice were -1, (-1+1)MOD20 = 0. But no init. Output indice set to 1, so fails step1. Also no END_FUNCTION_BLOCK. 
+Coherence: initialization missing and no final? It has logic but with assumption not met. Could be 1. Clarity: comments highly detailed but wrong (claims indice -1 not actual). That's incorrect comments. Per clarity rubric: "comentarios ausentes o incorrectos" => 1. So clarity 1. Mantenibilidad 1.
+ 
+**14. A5-8849**
+No compila 1 error same TYPE semicolon. Code similar no init indice, uses nextIndice. Has output indice default 0, nEventos default 0, VAR tAcumulado, prevNuevoEvento, nextIndice. Logic:
+tAcumulado += ciclo;
+IF flanco THEN
+    buffer[nextIndice] = ...
+    indice := nextIndice;
+    nextIndice := (nextIndice+1)MOD20;
+    if nEventos<20 ++
+...
+prevNuevoEvento := nuevoEvento.
+Initial nextIndice default 0, first event pos 0 correct. Step0 indice default 0 not -1, fails no event only if compiled. But it no compile due TYPE semicolon. 
+Coherencia: 1 maybe due indice missing init. Clarity: comments clear. 2. Mant 1.
+
+**15. A5-7832**
+Compiles fail all. Code:
+FUNCTION_BLOCK inputs
+VAR_OUTPUT no init
+VAR time, pos
+TYPE inside after VAR
+METHOD FB_Registro : VOID
+    IF NOT (indice = -1) THEN
+        tiempoAcumulado := tiempoAcumulado + ciclo;
+    END_IF;
+
+    IF nuevoEvento THEN
+        buffer[pos].codigo := evento;
+        buffer[pos].marca := tiempoAcumulado;
+
+        IF indice = -1 THEN
+            indice := 0;
+            nEventos := 1;
+        ELSE
+            indice := (indice + 1) MOD 20;
+            IF nEventos < 20 THEN
+                nEventos := nEventos + 1;
+            END_IF;
+        END_IF;
+
+        pos := indice;
+    END_IF;
+END_METHOD
+
+Need understand. Does not accumulate time unless NOT indice=-1. Initially indice default 0 (not -1), so time accumulates from start. Does not detect flanco, so repeated events while held. Fails. Registering first event: IF nuevoEvento true: buffer[pos] where pos default 0. indice default 0, so indice=-1 false, indice := (0+1)MOD20=1; if nEventos<20 then nEventos++ (nEventos default 0->1). pos:=indice (1). So first event stored at buffer[0], indice output 1. Wrong. Second call if still true: buffer[pos=1] stores same event, indice=(1+1)=2, nEventos=2. Fail. Time accumulation works. There is no prev flanco. Functional 0.
+IEC: compiles but METHOD and TYPE inside POU, extension. Score 1.
+Coherence: confusing state, no flanco, pos update. Could be 1 or 0. There's no contradictory? But first event stored at pos 0 but indice points 1; next event writes to 1 not 2? Wait after pos:=indice (1), next event writes buffer[1], but buffer[1] wasn't written first? Actually after first event: buffer[0] event, indice=1, nEventos=1, pos=1. Next event (could be new after false?) IF new true: buffer[1]=event, indice=(1+1)=2, nEventos=2, pos=2. So eventually fills buffer[0] then buffer[1]. For first event, indice points to 1 while last event is buffer[0]; wrong. The state is internally inconsistent. Not dead but wrong. Coherence 0 maybe because state mismatch. Let's see rubric 0: "variables sin inicializar con efecto, o estados muertos que impiden operar." It operates and stores data but output index mismatched; no dead. "condiciones contradictorias"? `IF NOT (indice = -1)` accumulates; `IF indice = -1` first event branch impossible because indice default 0. So dead condition; contradictory with init. I'd give 0 or 1. The branch `indice = -1` is dead because indice is never set -1. That's a condition dead. Could be 0. 
+Clarity: // comments, some labels. But odd METHOD structure. I'd give 1. Mantenibilidad 1.
+
+**16. A5-2051**
+Compiles passes all. f3 fixed.
+Code: TYPE top, outputs indice & nEventos no explicit init? Wait code: VAR_OUTPUT
+    buffer...
+    indice   : INT;                        (* ... *)
+    nEventos : INT;                        (* ... *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME;
+    nuevoEventoAntes : BOOL;
+    siguientePos : INT;
+END_VAR
+Comment says they force indice=-1 when nEventos=0.
+Logic:
+tiempoAcumulado += ciclo;
+IF nuevoEvento AND NOT nuevoEventoAntes THEN
+    buffer[siguientePos].codigo := evento;
+    buffer[siguientePos].marca := tiempoAcumulado;
+    indice := siguientePos;
+    siguientePos := siguientePos + 1; IF >19 -> 0;
+    IF nEventos<20 THEN nEventos++...
+ELSE
+    IF nEventos = 0 THEN
+        indice := -1;
+    END_IF;
+END_IF;
+nuevoEventoAntes := nuevoEvento;
+
+This passes. On first call no event: siguientePos default 0, nEventos 0, ELSE sets indice=-1. On first event, buffer[0], indice=0, nEventos=1, siguientePos=1. Good. It uses outputs no explicit init but algorithm ensures. Is this IEEE? Output nEventos default 0. Works.
+IEC: standard, but uses manual flanco, no blocks. Type correct. Could be 3? It is standard; but the manipulation of indice=-1 when no event is a bit unconventional but still ST. I'd give 2 or 3. It compiles and uses idiomatic ST not blocks. I'd maybe give 3 for standard. But compare: programs that use R_TRIG better idiomatically. Yet manual flanco is also standard. The standard says "extensions" for IEC. This code uses standard. I'd give 2 if I reserve 3 for R_TRIG or separate constant. But many programs with correct top TYPE and explicit outputs might be 3. Need decide criterion "3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." This program uses a POU and TIME but no standard blocks. But because manual flanco is acceptable, not less idiomatic. It uses correct POU and TIME. So 3.
+
+Coherence: 2 or 3. The initialisation is slightly indirect, but robust. We can give 3 perhaps because no unreachable states; handles no events; held input due flanco; circular. The else branch forces index -1 only when nEventos=0; if nEventos=0 but there was an erroneous event? okay. 
+Clarity: Comments very detailed explaining why. Good names. It has sections with headings. Score 3 maybe. "comentarios explican el porqué" yes. Good.
+Mantenibilidad: still literal 20, 19. No constants. Could be 1 or 2. It uses structured but no parameterization. We may give 1 or 2. Maybe 2 because "cambios localizados"? But if buffer size changes, need array, mod/IF. Not declared constant. So 1. But code has next pos and clear comments; maybe 2? Rubric says 2: "parámetros como variables o constantes declaradas; cambios localizados." Not satisfied. So 1.
+
+**17. A5-8294**
+Compiles fail all. Code:
+TYPE top correct.
+FB inputs
+VAR_OUTPUT buffer, indice, nEventos no init.
+VAR tiempoAcumulado, ultimoEvento init -1? actually `ultimoEvento : INT := -1;` yes, `eventosRegistrados : INT := 0;`
+Logic:
+tiempo += ciclo;
+IF nuevoEvento THEN
+    ultimoEvento := (ultimoEvento + 1) MOD 20;
+    buffer[ultimoEvento].codigo := evento;
+    buffer[ultimoEvento].marca := tiempoAcumulado;
+    IF eventosRegistrados < 20 THEN eventosRegistrados := ...;
+    indice := ultimoEvento;
+    nEventos := eventosRegistrados;
+END_IF
+END_FUNCTION_BLOCK
+
+No flanco detection: step1 with held True 3 calls registers same event 3 times? Step1: first call ultimoEvento (-1+1)MOD20 =0, writes event, eventosReg=1, indice=0. second call newEvento still true? Depending harness maybe newEvento is TRUE for 3 calls. It will register again: ultimoEvento=(0+1)=1, writes same 11, eventosReg=2, indice=1. That fails step1. If harness sets newEvento true only at first call? Protocol says "nuevoEvento sostenido 3 llamadas", generated likely True 3 scans. So fail. Step0: no event, indice default 0, expected -1; nEventos 0. fails all. Functional 0.
+IEC: compiles standard TYPE top, no extension. Types correct. But logic not. Could be iec 2? It compiles without changes, declarations/types correct. It doesn't use non-standard. I'd assign 2. Compare A5-1851 TYPE inside POU gets 1; this gets 2. That's good.
+Coherence: logic is partially coherent internally: ultimoEvento and eventosRegistrados updated; but because no flanco, repeated input causes overcount. The spec required flanco. That's a logic defect but not contradictory. Initial indice not -1. State variables consistent though `indice`/`nEventos` outputs produced from internal. I'd give 2? It doesn't have dead conditions. But missing flanco is a functional bug, not contradiction. Initial indice output not -1 due not assigned until event; with no event, output default 0. That's initialization defect. Maybe coherence 1. 
+Clarity: comments and names good. 2.
+Mantenibilidad: 1.
+
+**18. A5-1206**
+Compiles passes all. f3 fixed.
+Code like A5-5130 but uses R_TRIG, outputs init -1/0. TYPE top. Logic:
+tiempo += ciclo;
+trigEvento(CLK := nuevoEvento);
+IF trigEvento.Q THEN
+    indice := (indice + 1) MOD 20;
+...
+This passes.
+IEC: 3. Coherence: 3. Clarity: 2. Mant: 1.
+
+**19. A5-2632**
+No compila 1 error same TYPE semicolon. Code similar to A5-8849. Outputs indice, nEventos no init. variables tAcumulado, prevEvento, nextPos. Logic with flanco, first event at pos 0, index initial default 0 fail step0 if compiled. No compile. Coherence: 1 or 2. Clarity: 2. Maintain: 1.
+
+**20. A5-6758**
+Compiles passes all. f3 fixed.
+TYPE top; outputs init -1/0. R_TRIG. Uses IF indice<19 ELSE 0 wrap. Good.
+IEC: 3. Coherence: 3. Clarity: 2 (comments). Maintain: 1.
+
+**21. A5-1636**
+Compiles passes all. f3 fixed.
+TYPE top; outputs init -1/0. Manual flanco. Comments //. Logic correct.
+IEC: 2 or 3. Uses // comments, which is not standard ST? Actually standard IEC comments are (* *), // maybe not accepted by all IEC systems. CODESYS accepts //? Does result compiles. The code uses // comments; is that an extension? In IEC 61131-3, comments are (* *), not //. Some PLCs accept // as extension. Since it compiles under CODESYS, but "extensiones fuera del estándar" maybe for // comments. Does using // comments count? The IEC criterion likely about syntax, not comments. Could set 2: compiles without changes; declarations and types correct. If we are strict, // comments are an extension. But maybe too pedantic. Need be consistent: A5-2042 uses // and compiles; many others use //. We need decide if // comments lower IEC to 1 or just 2. The rubric says "sintaxis o declaraciones inválidas" 0, "compila solo tras correcciones menores, o usa extensiones fuera del estándar" 1, "compila sin cambios; declaraciones y tipos correctos" 2. Here compiles without changes. // are extension outside standard maybe but typically accepted. Does "extensiones fuera del estándar" refer to non-standard functions/METHOD? Likely yes. Comments might not count. But if code uses //, it's not strictly IEC. However many CODESYS ST allow // and treat as comment. In the context of CODESYS, perhaps acceptable. I'd not over-penalize comments if result compiles. But "conforme IEC" maybe. Need be consistent across all.
+
+Maybe we should differentiate:
+- 3: standard and idiomatic, using top TYPE and maybe R_TRIG or standard manual flanco, standard comments.
+- 2: compiles, types correct, but no standard blocks or some comments //. 
+- 1: compiles but non-standard placement of TYPE, METHODS, etc.
+
+For programs with // comments but standard logic, I'd give 2 or 3? The criterion for 3 includes "construcciones idiomáticas del estándar"; // comments not a construction. Maybe 2 if code uses // because comments not standard. But many good solutions might get 2.
+
+Need think of expected "iec_fijo null means assign". We need differentiate "Cumplimiento IEC". They likely expect scoring standard: if compiles and uses R_TRIG etc -> 3, if compiles but no comments? But the standard doesn't forbid //? It actually ST standard comments are (* *); // is not part of IEC. Yet CODESYS accepts // as extension. The prompt says "Trabajas conforme al estándar IEC 61131-3." So using // is nonstandard but maybe not syntax? Could be considered "usa extensiones fuera del estándar" -> 1. However if all programs with // get 1 that may be harsh. But the evaluator can note. Let's see what the task expected: comments in ST usually use (* *), but many assistants use //. If the program compiled in CODESYS, it's accepted. The fixed rule: "Cumplimiento IEC cuando compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." A code using // comments could be "usa extensiones fuera del estándar". But I think a teacher may not penalize comments if CODESYS supports. Need decide.
+
+Let's maybe reserve 1 for non-standard constructs that affect code behavior (TYPE inside POU, METHOD, END_VAR_INPUT). For // comments, I'd not lower below 2. But to be strict, if code uses //, maybe 2 not 3. Yet many noncompiling with no compile we don't score.
+
+Alternative: We can assign iec 2 for most compilable programs, 3 for those with R_TRIG or well-structured. Need align with examples:
+- A5-6029: standard TYPE top, manual flanco. Could be 3.
+- A5-5130: standard + R_TRIG. 3.
+- A5-7063: standard. Maybe 3.
+- A5-2051: standard but no explicit output init, type top, comments (* *). Could be 3.
+- A5-1206: R_TRIG. 3.
+- A5-6758: R_TRIG. 3.
+- A5-1636: uses // but standard otherwise. Could be 2 because of // comments or maybe 3. I'd maybe give 2 to codes using // if we consider extension. But A5-1636 passes all, standard otherwise. If we give 2, we'd contrast with A5-6029 (comments (* *)) 3. That seems plausible.
+- A5-8294: standard comments? Actually uses (* *), TYPE top. But missing flanco. IEC 2 (correct declarations). Could be 3? It uses no flanco, not idiomatic logic? 2.
+- A5-1851: TYPE inside POU. 1.
+- A5-4425: TYPE inside POU. 1.
+- A5-7771: extension (METHOD/TYPE). 1.
+- A5-7832: extension. 1.
+- A5-2012: standard? CODE uses TYPE top, outputs no init? It uses (* *), type top. It compiles. IEC maybe 2 or 3. It uses manual flanco, types correct. But no explicit output init maybe functional. For IEC, declarations correct? Outputs not initialized to -1 but not an IEC violation. It compiles without changes. I'd give iec 2? Could be 3? Let's see. If we require idiomatic standard, manual flanco with top TYPE is fine. Maybe 3? But outputs not init -1 isn't nonstandard. The code lacks comments? It has comments. Hmm.
+- A5-2042: type inside POU? Code shows FUNCTION_BLOCK then VAR... then TYPE inside? Actually A5-2042 code:
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT...
+END_VAR
+VAR_OUTPUT...
+END_VAR
+VAR...
+END_VAR
+
+TYPE
+    ST_Evento :
+...
+END_TYPE
+
+// Inicialización...
+IF primeraVez THEN...
+...
+But no END_FUNCTION_BLOCK! Wait A5-2042 code ends after IF newEvento THEN ... END_IF without END_FUNCTION_BLOCK. Yet result says compiles. Hmm maybe in CODESYS, FUNCTION_BLOCK ends automatically? Actually missing END_FUNCTION_BLOCK? It may compile? It says Compila. That's weird. Maybe the metadata "codigo_st" omitted? Actually code as shown has no END_FUNCTION_BLOCK. But result says compiles. Odd. If compiles, maybe CODESYS inferred at EOF? Hmm.
+Need assess as given. It has TYPE inside FB after VAR? yes. It uses // comments. Logic no flanco, no init indice/nEventos. But it compiles. If no END_FUNCTION_BLOCK, maybe CODESYS accepts? Possibly it treats implementation until EOF? No matter.
+
+Need format list.
+
+Before final, maybe compute functional scores for failing compiles:
+- A5-1851: 0.
+- A5-4425: 0.
+- A5-7771: 0.
+- A5-7832: 0.
+- A5-8294: 0.
+- A5-2042: 0? Let's analyze.
+- A5-2012: maybe 1 or 2.
+
+We also need check A5-2042:
+Code:
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT ...
+VAR_OUTPUT buffer, indice, nEventos (no init)
+VAR tiempoAcumulado, primeraVez init TRUE
+TYPE ST_Evento inside after VAR
+// Inicialización...
+IF primeraVez THEN
+    tiempoAcumulado := T#0s;
+    primeraVez := FALSE;
+END_IF
+tiempoAcumulado := tiempoAcumulado + ciclo;
+IF nuevoEvento THEN
+    indice := (indice + 1) MOD 20;
+    buffer[indice]...
+    IF nEventos<20 THEN nEventos++...
+END_IF
+(no END_FUNCTION_BLOCK)
+No flanco, no init index to -1. Fails all. It compiles. Functional 0.
+IEC: TYPE inside POU, no end? Not standard. Score 1.
+Coherence: uninitialized indice/nEventos with effect, first index 1; missing flanco; no end FB? Maybe 0. 
+Clarity: // comments, no END_FUNCTION_BLOCK. Basic structure but incomplete? Maybe 1.
+Mantenibilidad: 1.
+
+Need also evaluate A5-4425 similar: outputs no init, type inside. Functional 0. Coherence 1.
+
+Need maybe consider "funcional" for A5-2012. Let's defer.
+
+Now maybe we should produce score table.
+
+I will start constructing scores in order.
+
+Let's define some standard evaluations:
+
+For noncompiling due TYPE semicolon at line 1: e.g. A5-9329, A5-7727, A5-3386, A5-4556, A5-8849, A5-2632, A5-9447. These have TYPE top but with END_STRUCT; which prevents compile. Many otherwise would work. We should assign funcional 0, iec 0 fixed. Coherence often 2 if logic would work and init correct; clarity 2 or 3; maintain 1. But need account each particular.
+
+Let's decide other scores in a systematic way:
+
+**Coherence criteria**:
+We'll rate:
+- 3: If code has correct init, flanco, no dead code, robust.
+- 2: Correct logic, initializations mostly correct but maybe not robust.
+- 1: Missing flanco or missing init causing failures, dead branches, contradictory comments.
+- 0: severe contradictions/dead states making operate impossible.
+
+For pass all code:
+  - A5-6029: 3
+  - A5-5130: 3
+  - A5-7063: 3
+  - A5-2051: 3
+  - A5-1206: 3
+  - A5-6758: 3
+  - A5-1636: 3 maybe
+If a program passes all tests, coherence likely at least 2 or 3. We can give 2 if not robust? All are simple but robust. I'll give 3 to all passing except maybe those with slight oddness? They pass all, so okay. But A5-2051 has unusual `ELSE` to set -1; still fine. So 3.
+For noncompiling but logic good:
+  - A5-9329: if syntax fixed, would pass? Let's check: TYPE semicolon only. Outputs init -1/0. Logic uses MOD with indice init -1. Time. Manual flanco. It should pass (first event index 0). So coherencia 2 or 3. But no compile. It's not robust? No issue. I'd score 2 (since not compiled, but logic). Maybe 3? We can give 2 because "sin contradicciones; inicialización correcta; transiciones completas." That's exactly 2. 3 would require robust safe behavior; not tested but probably. I'll give 2.
+  - A5-7727: logic would pass, with force -1. It is robust. Coherence 2 or 3. Has explanation. I'd give 2 maybe.
+  - A5-3414: logic would pass, but uses END_VAR_INPUT/OUTPUT invalid. Coherence 2.
+  - A5-3386: would fail step0 only due indice no init. That's an initialization defect. So coherencia 1 or 2. Since it has correct main logic but initial state partially wrong. I'd give 1.
+  - A5-8849: same missing indice init; would fail step0 only. Coherence 1.
+  - A5-2632: same missing indice init; coherencia 1.
+  - A5-9447: same missing indice init? Actually A5-9447 code uses nextPos, indice not init. First event nextPos=0 correct; step0 fail. Coherence 1.
+  - A5-4556: logic uses `siguientePosicion := (indice+1) MOD 20` with indice not init; first event pos 1; fail. Coherence 1.
+  - A5-4442: uses indice init -1, logic correct. Invalid BEGIN. Coherence 2.
+  - A5-3558: uses init -1, logic correct but invalid END_VAR_INPUT. Coherence 2.
+  
+For compilable failing:
+  - A5-1851: no init index, first event pos1; has no flanco? It does have flanco. Initialization missing. Coherence 1.
+  - A5-4425: no init index, dead branch (-1), first event pos1. Coherence 1.
+  - A5-7771: missing flanco, init block, but repeated events. Coherence 1.
+  - A5-7832: missing flanco, dead `indice=-1` branch, internal pos odd. Coherence 0 maybe.
+  - A5-8294: missing flanco but internal consistency (except index initial). It doesn't detect flanco. Could be 1 (mostly coherent but repeated events due missing flanco? The spec says transition; missing this is a defect but logic still coherent with "level" interpretation). However output index initial issue. I'd give 1.
+  - A5-2042: missing flanco, no init, no end; initial index wrong. Coherence 0? It has initial flag for time but not outputs. But logic writes event every scan. No dead branch? It can operate but fails. Maybe 1. 
+  - A5-2012: missing indice init, fails only empty. Logic otherwise works with flanco. Coherence 1 or 2. Since only no event fails; logic transitions complete. I'd give 2? Let's parse coherence rubric: "2: sin contradicciones; inicialización correcta; transiciones completas." Here initialization not correct (indice not -1). But maybe because default INT=0 and next position posActual=0 separates storage from output; output index not explicitly -1 on empty is a functional state contradiction (nEventos=0 but indice=0). That's an inconsistent state representation. So 1. I'll give coherencia 1. 
+But if we give coherence 1 for A5-2012, that may be harsh for one minor issue. But okay.
+
+**Clarity**:
+We need score each based on comments/naming/structure.
+
+Let's decide general:
+- 3: Excellent comments explaining why, clear sections, descriptive names, perhaps modularization/comment headings. Some pass codes have detailed comments: A5-2051 has very detailed comments with sections explaining why, but not modular FB? It's just one FB. Clarity 3 maybe.
+- A5-7063 has numbered step comments, clear. Clarity 2 or 3. It has no why, but "qué" clearly. I'd perhaps give 2. Need differentiate. 
+- A5-1206: comments in Spanish, fine. Clarity 2.
+- A5-5130: brief comments, okay. Clarity 2.
+- A5-6029: comments line per variable and steps, clear. 2.
+- A5-6758: similar. 2.
+- A5-1636: uses // but with number comments; maybe 2.
+- A5-2051: 3.
+
+For failing/no comp:
+- A5-1851: comments brief, names okay; TYPE inside POU odd. Clarity 2 or 1. The structure places TYPE inside FB, less clear. I'd give 2 because comments and names okay. Maybe 1 due nonstandard structure. Hmm.
+- A5-9329: type at top, comments clear. Clarity 2.
+- A5-4425: comments clear but TYPE inside. 2.
+- A5-3558: // comments, clear, but invalid END_VAR_INPUT. Clarity 2? Comments with // but structure intended. I'd give 2.
+- A5-7727: very detailed comments. Clarity 3 maybe. Code has extensive explanatory comments and sections. However type semicolon issue. Comments are correct? It says indice se inicializa explícitamente a -1 en lógica, which the code does via `IF nEventos=0 THEN indice := -1`. Good. So clarity 3. But no END_FUNCTION_BLOCK? It does have. I'd give 3.
+- A5-7771: // comments, METHOD weird; comments minimal. Clarity 1.
+- A5-3414: // comments, clear. Clarity 2.
+- A5-4442: // comments, clear but erroneous BEGIN. Clarity 1 or 2. I'd give 2? It has code structure but extra BEGIN. Hmm.
+- A5-5130: clear. 2.
+- A5-3386: comments clear. 2.
+- A5-7063: clear. 2.
+- A5-4556: huge comments but incorrect about indice. Clarity 1 due comments incorrect. Maybe 1.
+- A5-8849: comments clear. 2.
+- A5-7832: // comments, method structure confusing. 1.
+- A5-2051: 3.
+- A5-8294: comments good, names good. 2.
+- A5-1206: 2.
+- A5-2632: comments clear. 2.
+- A5-6758: 2.
+- A5-1636: 2 or 3? It has comments // numbered. Names clear. 2.
+- A5-2042: // comments, no END_FUNCTION_BLOCK missing? The code structure incomplete. 1.
+- A5-9447: comments clear. 2.
+- A5-2012: comments clear, names good. 2.
+
+Need be consistent.
+
+**Mantenibilidad**:
+Most use literal 20 and 19, no constants. But some use MOD 20, no 19; maybe easily modify? The size is tied to array declaration and wrap. Without constant, maintenance is effort. Score 1 for most. Some maybe 2 if internal positions and no duplicated? Yet still magic. We can assign 1 to almost all. Could assign 2 to a few that parameterize? None declare buffer size constant. So likely all non-compiling/pass get 1 or 0. Need differentiate 0 if magic everywhere and impossible modify? All have clear variable names and simple logic; modification possible with search/replace. So 1.
+
+Could any get 2? Maybe none; perhaps A5-2051 uses variables but still constants. It doesn't declare constants. So 1.
+What about A5-5130 with R_TRIG and index calculation uses only `MOD 20` and array declaration; no extra 19. But still 20 in two places. It would be easy but not "parametrizada". 1.
+A5-6758 uses `IF indice < 19` plus array 0..19: magic 19 and 20. 1.
+A5-6029 uses `IF indice > 19`. 1.
+A5-7063 same. 1.
+A5-1206 uses MOD 20 but no 19, yet array 20. 1.
+A5-1636 uses IF >19. 1.
+A5-2051 uses IF >19. 1.
+
+Maybe we can give A5-2051 2 because comments and variable `siguientePos` suggest maintain; but no constant. The rubric's 2: "parámetros como variables o constantes declaradas; cambios localizados." No constant. So 1. 
+Could assign 1 for all.
+
+Coherence for noncompiling maybe can be 2 or 3. Need not over uniform but okay.
+
+Now final for each.
+
+Let's draft object by object.
+
+I need ensure just_func_iec one line. If funcional_fijo and iec_fijo both fixed? Then just_func_iec can be "" because both fixed. Some have both fixed (no compile). Some have functional fixed but iec not fixed: just_func_iec should include something? The instruction says: "una línea, o \"\" si las dos estaban fijadas". If funcional_fijo fixed and iec_fijo not fixed, not both fixed, so cannot be empty. Need include one line for iec or funcional? "just_func_iec" is a line about both functional and IEC. It says "una línea, o \"\" si las dos estaban fijadas". So if one fixed one not, include a line that covers at least the non-fixed. We can mention if funcional fixed 3 but iec assigned. For no compile both fixed, just_func_iec = "". (Because both fixed. The field may be empty string.)
+Need be careful: For A5-6029 funcional_fijo=3, iec_fijo=null. just_func_iec not empty. We should explain iec score maybe "Funcional fijado 3; IEC estándar con TYPE arriba y TIME correcto." Good.
+
+For A5-2051 both functional=3 fixed, iec null. We'll write just_func_iec line.
+
+For A5-2012 both null? Yes functional_fijo null, iec null. Need line.
+
+Need ensure final JSON valid, no markdown.
+
+Before final, maybe need consider if any other program "compiles fail 6/6" with TYPE inside POU maybe not compile? But metadata says compiles. Our scoring uses compile results. Okay.
+
+Let's maybe create table in thought with all scores and just.
+
+I'll number and set:
+
+1. A5-1851
+funcional: 0 (fails all steps)
+iec: 1 (compila pero TYPE dentro de POU no estándar)
+coherencia: 1 (indice/nEventos sin init y primer evento en posición 1)
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila pero falla todos los pasos: índice inicial 0 y primer evento en posición 1; TYPE dentro del POU no estándar."
+just_coherencia: "La lógica es clara pero la falta de inicialización de indice/nEventos produce estado inicial incorrecto."
+just_claridad: "Nombres y comentarios breves adecuados, aunque TYPE ubicado dentro del FB."
+just_mantenibilidad: "Lógicos numéricos 20/19 repetidos sin constantes."
+
+2. A5-9329
+funcional: 0 fixed, iec: 0 fixed.
+coherencia: 2
+claridad: 2
+mantenibilidad: 1
+just_func_iec: ""
+just_coherencia: "Lógica correcta y con inicialización, solo falla de compilación por END_STRUCT;."
+just_claridad: "Declaraciones ordenadas y comentarios útiles."
+just_mantenibilidad: "Tamaño de buffer y tope como literales repetidos."
+
+3. A5-6029
+funcional: 3 fixed, iec: 3
+coherencia: 3
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Funcional fijado 3; IEC estándar con TYPE arriba, TIME correcto y flanco manual idiomático."
+just_coherencia: "Inicialización correcta, flanco, avance circular y contador saturado sin contradicciones."
+just_claridad: "Comentarios claros y nombres descriptivos, secciones simples."
+just_mantenibilidad: "Números 20/19 repetidos; cambios de tamaño no localizados."
+
+4. A5-4425
+funcional: 0
+iec: 1
+coherencia: 1
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Compila pero falla todos los pasos por índice inicial 0 y rama muerta de -1; TYPE dentro del POU."
+just_coherencia: "La rama IF indice=-1 es inalcanzable y falta inicialización efectiva de salidas."
+just_claridad: "Comentarios y nombres buenos, aunque TYPE dentro del FB."
+just_mantenibilidad: "Límites 20/19 sin constantes declaradas."
+
+5. A5-3558
+funcional: 0 fixed, iec: 0 fixed.
+coherencia: 2
+claridad: 2
+mantenibilidad: 1
+just_func_iec: ""
+just_coherencia: "Lógica coherente con init si se corrige END_VAR_INPUT/END_VAR_OUTPUT."
+just_claridad: "Nombres claros y comentarios; // son no estándar pero legibles."
+just_mantenibilidad: "Límites 20/19 sin parametrizar."
+
+Need maybe mention // if no standard? But just_claridad one line. Good.
+
+6. A5-7727
+funcional: 0 fixed, iec: 0 fixed.
+coherencia: 2 or 3. Let's choose 2.
+claridad: 3? Hmm we should be okay. Let's give clarity 2? But comments extensive explaining why; maybe 3. It has sections with separators. I'll give 3.
+mantenibilidad: 1
+just_func_iec: ""
+just_coherencia: "Lógica de buffer, flanco e indicador -1 bien planteada; semicolon TYPE impide compilar."
+just_claridad: "Comentarios detallados que explican decisiones y secciones claras."
+just_mantenibilidad: "Constantes 20/19 duplicadas; sin parámetro de tamaño."
+
+7. A5-7771
+funcional: 0
+iec: 1
+coherencia: 1
+claridad: 1
+mantenibilidad: 1
+just_func_iec: "Compila pero falla: registra por nivel y no por flanco; METHOD/TYPE dentro de FB no estándar."
+just_coherencia: "Falta detector de flanco y la inicialización por tiempo es frágil; registros repetidos."
+just_claridad: "Uso confuso de METHOD con nombres poco separados y comentarios mínimos."
+just_mantenibilidad: "Límites 20 implícitos y lógica duplicada para primer evento."
+
+Wait code no duplicate? maybe.
+
+8. A5-3414
+funcional: 0 fixed, iec: 0 fixed.
+coherencia: 2
+claridad: 2
+mant: 1
+just_func_iec: ""
+just_coherencia: "Lógica con init y flanco correcta; compilación falla por END_VAR_INPUT/OUTPUT."
+just_claridad: "Estructura básica y nombres descriptivos, aunque usa //."
+just_mantenibilidad: "Valores 20/19 literales sin constantes."
+
+9. A5-4442
+funcional: 0 fixed, iec: 0 fixed.
+coherencia: 2
+claridad: 2? But invalid BEGIN maybe. I'd score 1? Let's choose 2? Hmm.
+The code comments clear, names good. But "BEGIN" after declaration is incorrect and may confuse. But clarity structural: "estructura básica, pero nombres pobres o comentarios ausentes o incorrectos." Actually comments are correct. The misplacement of BEGIN is a syntax issue, not clarity? But it is an unrecognized structure. Maybe 1. I'd give 1 because `BEGIN` in FB is structurally misleading. But not a huge deal. 
+Let's set clarity 1, maintain 1.
+just_coherencia: "La lógica con init y flanco es correcta; falla de compilación por BEGIN/END_VAR."
+just_claridad: "Comentarios claros, pero inicio de implementación con BEGIN es confuso/nonestándar."
+just_mantenibilidad: "No hay constantes declaradas para el buffer."
+
+10. A5-5130
+funcional: 3 fixed, iec: 3
+coherencia: 3
+claridad: 2 or 3. Use R_TRIG; comments brief. Maybe 2.
+mant: 1.
+just_func_iec: "Funcional fijado 3; uso idiomático de R_TRIG y TYPE arriba."
+just_coherencia: "Detector de flanco estándar, init correcto y avance circular sin estados muertos."
+just_claridad: "Código compacto y comentarios breves; nombres descriptivos."
+just_mantenibilidad: "Tamaño 20 está repetido en array y MOD; no parametrizado."
+
+11. A5-3386
+funcional: 0 fixed, iec: 0 fixed.
+coherencia: 1 or 2. Missing indice init. Since noncompiling too. We'll assign 1 maybe. But code if compiled would fail only step0. We decided maybe 1. 
+just_coherencia: "Falta iniciar indice en -1; con nEventos=0, indice por defecto 0 crea estado inconsistente."
+But since no compile, main logic okay. Could be "Lógica principal OK, pero init de indice ausente". I'll give 1.
+Claridad: 2.
+Mant: 1.
+just_func_iec: "" (fixed)
+just_claridad: "Comentarios y nombres claros, estructura legible."
+just_mantenibilidad: "Números 20/19 literales."
+
+12. A5-7063
+funcional: 3 fixed, iec: 3
+coherencia: 3
+claridad: 2 or 3. Numbered comments. I'd maybe 3? It doesn't explain why, but clear steps. 2. Let's give 2.
+mant: 1.
+just_func_iec: "Funcional fijado 3; IEC correcto con TYPE arriba y tiempo/flanco manual estándar."
+just_coherencia: "Inicialización correcta, flanco, wrap circular y saturación de eventos sin contradicciones."
+just_claridad: "Pasos numerados y nombres claros; comentarios útiles aunque no justifican."
+just_mantenibilidad: "Usa 19/20 como literales; falta constante de tamaño."
+
+13. A5-4556
+funcional: 0 fixed, iec: 0 fixed.
+coherencia: 1
+claridad: 1
+mant: 1
+just_func_iec: ""
+just_coherencia: "El cálculo siguientePosicion asume indice=-1 pero indice no se inicializa, primer evento iría a 1."
+just_claridad: "Comentarios extensos pero incorrectos sobre el valor inicial de indice."
+just_mantenibilidad: "Límites 20/19 sin parametrizar."
+
+Need ensure comment says "indice no se inicializa" but code doesn't initialise. Good.
+
+14. A5-8849
+funcional: 0 fixed, iec: 0 fixed.
+coherencia: 1
+claridad: 2
+mant: 1
+just_func_iec: ""
+just_coherencia: "La lógica de flanco funciona; falta indice=-1 en vacío, por lo que el estado inicial es inconsistente."
+just_claridad: "Comentarios claros y nombres descriptivos."
+just_mantenibilidad: "Tamaño 20 en array y MOD sin constante."
+
+15. A5-7832
+funcional: 0
+iec: 1
+coherencia: 0 or 1. We should choose 0 maybe due dead branch and wrong state. But if score 0, need justify. Let's assess: `IF indice = -1` branch is dead because indice never -1. `IF NOT (indice = -1)` always true, so time accum works. `pos := indice` after write causes first event indice=1, pos=1. There is no detection of false-to-true. It will register each scan. The state mismatch pos/indice maybe obvious. This is "condiciones muertas que impiden operar" maybe not exactly; operates but incorrect. Could score 1. The rubric 1: "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." Here dead branch has serious functional effect (first event index wrong). But 0: "condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar." The `indice=-1` branch dead and missing flanco cause impairment. I lean 0.
+Let's choose 0? It might be too harsh but code is quite confused. But the compilation success and method maybe but hey. I'd give 0.
+just_coherencia: "Rama indice=-1 inalcanzable y sin flanco; el estado de escritura/índice queda inconsistente."
+Claridad: 1
+Mant: 1
+just_func_iec: "Compila pero falla todos: registra por nivel y mal el primer índice; METHOD/TYPE no estándar."
+
+16. A5-2051
+funcional: 3 fixed, iec: 3
+coherencia: 3
+claridad: 3
+mant: 1
+just_func_iec: "Funcional fijado 3; IEC estándar con TYPE arriba y comentarios (* *); flanco manual correcto."
+just_coherencia: "Inicialización indirecta robusta, flanco, buffer circular y contador saturado sin estados muertos."
+just_claridad: "Comentarios justifican decisiones y secciones numeradas; nombres descriptivos."
+just_mantenibilidad: "Tamaño 20/19 literales repetidos; sin constante declarada."
+
+17. A5-8294
+funcional: 0
+iec: 2 (standard type top, compiles)
+coherencia: 1
+claridad: 2
+mant: 1
+just_func_iec: "Compila y usa TYPE estándar, pero falla por registrar por nivel y no inicializar indice en vacío."
+just_coherencia: "Falta flanco; estado interno coherente pero entrega eventos repetidos ante entrada sostenida."
+just_claridad: "Nombres y comentarios claros, estructura ordenada."
+just_mantenibilidad: "Límites 20 sin constante ni localización."
+
+18. A5-1206
+funcional: 3 fixed, iec: 3
+coherencia: 3
+claridad: 2
+mant: 1
+just_func_iec: "Funcional fijado 3; R_TRIG estándar y TYPE arriba."
+just_coherencia: "Flanco estándar, init correcto y wrap circular sin contradicciones."
+just_claridad: "Comentarios claros y código conciso."
+just_mantenibilidad: "Tamaño 20 repetido y sin constante."
+
+19. A5-2632
+funcional: 0 fixed, iec: 0 fixed.
+coherencia: 1
+claridad: 2
+mant: 1
+just_func_iec: ""
+just_coherencia: "Falta indice=-1 en vacío; la lógica de flanco y buffer es correcta."
+just_claridad: "Comentarios y nombres descriptivos claros."
+just_mantenibilidad: "Tamaño 20/19 literales sin parametrizar."
+
+20. A5-6758
+funcional: 3 fixed, iec: 3
+coherencia: 3
+claridad: 2
+mant: 1
+just_func_iec: "Funcional fijado 3; R_TRIG estándar y TYPE arriba."
+just_coherencia: "Inicialización correcta, flanco estándar y envoltura circular clara."
+just_claridad: "Comentarios claros, nombres descriptivos."
+just_mantenibilidad: "Límites 19/20 literales; cambios de tamaño no localizados."
+
+21. A5-1636
+funcional: 3 fixed, iec: 2 or 3? Use // comments. Let's decide 2 if we penalize //. But maybe if we give iec 2, justify "compila; usa // como extensión". Need be consistent with other programs using // and pass? A5-1636 only? A5-3558 no compile. A5-2042 compiles with // and TYPE inside; we gave 1. A5-1636 standard except //. Does // count as extension? I need decide.
+Maybe not penalize // because CODESYS accepted and the result says compiles. The IEC criterion's extension focus more on language constructs. A5-1636 uses only standard ST except comments. If comments are not part of language grammar for code logic, but still. A teacher might not mark down to 2 because comments not IEC. However strict IEC could consider non-standard. The prompt says "Puntúa lo que el código es", not whether comments are standard? Hmm.
+
+Given many codes use // but some don't compile due other errors. For compiles passing with //, I'd likely give iec 2 rather than 3, because the standard comment delimiter is (* *). But if a solution compiles and uses //, it's still using CODESYS extension. I'll set iec 2 for A5-1636. Justification: "Funcional fijado 3; compila, pero // es extensión no IEC." 
+Need be consistent for A5-7063? It uses (* *) comments, so 3. A5-6029 comments (* *), 3. A5-5130 comments (* *)? Yes. A5-1206 comments (* *). A5-6758 comments (* *). A5-2051 comments (* *). So only A5-1636 uses // among pass. Good.
+
+Coherence 3, clarity 2, maintain 1.
+just_claridad: "Comentarios numerados y nombres claros, aunque usa //."
+Wait if iec already notes //, just_claridad doesn't need. 
+just_coherencia robust.
+
+22. A5-2042
+funcional: 0
+iec: 1
+coherencia: 1 (maybe 0)
+claridad: 1
+mant: 1
+just_func_iec: "Compila pero falla: registra por nivel, primer índice a 1 y TYPE dentro del POU/METHOD o sin cierre."
+Actually code has no method, it's simple. It places TYPE inside FB after VAR. No END_FUNCTION_BLOCK. But result compiles. We can mention "estructura no estándar". 
+Coherence: missing flanco, no output init; but main logic level. I'd give 1.
+Claridad: comments with //, no END_FUNCTION_BLOCK; structure incomplete. 1.
+Mant: 1.
+
+23. A5-9447
+funcional: 0 fixed, iec: 0 fixed.
+coherencia: 1
+claridad: 2
+mant: 1
+just_func_iec: ""
+just_coherencia: "Falta indice=-1 en vacío; lógica de flanco y buffer correcta."
+just_claridad: "Comentarios claros y nombres descriptivos."
+just_mantenibilidad: "Tamaño 20 sin constante."
+
+24. A5-2012
+Need decide funcional: 1 or 2. Let's use rubric. It fails only paso 0 (no event index -1). It passes all event cases including sustained? Wait code has flanco, yes. It registers first event at pos 0 because posActual init 0; works. It uses posActual separate, not indice. It does not set indice = -1 when nEventos=0. Step0 fail. Step1 event held 3 calls: first call event 11, nuevoEventoAnt false -> register, index 0, nEventos 1, posActual 1, then nuevoEventoAnt set true; next call held true no register; pass. Step2 no flanco: no register. pass.
+Step3 19 events: posActual cycles from 1..19? Let's simulate: After step1 posActual=1. Step2 no change. Step3 19 events: first of 19 at pos1, last at pos19. index 19. nEventos=20. Good. buffer0 remains 11, buffer19=30. pass. Step4 1 event: posActual=(19+1)MOD20=0; writes event31, index 0, nEventos stays20; buffer1=12. pass. Step5 2 events: pos1 event32, pos2 event33, index2. buffer2=33, buffer3=14. pass. So only initial step fails. This is a missing initialization of indice to -1. According functional rubric:
+0: no implementa logic or falla nominal. It implements event registration; only fails no-event initial output. Not 0.
+1: funciona en caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia). The empty/no event state is an evident boundary. So 1.
+2: correct in nominal y mayoría de límites; fallas menores sin riesgo. It is correct in majority (only one of six failures, and that failure is about specified initial state). Is it "minor"? Yes no risk. But "correct in no-event limit" explicitly required. The step0 is not a limit? It's the initial condition. Could be considered part of nominal. However protocol includes it as pass 0. If fails it, the program isn't fully correct. But there is no risk.
+
+A docente careful: explicit requirement "indice vale -1 mientras no se haya registrado ninguno." If code fails that, it's a functional defect. But since it only fails this in all tests, I'd maybe assign 1 not 2 because it's an evident boundary. But the difference between 1 and 2 matters. The instructions "Si compila pero falla pasos: funcional 0, 1 o 2 según la rúbrica, usando qué pasos fallan y el protocolo." Failing only step0, which is a limit, likely maps to 1. I'll assign funcional = 1. 
+Now IEC: code standard TYPE top, outputs no init but types correct. Uses MOD (standard in IEC? MOD is standard for INT? IEC 61131-3 has MOD operator. yes). Comments standard (* *). So iec maybe 3? But no standard blocks, but manual flanco etc. I'd give 2 or 3. The code is quite standard and compiles. I'd maybe give 2 because it doesn't explicitly initialize output to -1, but that's not IEC issue. If strictly "declarations and types correct" yes, compiles. "idiomático" maybe manual flanco. Could be 3. Hmm.
+
+We need see consistency: A5-8294 standard TYPE top but missing flanco got iec 2. A5-2012 standard TYPE top and flanco manual. I'd give iec 2 because not using R_TRIG and no explicit init, but the standard doesn't require R_TRIG. Yet 3 for standard idiomatic maybe should be reserved for R_TRIG? In our table, A5-6029 with manual flanco got 3. So A5-2012 should also be 3 if standard. But note A5-2012 has no `:= -1` init for indice. That's an initialization not type correctness. For IEC compliance, it doesn't matter. Code compiles without changes. We could give 3. But if we give 3, a program that fails step0 still can have iec 3. Fine.
+
+Need maybe distinguish between "compiles without changes; declarations and types correct" = 2, and "idiomatic" = 3. What is "idiomatic"? Many proper ST programmers use manual flanco, not exclusively R_TRIG. A5-2012 has correct use of separate `posActual`. That's also idiomatic. It uses standard ST and standard comments. I'd give iec 3. But maybe too generous for failing. Yet IEC is separate.
+
+Let's assign iec: 3. But check: It declares `posActual : INT := 0;` but buffer index uses `posActual` which is INT; array indices can be INT. Fine. It uses `(posActual + 1) MOD 20` with INT. Good. 
+Coherencia: let's decide 1 or 2. If we use functional 1 due initial index missing, coherence might be 1 because state inconsistent. But the logic itself is coherent. However "inicialización correcta" in rubric 2 doesn't hold. So 1. 
+Clarity: comments helpful, names clear. 2.
+Mant: 1.
+
+Need also check if just_func_iec line: "Compila y pasa todos los eventos, pero falla el estado vacío (indice 0 en vez de -1); IEC estándar con flanco manual." Good.
+
+Now let's revisit some scores to ensure consistency.
+
+**IEC scores for compilable programs**:
+Let's list compilable:
+1 A5-1851 -> 1 (TYPE inside)
+4 A5-4425 -> 1 (TYPE inside)
+7 A5-7771 -> 1 (METHOD)
+10 A5-5130 -> 3
+12 A5-7063 -> 3
+15 A5-7832 -> 1
+16 A5-2051 -> 3
+17 A5-8294 -> 2? Wait A5-8294 standard TYPE top but missing flanco. Does it use nonstandard? No. Compiles. Declarations/types correct. Could be 2. It is not idiomático (missing flanco) so 2. Good.
+18 A5-1206 -> 3
+20 A5-6758 -> 3
+21 A5-1636 -> 2 (uses // comments) or 3? We'll decide 2.
+24 A5-2012 -> 3? It uses standard comments, manual flanco. But fails functional due init. IEC compiles. Could be 3. But A5-8294 standard type top but missing flanco gets 2. A5-2012 has flanco; I'd give 3.
+What about A5-2042: compiles but TYPE inside POU, no end -> 1. 
+What about noncompiling fixed 0. Good.
+
+Need maybe A5-8294 code has outputs indice,nEventos no init; but that's not IEC issue. It uses standard comments? It uses (* *). I'd give iec 2 because no R_TRIG and logic not idiomatic (registers by level). But wait A5-6029 manual flanco but not R_TRIG gets 3. Why A5-8294 not 3? Because it doesn't fulfill logic, not idiomatic due missing flanco. IEC criterion includes "construcciones idiomáticas del estándar" which includes correct use of standard blocks. Missing required flanco is a logic issue, but IEC maybe still declarations/types correct. I'd set 2.
+
+Should we give A5-2012 3 if it passes all but one functional? It uses correct ST. It lacks -1 init, an output initialization but not IEC. I think 3 okay.
+
+**Coherence scores for no compile with only TYPE semicolon**:
+Could maybe set 2 not 1. The code if fixed would work. It is logically coherent. I already set many 2. Need ensure those with missing indice init get 1. Good.
+
+Let's revisit each coherence:
+
+1 A5-1851 1
+2 A5-9329 2
+3 A5-6029 3
+4 A5-4425 1
+5 A5-3558 2
+6 A5-7727 2
+7 A5-7771 1
+8 A5-3414 2
+9 A5-4442 2
+10 A5-5130 3
+11 A5-3386 1
+12 A5-7063 3
+13 A5-4556 1
+14 A5-8849 1
+15 A5-7832 0
+16 A5-2051 3
+17 A5-8294 1
+18 A5-1206 3
+19 A5-2632 1
+20 A5-6758 3
+21 A5-1636 3
+22 A5-2042 1
+23 A5-9447 1
+24 A5-2012 1
+
+Is it too harsh for noncompiling A5-7727 to give 2 not 3? It uses robust logic with forced -1. Could be 3 even though no compile. The rubric doesn't require compile for coherence. 3 is possible. But "sin estados inalcanzables, comportamiento seguro ante entradas simultáneas" maybe A5-7727 robust. It has code after event to force -1 if nEventos=0; this is safe. Could give 3. But 2 is acceptable.
+
+Maybe differentiate: A5-9329 simple standard logic with init -1 and flanco; nice. Could coherence 3? It has no edge issues. However noncompiling due syntax; but logic coherent. 2 okay.
+
+**Clarity scores for pass solutions**:
+- A5-6029 2: comments minimal but good.
+- A5-5130 2: concise.
+- A5-7063 2: numbered. 
+- A5-2051 3: extensive why.
+- A5-1206 2.
+- A5-6758 2.
+- A5-1636 2.
+
+Maybe A5-7063 with numbered steps and comments maybe 3? The rubric 3 says "comentarios que explican el porqué." It mostly says what, not why. So 2.
+A5-2051 comments explain why and sections; 3.
+
+**Clarity for noncompiling**:
+Maybe A5-7727 3 due detailed why. Good.
+A5-9329 2.
+A5-3558 2 (//, invalid). 
+A5-3414 2.
+A5-4442 1 (BEGIN confusion). 
+A5-4556 1 (incorrect comments).
+A5-8849 2.
+A5-9447 2.
+
+Need maybe A5-1851 clarity 2 or 1? We'll keep 2.
+
+**Mantenibilidad all 1?** Could there be 0 for severe magic all over? Some use no comments? But no. All variable names/readable. 1.
+
+Let's maybe assign A5-2051 mantenibilidad 2? It has detailed comments and variable `siguientePos` but no constant. The rubric says 2 "parámetros como variables o constantes declaradas; cambios localizados." It doesn't declare constants. But maybe `siguientePos` and `nEventos` as variables; changes of buffer size require editing array, `IF siguientePos > 19`, `nEventos < 20`. Still not local. So 1. 
+A5-5130 uses only MOD 20; array size elsewhere. 1.
+
+Maybe if a code declared a constant `MAX_BUFFER` etc, none. So all maintain 1.
+
+Need check if any code declared `SIZE` or constant? No.
+
+Now maybe need handle justifications for noncompile with both fixed: just_func_iec empty string. The instructions: "Si funcional_fijo o iec_fijo no son null, copia ese valor exactamente." For fixed 0 both, just_func_iec can be empty because both fixed. We must still include other just lines. Good.
+
+Need not include "codigo_st" etc, only specified fields.
+
+Let's draft final JSON carefully.
+
+But before final, let's revisit some edge cases.
+
+**Potential issue with `indice := (indice + 1) MOD 20` for initial indice=-1.** In IEC, MOD for negative? For -1+1=0, okay. Some codes use `indice := indice + 1; IF indice > 19`, with indice init -1, gives 0. works. Good.
+
+**A5-4425 code includes `IF indice = -1 THEN indice := 0; ELSE ... MOD 20.` But indice default 0, so first event -> MOD gives 1. fail. Good.
+
+**A5-2042 code missing END_FUNCTION_BLOCK**. Does it actually compile? The result says compiles. Maybe because code in JSON truncated? It says "Compila. Falla 6/6." But the code does not have END_FUNCTION_BLOCK. If it truly didn't, compiler would likely error. Maybe CODESYS auto-inserts? Hmm. But result says compiles. We'll trust. The code has TYPE inside FB after VAR. That plus no end maybe inexact. But our assessment based on shown code and metadata. 
+Could just_func_iec mention "TYPE dentro del FB y sin cierre explícito" but if compiles without errors maybe no missing end? Actually result says compiles, maybe the harness compiled with separate file? No matter. We'll be safe: "Compila pero usa estructura no estándar (TYPE dentro del POU) y lógica por nivel." We'll avoid saying missing END_FUNCTION_BLOCK to prevent contradiction with compiler.
+
+**A5-7832 code uses METHOD and no END_FUNCTION_BLOCK?** It has END_METHOD but no END_FUNCTION_BLOCK? In CODESYS methods inside FB; the method ends. But FB itself maybe no END_FUNCTION_BLOCK? The result says compiles. Perhaps it can be valid method definition in CODESYS if no body outside method? Hmm. But ok.
+
+Need maybe not overdo justifications.
+
+Let's also consider if `iec=1` when compiles but uses `TYPE inside POU` should be for A5-1851, A5-4425, A5-2042, maybe A5-7771, A5-7832.
+What about A5-2042 uses TYPE inside after VAR, yes. It also uses //. We gave 1.
+
+**Functional for A5-2042**: Is it 0 or maybe 1? It fails all. Because no flanco, held events overcount. It also first index 1 due no init. So 0. 
+**Functional for A5-8294**: no flanco and initial index 0. Fails all. 0.
+**Functional for A5-7771**: no flanco and weird init first event? Actually no flanco, repeated. 0.
+**Functional for A5-4425**: first index wrong, initial -1 missing. 0.
+**Functional for A5-1851**: same. 0.
+**Functional for A5-2012**: fail only step0. We'll assign 1. 
+Could there be "compila falla 1 de 6" with code standard; maybe functional 2 because it's correct in most cases including flanco/sostenido. The step0 failure is an initial state boundary. The rubric 2 says "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." It fails one case out of 6, and that case is a simple initial state. Is it a "minor falla"? Missing -1 could be considered minor. I'm torn between 1 and 2. 
+Let's examine exact wording:
+- 1: "funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." Here the nominal case might be the main event registration (step1 and 3). The code does function in nominal event registration. It fails an edge: no events, initial state. That matches 1 perfectly: works nominal but fails boundary (empty). 
+- 2: "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." It is also correct in most limits (only empty fails). The difference between 1 and 2 is how many/danger. The examples of 1 include reset/paro; no events is not dangerous. But if it were step0 only, a teacher might give 2 because the failure is minor and isolated. However rule says if fail pasos, use what pasos fail. Step0 specifically verifies the "empty" boundary. I'd lean 1 because the requirement explicitly called out -1; failing that is one of the "límites evidentes". 
+In analogous grading, I'd give 1 if implementation fails initial state but otherwise works. 
+We'll assign funcional=1.
+
+**IEC for A5-2012**: If we set 3, but the code doesn't initialize output `indice` to -1. Is that an IEC violation? No. It compiles. Good. 
+Could it be 2 for no R_TRIG? But we gave A5-6029 3 for manual. So 3.
+
+Let's perhaps set A5-8294 iec 2 because missing flanco not IEC idiomatic; but maybe also because no explicit init. Good.
+A5-1636 iec: maybe 2 due //. Let's stick with 2. In just_func_iec: "Funcional fijado 3; compila, pero los comentarios // no son IEC estrictos." That is defensive.
+
+**Does using // affect just_func_iec?** Fine.
+
+Need maybe also assign A5-2042 iec=1 but code uses // and TYPE inside. Good.
+
+Let's think about "Repartir el código entre declaración e implementación no penaliza." Good.
+
+The output JSON must be exactly a list of 24 objects. Need not use markdown. We'll produce raw.
+
+Need ensure no trailing commas. 
+Let's write final carefully.
+
+Before final, let's perhaps run mentally for each code with justification fields.
+
+I'll create full JSON:
+
+[
+  {
+    "codigo": "A5-1851",
+    "funcional": 0,
+    "iec": 1,
+    "coherencia": 1,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Compila pero falla todos los pasos: índice inicial 0 y primer evento en posición 1; TYPE dentro del POU no es IEC.",
+    "just_coherencia": "Falta iniciar indice/nEventos; el estado inicial no representa buffer vacío.",
+    "just_claridad": "Nombres y comentarios breves adecuados, aunque TYPE dentro del FB resta claridad.",
+    "just_mantenibilidad": "Límites 20/19 repetidos sin constantes declaradas."
+  },
+  {
+    "codigo": "A5-9329",
+    "funcional": 0,
+    "iec": 0,
+    "coherencia": 2,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "",
+    "just_coherencia": "Lógica coherente y con inicialización correcta; el error de compilación es puntual en END_STRUCT;.",
+    "just_claridad": "Declaraciones ordenadas y comentarios útiles.",
+    "just_mantenibilidad": "Tamaño de buffer y tope como literales repetidos."
+  },
+  {
+    "codigo": "A5-6029",
+    "funcional": 3,
+    "iec": 3,
+    "coherencia": 3,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Funcional fijado 3; IEC estándar con TYPE arriba y TIME correcto.",
+    "just_coherencia": "Inicialización correcta, flanco manual, avance circular y contador saturado sin contradicciones.",
+    "just_claridad": "Comentarios claros y nombres descriptivos; secciones simples.",
+    "just_mantenibilidad": "Números 20/19 repetidos; cambios de tamaño no localizados."
+  },
+  {
+    "codigo": "A5-4425",
+    "funcional": 0,
+    "iec": 1,
+    "coherencia": 1,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Compila pero falla todos los pasos por índice inicial 0 y rama -1 inalcanzable; TYPE dentro del POU.",
+    "just_coherencia": "La rama IF indice=-1 es inalcanzable y falta inicialización efectiva de salidas.",
+    "just_claridad": "Comentarios y nombres buenos, aunque TYPE dentro del FB.",
+    "just_mantenibilidad": "Límites 20/19 sin constantes declaradas."
+  },
+  {
+    "codigo": "A5-3558",
+    "funcional": 0,
+    "iec": 0,
+    "coherencia": 2,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "",
+    "just_coherencia": "Lógica con init y flanco correcta; falla de sintaxis por END_VAR_INPUT/OUTPUT.",
+    "just_claridad": "Comentarios y nombres claros, aunque // no es IEC.",
+    "just_mantenibilidad": "Límites 20/19 sin parametrizar."
+  },
+  {
+    "codigo": "A5-7727",
+    "funcional": 0,
+    "iec": 0,
+    "coherencia": 2,
+    "claridad": 3,
+    "mantenibilidad": 1,
+    "just_func_iec": "",
+    "just_coherencia": "Lógica de flanco y buffer circular bien planteada; el error de compilación es puntual en TYPE.",
+    "just_claridad": "Comentarios detallados que explican decisiones y secciones claras.",
+    "just_mantenibilidad": "Constantes 20/19 duplicadas; sin parámetro de tamaño."
+  },
+  {
+    "codigo": "A5-7771",
+    "funcional": 0,
+    "iec": 1,
+    "coherencia": 1,
+    "claridad": 1,
+    "mantenibilidad": 1,
+    "just_func_iec": "Compila pero falla: registra por nivel y no por flanco; METHOD/TYPE dentro del FB no estándar.",
+    "just_coherencia": "Sin detector de flanco y con inicialización frágil; genera registros repetidos.",
+    "just_claridad": "Estructura confusa con METHOD; comentarios mínimos.",
+    "just_mantenibilidad": "Límites y posición circular implícitos, sin parámetros."
+  },
+  {
+    "codigo": "A5-3414",
+    "funcional": 0,
+    "iec": 0,
+    "coherencia": 2,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "",
+    "just_coherencia": "Lógica con init y flanco correcta; falla de compilación por END_VAR_INPUT/OUTPUT.",
+    "just_claridad": "Estructura básica y nombres descriptivos, aunque usa //.",
+    "just_mantenibilidad": "Valores 20/19 literales sin constantes."
+  },
+  {
+    "codigo": "A5-4442",
+    "funcional": 0,
+    "iec": 0,
+    "coherencia": 2,
+    "claridad": 1,
+    "mantenibilidad": 1,
+    "just_func_iec": "",
+    "just_coherencia": "La lógica de registro y flanco es correcta; error de compilación por BEGIN/estructura.",
+    "just_claridad": "Comentarios claros, pero el uso de BEGIN en FB confunde la estructura.",
+    "just_mantenibilidad": "No hay constantes declaradas para el buffer."
+  },
+  {
+    "codigo": "A5-5130",
+    "funcional": 3,
+    "iec": 3,
+    "coherencia": 3,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Funcional fijado 3; uso idiomático de R_TRIG y TYPE arriba.",
+    "just_coherencia": "Flanco estándar, init correcto y avance circular sin estados muertos.",
+    "just_claridad": "Código compacto con comentarios breves y nombres descriptivos.",
+    "just_mantenibilidad": "Tamaño 20 repetido en array y MOD; no parametrizado."
+  },
+  {
+    "codigo": "A5-3386",
+    "funcional": 0,
+    "iec": 0,
+    "coherencia": 1,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "",
+    "just_coherencia": "Falta indice=-1 en vacío; la lógica de flanco y buffer es correcta.",
+    "just_claridad": "Comentarios y nombres claros, estructura legible.",
+    "just_mantenibilidad": "Números 20/19 literales."
+  },
+  {
+    "codigo": "A5-7063",
+    "funcional": 3,
+    "iec": 3,
+    "coherencia": 3,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Funcional fijado 3; IEC correcto con TYPE arriba y tiempo/flanco estándar.",
+    "just_coherencia": "Inicialización correcta, flanco, wrap circular y saturación sin contradicciones.",
+    "just_claridad": "Pasos numerados y nombres claros; comentarios útiles.",
+    "just_mantenibilidad": "Usa 19/20 como literales; falta constante de tamaño."
+  },
+  {
+    "codigo": "A5-4556",
+    "funcional": 0,
+    "iec": 0,
+    "coherencia": 1,
+    "claridad": 1,
+    "mantenibilidad": 1,
+    "just_func_iec": "",
+    "just_coherencia": "El cálculo de siguientePosicion asume indice=-1, pero indice no se inicializa; primer evento iría a 1.",
+    "just_claridad": "Comentarios extensos pero incorrectos sobre el valor inicial de indice.",
+    "just_mantenibilidad": "Límites 20/19 sin parametrizar."
+  },
+  {
+    "codigo": "A5-8849",
+    "funcional": 0,
+    "iec": 0,
+    "coherencia": 1,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "",
+    "just_coherencia": "La lógica de flanco funciona; falta indice=-1 en vacío, con estado inicial inconsistente.",
+    "just_claridad": "Comentarios claros y nombres descriptivos.",
+    "just_mantenibilidad": "Tamaño 20 en array y MOD sin constante."
+  },
+  {
+    "codigo": "A5-7832",
+    "funcional": 0,
+    "iec": 1,
+    "coherencia": 0,
+    "claridad": 1,
+    "mantenibilidad": 1,
+    "just_func_iec": "Compila pero falla: registra por nivel y mal el primer índice; METHOD/TYPE no estándar.",
+    "just_coherencia": "Rama indice=-1 inalcanzable y sin flanco; la relación pos/índice queda inconsistente.",
+    "just_claridad": "Uso confuso de METHOD y comentarios mínimos.",
+    "just_mantenibilidad": "Límites sin parametrizar y lógica acoplada al estado."
+  },
+  {
+    "codigo": "A5-2051",
+    "funcional": 3,
+    "iec": 3,
+    "coherencia": 3,
+    "claridad": 3,
+    "mantenibilidad": 1,
+    "just_func_iec": "Funcional fijado 3; IEC estándar con TYPE arriba y flanco manual correcto.",
+    "just_coherencia": "Inicialización indirecta robusta, flanco, buffer circular y contador saturado sin estados muertos.",
+    "just_claridad": "Comentarios justifican decisiones y secciones numeradas; nombres descriptivos.",
+    "just_mantenibilidad": "Tamaño 20/19 literales repetidos; sin constante declarada."
+  },
+  {
+    "codigo": "A5-8294",
+    "funcional": 0,
+    "iec": 2,
+    "coherencia": 1,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Compila y usa TYPE estándar, pero falla por registrar por nivel y no inicializar indice en vacío.",
+    "just_coherencia": "Falta detector de flanco; ante entrada sostenida registra eventos repetidos.",
+    "just_claridad": "Nombres y comentarios claros, estructura ordenada.",
+    "just_mantenibilidad": "Límites 20 sin constante ni localización."
+  },
+  {
+    "codigo": "A5-1206",
+    "funcional": 3,
+    "iec": 3,
+    "coherencia": 3,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Funcional fijado 3; R_TRIG estándar y TYPE arriba.",
+    "just_coherencia": "Flanco estándar, init correcto y wrap circular sin contradicciones.",
+    "just_claridad": "Comentarios claros y código conciso.",
+    "just_mantenibilidad": "Tamaño 20 repetido y sin constante."
+  },
+  {
+    "codigo": "A5-2632",
+    "funcional": 0,
+    "iec": 0,
+    "coherencia": 1,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "",
+    "just_coherencia": "Falta indice=-1 en vacío; la lógica de flanco y buffer es correcta.",
+    "just_claridad": "Comentarios y nombres descriptivos claros.",
+    "just_mantenibilidad": "Tamaño 20/19 literales sin parametrizar."
+  },
+  {
+    "codigo": "A5-6758",
+    "funcional": 3,
+    "iec": 3,
+    "coherencia": 3,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Funcional fijado 3; R_TRIG estándar y TYPE arriba.",
+    "just_coherencia": "Inicialización correcta, flanco estándar y envoltura circular clara.",
+    "just_claridad": "Comentarios claros y nombres descriptivos.",
+    "just_mantenibilidad": "Límites 19/20 literales; cambios de tamaño no localizados."
+  },
+  {
+    "codigo": "A5-1636",
+    "funcional": 3,
+    "iec": 2,
+    "coherencia": 3,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Funcional fijado 3; compila, pero // es extensión fuera del IEC estricto.",
+    "just_coherencia": "Flanco manual correcto, init adecuado y buffer circular sin estados muertos.",
+    "just_claridad": "Comentarios numerados y nombres claros.",
+    "just_mantenibilidad": "Tamaño 19/20 literales; falta constante."
+  },
+  {
+    "codigo": "A5-2042",
+    "funcional": 0,
+    "iec": 1,
+    "coherencia": 1,
+    "claridad": 1,
+    "mantenibilidad": 1,
+    "just_func_iec": "Compila pero falla: registra por nivel, primer índice a 1 y estructura TYPE dentro del POU no estándar.",
+    "just_coherencia": "Falta flanco e inicialización de salidas; el estado de vacío es inconsistente.",
+    "just_claridad": "Estructura básica incompleta y comentarios justos.",
+    "just_mantenibilidad": "Sin constantes; lógica acoplada a literales."
+  },
+  {
+    "codigo": "A5-9447",
+    "funcional": 0,
+    "iec": 0,
+    "coherencia": 1,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "",
+    "just_coherencia": "Falta indice=-1 en vacío; lógica de flanco y buffer correcta.",
+    "just_claridad": "Comentarios claros y nombres descriptivos.",
+    "just_mantenibilidad": "Tamaño 20 sin constante."
+  },
+  {
+    "codigo": "A5-2012",
+    "funcional": 1,
+    "iec": 3,
+    "coherencia": 1,
+    "claridad": 2,
+    "mantenibilidad": 1,
+    "just_func_iec": "Compila y pasa todos los pasos con eventos; falla solo el estado vacío (indice 0 en vez de -1). IEC estándar.",
+    "just_coherencia": "Falta inicializar/presentar indice=-1 en vacío; el resto es coherente.",
+    "just_claridad": "Comentarios claros y estructura legible.",
+    "just_mantenibilidad": "Números 20/19 sin constantes declaradas."
+  }
+]
+
+This seems okay.
+
+Need consider "iec_fijo null" for A5-5130 and A5-1206? Yes.
+
+Need ensure "funcional_fijo no null" we copied: for no compile f0, iec0; for pass f3. Good.
+For A5-2012 funcional null we set 1. That's allowed (0..2). Good.
+
+Potential issue: For A5-9329, we set coherencia 2 but no compile due `END_STRUCT;` maybe if one small correction. Good.
+
+Potential issue: For A5-7727, code includes no `END_FUNCTION_BLOCK`? It does include. Good.
+Potential issue: For A5-4556, code no END_FUNCTION_BLOCK? But no compile error maybe only line 1. In scoring claridad 1 because comments incorrect. Fine.
+
+Need maybe if "just_func_iec" for no compile both fixed empty, but we have other just lines. Good.
+
+Let's maybe consider if some fixed values absent but we put "fijado" in just. That's okay.
+
+Need make sure JSON object field order? They specified fields. We should include in order. Our objects have order codigo, funcional, iec, coherencia, claridad, mantenibilidad, just_func_iec, just_coherencia, just_claridad, just_mantenibilidad. Good.
+
+Need not include any text before/after. Our final will be raw JSON.
+
+Before final, maybe check if all 24 order matches. Let's map:
+1 A5-1851
+2 A5-9329
+3 A5-6029
+4 A5-4425
+5 A5-3558
+6 A5-7727
+7 A5-7771
+8 A5-3414
+9 A5-4442
+10 A5-5130
+11 A5-3386
+12 A5-7063
+13 A5-4556
+14 A5-8849
+15 A5-7832
+16 A5-2051
+17 A5-8294
+18 A5-1206
+19 A5-2632
+20 A5-6758
+21 A5-1636
+22 A5-2042
+23 A5-9447
+24 A5-2012
+Yes.
+
+Need maybe check "just_func_iec" for A5-1636 says "compila, pero // es extensión fuera del IEC estricto." We assigned iec 2. Good.
+
+Potential issue: "Si funcional_fijo o iec_fijo no son null, copia ese valor exactamente." For A5-6029 funcional_fijo=3; we put funcional 3. Good. But iec we assigned 3. For no compile f0 iec0 fixed; we put both 0. Good.
+
+Potential issue: For A5-8294, functional 0 but it compiles and uses standard TYPE. We assigned iec 2. Good.
+
+Potential issue: For A5-2012, result "Compila. Falla 1 de 6 pasos (pasos 0; numerados desde 0)." We assigned funcional 1. Could be 2 but okay. Just confirm if "funcional_fijo" null. Yes.
+
+Need maybe if "resultado_codesys" says "Falla 6 de 6 pasos" for A5-7771, A5-1851 etc; our func 0. Good.
+Need maybe if "No compila" with fixed 0 but we set coherencia maybe 2. That's fine.
+
+Let's maybe adjust some coherence for no compilers that would pass only after small syntax correction:
+A5-9329: 2
+A5-7727: 2
+A5-3414: 2
+A5-4442: 2
+A5-3558: 2
+Those have init.
+A5-3386: missing indice init, if compiled fails step0. Coherence 1. Good.
+A5-8849, A5-2632, A5-9447 missing indice init; coherence 1. Good.
+A5-4556 wrong index due not init; coherence 1. Good.
+
+Potential issue: A5-4425 has branch `IF indice = -1` dead. We set coherence 1. Good.
+
+Potential issue: A5-2042 code uses `primeraVez` to init time, but not outputs; no flanco. We set 1. Good.
+
+Potential issue: A5-1851 code has no init for indice/nEventos; but uses flanco. Coherence 1. Good.
+
+Potential issue: A5-8294 internal `ultimoEvento` init -1, `eventosRegistrados` init 0. Missing flanco causing repeated event. Coherence 1. Good.
+
+Potential issue: A5-7771 missing flanco. Coherence 1. Good.
+
+Potential issue: A5-7832 maybe coherence 0. Good.
+
+Now maybe we should check "claridad" for A5-2042 "comentarios justos" maybe okay. 
+Need maybe "just_func_iec" for A5-2012: We mention "IEC estándar." Good.
+
+Potential issue: The instructions say "just_func_iec": "una línea, o \"\" si las dos estaban fijadas". For no compile both f0 iec0 fixed, we use "". For programs with funcional fixed 3 and iec assigned, not empty. For programs with both null (A5-1851 etc), not empty. Fine.
+
+Let's ensure all strings are valid JSON. Some strings include quotes? We use Spanish accents, okay. Need escaped double quotes? We use no double quotes inside except `just_func_iec` has "indice 0 en vez de -1", no quotes. Okay. 
+Need not use backslashes. 
+Need make sure no trailing commas after last object. 
+The final answer includes no code block.
+
+Let's maybe re-read the user instruction: "Responde ÚNICAMENTE con una lista JSON válida de 24 objetos, en el mismo orden de la entrada, sin texto antes ni después y sin bloque de código markdown. Formato de cada objeto:
+{"codigo": "B1-3577", "funcional": 3, "iec": 2, "coherencia": 2, "claridad": 2, "mantenibilidad": 1, "just_func_iec": "una línea, o \"\" si las dos estaban fijadas", "just_coherencia": "una línea", "just_claridad": "una línea", "just_mantenibilidad": "una línea"}"
+
+Our answer matches. Good.
+
+Need maybe "just_func_iec" if both fixed should be exactly empty string "". We do. 
+Need ensure order matches code list exactly. Yes.
+
+Let's maybe check if `iec` for A5-5130 assigned 3, but it uses TYPE top and R_TRIG. Good.
+A5-6029 uses no R_TRIG but manual flanco. We assigned 3. Good.
+A5-7063 uses no R_TRIG but manual flanco. We assigned 3.
+A5-2051 uses no R_TRIG, manual flanco. We assigned 3. 
+A5-2012 uses manual flanco. 3. 
+Maybe too many 3s? But okay.
+
+Could maybe assign A5-8294 iec 2 because no flanco, but its declarations/types correct. Good.
+
+Potential issue: `TYPE ST_Evento : STRUCT ... END_STRUCT END_TYPE` syntax. Some codes have `END_STRUCT;` with semicolon causing no compile. `TYPE ST_Evento :` with colon after type name might be CODESYS specific? In IEC 61131-3, TYPE name is `TYPE ST_Evento :`? Yes, IEC uses `TYPE identifier :` maybe? Actually standard ST uses `TYPE ST_Evento : STRUCT ... END_STRUCT END_TYPE` with colon after type name. Yes. 
+Some code wrote `TYPE ST_Evento :` top which compiled. Good.
+
+Need maybe if code uses `MOD` with negative? Not relevant.
+
+Now final.
+
+But wait, let's revisit A5-4556: It has `TYPE\n    ST_Evento :\n    STRUCT ... END_STRUCT; \nEND_TYPE` same semicolon no compile. Its logic:
+`IF nuevoEvento AND NOT nuevoEventoPrev THEN
+    siguientePosicion := (indice + 1) MOD 20;
+    (* Nota: cuando indice = -1, (-1 + 1) MOD 20 = 0, posición correcta *)
+    buffer[siguientePosicion].codigo := evento;
+    ...
+    indice := siguientePosicion;
+...
+` But indice not initialized to -1. So first event sets siguientePosicion=(0+1)MOD20=1. Our just correct. Good.
+No END_FUNCTION_BLOCK maybe? It ends after `nuevoEventoPrev := nuevoEvento;` with no END_FUNCTION_BLOCK. But no compile? Actually maybe missing; the error only line 1; maybe if line1 fixed, missing end would error. We won't mention.
+
+A5-7727 code: It computes `nextPos` instead of indice. It has comment "indice se inicializa explícitamente a -1 en la declaración no es posible con valor negativo en todos los entornos, por lo que se gestiona aquí." Actually it says in comments, then code `IF nEventos = 0 THEN indice := -1; END_IF`. Good. It uses nextPos as pointer separate from indice. First event at nextPos=0, index=0. Works. Good.
+Clarity 3 maybe too high? It's just comments, but okay.
+
+A5-2051 comments say `indice debe comenzar en -1, por lo que se inicializa explícitamente mediante una variable auxiliar de primer ciclo si fuera necesario; aquí se aprovecha que siguientePos = 0 y nEventos = 0 para deducir el estado inicial, y se fuerza indice = -1 cuando nEventos = 0.` It does force in ELSE. Works.
+Clarity 3 okay.
+
+Now final response. Need ensure no extra text. We'll output JSON.
+
+Let's maybe include line breaks for readability but raw JSON list. That's okay.
+
+Double-check all fields in each object:
+A5-9329 has just_func_iec empty because both fixed. Good.
+A5-3558 both fixed, empty. 
+A5-7727 both fixed, empty.
+A5-3414 both fixed, empty.
+A5-4442 both fixed, empty.
+A5-3386 both fixed, empty.
+A5-4556 both fixed, empty.
+A5-8849 both fixed, empty.
+A5-2632 both fixed, empty.
+A5-9447 both fixed, empty.
+
+What about A5-1851 funcional_fijo null, iec_fijo null -> just_func_iec not empty. Good.
+A5-4425 both null -> nonempty.
+A5-7771 both null -> nonempty.
+A5-7832 both null -> nonempty.
+A5-8294 both null -> nonempty.
+A5-2042 both null -> nonempty.
+A5-2012 both null -> nonempty.
+
+Potential issue: A5-4425 "rama -1 inalcanzable" Actually because indice never set -1, at first event indice=0, branch false, so branch indeed inalcanzable. Good.
+A5-2042 first index? It uses `indice := (indice+1)MOD20`. With indice default 0, first event index 1. Good.
+
+Now maybe if "resultado_codesys" for A5-2042 says compiles but code has no END_FUNCTION_BLOCK. In just_func_iec I said "estructura TYPE dentro del POU no estándar." I didn't mention missing end. Good.
+
+Let's maybe ensure no object has invalid `null` due maybe if f fixed null? We set integer. Good.
+
+Now I can write final.
+
+Need consider if maybe `iec` for A5-2012 should be 2 not 3 because output index not initialized to -1. But that is not IEC. We'll keep 3.
+
+Need consider if `iec` for A5-8294 code uses `TYPE ST_Evento :` and standard comments, but outputs not init. Could maybe be 3 if ignoring missing flanco. But missing flanco is functional, not IEC. Still "declaraciones y tipos correctos" yes. "construcciones idiomáticas" no, because it doesn't use flanco standard; but a simple `IF nuevoEvento THEN` is not idiomatic for edge. So 2.
+
+Need maybe if `iec` for A5-1851 with type inside POU but compiles could be 1. Good.
+A5-4425 same. 
+A5-7771 uses METHOD, 1.
+A5-7832 uses METHOD, 1.
+
+Need maybe if A5-2042 uses type inside but no method; 1.
+
+Now final.

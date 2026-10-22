@@ -1,0 +1,1107 @@
+We need answer as evaluator. Need produce JSON list 24 objects in same order. Need read carefully. Need compute scores. We need obey user: no markdown, only JSON. Need verify.
+
+We need score each on 5 criteria: funcional, iec, coherencia, claridad, mantenibilidad, plus justifications. Some funcional_fijo/iec_fijo fixed. If fixed copy exact. If pass all funcional=3 fixed. If no compila funcional=0 iec=0 fixed. If compiles but fails steps functional 0/1/2. Need inspect each.
+
+We need be consistent. Need include just_func_iec: if both fixed? It says "una línea, o \"\" si las dos estaban fijadas". Actually if functional_fixed and iec_fixed both non-null, use "". If one fixed one not, need justification for IEC? since funcional fixed? just_func_iec covers both? likely write line explaining iec if functional fixed but iec not, maybe mention. If both non-null empty. Need produce.
+
+Need parse all 24. Let's list.
+
+Input order:
+1 B1-3577
+2 B1-8070
+3 B1-4667
+4 B1-3153
+5 B1-3916
+6 B1-4316
+7 B1-7103
+8 B1-3006
+9 B1-7637
+10 B1-3504
+11 B1-1729
+12 B1-8468
+13 B1-2708
+14 B1-7716
+15 B1-4160
+16 B1-3776
+17 B1-1689
+18 B1-7970
+19 B1-2577
+20 B1-2078
+21 B1-2077
+22 B1-6475
+23 B1-9711
+24 B1-4469
+
+Need evaluate.
+
+We need know CODESYS ST syntax peculiar: END_FUNCTION_BLOCK not standard? Actually IEC uses END_FUNCTION_BLOCK? CODESYS accepts. Some may use END_FUNCTION_BLOCK. Many no END_FUNCTION_BLOCK? Not compile? Actually CODESYS requires END_FUNCTION_BLOCK maybe? Noncompilables have missing END_IF? Let's inspect.
+
+Task: FB_Motor with inputs btnMarcha, btnParo, btnEmerg BOOL; output motorOn. logic: motor starts on Marcha pulse, latch; stop by Paro or Emerg; after emergency, must not restart even if Marcha still pressed. Need nuance: If Marcha remains pressed after emergency and released, no restart. In ST if using level-triggered btnMarcha, then after emerg released and btnMarcha still true, would restart unless latch or edge. So correct implementations use R_TRIG or emergency seal-in that requires release of Marcha to reset or permanent until paro. Need check those that pass, yes.
+
+Need score funct for compile but fail. Several fail step 6 (emergency release while Marcha still pressed: expected FALSE). These implementations restart on level of btnMarcha after emergency state resets? Let's inspect.
+
+Need perhaps identify fixed values: 
+- funcional_fijo not null for compile pass =3; no compile=0. For fails null.
+- iec_fijo null for compile pass; compiles but fails null; no compile 0.
+
+Need assign IEC for compiling codes. IEC 61131-3 standard. We can score 2/3. Need identify extension? Some use FB with R_TRIG, standard FB. If all compile and declarations correct, at least 2. Use idiomatic standard: Function Block with inputs/outputs, R_TRIG instanced correctly, boolean logic maybe 3. For codes using state variables and IF, still standard. Need perhaps 3 if correct. 1 if uses nonstandard e.g. comments? No. CODESYS uses END_FUNCTION_BLOCK maybe not standard? Actually IEC 61131-3 has END_FUNCTION_BLOCK? Let me recall: ST uses FUNCTION_BLOCK name ... END_FUNCTION_BLOCK. Standard? IEC 61131-3 second edition? Yes. May be okay. Some missing END_FUNCTION_BLOCK? Compile? Codes without END_FUNCTION_BLOCK might still compile in CODESYS if at EOF? But they compiled? We'll assess.
+
+Let's get each response detailed.
+
+Need avoid guessing model. Need maybe in justifications.
+
+For functional scoring of failing 8?: B1-3153, B1-7103, B1-2708, B1-1689, B1-7970, B1-4469. Also B1-8070 no compile fixed 0, B1-4160 no compile fixed 0. Maybe B1-7637 etc pass. Need identify all fails.
+
+Let's read protocol: 7 pasos:
+0 repose all false expected false
+1 Marcha true, expected true
+2 Marcha false expected true
+3 Paro true expected false
+4 Paro false Marcha true expected true
+5 Emerg true expected false (with Marcha true still? Step 5 sequence: from step4 Marcha true, Paro false -> expected true. Step5 btnEmerg true expected false. So at step5 Marcha remains TRUE, Emerg true)
+6 Emerg false expected false (Marcha still true). So key: after emergency released, Marcha still pressed, not restart.
+
+Failing step6 exactly: code starts if btnEmerg true/reset state then ELSIF Marcha? Many seal-in state variables? Let's inspect.
+
+B1-3153:
+VAR motorLatch
+IF btnEmerg THEN motorLatch := FALSE;
+ELSIF btnParo THEN motorLatch := FALSE;
+ELSIF btnMarcha THEN motorLatch := TRUE;
+END_IF
+motorOn := motorLatch;
+At step5 Emerg true: motorLatch false (if first condition true, no elsif). Step6 Emerg false, btnParo false, btnMarcha true -> motorLatch true. Fails. Function nominal mostly yes but emergency re-start fail. So functional maybe 1 due to fails in clear edge case (emergency release with Marcha still pressed). Need not 0 because nominal and paro normal? It passes 0-5? Step5 expected false yes, step6 fails. So one clear safety edge fail. Rubric: 1: works nominal but fails cases límite evidentes (flancos, reset, paro emergencia). It fails paro de emergencia nuance. So func=1.
+
+B1-7103 same as B1-3153 with estadoMotor. Fails step6. func=1.
+
+B1-2708:
+VAR bloqEmerg
+IF btnEmerg THEN bloqEmerg := TRUE; END_IF
+IF btnParo OR btnEmerg THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT bloqEmerg THEN motorOn := TRUE;
+END_IF
+IF NOT btnEmerg AND NOT motorOn THEN bloqEmerg := FALSE; END_IF
+At step5: Emerg true -> bloqEmerg true, motorOn false. Then second IF? execution order: first IF sets block true. second IF btnParo or Emerg true -> motorOn false. third IF NOT btnEmerg AND NOT motorOn? btnEmerg true -> condition false; so block stays true. Step6: Emerg false, Marcha true. First IF no. second: btnParo false, Emerg false; ELSIF btnMarcha AND NOT bloqEmerg => false (bloqEmerg true) so no assignment, motorOn keeps false. third IF NOT btnEmerg AND NOT motorOn -> true AND true => bloqEmerg false. Output false. Wait step6 expected false and passes? But harness says fails 1 step6? Wait if motorOn false at step6, pass. But code maybe step5? Let’s simulate step sequence carefully. At step5 from step4 motorOn true, Marcha true. Step5 btnEmerg true: first set bloqEmerg true. second if btnParo or btnEmerg => motorOn false. third if NOT btnEmerg AND NOT motorOn -> btnEmerg false? no, so not. Step6 btnEmerg false: first no. second condition: btnParo false, btnEmerg false; ELSIF btnMarcha AND NOT bloqEmerg: bloqEmerg true, so false. motorOn unchanged false. third: NOT btnEmerg true AND NOT motorOn true -> bloqEmerg false. Output false. Should pass step6. But results say fails step6? Need maybe harness fails? Wait maybe there is order: In second IF, if btnParo OR btnEmerg false, ELSIF btnMarcha AND NOT bloqEmerg. bloqEmerg true initially; false. no assignment, motorOn remains false. third resets block after. Step7? No. So code would pass? Did I miss that first IF at step6 doesn't clear. Let's re-read: Step6: emer false, march true. first IF btnEmerg false no. second IF btnParo false OR btnEmerg false => false. ELSIF btnMarcha true AND NOT bloqEmerg. But bloqEmerg? At step5 set true. Step5 third didn't clear. So false. no assignment; motorOn retains false. Third IF: NOT btnEmerg true AND NOT motorOn true -> bloqEmerg false. So passage. Why harness says fail pasos 6? Hmm maybe protocol sequence includes step5? The "falla 1 de 7 pasos (pasos 6; numerados desde 0)" means only step6 fail. Perhaps my interpretation of harness has different order? Let's recalc from step0.
+
+Maybe at step1 Marcha true: bloqEmerg initial? false. second IF paro/em false, ELSIF Marcha true AND NOT false => motorOn true. third IF NOT btnEmerg true AND NOT motorOn false => no. step2 Marcha false: second IF none, motorOn retains true. third no (NOT motorOn false). step3 Paro true: second IF btnParo true => motorOn false; third IF NOT btnEmerg true AND NOT motorOn true => bloqEmerg false. step4 Paro false Marcha true: second ELSIF Marcha true AND NOT block true => motorOn true. step5 Emerg true Marcha true: first block true. second IF emer true => motorOn false. third false. step6 Emerg false Marcha true: second ELSIF Marcha true AND NOT block false? Wait block is true, so false; no assignment; motorOn remains false. third clears block. passes. So why fail? Maybe because in second if they use ELSIF btnMarcha AND NOT bloqEmerg. But at step5, before second, first set bloqEmerg true. second condition btnParo OR btnEmerg true -> motorOn false. At end motorOn false. At step6 first no; second sees btnMarcha AND NOT bloqEmerg false; no assignment; so output false. Pass. Hmm maybe harness counts step6 fail due to output? Wait after step6 expected false, code false. So no fail. Something inconsistent? Let's examine code B1-2708 more: "Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0)." It may actually fail because after third IF at step6 clears block, but second IF already evaluated. It remains false. So no. Unless the harness applies inputs and checks output after multiple executions? Might run one cycle per step. The third IF clearing block doesn't affect second. so pass. There may be an issue: Code at step4: first IF no. second IF btnParo false/emergent false; ELSIF btnMarcha true AND NOT bloqEmerg. But after step3, third IF cleared block. so true. correct. Step5: block true, stop. Step6: output false. Pass. 
+
+Maybe harness fail is due to "step6" but code should pass. Need not overtrust? User says result_codesys given; we should use. But need maybe code reading. Yet fixed functional not set. We need score based on what results says? The instructions say use qué pasos fallan y protocolo. If result says fail step6, determine. But if code actually seems pass, maybe my reading missing something. Let's simulate exactly CODESYS semantics: 
+VAR bloqEmerg BOOL; no initial? defaults FALSE. 
+At step5: 
+IF btnEmerg THEN bloqEmerg := TRUE; END_IF
+IF btnParo OR btnEmerg THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT bloqEmerg THEN motorOn := TRUE;
+END_IF
+IF NOT btnEmerg AND NOT motorOn THEN bloqEmerg := FALSE; END_IF
+So yes.
+
+At step6:
+IF btnEmerg FALSE -> skip
+IF btnParo OR btnEmerg FALSE -> evaluate ELSIF: btnMarcha TRUE AND NOT bloqEmerg. What is bloqEmerg? At step5 third: since btnEmerg true -> condition false, block remains true. So false. Thus motorOn no assignment. Since motorOn previous false, remains false.
+Third IF: NOT btnEmerg TRUE AND NOT motorOn TRUE -> bloqEmerg := FALSE. 
+Output false.
+Thus passes step6. Maybe harness expects after step6, especially if step6 is releasing emergency with marcha still pressed it should FALSE, yes. So result data inconsistent. But we must use provided result "Falla 1... pasos 6". However if functional_fijo null, we assign. Hmm.
+
+Maybe the harness's "pasos 6" 0-indexed means the 7th step? There are only 0-6. So step 6 yes.
+
+Maybe actual result: could fail due to "bloqEmerg" resetting in third before second? No order. no.
+
+Could there be no END_FUNCTION_BLOCK? Compiles anyway. pass? Hmm.
+
+Maybe step6 actual: Since after step5, third did not reset. At step6, second no assignment, then third resets. Output false. So should pass. No issue.
+
+Maybe I misread "Falla 1 de 7 pasos (pasos 6; numerados desde 0)" means the harness fails at paso 6 because output is true? For output true, motorOn would need set true in second. That would happen if bloqEmerg false at step6. Could be because third IF at step5 clears block? It doesn't. Could be because CODESYS evaluates ELSIF with btnMarcha AND NOT bloqEmerg before second condition? no.
+
+What about if btnEmerg edge? At step5, btnEmerg true. First sets block true. Then second: condition (btnParo OR btnEmerg) true -> motorOn false. Since condition true, ELSIF skipped. Third skipped. Good.
+
+Could code have function block instance variable retained? yes.
+
+Maybe harness might call FB twice? no.
+
+Given inconsistency, but for scoring, if result says fails step6 and we trust harness, functional = 1 maybe. But if we read code and believe passes all, could be 3. But rule: "resultado_codesys" indicates if compiló y cuántos pasos del banco pasó o falló. I should use that as authoritative unless clearly impossible. But if I score B1-2708 as func=1, but code seems correct, will be inconsistent with "pasa all"? Need maybe not too overthink. There might be subtle: In code, line "* Liberar bloqueo de emergencia solo cuando no hay emergencia ni motor en marcha *" but condition `NOT btnEmerg AND NOT motorOn` at step3 paro also clears block. But that's fine. At step6, after second IF motorOn false, third clears block. Pass. Why harness fail? Hmm maybe step6 checks before third executes? It checks output, not after? The output is motorOn variable, which didn't change in second. no.
+
+Could fail step6 because at step6, due to `IF NOT btnEmerg AND NOT motorOn THEN bloqEmerg := FALSE;` being before output update? no output update assigned later? there is no later assignment.
+
+Maybe fail due to step6 after third clears block but code execution order: The output uses motorOn; the FB outputs are read by harness after entire FB call. So false.
+
+Maybe no fail. But the input says result_codesys "Falla 1... pasos 6". Might be generated by earlier evaluator and maybe not mathematically exact. We should respect it. Yet if someone manually re-simulates, they'd see it passes? Let's check similar B1-3006 passes. B1-2708 almost same except reset condition. It might actually pass too. When result says fail, maybe due to "no END_FUNCTION_BLOCK"? But compiles. Could there be a harness bug? Hmm.
+
+Let's not deviate from provided results. We'll score functional based on failed step: if result fails step6, maybe code missed safety. But code reading says otherwise? Maybe in CODESYS, motorOn and bloqEmerg variables are not automatically stateful between calls? They are VAR in function block instance. Yes.
+
+Let's proceed to all.
+
+Need maybe score "funcional" for fails 0/1/2. Some fail one step; if safety-related, likely 1. If failed step6 but otherwise nominal, dangerous. B1-3153 and B1-7103 clear fail step6: they use level-triggered marcha after emergency. That's fail safety. B1-2708 according to result fail step6? Hmm we can assign 1 for fail safety if trust. But if code reading suggests pass, maybe maybe step6 failure isn't safety? Let's inspect B1-7970, B1-4469 maybe fail step6 due to reset latch with NOT motorOn / NOT btnEmerg causing restart? Need simulate.
+
+Let's examine each failing compiled code to see if functional maybe 1 or 2. Functional rubric says 0: no implementa lógica pedida o falla en caso nominal. 1: funciona nominal pero falla límites evidentes. 2: correcto nominal y mayoría límites, fallas menores sin riesgo. Need see if failures are safety-risk. Step6 emergency not rearrancar are safety. So any failure step6 = falls in emergency case, not minor. But it's a clear edge. Could be 1.
+
+B1-3153: Fail step6, risk rearranque tras emergencia. So func=1.
+
+B1-7103: same as 3153. func=1.
+
+B1-2708: Per result fail step6. But code maybe actually passes. If trust, risk rearranque? Their code maybe no risk. Let's simulate if fail step6 somehow means motorOn true, that would happen if they reset block before testing marcha. They don't. Could be due to ordering if third IF in CODESYS executes maybe after? no. Hmm maybe if `NOT motorOn` uses old motorOn? In ST, assignments update variable immediately; yes. If the third IF after second, motorOn is false, so block reset. No.
+
+Maybe I should run mentally step5 with order differently: Some ST interpreters evaluate all IF statements with variables from beginning of cycle? No, CODESYS updates variables immediately? Yes in ST assignment immediate. Actually CODESYS ST assignments are immediate. So no.
+
+Maybe one subtlety: The line `IF NOT btnEmerg AND NOT motorOn THEN bloqEmerg := FALSE; END_IF;` after step6 clears block. But output false. no.
+
+Maybe harness might not execute step5 as single cycle; it might set btnEmerg TRUE and btnMarcha TRUE at step5, run until stable, then set btnEmerg FALSE at step6; output should be false after one evaluation. no.
+
+Could the harness's "falla paso 6" be due to expecting after step6 once it release emergency and marcha still pressed, not restart; code false. Should pass.
+
+Could result metadata be wrong? Given this is an evaluation setting, likely result_codesys is trustworthy. But if code logically passes, then maybe my semantic assumption wrong: In ST, `ELSIF btnMarcha AND NOT bloqEmerg` at step6: as discussed false. But maybe `bloqEmerg` was reset at step5 because `NOT btnEmerg` false? no.
+
+What if `bloqEmerg` in step5 third IF was true? Actually `bloqEmerg` is set true in first IF. Then third IF condition `NOT btnEmerg AND NOT motorOn`: btnEmerg true, so false. so block true. Good.
+
+I think harness result may be wrong but we should not worry. The earlier rubric: "Puntúa lo que el código es, no lo que el asistente probablemente quiso hacer." It says use resultado_codesys for functional. So we should use result.
+
+But if we assign func=1 to B1-2708 even though manual reasoning says correct, might be okay because failing step6 is given. Justify "falla el paso 6 del protocolo (rearranque indebido tras liberar emergencia con marcha pulsada)". But if code actually no rearranque, maybe justification inaccurate. Could choose func=2? Let's determine from code: what would actual functional be? It passes all? Then func should 3 fixed? But funcional_fijo null because result says fail. If actual code passes all, maybe result should not be null. But rule says fixed? "Si pasa TODOS los pasos del banco: funcional=3 (viene fijado)." The result says fail, so no. If I decide code actually passes all, I'd set func=3, but that violates "Si compila pero falla pasos: funcional 0,1,2...". So must trust results. 
+
+Let's keep result. For B1-2708, maybe fail step6 because output true due to a race? Hmm no.
+
+Next B1-1689:
+Same as 3153/7103. fail step6. func=1.
+
+B1-7970:
+Let's simulate. Code:
+VAR motorLatch, emergStopLatch
+IF btnEmerg THEN emergStopLatch := TRUE; motorOn := FALSE;
+ELSIF btnParo THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT emergStopLatch THEN motorLatch := TRUE;
+END_IF
+
+IF motorLatch AND NOT btnParo AND NOT btnEmerg THEN motorOn := TRUE;
+ELSE motorOn := FALSE; motorLatch := FALSE;
+END_IF
+
+IF NOT btnEmerg THEN emergStopLatch := FALSE; END_IF
+
+Step0: all false: first none; second IF motorLatch false -> else motorOn false, motorLatch false; third NOT btnEmerg true -> emergStopLatch false. ok.
+Step1 Marcha true: first ELSIF btnMarcha AND NOT emergStopLatch true -> motorLatch true. second IF motorLatch true and NOT paro true and NOT em true -> motorOn true; no else. third em false -> emergStopLatch false. ok.
+Step2 Marcha false: first none; second IF motorLatch true (from step1) and not paro/em true -> motorOn true; ok. Step3 Paro true: first ELSIF btnParo true -> motorOn false (but motorLatch still true? Wait first IF condition: btnEmerg false, ELSIF btnParo true -> motorOn := FALSE; motorLatch remains true from prior. Then second IF motorLatch true AND NOT btnParo (false) AND NOT btnEmerg true => false; ELSE motorOn := FALSE; motorLatch := FALSE. So output false and latch clear. ok.
+Step4 Paro false Marcha true: first ELSIF Marcha AND not emerg -> motorLatch true. second IF motorLatch true AND not paro true AND not em true -> motorOn true. ok.
+Step5 Emerg true Marcha true: first IF btnEmerg true -> emergStopLatch true; motorOn false; motorLatch remains true? step4 motorLatch true, yes. Then second IF motorLatch true AND NOT paro true AND NOT btnEmerg false -> ELSE motorOn false; motorLatch := FALSE. third IF NOT btnEmerg false -> skip. So at end emergStopLatch true, motorLatch false, motorOn false. ok.
+Step6 Emerg false Marcha true: first none? ELSIF btnMarcha AND NOT emergStopLatch: emergStopLatch true -> false; no. second IF motorLatch false (from step5 else) -> ELSE motorOn false; motorLatch false. third IF NOT btnEmerg true -> emergStopLatch := FALSE. Output false. Wait passes step6! But result says fail step6? Hmm again code appears pass. Wait maybe there is nuance: At step6, first IF btnEmerg false, ELSIF btnParo false, ELSIF btnMarcha AND NOT emergStopLatch. emergStopLatch true at start, so false. So no. Then second clears. third resets. output false. Pass. Result says fail. Hmm.
+
+Could it fail step6 because at step6, `emergStopLatch` was reset at step5? third IF NOT btnEmerg true at step5? At step5 btnEmerg true so no. so true. pass.
+
+Maybe what if first IF at step5 sets emergStopLatch true, then second IF ELSE sets motorLatch false. Step6 motorLatch false so false. pass.
+
+So again inconsistency. We'll still trust result? Hmm.
+
+Maybe B1-7970 actually could pass all. But result says fail. It's weird. Let's see if there are other fail with similar logic that may actually pass.
+
+B1-4469:
+VAR motorLatch, emergStop
+IF btnEmerg THEN motorOn := FALSE; emergStop := TRUE;
+ELSIF btnParo THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT emergStop THEN motorOn := TRUE;
+END_IF
+motorLatch := motorOn;
+IF motorLatch THEN motorOn := TRUE;
+END_IF
+IF NOT motorOn THEN emergStop := FALSE;
+END_IF
+
+Step0: first none; motorLatch := false; second no; third IF NOT motorOn true -> emergStop false. ok.
+Step1: first ELSIF Marcha AND NOT emergStop -> motorOn true. motorLatch := true; second no; third IF NOT motorOn false. ok.
+Step2: first none; motorLatch := motorOn (true); second motorOn true; third false. ok.
+Step3 paro true: first ELSIF paro -> motorOn false; motorLatch := false; second no; third IF NOT motorOn true -> emergStop false. ok.
+Step4 paro false Marcha true: ELSIF Marcha and not emergStop -> motorOn true. motorLatch true; second no; third false. ok.
+Step5 Emerg true Marcha true: first IF btnEmerg true -> motorOn false; emergStop true. motorLatch := motorOn false; second no; third IF NOT motorOn true -> emergStop := FALSE! Ah! It resets emergStop immediately at the same cycle because motorOn false. So at end step5: emergStop false, motorOn false. Step6 Emerg false Marcha true: first ELSIF Marcha AND NOT emergStop true -> motorOn true. Fails step6. Yes harness fail correct.
+
+For B1-7970, their third reset only `IF NOT btnEmerg THEN emergStopLatch := FALSE`. So no immediate reset. Step6 passes. Why result says fail? Let's check maybe because second IF in step6? no. Not fail.
+
+Wait step6 for B1-7970: after step5, first IF sets emergency true and motorOn false. Second IF: `IF motorLatch AND NOT btnParo AND NOT btnEmerg THEN motorOn := TRUE; ELSE motorOn := FALSE; motorLatch := FALSE; END_IF`. Conditions false due btnEmerg, so else clears motorLatch. Third IF not btnEmerg false. So at end emergStop true, motorOn false.
+
+Step6: first IF btnEmerg false; ELSIF btnParo false; ELSIF btnMarcha AND NOT emergStopLatch: emergStopLatch true from step5, so false. second IF motorLatch false -> else clear. third resets emergStop false. Output false. Pass. So result fail step6 impossible. Unless CODESYS evaluates `NOT emergStopLatch` using value from before first IF? At start emergStopLatch true? yes.
+
+Could harness's step5 maybe doesn't set btnEmerg true? It does. No.
+
+Maybe result_codesys says "Falla 1 de 7 pasos (pasos 6)" but maybe due to a harness that only checks outputs BEFORE internal variables reset? It runs each step multiple times? Hmm.
+
+This may be stochastic? But user has provided result; maybe we should use.
+
+Let's hold this issue. Need maybe in final justifications avoid specific code behavior if unsure. But for functional of B1-7970, if fail step6 according to result, describe risk. 
+
+Need ensure final answer only JSON. Could have 24 objects.
+
+Need compute all criteria.
+
+Let's decide methodology.
+
+Functional:
+- no compile: 0 fixed.
+- pass all: 3 fixed.
+- fail compiled: based on failing steps. If fail only step6 (safety) => 1 (nominal but safety edge fail). If maybe fail less serious? All fail step6. So each fail = 1. But maybe B1-2708 and B1-7970 maybe code actually pass; if using result, still 1. Could maybe score 2 for "correcto en nominal y mayoría límites; fallas menores sin riesgo"? The failure is emergency rearranque risk, not minor. So 1.
+
+Need check B1-8070/4160 no compile => func=0, iec=0 fixed. Other criteria.
+
+IEC:
+For compiled passing and failing. Need assign.
+- Pass uses standard FB with R_TRIG? That's IEC 61131-3 standard. Most use R_TRIG or IF. All declarations good. I'd assign 3 for idiomático standard blocks (R_TRIG) or 2 for okay. Need differentiate. Maybe those using R_TRIG get IEC 3: B1-3577, B1-3916, B1-1729, B1-7716, B1-2078 (uses R_TRIG but in IF), B1-2077. Also maybe B1-4316 no R_TRIG but uses BOOL, IF; standard. We can give 2? The rubric: 3 if "usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." R_TRIG instances definitely 3. Others no standard blocks but still standard ST. Could be 2 or 3. Need be careful not to inflate.
+
+IEC 2: "compila sin cambios; declaraciones y tipos correctos." So any compiles correct is at least 2. IEC 3: additionally "usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." The task is simple logic; using R_TRIG for edge is idiomatic. For those level-triggered but safe maybe less. Could give 3 to all compiled that use correct FB? But no, if they use a latch with IF and edge? That's still not using standard edge triggers, but correct.
+
+Need maybe consistency: For no compile iec=0 fixed. For compiled but maybe not standard due to missing END_FUNCTION_BLOCK? If compiles in CODESYS, maybe syntax valid. Could assign 2 or 3. Let's examine missing END_FUNCTION_BLOCK: some codes omit END_FUNCTION_BLOCK and still compile? Maybe CODESYS allows? It might use POUs ending with END_FUNCTION_BLOCK? Actually CODESYS requires `END_FUNCTION_BLOCK`? If absent, maybe compile error? But results say compiles for many missing. The code in input often has no final END_FUNCTION_BLOCK; e.g., B1-3153, B1-7103, B1-3006, B1-7637, etc. They compile. CODESYS may not require END_FUNCTION_BLOCK? Actually it may treat end of file. Standard maybe requires END_FUNCTION_BLOCK. If absent but compiles, maybe not standard? But user says CODESYS. We evaluate IEC standard. Missing END_FUNCTION_BLOCK could be considered syntax shorthand? Many trainers may allow? But if CODESYS accepts, it's the dialect. However IEC 61131-3 requires END_FUNCTION_BLOCK? Let me recall: IEC 61131-3 ST POU: `FUNCTION_BLOCK <name> ... END_FUNCTION_BLOCK`. Yes. But CODESYS may accept without? It might auto-insert? The codes without END_FUNCTION_BLOCK compiled. But are they IEC compliant? Maybe not strictly. The rubric "Cumplimiento IEC 61131-3" 2: compila sin cambios; declaraciones y tipos correctos. It says "compila sin cambios" as proxy. Since they compile in CODESYS, could be 2, not necessarily penalize missing END_FUNCTION_BLOCK. For 3, would require idiomatic. Missing end block not idiom. Hmm.
+
+Need not be too strict with END_FUNCTION_BLOCK maybe because the assistant was asked "entrega únicamente el código". They include it not always. But evaluator user: "Repartir el código entre declaración e implementación no penaliza." doesn't mention END. We can consider compiles in CODESYS = IEC 2. For 3 only if properly uses standard R_TRIG etc and has end block maybe. We'll see.
+
+Let's create scoring table.
+
+I need assign coherencia, claridad, mantenibilidad.
+
+Rúbrica:
+
+Coherencia lógica:
+0: condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar.
+1: lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave.
+2: sin contradicciones; inicialización correcta; transiciones completas.
+3: además robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas.
+
+Claridad estructural:
+0: sin estructura reconocible; nombres crípticos; sin comentarios.
+1: estructura básica, pero nombres pobres o comentarios ausentes o incorrectos.
+2: nombres descriptivos, secciones ordenadas, comentarios útiles.
+3: además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué.
+
+Mantenibilidad:
+0: valores mágicos por todas partes; imposible modificar sin reescribir.
+1: modificable con esfuerzo; constantes parcialmente parametrizadas.
+2: parámetros como variables o constantes declaradas; cambios localizados.
+3: además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica).
+
+This is simple no magic values. Most code no constants. We can score 2 generic. For distinct maybe 1/2/3.
+
+Need maybe evaluate 24. Let's go through each in detail. I'll make a mental table.
+
+Because final justifications must be one line each.
+
+Need use codes exactly. We'll produce in same order.
+
+Let's inspect each:
+
+### 1. B1-3577
+Code:
+FUNCTION_BLOCK FB_Motor
+VAR_INPUT declarations ...
+VAR_OUTPUT
+VAR flancoMarcha : R_TRIG
+flancoMarcha(CLK := btnMarcha);
+motorOn := (flancoMarcha.Q OR motorOn) AND NOT btnParo AND NOT btnEmerg;
+END_FUNCTION_BLOCK
+
+Functional fixed 3. IEC null. Need assign IEC. Uses R_TRIG correctly, standard, declarations good, comments. IEC=3 likely.
+Coherence: Correct, robust, edge detection ensures no rearranque. Initialization? R_TRIG instance variable state. No contradictions. Should be 3? Interlocks: Stop priority, edge trigger. Could be 3: robust. Yes.
+Clarity: Names good, comments good, structure clear. Could be 3? It is simple but uses standard FB. Maybe 2 or 3. Rúbrica 3 requires modularization adecuada (FB reutilizable, separación lógica/E/S). It is a FB with separated inputs/outputs, but not multiple POU. For simple task, 3 maybe. Comments explain why. Should we give 3? Need differentiate excellent. This is excellent. Yes clarity 3.
+Mantenibilidad: 2? It has variable names, no magic. Extensible? Could add params? But no duplicación. The FB is appropriate, inputs/outputs separated. Could be 3? Rubric 3: "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)" Here inputs already parameters of FB. Logic simple. Could give 3. But if we give 3 to almost all good, maybe less variance. This one deserves 3? Maybe mantenibilidad 2 because no constants; simple. Extensible by FB inputs. I'd give 3 maybe.
+Justificaciones: 
+just_coherencia: "La lógica con R_TRIG y prioridad de paro no tiene contradicciones y cubre enclavamiento y emergencia."
+just_claridad: "Declaraciones y comentarios claros; separación E/S lógica en un FB."
+just_mantenibilidad: "Entradas/salidas del FB bien definidas; sin valores mágicos y lógica sin duplicar."
+
+Need maybe if iec_fijo null and func fixed, just_func_iec should be line about IEC. Since one fixed? "una línea, o \"\" si las dos estaban fijadas" – funcional_fijo is 3, iec_fijo null -> not both fixed, so write line. Good.
+
+### 2. B1-8070 no compile
+No compile fixed func=0 iec=0. Other criteria by reading.
+Code has IF statements but no END_IF? Wait code:
+FUNCTION_BLOCK FB_Motor... VAR...
+// Programa principal
+IF btnEmerg THEN
+    ...
+ELSEIF emergenciaActiva THEN
+    ...
+ELSEIF btnParo THEN
+    ...
+ELSEIF btnMarcha THEN
+    ...
+END_IF;
+Actually it has `END_IF;` at end? yes line 13 "END_IF;"? Let's read: 
+IF ... THEN
+...
+ELSEIF emergenciaActiva THEN
+...
+ELSEIF btnParo THEN
+...
+ELSEIF btnMarcha THEN
+...
+END_IF;
+Need check: the code string in JSON after "ELSEIF btnMarcha THEN motorOn := TRUE; END_IF;" It shows `END_IF;`? Text: 
+"ELSEIF btnMarcha THEN\n    // Si se presiona el botón de marcha\n    motorOn := TRUE;   // Enciende el motor\nEND_IF;"
+Actually snippets show `END_IF;`? For B1-8070 final line: "END_IF;" yes? Wait user text: "END_IF;" maybe? In codigo_st: "... motorOn := TRUE;   // Enciende el motor\nEND_IF;" Actually I see final before closing quote: `END_IF;`? Let's re-read:
+"ELSEIF btnMarcha THEN\n    // Si se presiona el botón de marcha\n    motorOn := TRUE;   // Enciende el motor\nEND_IF;"
+Yes.
+
+But compiler errors say "Se esperaba ';' en lugar de 'emergenciaActiva'" at line 5, etc. That seems due to missing semicolons at line 5? Actually code has `btnEmerg : BOOL;   // Botón de paro de emergencia` fine. Why errors "se esperaba ';' en lugar de 'emergenciaActiva'"? Maybe because after `THEN` there is a comment? Hmm. Wait maybe the actual code uses `ELSEIF`? CODESYS ST may use `ELSIF` not `ELSEIF`? Actually CODESYS uses `ELSIF`? In Structured Text IEC, it's `ELSIF` (not ELSEIF). CODESYS often uses `ELSIF`? I think CODESYS supports `ELSIF`; maybe `ELSEIF` invalid? No, standard is `ELSIF`. CODESYS might support `ELSIF` but not `ELSEIF`. The compiler errors "Se esperaba ';' en lugar de 'emergenciaActiva'" at line 5? Maybe it didn't recognize `ELSEIF` token; we see "ELSEIF emergenciaActiva THEN" in code. It tokenizes `ELSEIF`? Actually in ST standard, the keyword is `ELSIF`, not `ELSEIF`. CODESYS may not accept `ELSEIF`. That explains no compile: `ELSEIF` invalid. Also maybe semantic error line5. So no compile.
+
+Now score coherence/clarity/mantenibilidad despite no compile.
+
+B1-8070: Logic: It tries to latch emergency flag but never resets; has `IF btnEmerg THEN ... ELSEIF emergenciaActiva THEN ...`. Because ELSEIF invalid. Could be coherent? It would not compile. But if corrected syntax to ELSIF, the logic: emergency flag latches true; after emergency false, `ELSIF emergenciaActiva` keeps motorOn false forever, never rearranca; but also after a normal paro? It may also prevent rearranque forever until? no reset. It's safe but too strict. Could be scored coherencia: 1 or 2? There is a latch emergenciaActiva never reset: after emergency, motor cannot restart (even after releasing Marcha and pressing again) because flag stays true. The task doesn't specify reset method; after emergency, it must not restart while Marcha still pressed, but likely should allow restart after a new pulse? Wait task: "tras un paro de emergencia el motor no debe rearrancar aunque el botón de marcha siga pulsado." It doesn't necessarily require allowing restart after a new pulse; maybe after reset emergency, normal start should work? Usually yes, but could require explicit reset? The protocol step6 only releases emergency with marcha still pressed; no step for new pulse. So permanent lock may pass protocol? But logic: flag true forever means no rearranque ever; not explicitly tested. Coherence: no contradictions, but transition incomplete (no reset). The variable `emergenciaActiva` initialized FALSE but latched true; no condition to reset. This is a "estado muerto" after emergency? It prevents operation. Rubric coherencia 0: variables sin inicializar con efecto, o estados muertos que impiden operar. Here an emergency latch that cannot be reset may be considered state dead preventing operation. But if intentional safe latch? Could be plausible because emergency reset external not specified. But no manual reset input, so after emergency FB becomes unusable. That's not robust/reusable. For a simple code that didn't compile due ELSEIF, I'd give coherencia 1 maybe "lógica de enclavamiento de emergencia sin reset; incompleta tras emergencia". Claridad: names good, comments present but syntax wrong. Could be 1? Since comments helpful but structure basic. Mantenibilidad: no magic, but syntax error; maybe 1.
+
+Need use fixed just_func_iec = "" because both func and iec fixed. The object for no compile must have just_func_iec "" exactly? user says: "just_func_iec: una línea, o \"\" si las dos estaban fijadas". For B1-8070 funcional_fijo=0, iec_fijo=0 -> both fixed -> "".
+
+Need assign coherencia, claridad, mantenibilidad. Maybe coherencia 1, claridad 1, mantenibilidad 1 or 2. Let's be consistent.
+
+### 3. B1-4667
+Compiles passes -> functional fixed 3. IEC null.
+
+Code:
+FUNCTION_BLOCK FB_Motor
+VAR_INPUT
+...
+VAR_OUTPUT
+VAR bloqEmerg : BOOL;
+IF btnEmerg THEN bloqEmerg := TRUE; motorOn := FALSE;
+ELSIF btnParo THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT bloqEmerg THEN motorOn := TRUE;
+END_IF;
+IF bloqEmerg AND NOT btnEmerg AND NOT btnMarcha THEN bloqEmerg := FALSE;
+END_IF;
+END_FUNCTION_BLOCK
+
+Functional 3. It uses no R_TRIG but uses emergency latch with release only when emerg false and marcha false. That satisfies. IEC: compiles, standard declarations, uses IF, BOOL. No standard blocks but correct. Could be 2 or 3. Since behavior uses custom latch instead of R_TRIG, but it's idiomatic? For simple logic, maybe 2. We need decide. There is no R_TRIG. I'd give IEC 2, maybe 3 if we consider standard syntax and POU appropriate. But to make 3 only for R_TRIG idiomatic. This one is standard and compiles, correct types. I'd give 2.
+Coherence: It correctly sets/clears block only when no emerg and no marcha. But consider step5: btnEmerg true, Marcha true. It sets block true and motor off. Step6: Emerg false, Marcha true. First IF: no; block true clears? second IF `bloqEmerg AND NOT btnEmerg AND NOT btnMarcha`: btnMarcha true -> false. So block remains true. Output remains false (since second IF? Wait the control IF: `IF btnEmerg THEN ... ELSIF btnParo ... ELSIF btnMarcha AND NOT bloqEmerg THEN ...` At step6, `bloqEmerg` true, btnMarcha true -> condition false, no assignment; motorOn stays false from step5. Good. Then if Marcha released later, block clears. Good. No contradictions. Could be coherencia 3? It has robust interlock. It doesn't allow rearranque while Marcha held. Yes robust. But it has a potential if btnParo and btnEmerg simultaneously: first branch emerg sets block and motor off, but does not clear block; paro also not evaluated. OK. However if btnParo is pressed while motor running after previous btnEmerg? fine. It manages. I'd give 3 maybe.
+Coherencia 3? The comment says "El bloqueo de emergencia se libera unicamente cuando btnEmerg ya no esta activo Y btnMarcha no esta pulsado" correct. Very robust. 3.
+Clarity: Names descriptive, comments useful, structure clear. 2 or 3. It is a FB. Comments explain. It doesn't have R_TRIG but okay. I'd give 2 because comments a bit verbose but not explaining why? Actually they explain. Could be 2. For excellent clarity maybe 3 for modularization. But no real modularization beyond one FB. Still simple. Use 2.
+Mantenibilidad: 2. Constants? no. Changes local. Could be 3? It's not extensible beyond block variable. Need maybe 2. But it's a FB with params. Could be 3. Hmm.
+
+Let's define more systematic rubric mapping:
+
+For simple B1, I'd award:
+- IEC 3 to those using R_TRIG correctly; IEC 2 to those using correct simple ST with boolean/IF; maybe IEC 2 could be "compiles without changes" not necessarily idiomatic. Let's give 3 only to R_TRIG/edge plus clear. 
+- Coherencia 3 to those with robust safety interlock (edge or safe block). 
+- Claridad 2 to those with good names/comments but no specific modularization beyond FB? 3 requires modularization adecuada. Since all are FBs, maybe the FB itself is POU separation? The rubric's 3 says "además modularización adecuada (FB reutilizable, separación entre lógica y E/S)". This is already a FB with inputs/outputs. For this simple task, that's enough? But if all FBs then all get 3? Need variance. I think we can award 3 to those with especially good comments, no criticized. So maybe B1-3577 and B1-3916 etc.
+
+- Mantenibilidad 2 generally; 3 to those with clear FB inputs, no logic duplication. Many would get 2.
+
+Let's maybe keep each object values not too high.
+
+Need think about no compile codes: coherence/clarity/mantenibilidad lower.
+
+Let's continue.
+
+### 4. B1-3153 (compiles fail step6)
+Functional null. IEC null. Need assign.
+Code:
+VAR motorLatch BOOL;
+IF btnEmerg THEN motorLatch := FALSE;
+ELSIF btnParo THEN motorLatch := FALSE;
+ELSIF btnMarcha THEN motorLatch := TRUE;
+END_IF
+motorOn := motorLatch;
+
+IEC: compiles, declarations and types correct. Syntax uses ELSIF (correct) and no END_FUNCTION_BLOCK? Actually no END_FUNCTION_BLOCK? It doesn't include final END_FUNCTION_BLOCK. But compiles. Is `ELSIF` standard (yes). Could give IEC 2. It uses no edge blocks; logic simple. IEC 2.
+Coherence: As analyzed, fails emergency restart; cause: using level of btnMarcha to set latch after emergency. Does this count contradictory? Not exactly; condition dead? There is no memory of emergency; after emergency release with Marcha still true, the level triggers start. This is an incomplete transition / safety gap. According to rubric: 1 "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." But this gap is serious. 0? "estados muertos que impiden operar" opposite? Hmm. It is coherent syntactically and for nominal sequencing. It fails safety edge. I'd put coherencia 1: "Hay una condición de rearranque automático tras emergencia al mantener Marcha; transición incompleta." That is logical safety flaw maybe not contradictory but not robust. 1.
+Claridad: Variables name `motorLatch` clear; comments present but somewhat sparse. Structure simple. 1 or 2. It has comments, but no section? I'd give 2 because names descriptive and comments. But there's no END_FUNCTION_BLOCK? not require. Maybe 2.
+Mantenibilidad: 1 or 2. No magic; logic local. Could be 2. But lacks separation? It's FB. I'd give 1 maybe because logic not parameterized? It's just one variable. Need use range. Let's consider: Most simple code with descriptive names and no constants can be 2. So maintainability 2.
+
+### 5. B1-3916
+Pass all. Uses R_TRIG. Similar to B1-3577 but less comments? Code:
+VAR rtMarcha : R_TRIG; 
+rtMarcha(CLK := btnMarcha);
+motorOn := (rtMarcha.Q OR motorOn) AND NOT btnParo AND NOT btnEmerg;
+END_FUNCTION_BLOCK
+Functional fixed 3. IEC: R_TRIG correct, standard, 3.
+Coherence: robust with edge and stop priority. 3.
+Clarity: names descriptive, comments explain. Could be 3? Maybe yes. It has no big comments but enough. Structure clear. 3.
+Mantenibilidad: 2 or 3. Could be 2. It's one expression; no duplication. FB inputs. Maybe 3. Hmm. I'd give 2 to some. But if I give B1-3916 3, it's excellent. Maybe okay.
+
+### 6. B1-4316
+Pass all fixed 3. Code uses `bloqueado` latch:
+1. IF btnEmerg THEN bloqueado := TRUE; END_IF
+2. IF NOT btnEmerg AND NOT btnMarcha THEN bloqueado := FALSE; END_IF
+3. IF btnEmerg OR btnParo OR bloqueado THEN motorOn := FALSE;
+ELSIF btnMarcha THEN motorOn := TRUE;
+END_IF;
+
+Functional 3 fixed. But does this actually pass step6? Let's simulate: step5 emerg true, Marcha true: first block true; second no; third condition `btnEmerg OR ...` -> motorOn false. Step6 emerg false Marcha true: first no; second `NOT btnEmerg AND NOT btnMarcha` false (Marcha true) so block true; third condition `btnEmerg OR btnParo OR bloqueado` true -> motorOn false. Pass. Once Marcha releases later, block clears. Good.
+IEC: standard IF, bool. No edge but safe block. Could give 2. But is it idiomatic? Not using R_TRIG. I'd give 2.
+Coherence: It uses a blocking flag with reset on no marcha and no emerg. This is robust, but note line 2 resets block every cycle when no marcha no emerg, even after a normal stop. That's fine. However, if btnEmerg and btnMarcha false, then at next cycle after emergency if Marcha released, block resets. OK. No contradictions. Interlocks complete. 3.
+Clarity: Comments are longer, explain why. Names good. Structure maybe enough. 3? It has comments in block, separated. Could be 3. But if variable `bloqueado` okay. I'd give 3.
+Mantenibilidad: 2 maybe. It has logic in 3 IF statements, all clear. Could be 2.
+
+### 7. B1-7103
+Similar to B1-3153 with estadoMotor. Fail step6. Functional likely 1. 
+IEC: compiles, declarations good, uses IF. IEC 2.
+Coherence: same as B1-3153; level-driven restart after emergency. 1.
+Clarity: names `estadoMotor` clear, comments simple. 2.
+Mantenibilidad: 2.
+
+### 8. B1-3006
+Pass all fixed 3. Code:
+VAR bloqueado : BOOL;
+IF btnEmerg THEN bloqueado := TRUE;
+END_IF
+IF btnEmerg OR btnParo THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT bloqueado THEN motorOn := TRUE;
+END_IF;
+No release of block! Wait only activa but never resets. Let's simulate protocol: 
+Step0 all false: block false (uninitialized default? In CODESYS VAR BOOL default false). Control: emer/paro false; ELSIF marcha false -> no. motorOn initial false. 
+Step1 marcha true: first no; control: emer/par false; ELSIF marcha AND NOT bloqueado -> motorOn true.
+Step2 marcha false: no; motorOn retains true.
+Step3 paro true: control btnEmerg OR btnParo true -> motorOn false. 
+Step4 paro false marcha true: block false, motorOn true.
+Step5 emer true marcha true: first block true; control emer true -> motorOn false.
+Step6 emer false marcha true: first no; control emer/par false; ELSIF marcha AND NOT block -> false; motorOn remains false. Pass step6. So it passes protocol despite block never clearing. But after step6, if Marcha released and pressed again, block still true, so can't restart. Task didn't test that but likely not ideal because emergency lock should maybe require reset? The comment says "bloqueo permanente hasta reset manual" but there is no manual reset input. Passing harness because it never needs restart after emergency. 
+Coherence: Has latch stuck after emergency; no reset path. This is "estados muertos que impiden operar" after emergency. But task only says no rearranque after emergency with marcha pressed. Permanent lock might be acceptable? A real motor emergency should require manual reset. With no reset input, the FB is permanently unusable after emergency. In terms of coherence, maybe 2? It's coherent and safe, but incomplete transition (no reset). Rubric 2 says "sin contradicciones; inicialización correcta; transiciones completas." Transitions completas? The emergency block never transitions back; not complete. So maybe 1. But functional passes all due harness. Coherencia could be 1 or 2. Need score "lo que el código es": It never rearranca after emergency; no contradiction. But transition not complete. Could be 2? Hmm.
+
+User says "Coherencia lógica 3: además robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas." This code has emergency state inalcanzable reset? Actually the state `bloqueado` becomes true and never false; subsequent `btnMarcha AND NOT bloqueado` becomes dead. But maybe that's intended (manual reset externally by reinit). Since no reset, it's an stato muerto? "estados muertos que impiden operar" under 0. But it still can operate until first emergency. So 0? No, 0 implies contradictions or states that prevent operation; after emergency, operation prevented. This is a severe missing reset. I'd give 1 for incomplete transition. But is it fair? Functional fixed 3 due harness; however coherencia can be lower. Let's set coherencia 1 for codes with permanent emergency latch and no reset. But then many pass all fixed have coherencia 1? B1-7637, B1-3006, B1-3504, B1-3776, B1-9711, B1-6475 maybe. Need treat similarly.
+
+Let's examine B1-3006 more:
+```
+IF btnEmerg THEN bloqueado := TRUE; END_IF;
+IF btnEmerg OR btnParo THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT bloqueado THEN motorOn := TRUE;
+END_IF;
+```
+Comment: "Bloqueo permanente hasta reset manual". Actually no reset manual. If this were real, after emergency, you cannot reset. The protocol step6 only needs no auto restart. So it passes. Coherence: variable `bloqueado` never reset, creating un reinicio after emergencia. That's maybe a design choice safe but incomplete. I'd score coherencia 1? Or 2? Rubric 2 says transiciones completas: no, missing reset. 1? Let's define 1 for partial latch with no reset, since it causes a dead state after an emergency (not contradictory). 2 maybe for correct but not robust? Hmm.
+
+Maybe better: Coherencia 2 for code that is logically consistent but may be overly restrictive (emergency latch permanent). Coherencia 3 for robust with safe reset. Coherencia 1 for code whose logic causes dangerous automatic restart. Coherencia 0 for contradictions/noncompiling? But noncompiling not automatically 0 for coherence, but we can assign. I'd use:
+- If passes/compiles but dangerous restart -> coherencia 1 (incomplete/safety).
+- If passes and safe but no reset path (permanent lock) -> coherencia 2 (no contradictions, but transitions not complete).
+- If noncompile with syntactical issues but conceptually similar -> maybe 1 or 0.
+
+This seems fair.
+
+Let's assign B1-3006 coherencia 2 (safe but no reset path). 
+Clarity: comments explain, but no reset means comment "hasta reset manual" but none; still names good. 2.
+Mantenibilidad: 2.
+
+IEC: standard IF with nonstandard? Syntax uses `ELSIF` correct. It compiles. IEC 2 maybe (no standard edge block). But can still be 2.
+
+### 9. B1-7637
+Pass all fixed 3. Code:
+VAR emergenciaActiva : BOOL := FALSE;
+IF btnEmerg THEN motorOn := FALSE; emergenciaActiva := TRUE;
+ELSIF emergenciaActiva THEN motorOn := FALSE;
+ELSIF btnParo THEN motorOn := FALSE;
+ELSIF btnMarcha THEN motorOn := TRUE;
+END_IF;
+No reset. Similar to B1-8070 but uses ELSIF correctly, passes. 
+Functional pass because step6 emergency release? At step5: btnEmerg true -> emergenciaActiva true, motorOn false. Step6: btnEmerg false, emergenciaActiva true -> ELSIF emergenciaActiva -> motorOn false. Pass. But no reset ever, so after emergency, can't restart. No new pulse tested. 
+IEC: compiles, standard IF; but uses `btnEmerg` as normal, no edge. IEC 2.
+Coherence: Emergency latch true forever, no reset; coherent but incomplete. 2. 
+Clarity: names and comments good. 2.
+Mantenibilidad: 2.
+
+### 10. B1-3504
+Pass all fixed 3. Code:
+VAR bloqueado : BOOL;
+IF btnEmerg THEN bloqueado := TRUE; END_IF
+IF btnEmerg OR btnParo THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT bloqueado THEN motorOn := TRUE;
+END_IF;
+Same as B1-3006? Yes except comment "Bloqueo permanente hasta reset manual" same. No reset. So functional pass. 
+IEC 2.
+Coherence 2 (safe but no reset path).
+Clarity 2.
+Mantenibilidad 2.
+
+### 11. B1-1729
+Pass all fixed 3. Code uses R_TRIG:
+rtMarcha(CLK := btnMarcha);
+motorOn := (motorOn OR rtMarcha.Q) AND NOT btnParo AND NOT btnEmerg;
+Same as B1-3577 but no END? Actually has END_FUNCTION_BLOCK. 
+IEC 3.
+Coherence 3 (robust edge and stop priority).
+Clarity 2? It has comments; not as detailed but good. Could be 3. 
+Mantenibilidad 2.
+
+Need maybe not give too many 3. We'll decide.
+
+### 12. B1-8468
+Pass all fixed 3. Code:
+VAR estadoMotor : BOOL := FALSE; emergenciaActiva : BOOL := FALSE;
+IF btnEmerg THEN emergenciaActiva := TRUE; estadoMotor := FALSE;
+ELSIF btnParo THEN estadoMotor := FALSE;
+ELSIF btnMarcha AND NOT emergenciaActiva THEN estadoMotor := TRUE;
+END_IF
+motorOn := estadoMotor;
+No reset of emergenciaActiva. Pass step6 because latch true. 
+IEC 2.
+Coherence 2 (safe but no reset).
+Clarity 2.
+Mantenibilidad 2.
+
+### 13. B1-2708
+Compiles fails step6 per result. We need assign functional maybe 1. Let's maybe inspect if no reset? Code has reset: 
+IF btnEmerg THEN bloqEmerg := TRUE; END_IF
+IF btnParo OR btnEmerg THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT bloqEmerg THEN motorOn := TRUE;
+END_IF
+IF NOT btnEmerg AND NOT motorOn THEN bloqEmerg := FALSE;
+END_IF
+This code actually passes pass. But we use result fail step6? Hmm. If I score functional 1, I need perhaps not call code robust. But code should be robust. Could assign func=2? According to result fails a safety step. The rubric: "1: funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." This exactly. So func=1. But if I later write justification "falla paso 6" even though code improbable. OK.
+
+IEC: compiles standard. It has `ELSIF`. IEC 2 (or maybe 2). It uses block latch but no edge. Also no END_FUNCTION_BLOCK? Not that I remember? The code ends `END_FUNCTION_BLOCK`? Actually codigo_st: "IF NOT btnEmerg AND NOT motorOn THEN\n    bloqEmerg := FALSE;\nEND_IF;\n\nEND_FUNCTION_BLOCK" Yes. IEC 2.
+Coherence: It has a reset condition `NOT btnEmerg AND NOT motorOn`. This resets emergency block immediately after any stop if motorOn false, including normal paro. But that's okay. If step6 actual pass, robust. But result fail. What coherence? The logic is coherent; maybe if fail, not. But scoring based on code reading. I'd give 2 or 3. Since it has proper reset and no contradictions, maybe 3? Wait if output false at step6 then robust. It handles simultaneous inputs? If emerg and paro: first block true, second stop false? second `IF btnParo OR btnEmerg` true motorOn false; third not clear if em true. Good. If btnParo and Marcha: paro priority stops. If emergency while marcha false: block true, stop. On release and not motorOn, resets. Good. Complete. Could be 3. But if harness says fail, there may be some subtle race. I'm leaning code robust, so coherencia 3. However if functional result says fail, that creates inconsistency: a logically robust code shouldn't fail. Maybe due to harness mismatch. We can still score coherencia based on code: 3. But if functional is 1, just_coherencia maybe "La intención de reset es correcta, pero el comportamiento reportado falla..." hmm.
+
+Let's not overcomplicate. We can assign coherencia 2 or 3. Maybe because result fail means there is an issue in transitions; lower to 2. Actually the logic with reset after motor off may clear block even while Marcha still pressed? Wait it clears only when `NOT motorOn`. At step6 after motorOn false, it clears block. But because it clears after evaluating run, no start. At step7 if another cycle with Marcha still pressed and block false, second IF would start. Wait harness only has step6. But real behavior: At step6, during the same cycle it sets block false at end. If the PLC runs another cycle with btnEmerg false and btnMarcha still true, then second IF: ELSIF btnMarcha AND NOT bloqEmerg -> true, motorOn true. Aha! That's the bug! This is key: The harness maybe runs multiple cycles per step? Or it might advance internal state within same step? Let's see: Step6 in harness may evaluate after one scan? But if it evaluates over a stable state, at the first scan of step6, motorOn false, then block resets. Next scan with same inputs (btnEmerg false, btnMarcha true), the code would set motorOn true! So the motor rearranque after releasing emergency while Marcha held, just one scan later. The harness may check after a single scan, so B1-2708 false at step6. But if it executes multiple scans until stable, then it would fail. The harness result says fail maybe because it runs multiple cycles / waits until output settles. The code's behavior: after first scan false, then true. So dangerous. Good! Thus result can be correct if the harness checks after settling or repeated? The harness description: "aplica entradas paso a paso, compara salida ... Varios scans?" It likely for each paso set input then maybe check? Actually CODESYS simulation maybe a cycle; But they may check after calling FB once per step. If only once, our single-scan pass. But if they call multiple times with same inputs, fails. The harness says "CASE paso OF ..." each step sets inputs and expected. At each step, if not changed? Hmm likely each step executed for one scan then advances. But maybe the run is continuous and step changes after some conditions. Not clear. The result says fail step6, so it probably captured the next scan or steady-state condition. So B1-2708 has a real safety bug due to releasing the block too early while Marcha still pressed, even if motorOff, causing restart in a subsequent cycle. Good.
+
+Thus functional 1, coherencia maybe 1 or 2. Its logic transitions are incomplete: clearing block based solely on `NOT motorOn` lets rearranque while Marcha still pressed on next cycle. This is a logical flaw. So coherencia 1 (or 2? It's coherent but not robust). I'd give 1 due safety flaw. 
+
+Clarity: names and comments good. Maybe 2.
+Mantenibilidad: 2.
+
+Good.
+
+### 14. B1-7716
+Pass all fixed 3. Uses R_TRIG:
+flancoMarcha(CLK := btnMarcha);
+motorOn := (motorOn OR flancoMarcha.Q) AND NOT (btnParo OR btnEmerg);
+END_FUNCTION_BLOCK
+IEC 3.
+Coherence 3.
+Clarity 2 or 3. This one has comments short, simple. Maybe 2? Actually no detailed comments why but enough. Could be 2.
+Mantenibilidad 2.
+
+### 15. B1-4160 no compile
+No compile fixed func=0 iec=0. Code similar to B1-8070 with ELSEIF / maybe END_IF? Actually uses ELSEIF. It has no `END_IF` maybe? It ends `END_IF` but missing semicolon? Text: "motorOn := TRUE;   // Enciende el motor\nEND_IF" maybe missing semicolon. In any case fixed.
+Need score other three.
+Code:
+FUNCTION_BLOCK FB_Motor
+...
+VAR emergenciaActiva : BOOL := FALSE;
+IF btnEmerg THEN emergenciaActiva := TRUE; motorOn := FALSE;
+ELSEIF emergenciaActiva THEN motorOn := FALSE;
+ELSEIF btnParo THEN motorOn := FALSE;
+ELSEIF btnMarcha THEN motorOn := TRUE;
+END_IF
+No reset. Syntax invalid due ELSEIF? Actually in CODESYS maybe `ELSEIF` invalid. 
+Coherence: Conceptually it's like B1-8070: emergency latch true forever, no reset. Since no compile but read. Could be 1. It is logically coherent but incomplete. 
+Clarity: Similar names/comments; syntax errors. 1 maybe.
+Mantenibilidad: 1 maybe.
+
+### 16. B1-3776
+Pass all fixed 3. Code:
+VAR estadoEmergencia : BOOL;
+estadoEmergencia := estadoEmergencia OR btnEmerg;
+IF estadoEmergencia THEN motorOn := FALSE;
+ELSE
+  IF btnParo THEN motorOn := FALSE;
+  ELSE motorOn := motorOn OR btnMarcha;
+  END_IF
+END_IF;
+END_FUNCTION_BLOCK
+
+Functional pass? Let's simulate: Step0: estadoEmergencia false; IF false -> else if paro false -> else motorOn := motorOn OR marcha false -> false. Step1 marcha true: est false; else motorOn := false OR true -> true. Step2 marcha false: motorOn := motorOn (true) OR false -> true. Step3 paro true: est false; else if paro -> motorOn false. Step4 paro false marcha true: est false; else motorOn true. Step5 emerg true marcha true: estadoEmergencia := false OR true -> true; IF true -> motorOn false. Step6 emerg false marcha true: estadoEmergencia := true OR false -> true; IF true -> motorOn false. Pass. But estadoEmergencia never reset. Similar to no reset, safe but no restart after emergency. 
+IEC: standard IF/OR, but uses nested IF and expression `estadoEmergencia := estadoEmergencia OR btnEmerg;` (latch). Compiles, types correct. Could give 2. 
+Coherence: Emergency state latches forever. No reset. Coherence 2 (safe but incomplete). 
+Clarity: names, comments are sparse: "Estado de emergencia" "Control del motor". It's okay. I'd give 2.
+Mantenibilidad: 2.
+
+### 17. B1-1689
+Similar to B1-3153 fails step6. functional 1. IEC 2. Coherence 1 (dangerous restart). Clarity 2. Mant 2.
+
+### 18. B1-7970
+Compiles fails step6 per result. Need simulate real bug due to multiple scans. Code:
+VAR motorLatch, emergStopLatch;
+IF btnEmerg THEN emergStopLatch := TRUE; motorOn := FALSE;
+ELSIF btnParo THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT emergStopLatch THEN motorLatch := TRUE;
+END_IF
+
+IF motorLatch AND NOT btnParo AND NOT btnEmerg THEN motorOn := TRUE;
+ELSE motorOn := FALSE; motorLatch := FALSE;
+END_IF
+
+IF NOT btnEmerg THEN emergStopLatch := FALSE;
+END_IF
+
+Let's see real behavior across scans:
+Step5: em true, marcha true. First sets emergStopLatch true, motorOn false; second else clears motorLatch false; third skip. Output false, emerg true.
+Step6 first scan: em false, marcha true. First: btnEmerg false, ELSIF btnMarcha AND NOT emergStopLatch: emergStopLatch true at start -> false, so no motorLatch. Second motorLatch false -> output false, clear. Third NOT btnEmerg true -> emergStopLatch := false. OUTPUT false. But after this scan, emergStopLatch false.
+Second scan same inputs (em false, marcha true): First none, ELSIF btnMarcha AND NOT emergStopLatch true -> motorLatch true. Second IF motorLatch true AND not paro/em -> motorOn true. Third not em -> emergStopLatch false. Output true. Thus after at least two scans, fails. Harness result fail. 
+So functional 1. Coherence: logic has a clear interlock flaw: emergency latch reset based solely on `NOT btnEmerg`, not requiring Marcha release. This allows auto restart in next scan while Marcha held. Coherence 1. 
+Clarity: comments, names, but complex. I'd give 2. 
+Mantenibilidad: 2.
+
+### 19. B1-2577
+Pass all fixed 3. Code:
+VAR bloqEmerg : BOOL;
+IF btnEmerg THEN bloqEmerg := TRUE; END_IF
+IF btnParo AND NOT btnEmerg THEN bloqEmerg := FALSE; END_IF
+IF (btnParo OR btnEmerg) THEN motorOn := FALSE;
+ELSIF btnMarcha AND NOT bloqEmerg THEN motorOn := TRUE;
+END_IF;
+Need simulate step5/6. Step5 em true, Marcha true: first block true; second `btnParo AND NOT btnEmerg` false; third `btnParo OR btnEmerg` true -> motorOn false. Step6 em false Marcha true: first no; second btnParo false; third none? `btnParo OR btnEmerg` false; ELSIF Marcha AND NOT block -> block true so false; motorOn stays false. pass. Block is never reset except Paro after emerg? Actually second resets only when btnParo true and not emerg. So after emergency, to restart, need press Paro. But protocol doesn't require restart after emergency. Could be design (may require paro reset). Harness passes. Note: If after emergency, user presses Paro while Marcha still true? Step6 no. Let's think: It has a real safety property: Block stays true until Paro normal; so safe. If after emergency release, Marcha still pressed, no rearranque. If press Paro, block clears and then if Marcha still pressed, next cycle might start? But if Paro pressed, first branch? At that cycle paro true, condition paro true -> motorOn false; second resets block false. Next cycle if Marcha still true and paro false, starts. But that's after a manual reset (Paro). Is that allowed? The task: after emergency must not rearrancar although Marcha still pressed. If user presses Paro, that's an explicit stop/reset; maybe then should it start? Perhaps no, since Marcha remained pressed from before; control should require a new positive edge. But protocol doesn't test this. Coherence maybe 2 or 3? It allows restart if Paro reset with Marcha held, maybe an edge case. However typical "emergency stop reset" and then start may be required to release and press Marcha again. The task only says "tras un paro de emergencia el motor no debe rearrancar aunque el botón de marcha siga pulsado." It doesn't mention reset by Paro. If btnParo is not a reset for emergency, this code might violate if after emergency user presses Paro while still holding Marcha then releases Paro: because block cleared while Marcha still held, next cycle starts. But if Paro is pressed, output is off during that cycle but after release it restarts. That's still a rearranque after emergencia con Marcha mantenida, albeit after pressing Paro. The harness likely not test because step sequence ends. So it's not fully safe. But it passes. We'll score coherencia maybe 2 (not 3 due this edge). 
+IEC 2 or maybe 2. 
+Clarity 2.
+Mantenibilidad 2.
+
+### 20. B1-2078
+Pass all fixed 3. Code uses R_TRIG but logic:
+flancoMarcha(CLK := btnMarcha);
+IF btnParo OR btnEmerg THEN
+    motorOn := FALSE;
+ELSIF flancoMarcha.Q THEN
+    motorOn := TRUE;
+END_IF;
+No overt self-latch `motorOn`? It sets motorOn true on edge; because output retains, latch? Let's simulate step2: step1 edge true sets motorOn true. Step2 btnMarcha false -> rtQ false; no paro; no assignment; motorOn retains true. Yes latch. Step5 em true -> motorOn false. Step6 em false -> no paro; elsif flanco Q? Marcha has been true since step4, but rtMarcha Q is false (only one scan at step4? Actually at step4 when Marcha went true, rtQ true; step5 em true? Then it failed? Wait step sequence: step4 btnMarcha true, paro false. R_TRIG Q at step4 true sets motorOn true. Step5 btnEmerg true while Marcha true: first condition btnParo OR btnEmerg true -> motorOn false. R_TRIG Q false because CLK still true no edge. Step6 btnEmerg false while Marcha true: first condition false; ELSIF flancoMarcha.Q false; no assignment, motorOn remains false. Pass. 
+IEC 3 (R_TRIG).
+Coherence 3? It handles rearranque due edge. But if button Marcha goes false then true after emergency, R_TRIG edge starts. Good. Safe. 3.
+Clarity 2? Comments shorter but okay. Maybe 3? 
+Mantenibilidad 2.
+
+### 21. B1-2077
+Pass all fixed 3. Code:
+trigMarcha : R_TRIG;
+trigMarcha(CLK := btnMarcha);
+motorOn := (motorOn OR trigMarcha.Q) AND NOT btnParo AND NOT btnEmerg;
+Similar to B1-1729. IEC 3.
+Coherence 3.
+Clarity 2.
+Mantenibilidad 2.
+
+### 22. B1-6475
+Pass all fixed 3. Code:
+VAR estadoEmergencia : BOOL := FALSE;
+IF btnEmerg THEN estadoEmergencia := TRUE; motorOn := FALSE;
+ELSIF estadoEmergencia THEN motorOn := FALSE;
+ELSIF btnParo THEN motorOn := FALSE;
+ELSIF btnMarcha THEN motorOn := TRUE;
+END_IF;
+No reset. Pass. IEC 2.
+Coherence 2 (safe but no reset).
+Clarity 2.
+Mantenibilidad 2.
+
+### 23. B1-9711
+Same as B1-6475 duplicate. Pass all fixed 3. IEC 2. Coherence 2. Clarity 2. Mant 2.
+
+### 24. B1-4469
+Fail step6. We simulated dangerous restart due resetting emergStop immediately when `NOT motorOn` at step5. Functional 1. 
+IEC: compiles standard IF. IEC 2.
+Coherence: Why does it fail? `IF NOT motorOn THEN emergStop := FALSE` resets emergency flag at the same time as motor off. In step5, in first IF sets motorOn false, emergStop true. Then after running, motorLatch := motorOn false; second IF no; third IF NOT motorOn true -> emergStop false. So next scan with Marcha true restarts. Logic flaw. Coherence 1.
+Clarity: names, comments okay. 2.
+Mantenibilidad: 2.
+
+Need assign IEC for compiled fail maybe all 2 unless uses R_TRIG. B1-2708/7970/4469/3153/7103/1689 no R_TRIG. IEC 2. 
+Need perhaps for no compiles, fixed iec=0. For pass all with R_TRIG, maybe IEC 3. For pass all without R_TRIG, IEC 2. Should B1-4316 maybe IEC 2. B1-7716 R_TRIG 3. B1-1729 3. B1-2078 3. B1-2077 3. B1-3577 3. B1-3916 3. Good.
+
+Need maybe for B1-4667 (pass all no R_TRIG) could be IEC 3? It uses standard IF and no edge. Rubric for 3 includes "POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados." It doesn't use TON/R_TRIG but the POU is appropriate. "usa construcciones idiomáticas del estándar" vague. I'd reserve 3 for those with R_TRIG. So IEC 2 for no R_TRIG. 
+Need maybe B1-4316 uses comments and IF with `ELSIF`, standard. 2.
+B1-2577 uses `AND NOT`, but correct. 2.
+B1-3776 uses `motorOn := motorOn OR btnMarcha;` no edge. 2.
+B1-3006/3504/7637/8468/6475/9711 no edge. 2.
+
+Now coherencia scores. Let's set for all pass all:
+- R_TRIG pass: B1-3577 3, B1-3916 3, B1-1729 3, B1-7716 3, B1-2078 3, B1-2077 3.
+- B1-4667 safe block release on no marcha no emerg: 3.
+- B1-4316 safe block release on no marcha no emerg: 3.
+- B1-2577 uses block reset by Paro, but may allow restart with Marcha held after Paro reset. But for harness, pass. Coherence: Is it robust? Let's examine if simultaneous Paro + Marcha after emergency could restart inadvertently while Marcha still held. The task's key is regardless after emergency. The code resets block only on btnParo (without emergency). Suppose emergency happened while Marcha held, then emergency released (still Marcha held) output remains false because block true. If user presses Paro (normal stop) while still holding Marcha? Then at that scan, first IF no; second IF btnParo AND NOT btnEmerg -> bloqEmerg := FALSE; third IF (btnParo OR btnEmerg) -> motorOn false. Next scan, paro released, Marcha still held; first no, second no, third ELSIF Marcha AND NOT block (now false) -> motorOn true. This means it rearranca after emergency while Marcha is still held if the operator presses Paro. Is that a violation? The requirement "tras un paro de emergencia el motor no debe rearrancar aunque el botón de marcha siga pulsado." Maybe "aunque" means despite button held after emergency release without any further action. A Paro press is another action, but it is not a new Marcha edge. In machine safety, start after emergency should require a new start, not just pressing Paro. The implementation doesn't ensure edge; so not fully robust. So coherencia 2 maybe not 3. For harness pass, functional 3 fixed, but coherencia can be 2. I'd set coherencia 2 for B1-2577.
+- B1-3006/3504/7637/8468/6475/9711/3776: emergency latch permanently true, no reset. Are transitions incomplete. Coherence 2? Yes. Not 3. If the latch is never reset, cannot restart after emergency; but not contradictory. Could be 2. Maybe 1? Need decide. In rubric 2 says "transiciones completas." Doesn't have emergency retorno. That's incomplete. So maybe 1? But it's deliberate safety latch? Hm. The code is structurally coherent and no contradictions. I'd still score 2 because safe but not complete; but "transiciones completas" maybe missing reset is a flaw. However coherencia 0 mentions "estados muertos que impiden operar." Permanent emergency latch is a dead state preventing future operation. 0? Maybe too harsh because before emergency it operates. "estados muertos que impiden operar" could include if emergency occurs then FB unusable. But 0 is for conditions contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar. This latch state maybe not dead; it's an activated state with no reset input. Since no reset input in the FB, after emergency the FB cannot operate; that might be dead. But the task didn't require an emergency reset input. Some safety systems require power cycle/reboot to reset, but that would be not reusable. I'd assign coherencia 1 for permanent latch no reset? Let's see distinction: 
+- If no reset path, the block can't restart after emergency, but the task only forbids auto restart while button held. It might need manual reset unknown. The protocol doesn't test, so functional fixed 3. 
+- Coherencia not functional. I'd maybe use 2 for "sin contradicciones; inicialización correcta; transiciones completas" if we interpret the emergency latch as not needing reset because no requirement. But it is incomplete relative to expected motor control? The user might value safe. I'll lean 2: no contradictions, initial values clear, transitions for tested cases complete. Missing manual reset is a transition not specified. 
+For B1-2708 and B1-7970/4469, their transition resets cause safety issue, so 1.
+
+Maybe B1-8070 no compile: if corrected, permanent emergency latch true forever. Coherence 1 because no reset and syntax errors? But no compile fixed. I'd give 1 for no reset/dead state. B1-4160 same.
+
+Clarity scores:
+Need maybe set:
+- For clean FB with R_TRIG and good comments: 3 for some, 2 for others.
+Let's decide each.
+
+We can use matrix:
+Pass all and use R_TRIG, clear comments:
+1 B1-3577: clarity 3 (detailed comments)
+5 B1-3916: clarity 2 or 3? It has comments "Detectar flanco ascendente..." "Lógica de control..." enough. Maybe 2.
+11 B1-1729: clarity 2 or 3? It has concise comments. 2.
+14 B1-7716: clarity 2 (short comment, no "why"? Actually doesn't explain why? It says "Evitar rearranque" good. Could be 2).
+20 B1-2078: clarity 2 or 3? It has "Detecta solo el instante..." and logic comment. 2.
+21 B1-2077: clarity 2.
+
+Pass all no R_TRIG:
+3 B1-4667: comments useful; clarity 3 maybe? It has comments explaining reset. Could be 3.
+6 B1-4316: long comments, separated; clarity 3.
+8 B1-3006: comments maybe 2.
+9 B1-7637: comments 2.
+10 B1-3504: comments 2.
+12 B1-8468: comments 2.
+16 B1-3776: comments are sparse, structure nested but okay; clarity 1? Names okay but no detailed comments. The code has only brief comments. Could be 1? The rubric clarity 1 = structure básica, nombres pobres o comentarios ausentes o incorrectos. Here names okay, comments present but minimal. I'd give 1 or 2. Most have comments. Maybe 1 for sparse comments like B1-3776? It has comments "Manejo del estado de emergencia", "Control del motor". Not absent. So 2.
+19 B1-2577: comments 2.
+22/23: comments 2.
+
+Fail compiled:
+4 B1-3153: names/comments good but no elaborate. clarity 2.
+7 B1-7103: 2.
+13 B1-2708: names/comments good; clarity 2.
+17 B1-1689: 2.
+18 B1-7970: names/comments; clarity 2.
+24 B1-4469: 2.
+
+No compile:
+2 B1-8070: has comments and names, but syntax errors; structure basic. clarity 1 or 2? Since comments present and names descriptive, but invalid syntax. I'd give 1: "nombres y comentarios descriptivos, pero la sintaxis inválida oscurece la estructura." Hmm "estructura básica, nombres pobres o comentarios ausentes o incorrectos" Not exactly. But invalid syntax maybe 0? 0 if sin estructura reconocible; no, structure recognizable. 2? Could give 1 due syntax. 
+15 B1-4160: similar clarity 1.
+
+Mantenibilidad scores:
+Need maybe assign 2 to most, 3 for some, 1 for no compile/fail maybe simpler.
+
+Mantenibilidad rubric:
+0: valores mágicos por todas partes; impossible modificar sin reescribir.
+1: modificable con esfuerzo; constantes parcialmente parametrizadas.
+2: parámetros como variables o constantes declaradas; cambios localizados.
+3: además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica).
+
+Most code has no magic, uses variables, changes local. They are simple; 2. For 3: if it uses FB input params, no duplication, maybe easy extension. But all FBs have inputs. To avoid all 3, only award 3 for excellent e.g., B1-3577, B1-3916, maybe B1-4667, B1-4316. Yet if simple logic one expression, extensible? maybe 3. But final could have many 2. 
+For no compile: maintainability maybe 1 because syntax invalid must rewrite; if corrected OK. But that's more about compile. I'd give 1 to no compiles. 
+For fail compiled: 2 maybe.
+
+Could define maintainability:
+- Simple latch with one internal BOOL and clear logic: 2.
+- R_TRIG edge logic one expression: 2 or 3. Maybe because edge-based design is robust but not parameterized beyond FB. I'd give 2 to most.
+- Those with comments and separated sections: 2.
+- 3 only if code uses no duplicated logic and has clear FB interface; all do. Hmm.
+
+Maybe we can give maintainability 2 to all compiled, 1 to no compile. That is consistent and acceptable. But user asked each criterion; maybe okay.
+
+Need maybe differentiate high quality. For B1-3577, maintainability 3: "FB con E/S separadas, uso de R_TRIG estándar y una única asignación; fácil extender." 
+For B1-3916 maybe 3.
+For B1-4667 maybe 2.
+For B1-4316 maybe 2 or 3.
+But if all compiled get 2, no issue. Need not artificially use 3.
+
+Let's create final table with scores.
+
+I need ensure all values 0-3. Fixed values copied:
+- For funcional_fijo=3 copy 3
+- For no compile funcional_fijo=0 iec_fijo=0 copy 0
+- For funcional_fijo null and iec_fijo null assign.
+
+Let's produce final JSON.
+
+Need include justificaciones each one line. Need no markdown. Need ensure exactly 24.
+
+Before final, verify:
+- "just_func_iec": "" for no compiles (both fixed). For compiled pass/fail if iec_fijo null, write one line with IEC justification; if functional fixed and iec null, we can mention "IEC: compila, tipos correctos; R_TRIG estándar bien instanciado." even though just_func_iec field. That's fine.
+- For compiled fail functional null, we can mention functional & IEC? The field `just_func_iec` can cover both. Should be one line. If both were fixed, empty. For fail functional null and iec null, need justify both func and iec maybe in same line. Use e.g., "Falla paso 6 (rearranque tras emergencia con marcha pulsada); IEC compila y tipos correctos." 
+- For pass all functional fixed but iec null, just_func_iec just IEC.
+
+Need maybe not overjustify.
+
+Let's maybe derive all object fields.
+
+I'll construct object list with codes, scores:
+
+1 B1-3577: funcional 3, iec 3, coherencia 3, claridad 3, mantenibilidad 2? Let's decide final:
+Maybe maintainability 3 instead? Hmm I'll choose 2 for consistency with others? But this one excellent. Yet if I give 2, not wrong. Need maybe use 3 for one or two excellent to show range. Let's decide final values for each.
+
+Maybe assign maintainability:
+- B1-3577: 3
+- B1-3916: 3
+- B1-1729: 2
+- B1-7716: 2
+- B1-2078: 2
+- B1-2077: 2
+- B1-4667: 2
+- B1-4316: 2
+- B1-3006: 2
+- B1-3504: 2
+- B1-7637: 2
+- B1-8468: 2
+- B1-3776: 2
+- B1-2577: 2
+- B1-6475: 2
+- B1-9711: 2
+- compiled fails: 2
+- no compile: 1
+
+Could use maintainability 3 for B1-3577 and B1-3916 only because they are concise, standard, no duplication. But then B1-1729 similar also could 3. Maybe all R_TRIG one-expression get 3? That might be too many. But it's okay to have several 3? The rubric: 3 requires extensible design (parámetros de entrada del FB, sin duplicación). R_TRIG one-expression does satisfy. But if all R_TRIG get 3, okay. Maybe not all because B1-2078 uses IF, still no duplication. I'd rather not overgrant.
+
+Final maintainability for B1-3916 3, B1-3577 3, B1-4667 2, etc.
+
+Clarity 3 for B1-3577, B1-4667, B1-4316 maybe. R_TRIG others 2. That gives variation.
+
+Coherence 3 for R_TRIG edge and safe block (B1-4667, B1-4316). For B1-3577 3, B1-3916 3, B1-4667 3, B1-4316 3, B1-1729 3, B1-7716 3, B1-2078 3, B1-2077 3. B1-2577 2. B1-3006 etc 2. B1-3776 2. B1-6475/9711 2. B1-7637/8468 2. 
+No compile: coherencia 1 both.
+Compiled fail: coherencia 1 all.
+
+IEC: For B1-4667 etc 2. For no compile 0 fixed.
+Maybe B1-4316 no R_TRIG but uses standard. 2.
+Maybe B1-3776 uses `estadoEmergencia := estadoEmergencia OR btnEmerg;` it's commutative, okay. 2.
+Maybe B1-2577 uses `IF btnParo AND NOT btnEmerg` etc. 2.
+B1-2078 uses R_TRIG; IEC 3.
+
+Need maybe for B1-4316 IEC 2? It compiles and uses standard, but not R_TRIG. Yes.
+
+Now final object list.
+
+Let's draft each in given order.
+
+1 B1-3577
+functional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 3? We said 3 maybe. Actually if we give both clarity and mantenibilidad 3, fine. Let's settle: maintainability 3 for B1-3577. 
+just_func_iec: "IEC: R_TRIG estándar bien instanciado; declaraciones y tipos correctos." 
+just_coherencia: "Sin contradicciones; flanco y prioridad de paro cubren enclavamiento y emergencia con rearranque seguro."
+just_claridad: "Nombres descriptivos, comentarios que explican el porqué y estructura de FB clara."
+just_mantenibilidad: "Diseño extensible con E/S separadas y lógica sin duplicar."
+
+2 B1-8070
+functional 0, iec 0
+coherencia 1
+claridad 1
+mantenibilidad 1
+just_func_iec: ""
+just_coherencia: "Lógica de emergencia queda enclavada sin reset; una vez activa impide operar y no define transición de retorno."
+just_claridad: "Nombres y comentarios aceptables, pero el uso de ELSEIF inválido oscurece la estructura."
+just_mantenibilidad: "Modificable con esfuerzo; el bloqueo permanente obligaría a reescribir para añadir reset."
+
+3 B1-4667
+functional 3, iec 2
+coherencia 3
+claridad 2? We said maybe 3? Let's decide final: B1-4667 has good comments, safe block. clarity 3? I think 2 maybe. Let's assign clarity 2 for most non-R_TRIG. 
+Mantenibilidad 2
+just_func_iec: "IEC: compila y declara correctamente; IF/ELSIF estándar, sin extensiones."
+just_coherencia: "Bloqueo de emergencia con reset seguro (sin emergencia ni marcha); transiciones completas y seguras."
+just_claridad: "Nombres descriptivos y comentarios útiles, aunque sin separación modular adicional."
+just_mantenibilidad: "Variables locales claras y cambios localizados; lógica no duplicada."
+
+4 B1-3153
+functional 1, iec 2
+coherencia 1
+clarity 2
+mant 2
+just_func_iec: "Falla paso 6: rearranca con Marcha aún pulsada tras emergencia; IEC compila y tipos correctos."
+just_coherencia: "La conmutación por nivel de btnMarcha pierde el estado de emergencia, creando rearranque inseguro."
+just_claridad: "Nombres y comentarios básicos correctos; estructura IF clara."
+just_mantenibilidad: "Sin valores mágicos y con lógica local; añadir enclavamiento requeriría tocar la rama de arranque."
+
+5 B1-3916
+functional 3, iec 3
+coherence 3
+clarity 2 or 3? Let's assign 3? The code is similar to B1-3577 but slightly shorter comments. Maybe 2. Let's choose clarity 2. Maintainability 3? Could be 2. Let's settle: maintainability 2 (unless we give 3 to B1-3577 only). 
+just_func_iec: "IEC: R_TRIG estándar correctamente instanciado; lógica booleana idiomática."
+just_coherencia: "Flanco detectado y prioridad de paro evitan rearranque automático; sin contradicciones."
+just_claridad: "Estructura compacta y nombres claros; comentarios adecuados aunque breves."
+just_mantenibilidad: "Una única expresión y E/S del FB bien definidas facilitan cambios."
+
+6 B1-4316
+functional 3, iec 2
+coherence 3
+clarity 3
+mant 2
+just_func_iec: "IEC: declaraciones y tipos correctos; usa IF/ELSIF estándar y BOOL de bloqueo."
+just_coherencia: "Interlock de emergencia con reset seguro (sin emergencia ni marcha); manejo robusto de paros."
+just_claridad: "Comentarios extensos por secciones y nombres descriptivos; estructura fácil de seguir."
+just_mantenibilidad: "Bloqueo y control separados en pasos; cambios localizados, aunque sin parámetros adicionales."
+
+7 B1-7103
+functional 1, iec 2
+coherence 1
+clarity 2
+mant 2
+just_func_iec: "Falla paso 6 por rearranque con Marcha mantenida tras emergencia; IEC compila sin cambios."
+just_coherencia: "La lógica por nivel de Marcha no guarda el estado de emergencia; transición insegura."
+just_claridad: "Nombres y comentarios básicos; estructura simple."
+just_mantenibilidad: "Lógica local y sin valores mágicos; modificación por agregar interlock es acotada."
+
+8 B1-3006
+functional 3, iec 2
+coherence 2
+clarity 2
+mant 2
+just_func_iec: "IEC: compila y declara tipos correctos; IF/ELSIF estándar."
+just_coherencia: "Sin contradicciones y protege tras emergencia, pero bloqueado nunca se resetea: estado sin retorno."
+just_claridad: "Comentarios y nombres descriptivos; estructura limpia."
+just_mantenibilidad: "Parámetros de FB claros y lógica local; el bloqueo permanente limita reutilización."
+
+9 B1-7637
+functional 3, iec 2
+coherence 2
+clarity 2
+mant 2
+just_func_iec: "IEC: compila, declaraciones y tipos correctos; IF/ELSIF estándar."
+just_coherencia: "La bandera de emergencia queda enclavada sin reset explícito; seguro pero incompleto."
+just_claridad: "Nombres y comentarios claros; estructura simple."
+just_mantenibilidad: "Cambios localizados; añadir reset requeriría tocar la bandera."
+
+10 B1-3504
+functional 3, iec 2
+coherence 2
+clarity 2
+mant 2
+just_func_iec: "IEC: compila sin cambios; IF/ELSIF y tipos correctos."
+just_coherencia: "Enclavamiento de emergencia sin reset; cumple el caso probado pero no retorna a operación normal."
+just_claridad: "Comentarios y nombres descriptivos, estructura ordenada."
+just_mantenibilidad: "Lógica local sin duplicación; el reset manual ausente dificulta mantenimiento."
+
+11 B1-1729
+functional 3, iec 3
+coherence 3
+clarity 2
+mant 2
+just_func_iec: "IEC: R_TRIG estándar instanciado y expresiones booleanas idiomáticas."
+just_coherencia: "Flanco de marcha y prioridad de paro robustos; sin condiciones contradictorias."
+just_claridad: "Comentarios correctos y nombres claros; estructura compacta."
+just_mantenibilidad: "Una sola expresión de control y E/S definidas; fácil de modificar."
+
+12 B1-8468
+functional 3, iec 2
+coherence 2
+clarity 2
+mant 2
+just_func_iec: "IEC: compila, tipos correctos; IF/ELSIF estándar."
+just_coherencia: "Bandera de emergencia sin reset, por lo que la transición de retorno queda incompleta."
+just_claridad: "Nombres descriptivos y comentarios claros; estructura básica."
+just_mantenibilidad: "Variables locales y lógica centralizada; cambios acotados."
+
+13 B1-2708
+functional 1, iec 2
+coherence 1
+clarity 2
+mant 2
+just_func_iec: "Falla paso 6: al liberar emergencia con Marcha pulsada, el desbloqueo anticipado permite rearranque; IEC compila."
+just_coherencia: "El reset basado solo en motorOn libera el bloqueo con Marcha aún pulsada; transición insegura."
+just_claridad: "Comentarios y nombres correctos; lógica separada en bloques."
+just_mantenibilidad: "Sin valores mágicos; cambiar el interlock de seguridad requiere tocar condiciones."
+
+14 B1-7716
+functional 3, iec 3
+coherence 3
+clarity 2
+mant 2
+just_func_iec: "IEC: R_TRIG estándar y expresión booleana correcta."
+just_coherencia: "Detección por flanco y prioridad de paro evitan rearranque; lógica robusta."
+just_claridad: "Nombres claros y comentario breve; estilo compacto."
+just_mantenibilidad: "Asignación única y FB con E/S separadas; fácil de ajustar."
+
+15 B1-4160
+functional 0, iec 0
+coherence 1
+clarity 1
+mant 1
+just_func_iec: ""
+just_coherencia: "Bandera de emergencia queda enclavada sin reset; además la sintaxis inválida impide ejecución."
+just_claridad: "Nombres y comentarios presentes, pero ELSEIF inválido compromete la claridad."
+just_mantenibilidad: "Requiere corrección de sintaxis y no permite retorno de emergencia; reescribir parcialmente."
+
+16 B1-3776
+functional 3, iec 2
+coherence 2
+clarity 2
+mant 2
+just_func_iec: "IEC: compila y usa IF/OR estándar; tipos correctos."
+just_coherencia: "Bloqueo de emergencia permanente por OR; seguro pero sin retorno a operación normal."
+just_claridad: "Comentarios breves y nombres aceptables; estructura anidada clara."
+just_mantenibilidad: "Sin valores mágicos; lógica local, aunque el latch sin reset limita extensibilidad."
+
+17 B1-1689
+functional 1, iec 2
+coherence 1
+clarity 2
+mant 2
+just_func_iec: "Falla paso 6: la lógica por nivel de Marcha rearranca tras emergencia; IEC compila."
+just_coherencia: "No se conserva estado de emergencia; condición de Marcha es insegura en ese límite."
+just_claridad: "Nombres y comentarios básicos; estructura IF sencilla."
+just_mantenibilidad: "Cambios localizados; añadir enclavamiento es directo."
+
+18 B1-7970
+functional 1, iec 2
+coherence 1
+clarity 2
+mant 2
+just_func_iec: "Falla paso 6: el latch de emergencia se limpia antes de garantizar flanco nuevo; IEC compila."
+just_coherencia: "Reset de emergStopLatch al desaparecer btnEmerg permite rearranque con Marcha mantenida."
+just_claridad: "Nombres y comentarios claros; estructura por etapas."
+just_mantenibilidad: "Lógica repartida en bloques; modificación de interlock es acotada."
+
+19 B1-2577
+functional 3, iec 2
+coherence 2
+clarity 2
+mant 2
+just_func_iec: "IEC: compila y declara correctamente; IF/ELSIF estándar."
+just_coherencia: "Bloqueo de emergencia se libera con Paro; seguro ante emergencia, pero puede permitir rearranque con Marcha aún mantenida tras reset por Paro."
+just_claridad: "Comentarios y nombres descriptivos; bloques lógicos separados."
+just_mantenibilidad: "Sin duplicación y con variables locales claras; modificación de reset centralizada."
+
+Wait: Is B1-2577 functional 3 fixed despite that potential edge. Good.
+
+20 B1-2078
+functional 3, iec 3
+coherence 3
+clarity 2
+mant 2
+just_func_iec: "IEC: R_TRIG estándar bien instanciado; IF/ELSIF correcto."
+just_coherencia: "El flanco de Marcha y prioridad de paro evitan rearranque tras emergencia."
+just_claridad: "Nombres claros y comentarios breves; estructura simple."
+just_mantenibilidad: "Lógica compacta y E/S de FB definidas; cambios localizados."
+
+21 B1-2077
+functional 3, iec 3
+coherence 3
+clarity 2
+mant 2
+just_func_iec: "IEC: R_TRIG estándar y expresión booleana idiomática."
+just_coherencia: "Enclavamiento por flanco con paro dominante; sin contradicciones."
+just_claridad: "Comentarios y nombres descriptivos; estructura compacta."
+just_mantenibilidad: "Asignación única y sin duplicación; fácil de mantener."
+
+22 B1-6475
+functional 3, iec 2
+coherence 2
+clarity 2
+mant 2
+just_func_iec: "IEC: compila y usa IF/ELSIF correcto; tipos correctos."
+just_coherencia: "Bandera de emergencia sin reset: operación segura tras emergencia pero sin retorno de estado."
+just_claridad: "Nombres y comentarios claros; estructura básica."
+just_mantenibilidad: "Variables locales y lógica simple; añadir reset es un cambio puntual."
+
+23 B1-9711
+same as B1-6475
+functional 3, iec 2
+coherence 2
+clarity 2
+mant 2
+just_func_iec: "IEC: compila y usa IF/ELSIF correcto; tipos correctos."
+just_coherencia: "Misma bandera de emergencia sin reset; segura pero con retorno incompleto."
+just_claridad: "Nombres y comentarios claros; estructura básica."
+just_mantenibilidad: "Sin valores mágicos; modificación local para reset."
+
+24 B1-4469
+functional 1, iec 2
+coherence 1
+clarity 2
+mant 2
+just_func_iec: "Falla paso 6: emergStop se resetea en el mismo ciclo de paro y permite rearranque; IEC compila."
+just_coherencia: "El reset por NOT motorOn anula el enclavamiento de emergencia de forma insegura."
+just_claridad: "Nombres y comentarios claros; lógica por pasos legible."
+just_mantenibilidad: "Cambios localizados; la condición de reset debe corregirse sin reescribir todo."
+
+Need double-check some "just_func_iec" for no compile both fixed are "". Good.
+
+Now verify constraints:
+- 24 objects.
+- Codes same.
+- Values integers 0-3.
+- Fixed values copied: no compile: functional 0, iec 0. Pass all: funcional 3 where fixed. We have. For compiled fail functional null -> assigned 1. iec null assigned 2. ok.
+- When funcional no fijado should be 0-2: we assigned 1 (fails).
+- When iec no fijado should be 1-3: we assigned 2/3.
+
+Need maybe ensure for B1-8070 and B1-4160 no compile `iec=0` fixed. We have.
+
+Need maybe for B1-3153 I assigned iec 2 but no END_FUNCTION_BLOCK? compiles. okay.
+
+Potential issue: Some pass all but no reset permanent emergency latch—would they pass if harness step6 checks after multiple cycles? Let's test B1-3006: after step5, block true. Step6 em false, Marcha true; control ELSIF marcha AND NOT block false; block true no reset. MotorOn false always. So pass. Good. On second scan same, block true remains. So pass.
+B1-7637: emergency flag true; second scan `ELSIF emergenciaActiva THEN motorOn := FALSE`; pass.
+B1-3776: estadoEmergencia true; second scan `estadoEmergencia := estadoEmergencia OR btnEmerg` (true OR false -> true); IF true -> motorOn false. pass.
+Good.
+
+Potential issue: B1-3006 and B1-3504 no reset; if harness then does later cycles with Marcha still pressed, still false because block true. So pass.
+
+Need maybe for B1-2708 result fail due next scan; our justification "desbloqueo anticipado permite rearranque" correct. 
+For B1-7970 result fail due next scan; yes.
+
+Need maybe for B1-4469 even first scan step5 resets emergStop immediately; on same step5 output false pass; next scan step6 with same inputs starts. Fails. Good.
+
+Need maybe for B1-3153/7103/1689 fail step6 on first scan? Actually after step5, they set motorLatch false, no emergency. Step6 with Marcha true sets true first scan. Yes.
+
+Now, need final only JSON. Ensure no trailing commas. We can produce as plain JSON.
+
+Let's maybe include line breaks for readability. User said no markdown. JSON list valid. That's fine.
+
+Need maybe verify justifications are one line, but in JSON they can be strings. Avoid newline inside. 
+
+Let's produce final.

@@ -1,0 +1,918 @@
+We need answer only JSON list of 24 objects in same order. Need evaluate each according rubric. Need carefully read all. We have task I3. We need produce valid JSON. Need ensure 24 objects. Codes same. Values 0-3. Fixed copied. If funcional_fijo null and fails harness: need assign functional 0,1,2 according. IEC when compila: 1,2,3, since no fixed. Need judge.
+
+We can reason here. Need provide final JSON only. Need be careful.
+
+Let's restate problem. We have 24 responses. Need score.
+
+We need evaluate:
+
+- funcional: fixed 3 if passes all; fixed 0 if no compiles. For failures I3-6376 and I3-7173 fail steps 2,3. Need assign functional 0-2. Let's analyze those.
+
+Protocol: step 2 ack3 true while alm3 true. Correct must retain. Their logic:
+IF NOT ack3 THEN retAlm3 := alm3; ELSE retAlm3 := FALSE; END_IF. At step 1 alm3 true ack false -> ret true. Step 2 ack true, alm3 still true -> ret false clears while cause present. expected still true. Step 3 ack false and alm3 false -> retAlm3 := alm3 (false) so stays false but expected retained because no ack after cause dissapear? Wait step 3 says "Se retira la causa y se suelta el ACK: sigue retenida". Their implementation: ack false, alm false => ret:= false. That's also fails. So they don't latch at all except instantaneous. They fail steps 2,3. This violates core latch/reset. Functional: according rubric 0: no implementa lógica pedida o falla caso nominal. The nominal case? It fails retain case. But maybe case nominal initial? However "cada alarma debe quedar retenida" core fails. But passes many steps. Need assign 0 or 1? Rubric: 0 no implements logic or fails nominal case. 1 works nominal but fails edge cases evident (flancos, reset, emergency). Here fail retention, central. Could assign 0? They implement sirena/priority partially? But case of alarm active with ack while cause present and after cause removed no ack, fails. The harness step 2/3 are core. I'd assign functional 1 maybe? Let's examine: They don't retain: the output equals cause except if ack true then false. In step 1 alarm low active -> code 3 sirena true (works nominal active). Step 2 ack with cause present -> clears, which is specific rule. Step 3 cause gone ack released -> no latch. So central retentive requirement missing. According rubric: "0: no implementa la lógica pedida o falla en el caso nominal." The case nominal maybe alarma active encender sirena, codigo, ack after cause disappears? They pass step4? Actually after step3 already false, step4 ack true and no cause -> remains false, passes step4? Harness says fail only paso 2,3, maybe step 4 expects false and they false, so pass but not due correct. But core "retenida" no implement. I'd lean functional 1: works basic active outputs but fails borderline retention/reconocimiento (central? maybe not edge). However rules say compiles but fail steps functional 0,1,2 according. "falla en el caso nominal" could be 0. What is nominal? It should retain until ack, they don't. I'd assign 1 because it compiles and passes 8/10, but key requirement violated. Let's think as evaluator: "no implementa la lógica pedida" exactly they didn't implement retention. So might be 0. But they did implement some logic. The protocol has 10 steps; failure step 2/3 central. The fixed rules: "Si compila pero falla pasos: funcional 0,1 o 2 según la rúbrica, usando qué pasos fallan y protocolo." So if core latching fails maybe 0. Need decide consistency.
+
+Maybe assign functional 1 for both? But rubric says 1: "funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." That doesn't exactly fit because failure central; but these implementations do function for direct alarm present and clear when acking (step4) but no latch. Could be 1 because basic path partly. The main broken behavior is "retenida" which is not edge. That suggests 0. But maybe they "funciona en el caso nominal" if nominal = without ack while cause present? The expected nominal includes ack after cause maybe? Step 4 passes? Actually due previous false not because correct, but outputs correct. The logic itself can set alarm and clear on ack when cause absent: In a scenario isolate: alm3 false initially, ack false. If alm3 true -> ret true. If alm3 false with ack false -> ret false immediately (loses latch). If alm3 true then ack true -> false. So only momentary active while cause true and ack false. Maybe works for simple non-retained alarm. I'd maybe assign 1: implements alarm activation and priority, but retentiva no. But we need careful with "no implementa la lógica pedida": central missing latch. Maybe 0.
+
+Let's read again: "Cada alarma debe quedar retenida (aunque su causa desaparezca) hasta que se reconozca individualmente ... reconocimiento solo tiene efecto si la causa ya desapareció." These implementations directly violate retention and ack cause present. They miss a core functional requirement. I'd assign 0 as per rubric: no implementa la lógica pedida. But maybe we differentiate no compile vs compile fails: functional 0 is possible if fails nominal. The "pasos 2,3" are central (step3 is exactly retention after cause disappears). So yes functional 0 is defensible. However many scoring systems would give functional 1 for partial. The prompt says "falla en el caso nominal" no. The nominal case could be direct alarm generation. Hmm.
+
+Need evaluate all criteria for all. There are many passing all functional fixed 3. Need score iec, coherencia, claridad, mantenibilidad. Need provide justificaciones one line. Need be consistent. Might assign similar to many.
+
+Let's first map all codes and results.
+
+List:
+1 I3-8823 passes all functional 3 iec null
+2 I3-1249 passes all 3
+3 I3-2429 passes all 3
+4 I3-2584 passes all 3
+5 I3-9331 passes all 3
+6 I3-6376 fails 2,3 func null
+7 I3-8129 passes all 3
+8 I3-2453 passes all 3
+9 I3-5104 passes all 3
+10 I3-3183 passes all 3
+11 I3-8600 passes all 3
+12 I3-6496 passes all 3
+13 I3-4378 passes all 3
+14 I3-1066 passes all 3
+15 I3-1113 passes all 3
+16 I3-9934 passes all 3
+17 I3-7296 passes all 3
+18 I3-3545 passes all 3
+19 I3-7173 fails 2,3 func null
+20 I3-9721 passes all 3
+21 I3-2759 passes all 3
+22 I3-4645 passes all 3
+23 I3-1393 passes all 3
+24 I3-4818 passes all 3
+
+Need assign IEC for each pass. "compila sin cambios; declaraciones y tipos correctos" = 2. "usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)" = 3. Here no standard blocks needed; using FB correct, IF, BOOL, INT. Could some earn 3? Many are idiomatic, clear. Need decide.
+
+The rubric:
+- Cumplimiento IEC 61131-3. 0: no compila. 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados).
+
+All compile; declarations correct. Are they idiomáticas? They use FUNCTION_BLOCK, IF/ELSIF, boolean latches. That's standard. For 3 maybe need "POU adecuado" yes FB_Alarmas, types correct. "bloques estándar ... bien instanciados" no applicable. Many comments. I'd give 3 to all correct ones? Need consistency. The simple programs use latch expressions or set/reset IF. Both idiomatic. But some use `IF alm1 THEN mem:=TRUE; ELSIF ack AND NOT alm1 THEN mem:=FALSE; END_IF` which is idiomatic for set/reset. Others use expressions `mem := alm OR (mem AND NOT ack)` also idiomatic. Some split set and reset IFs, also fine. We could assign IEC 2 to all, or maybe 3 for well structured. Need differentiate based on comments? IEC compliance not about comments. Maybe assign 3 to all passing because they use appropriate standard ST. But "excellent" reserved for "construcciones idiomáticas del estándar". Is using boolean latch expressions but not declaring initial values okay? Variables not initialized but for latch maybe CoDeSys initializes to FALSE? In IEC? In CODESYS BOOL default FALSE? The standard may not guarantee? In CODESYS variables default initialized to 0 unless retained? In simulation harness passes. Criteria could affect coherencia: variables sin inicializar con efecto. Many leave ret mem uninitialized; CODESYS initializes VAR to 0 FALSE by default. Standard may also? In IEC, uninitialized variables have system-dependent? But in CODESYS default 0. So okay.
+
+Need maybe not over-award 3. The "iec_fijo null means la pones tú." We can set 2 for all compile? But if 3 for those with clearly idiomatic structure. The rule: "Cumplimiento IEC cuando compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." Here all are idiomático enough? Maybe yes. But if there is no use of standard blocks, maybe "POU adecuado, tipos correctos" enough. I'm leaning 3 for all that pass? But need differentiate maybe some use `//` comments (eligible? In IEC 61131-3 ST comments are (* *) normally. CODESYS accepts // extension? Actually CODESYS supports // comments? According standard, only (* *). But the programs that use `//` might be using an extension? They passed compiler. The rubric: "usa extensiones fuera del estándar" gets 1. Hmm important. In IEC 61131-3, comments are `(* *)`; `//` may not be standard in the base language (though CODESYS supports). The prompt: "Programa en ST conforme a IEC 61131-3". Many use `//`. Does that constitute extension? Need decide. The rubric says iec 1 if uses extension outside standard. It explicitly says compila solo tras correcciones menores, o usa extensiones. If we treat `//` comments as non-standard, then many would get IEC 1, not 2/3. But in CODESYS, `//` is a supported comment syntax? IEC 61131-3 ST standard? Let's recall: IEC 61131-3 Part 3 defines comments `(* *)`. Single-line `//` is included in CODESYS as extension or maybe 'pragma'? Some compilers support. The rubric probably wants to detect `//` as non-standard? But many responses use // comments. The instructions: "Actúas como evaluador experto ... según IEC 61131-3 y CODESYS." "Cumplimiento IEC ... usa extensiones fuera del estándar." It mentions compila in CODESYS. In CODESYS, `//` allowed; standard ST? I think IEC 61131-3 second edition includes single-line comment? Let's verify from knowledge: IEC 61131-3 textual languages use (* ... *) for comments. There is no //. CODESYS added //. So yes extension. But the evaluation might not penalize comments? The rubric says "sintaxis o declaraciones inválidas" for 0; "usa extensiones fuera del estándar" for 1. If `//` comments are extensions, then those should get 1. But if so, almost all passing ones with // get iec 1, only ones using (* *) get 2/3. However in the prompt examples maybe accepted. Need decide carefully.
+
+Look at codes: Some use `(* *)` exclusively: I3-8823 uses (* *), IEC maybe 3. I3-1249 uses (* *) only, maybe 3. I3-9331 uses (* *), 3. I3-6496 uses (* *), 3. I3-1066 uses (* *), 3. I3-7296 uses (* *), 3. I3-3545 uses (* *), 3. I3-9721 uses (* *), 3. I3-4818 uses (* *), 3. Many others use `//` comments. Are `//` extensions enough to drop to 1? Let's inspect rubric: 1: "compila solo tras correcciones menores, o usa extensiones fuera del estándar." That seems exactly if they use //. But maybe "extensiones fuera del estándar" means language features (like `R_TRIG`? Actually R_TRIG is standard; like `VAR_TEMP`, `PLCOpen`, etc). Comments syntax might be minor not "extension" in this context? Could be considered. Hmm.
+
+We need not over-ding comments? The prompt says "No intentes adivinar qué modelo produjo cada respuesta." We just score. Need likely differentiate some. The given fixed iec null; we set.
+
+We need also evaluate coherencia, claridad, mantenibilidad.
+
+Let's inspect each code in more detail.
+
+General observations:
+- Most passing implementations split into:
+  1. retentive latches with IF/ELSIF (correct set priority)
+  2. latch expression (also correct)
+  3. split set and reset:
+     - If alm then ret true; then if ack and not alm then ret false. Is this correct in all cases including simultaneous ack true and alm true? Need analyze. Many split implementations (I3-2429, 5104, 3183, 4378, 4645 possibly) use separate IFs: first `IF alm THEN ret:=TRUE; END_IF` then `IF ack AND NOT alm THEN ret:=FALSE; END_IF`. If alm true and ack true, the second condition `ack AND NOT alm` is false, so ret stays true. Good. If alm false ack true ret false. Good. If alm true ack false set true. If after cause disappears ack false: no reset, stays true from previous. Good. This is correct. However initial ret false? Without explicit init, variables default? In CODESYS likely false. But if no warm start? Still default. Coherencia maybe okay. They all pass.
+
+- Some split separate with order reversed: I3-1066 first clears if not alm and ack then sets if alm. If alm false ack true clears. If alm true ack true, first condition `NOT alm AND ack` false, then `IF alm THEN ret:=TRUE;` so stays true. Correct. Good.
+
+- Latch expression: `mem := alm OR (mem AND NOT ack);` This satisfies "ack only if cause absent"? If alm true and ack true => mem stays true due alm. If alm false and ack true => false. If alm false ack false => mem stays previous. Good. This is compact. Good.
+
+- Failing implementations I3-6376/7173: no latch, discussed.
+
+Now "cumplimiento IEC":
+Could give 3 to those that use IEC comments `(* *)` and clean ST; 2 to those with `//`? But if // is extension, maybe 1. Let's deliberate.
+
+We were instructed "Cuando iec no estaba fijado, que esté entre 1 y 3." Actually prompt says "cuando iec no estaba fijado, que esté entre 1 y 3." So 1 possible if extensions. We need use.
+
+Could assign:
+- IEC 3: If compile, declarations correct, idiomatic ST; maybe all passing responses get 3? But then no differentiation.
+- IEC 2: If compile and corrections types correct but no particular standard blocks. The rubric says 2 if compiles sin cambios; declaraciones y tipos correctos. 3 if además idiomático. All these use standard declaraciones. Do they use "construcciones idiomáticas"? Some comments structure. Almost all yes. But maybe some with `//` are not standard comments but compiler accepts. Could assign 2 to most.
+
+Need think like "docente cuidadoso": Not all excellent. 3 should be reserved for clear idiomatic standard-compliant. Many programs are functionally identical. We can give IEC 2 to all standard-compliant, maybe some 3 for better comments and explicit latch expressions with standard comments. But iec is only about standard, not clarity. Need not reflect comment style? IEC includes comments? "Construcciones idiomáticas del estándar". Comments with `(* *)` are standard; `//` may be non-standard extension. Hmm.
+
+Let's inspect each for use of `//`. Many:
+- I3-2429 uses //. If strict, iec 1. But "compila sin cambios" also true. Does `//` count extension? I'd think yes. But maybe too harsh? The rubric explicitly mentions "extensiones fuera del estándar", and `//` comment syntax is a CODESYS extension. Should we penalize to 1? A careful evaluator might do that. However then many get iec 1, maybe not desired if just comments. The use of // is not "sintaxis o declaraciones inválidas" since compiler accepts. But the prompt says "conforme a IEC 61131-3". So yes, using // is not standard. But does CODESYS treat `//` as standard? In project options maybe "allow single-line comments"; many code examples use //. The evaluator likely expects to not penalize comments? This task likely inspired by evaluating code from models; some responses use // vs (* *). In Standard ST comments can be (* *); single-line // is in CODESYS but not IEC. I'd note in justificación.
+
+Yet the rubric for iec 1 says "compila solo tras correcciones menores, o usa extensiones fuera del estándar." If I give 1 to many for //, I need be consistent. There are some using `//` but otherwise perfect. Could set iec 1 for them. There are also some using `(* *)`: set 3 maybe. Let's count.
+
+Use `(* *)` entirely:
+1 I3-8823: (* *) only. Comments Spanish. Good.
+2 I3-1249: (* *) only.
+5 I3-9331: (* *) only.
+6 I3-6376: (* *) only. Fails func but compiles. Need iec maybe 3 or 2? It uses (* *).
+12 I3-6496: (* *) only.
+14 I3-1066: (* *) only.
+17 I3-7296: (* *) only.
+18 I3-3545: (* *) only.
+20 I3-9721: (* *) only.
+24 I3-4818: (* *) only.
+Also maybe 7 I3-8129 uses (* *) only? Let's check: yes `(* *)`. So IEC maybe 3.
+Use `//` entirely:
+3 I3-2429 //.
+4 I3-2584 //.
+8 I3-2453 //.
+9 I3-5104 //.
+10 I3-3183 //.
+13 I3-4378 //.
+15 I3-1113 //.
+19 I3-7173 (* *) actually uses (* *) only. I need check. Yes uses (* *).
+21 I3-2759 //.
+22 I3-4645 //.
+23 I3-1393 //.
+Maybe 16 I3-9934 uses (* *) only? Yes.
+11 I3-8600 uses (* *) only? yes.
+
+If // is extension, the // group would IEC 1. But the passing `I3-2429` etc are "compila sin cambios; declaraciones y tipos correctos" not "solo tras correcciones"; but due extension they'd be 1. The rubric says 1 if "usa extensiones"; yes.
+
+But maybe examples of extensions are "declaraciones no estándar, `VAR_TEMP`, `METHOD`, `SUPER`, `AND_THEN`". Comments maybe not considered language feature. Need decide whether to include this in justification. Many human evaluators wouldn't downgrade just for `//` because CODESYS accepts and readability okay. Hmm.
+
+Let's read "Cumplimiento IEC 61131-3. 0: no compila; sintaxis o declaraciones inválidas. 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)."
+
+They emphasize "POU adecuado, tipos TIME correctos, bloques estándar". Comments not main. But `//` is a syntax extension. I think as strict evaluator, maybe penalize. However if I assign iec 1 to all comments `//`, then that's 12 responses; none get 2? Actually 2 would be maybe not. We can assign iec 2 to codes using // if we deem comments not significant extension? Then no 3 maybe confusing. Could assign iec 3 to those with (* *) and some elegant structure.
+
+Need also compute coherencia for failing ones. Because they lack latch, coherencia maybe 1 or 2? Coherencia criteria:
+- 0: conditions contradictory, uninitialized variables with effect, dead states preventing operation.
+- 1: mostly coherent, with redundancies or dead conditions no serious effect.
+- 2: no contradictions; initialization correct; complete transitions.
+- 3: robust interlocks, no unreachable states, safe behavior simultaneous inputs.
+
+For failing implementations I3-6376/7173:
+- Logic: `IF NOT ack THEN retAlm := alm; ELSE retAlm := FALSE; END_IF` No contradictions, but fails to implement retentive latch. There are no dead states? But there is no memory behavior. Variables uninitialized? Since assigned each cycle depending on inputs, not effect. Coherencia maybe 1 or 0? 0 says "variables sin inicializar con efecto, o estados muertos que impiden operar." They impede retention, but not due contradictions. 1: "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." Actually the missing memory is missing logic, not incoherence. Could assign 1 or 2. Since logic coherent but functionally wrong. Coherencia maybe 2: no contradictions, initial assignment by inputs; transitions complete? But outputs compile. However "requisitos no implementados" maybe not. Criteria is about internal consistency, not functional correctness. The code is consistent, just doesn't satisfy. I'd assign coherencia 2 maybe. But it fails central requirement; maybe functional 0, coherencia 2. That's possible. Need be fair: Coherencia is separate from functional. For these fail codes, the algorithm is internally coherent: retAlm1 tracks condition based on ack and alm, priority logic okay. No contradictions. So coherencia 2 (or 1 for lack memory state). But "transiciones completas" maybe no memory variable transition. It is simple combinational. Could be 2. Maybe 1 if redundancy/no dead conditions. There are no dead conditions. Hmm.
+
+For all passing codes:
+- Need score coherencia 2 or 3. Since all correct. Some use expressions vs separate IFs. Coherencia 3 for robust simultaneous inputs? Let's verify each handles simultaneous ack and cause present correctly due set priority or separate set/reset. All pass step 2. I3-2453/5104 etc use separate IF with reset `ack AND NOT alm`, so when ack true and alm true, no reset, set remains. Good. Some use latch expressions, simultaneous okay. Some use split set first then reset condition with `ack AND NOT alm`, simultaneous okay. So all robust for simultaneous. Coherencia 3 possible. But need differentiate based on initialization? Some declare `BOOL` no explicit init; some declare `BOOL := FALSE`. Since CODESYS defaults to FALSE, no problem. Could give 3 to all correct: no contradictions, initialization implied, safe simultaneous. But may be too generous. Some codes with separate set/reset have a potential order issue? Let's verify:
+
+I3-2429:
+```
+IF alm1 THEN ret1 := TRUE; END_IF;
+IF alm2 THEN ret2 := TRUE; END_IF;
+IF alm3 THEN ret3 := TRUE; END_IF;
+
+IF ack1 AND NOT alm1 THEN ret1 := FALSE; END_IF;
+...
+```
+If ack1 true and alm1 true, reset condition false => ret true. Good.
+If ack1 true and alm1 false with ret false, set doesn't run, reset true => ret false (no change). Good.
+If alm1 true and ack1 true at first scan ret initialized? In CODESYS false; set runs, reset false, ret true. Good.
+
+I3-1066:
+```
+IF NOT alm1 AND ack1 THEN ret1 := FALSE; END_IF
+IF NOT alm2...
+...
+IF alm1 THEN ret1 := TRUE; END_IF
+...
+```
+If alm1 true and ack1 true: first false, second true -> ret true. Good.
+If alm1 false ack true: first true -> false. Good.
+If alm1 true ack false: first false, second true. good. If no alarm false ack false: no assignment, ret stays previous. That's okay for retention. Initial false default. So all robust. Thus coherencia 3 maybe.
+
+But "coherencia lógica" is not about functionality? But all correct implementations can be 3.
+
+Clarity:
+Need assess names and comments, sections, modularization. There is no much modularization beyond an FB already required. Could give:
+- 2 for most: descriptive names, ordered sections, comments.
+- 3 for some with extra section banners/clear explanation of why, e.g. I3-8823, I3-6496, I3-9721, I3-4818 with detailed comments, maybe I3-2584/2759 with numbered sections but //.
+- Could give 1 for code with sparse/no comments? Some all have comments. Minimal? I3-1066 maybe comments okay but less structured: clear sections but not many explanatory comments. Still 2. Some with all comments and explanations maybe 3.
+
+Need produce justifications for each.
+
+Mantenibilidad:
+- No parameters beyond fixed I/O; no magic values? Some hard-code alarm counts maybe but okay. Some use explicit ret bits; duplicação logic per alarm. For 3, design extensible (parámetros de entrada del FB, sin duplicación de lógica). These simple FBs duplicate logic three times; not extensible to N alarms. Could assign 2 to most: constants declared? They don't use constants. But task fixed 3 alarms. "valores mágicos"? Priority code values 1,2,3; outputs are inherent. No constants for priorities. Could assign 2: parámetros como variables/constantes declaradas? Not really. Maybe 2 for direct variables. Many cannot easily add 4th alarm without code changes but okay. 3 would require arrays or FB parameters, not present. So likely mantenibilidad 2 at best. Some duplicate but manageable. Maybe 1 for very repetitive? But there is no magic. "Parámetros como variables o constantes declaradas; cambios localizados." They have names and clear local ret variables; but alarm count hardcoded. I'd assign 2 to all. Maybe I3-8823 with comments and STRUCT? no. Maybe all 2. Could assign 3 to none. The rubric 3 "diseño extensible ... sin duplicación de lógica". All duplicate 3 times, no extensible. So no 3. Could assign 2 to all. Maybe failing ones? Their simplistic logic maybe hard to modify because missing memory; but still names clear. Could assign 1 because central behavior can't be fixed without rewriting. But make consistent: maintenance maybe 1 for failing combinational code because having to add latches. However they are localized enough. Hmm.
+
+Need inspect each for possible initial values. Some declare `alm1Retenido : BOOL := FALSE;` (I3-4378). Others no. Is lack init a maint or coherencia issue? In CODESYS default false; no effect. IEC standard maybe "variables are initialized to 0 if not explicitly" I think standard initial value is 0 for static? Probably okay. Could give coherencia 2 vs 3 due not explicit, but "viene fijado no"? We decide.
+
+Let's design scoring approach.
+
+Given all passing implementations mostly identical, we can assign many similar scores with justifications. Need not over differentiate. But must score each.
+
+Could set for all passing:
+- funcional = 3 fixed.
+- iec = 2 or 3 depending comments/syntax.
+- coherencia = 2 or 3.
+- claridad = 2 or 3.
+- mantenibilidad = 2.
+
+Need produce valid JSON. Need one line per justification. It says when func/iec fixed? We need `just_func_iec`: "una línea, o \"\" si las dos estaban fijadas". Here funcional is fixed, but iec not fixed in all. Need one line for func/iec? It says "una línea, o \"\" si las dos estaban fijadas". But if only funcional fixed and iec not fixed, we should provide justification for iec? The field named just_func_iec maybe can combine both. We'll provide one line explaining iec (and mention functional fixed if needed). For failing where both not fixed, provide both. Need keep concise. Ensure no markdown.
+
+Need decide iec scores.
+
+Let's thoroughly evaluate each response.
+
+I'll create table.
+
+First, parse comments syntax and structure.
+
+1. I3-8823:
+```
+FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT...
+END_VAR
+VAR_OUTPUT...
+END_VAR
+VAR...
+END_VAR
+(* ── Lógica... *)
+...
+```
+Uses `(* *)`, labels, decent comments. Logic IF/ELSIF. Variable names mem1..mem3 less descriptive but okay. Sirena etc.
+- IEC: 3? It is standard, no extensions, good comments. Declarations correct. Uses IF/ELSIF idiomatic. Yes 3.
+- coherencia: 3 (set priority handles simultaneous).
+- claridad: 3? Names mem1..mem3 generic but comments clear; section banners. Probably 3 maybe 2. "nombres descriptivos" mem1 not as descriptive as retAlm1. But comments say. Could be 2. Functional code identical. Clarity 2 or 3. Let's see: "nombres descriptivos, secciones ordenadas, comentarios útiles" yes mem1 less descriptive but okay. "modularización adecuada (FB reutilizable...)" not really. So maybe 2. Actually "además modularización adecuada y comentarios que explican el porqué." Comments "prioridad al set" explain why. But names mem1/2/3 are not too descriptive. I'd give 2. Mantenibilidad 2.
+
+2. I3-1249:
+Uses ret1/ret2/ret3, comments with header. Section comments. IEC (* *). 
+- IEC: 3? Standard comments and FB. Yes.
+- coherencia: 3.
+- claridad: 2 or 3. Names ret1 etc somewhat short; comments useful. "--- Logica de retencion por alarma ---". Could be 2.
+- Mant 2.
+
+3. I3-2429:
+Uses // comments. Variable names ret1..ret3. Logic split set and reset. 
+- IEC: If strict `//` extension, maybe 1. But maybe it compiles with CODESYS extension; comments are not standard. I need decide globally.
+Let's think: The task expects evaluator may penalize `//` under IEC. Many model outputs use //; a careful evaluator should at least assign 1 or 2? Maybe "usa extensiones fuera del estándar" includes `//` comments. I'll likely set iec 1 for codes using //, to be consistent. But could that be too harsh? Let's see if there are any with // but also not standard? Many. If I set iec 1 for //, the “Cumplimiento IEC” would be low for most but some use (* *). The prompt "ven fijado null, la pones tú". It's acceptable.
+
+But in the rubric, score 1 "compila solo tras correcciones menores, o usa extensiones fuera del estándar". The // code compiles without changes but uses extension. So yes 1. However in our internal "just_func_iec" for these maybe "Compila y lógica correcta; usa comentarios // no estándar según IEC 61131-3." That would be exactly.
+
+What about code with both? Some use // exclusively. We can assign iec 1. But there are also some with no comments? none.
+
+Would a code with // comments but all else correct get IEC 1, which seems low. The rubric maybe intended for actual language constructs like `R_TRIG`? But strict.
+
+Let's search my memory: In CODESYS V3, ST comments are both `(* *)` and `//`? The IEC 61131-3 3rd edition maybe includes `//`? Let's check: IEC 61131-3: “Comments shall be enclosed by the combination (* and *)”. Single-line comment `//` is not standard. So yes. However the user explicitly says "Conforme al estándar IEC 61131-3." So I'd penalize non-standard comments. But would I give 1 vs 2? The rubric says 2 "compila sin cambios; declaraciones y tipos correctos." Even if comments use //, the code compiles and declarations correct; but because it's an extension, I think rubric places it 1. We can mention.
+
+But if I do that, those with // cannot be 3 even if otherwise perfect. Fine. Maybe some with // but using standard syntax? no.
+
+Now, all codes with (* *) perhaps IEC 3 if they are idiomatic. But are there any with (* *) but maybe no standard blocks? 3 still possible. I'd assign 3 to many (* *) ones. But if all correct ones use exactly same simple logic, maybe all 3. That's okay. But maybe assign 2 to those with less idiomatic? Let's define:
+- IEC 3 for standard comments `(* *)`, appropriate FB, standard ST.
+- IEC 2 for standard comments but maybe some ordering? Actually all compile.
+- IEC 1 for // extension.
+
+What about I3-6376/7173 failing but using (* *) and compiles. For IEC, compiles. They use IF, declarations correct, (* *). They are somewhat idiomatic? Yes. Could assign 3? But their logic is not functional; IEC compliance independent. The rubric says 3 if compiles and idiomatic. They are idiomatic. But maybe because they don't implement retention? not relevant. So I'd assign 2 or 3? The code's standard comments and control structures are idiomatic. Could assign 2 perhaps because it's a combinational logic not using latches? The standard does not require. I'd assign 2 maybe because simple, but if strict the code is standard. For consistency with other (* *) using standard, should assign 3? Wait "excellent" 3 maybe not needed for failure cases; but iec independent. The "iec_fijo" for no compiles are 0. For compiles, no explicit penalty for functional. I'd probably assign 2 to all compiling codes that don't use // because they don't use any particular standard block, just simple IF; no need to be 3. But then what distinguishes 3? The rubric says "y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." A simple FB with IF/ELSIF is idiomatic. Hmm.
+
+Maybe better to differentiate:
+- 3: Uses boolean latch expression as single assignment? Or clear set/reset idiom? Actually all are idiomatic.
+- 2: Standard comments, types correct, no issues, but no mention of blocks. 
+- 1: //.
+
+Could choose 2 for most standard comment codes, 3 for particular clean ones with detailed comments? But iec isn't clarity. Hmm.
+
+Let's consider the intended answer evaluation maybe the `iec_fijo` would have generated before? The prompt says "Cumplimiento IEC cuando compila: 1 si usa extensiones; 2 si declaraciones y tipos correctos; 3 si además es idiomático." Thus they may expect:
+- If code uses no standard blocks, but POU and types correct, maybe 2. "Idiomatic" might include using `R_TRIG` if needed, but not needed.
+- An FB named FB_Alarmas is adequate. Type INT for codigoAlm correct. Using `IF` for priority is standard. That's enough for 3? Maybe yes.
+
+Need not overfit.
+
+Let's perhaps set:
+- IEC = 3 for codes that compile, use standard comments `(* *)`, and have clear standard ST.
+- IEC = 2 for codes that compile, use standard comments `(* *)` but not as elegant? but no reason.
+- IEC = 1 for `//`.
+But if we give 3 to all (* *) including fail cases, okay.
+Will there be too many 3? 14 codes.
+
+Maybe we can set IEC 3 for all (* *) except failing? But failing also compile and standard. Hmm.
+
+Let's step aside: We need produce final JSON list. It can have varied scores. Just must be plausible. The rubric's fixed rules demand if compiles but fails steps functional not 3; iec not fixed. The overall scores probably will be evaluated by some meta-evaluator? It's okay.
+
+Need maybe not over-penalize comments; may be too strict. Let's perhaps assign IEC 2 to all compiling responses (correct declarations and types) and IEC 3 to those with standard comments and clearer construction. That would avoid harsh `//` issue? But then we ignore // as extension. However "usa extensiones" could be applied to //. Hmm.
+
+Let's revisit the exact rubric "Cumplimiento IEC 61131-3. 0: no compila; sintaxis o declaraciones inválidas. 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)."
+
+The phrase "construcciones idiomáticas del estándar" examples include `POU adecuado, tipos TIME correctos, bloques estándar ...`; no comments. Maybe "comments //" isn't central. But definitely extension. In a careful eval, use of // constitutes 1, even though the code compiles. But maybe `//` is accepted by CODESYS as part of IEC? Let's confirm from CODESYS help: In ST, comments are enclosed in (* *) or start with //. It says "Single-line comments begin with // and end with newline." But IEC does not standardize. The task says "Conforme al estándar IEC 61131-3"; so yes.
+
+I can incorporate comments issue in `just_func_iec` for those. This is a legitimate differentiation. Let's do that, but maybe adjust `iec` for // to 1. The rubric says 1 if uses extension; no need to debate. Good.
+
+Now functional failing codes. Need decide final functional for I3-6376 and I3-7173. It may be 0 or 1. Let's settle on 0 or 1.
+
+Let's examine I3-6376 exactly:
+```
+IF NOT ack1 THEN retAlm1 := alm1; ELSE retAlm1 := FALSE; END_IF;
+...
+IF retAlm1 THEN codigoAlm := 1; ELSIF retAlm2 ... else 0
+```
+This is a combinatorial logic. It doesn't retain. It fails step2 and step3. The protocol's step3 specifically: cause removed and ack released; expected retained. Their output clears because `retAlm3 := alm3` and alm3 false. So fails central "queda retenida". The rubric for functional 0: "no implementa la lógica pedida o falla en el caso nominal." Does the "caso nominal" include retention? Yes, central. But they implement alarm detection and priority. If "la lógica pedida" includes retention, they don't implement. I'd assign 0. The fixed rules say if compiles but fail steps use 0,1,2. If they fail core because missing latch, that's 0. Some may argue 1 because most outputs correct. But "no implementa la lógica pedida" is accurate: no retention. I think assign 0 is justified. Need in `just_func_iec`: "No retiene: borra con ACK aunque la causa siga activa y pierde al retirar causa sin ACK; falla pasos 2 y 3, funcional 0." Good.
+
+But wait if funcional 0 for failing, then perhaps coherencia and mantenibilidad could still be 2, and iec 2/3. That's okay.
+
+Could assign functional 1 to recognize partial? Let's see rubric:
+0: "no implementa la lógica pedida o falla en el caso nominal."
+1: "funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)."
+2: "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo."
+The case nominal for this task: alarm active -> sirena/codigo; ack after cause gone clears. This code:
+- Step1: alm3 true -> output 3 true. Pass.
+- Step4: after previous false, ack true -> false pass.
+But step3 is also core: alarm retained after cause gone. They fail. So not just edge. Thus 0. Good.
+
+Now for passing functions, functional fixed 3; just_func_iec: maybe "Compila y pasa los 10 pasos; IEC correcto..." If iec fixed? no. We can mention fixed functional 3.
+
+Now for codes that pass but use // maybe functional fixed 3, iec 1. `just_func_iec` could be "Funcional 3 fijado; IEC 1 por comentarios // no estándar." Good.
+
+Now coherencia for failing code. We need assign `coherencia` 0-3. For I3-6376/7173:
+- No contradictions, but missing memory. Variables uninitialized with effect? They assign using inputs each scan; no effect? Actually no previous state used except not using prev. There is no dead state? The output clears prematurely. Coherencia maybe 1 because logic is coherent for non-retentive behavior, but requirement missing. The rubric's 0 includes "condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar." Here no, but their condition `IF NOT ack THEN retAlm := alm ELSE retAlm := FALSE` has contradictory with requirement not internally. No dead state. It does not "impeden operar" for immediate alarm. So 1 or 2. I'd assign 1? "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." They don't have redundancies. Could be 2. But the logic has a major omission, not incoherence. The criteria maybe should reflect that no contradictions. I'd assign 2 for both failing because their code is internally coherent but simplified. However they lack correct transition for memory; that's not incoherence. In a rubric, coherencia could be 1 due missing state transitions. Hmm. Let's define coherencia 2: "sin contradicciones; inicialización correcta; transiciones completas." Do they have complete transitions? No, they don't have retention state. They have only combinational transitions; for a retentive task, transitions incomplete. So maybe coherencia 1: "lógica mayormente coherente, con ... condiciones muertas sin efecto grave." The missing retention is a simplification, but not exactly redundancy. Could be 1. Let's maybe assign coherencia 1 to failing ones: they are coherent but incomplete and fail safe behavior simultaneous? Actually when ack true and cause true, they clear despite cause; that's not coherent with requirement. But internal logic no contradiction. Maybe 1.
+
+Given functional 0, claridad maybe 2, mantenibilidad 1? Let's decide later.
+
+Now for passing codes coherencia. Most handle simultaneous `alm` and `ack` correctly. Could assign 3 to all. But some with set/reset split maybe might have subtle order? We verified robust. Coherencia 2 might be enough; 3 "interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas." They all have that. Should give 3? Let's see if any have "módulos separados" no. Coherencia 3 possible.
+
+Clarity: probably 2 for most, 3 for those with detailed explanation. Let's decide per code.
+
+Mantenibilidad: likely 2 for all. Some maybe 1 if they use magic codes? No. Some define constants? None. Duplication but task small. "modificable con esfuerzo; constantes parcialmente parametrizadas." Maybe all are 2 because names descriptive and changes local. Let's assign 2 universally. For failing ones perhaps 1 because to add retention you'd rewrite all three latches? But still local. Maybe 2.
+
+Actually 3 for mantenibilidad is for extensible design; none meet. So 2 max. Could assign 1 to codes with poor names? all have good. So 2.
+
+Now need produce one-line justifications.
+
+Need ensure each object includes all fields: `codigo`, `funcional`, `iec`, `coherencia`, `claridad`, `mantenibilidad`, `just_func_iec`, `just_coherencia`, `just_claridad`, `just_mantenibilidad`. Values integer.
+
+Let's plan per response.
+
+I'll create detailed table.
+
+First determine IEC policy:
+
+Let's maybe not use strict `//` penalization after all? The prompt explicitly says `iec_fijo` null. If I assign 1 to many, the distribution will be somewhat harsh. But correct.
+
+Let's verify which responses use only (* *):
+- I3-8823 yes (* *) 
+- I3-1249 yes
+- I3-9331 yes (* *)
+- I3-6376 yes
+- I3-8129 yes (* *)
+- I3-8600 yes (* *)
+- I3-6496 yes (* *)
+- I3-1066 yes (* *)
+- I3-7296 yes (* *)
+- I3-3545 yes (* *)
+- I3-7173 yes (* *)
+- I3-9721 yes (* *)
+- I3-4818 yes (* *)
+- I3-9934 yes (* *)
+- I3-1393 yes? Check: I3-1393 uses `(* *)` only? Code: yes `FUNCTION_BLOCK` then comments `(* Alarma 1 - Prioridad alta *)`, etc. All comments `(* *)`. So yes.
+- I3-2759 uses `//`.
+- I3-4645 uses `//`.
+- I3-5104 uses `//`? Actually code comments? `// Alarma de prioridad alta`, yes.
+
+Let's list 24 with comment type:
+
+1 I3-8823 (* *)
+2 I3-1249 (* *)
+3 I3-2429 // (comments `//`)
+4 I3-2584 // 
+5 I3-9331 (* *)
+6 I3-6376 (* *)
+7 I3-8129 (* *)
+8 I3-2453 // 
+9 I3-5104 //
+10 I3-3183 //
+11 I3-8600 (* *)
+12 I3-6496 (* *)
+13 I3-4378 //
+14 I3-1066 (* *)
+15 I3-1113 //
+16 I3-9934 (* *)
+17 I3-7296 (* *)
+18 I3-3545 (* *)
+19 I3-7173 (* *)
+20 I3-9721 (* *)
+21 I3-2759 //
+22 I3-4645 //
+23 I3-1393 (* *)
+24 I3-4818 (* *)
+
+So 13 use (* *) if count: 1,2,5,6,7,11,12,14,16,17,18,19,20,24 => 14? Actually 24 yes 14. The rest 10 use //. Check I3-4378 uses //; I3-1113 //; I3-4645 //. Count of //: 3,4,8,9,10,13,15,21,22 = 9; maybe 23 *? no. Let's count total 24: * group 14, // group 10. Let's recount:
+1 *
+2 *
+3 //
+4 //
+5 *
+6 *
+7 *
+8 //
+9 //
+10 //
+11 *
+12 *
+13 //
+14 *
+15 //
+16 *
+17 *
+18 *
+19 *
+20 *
+21 //
+22 //
+23 * (comments (* *)? Actually code shows: 
+```
+FUNCTION_BLOCK FB_Alarmas
+VAR_INPUT
+    alm1 : BOOL; (* Alarma 1 - Prioridad alta *)
+...
+```
+ yes *)
+24 *
+Aha I didn't include 23? Yes * group includes 23. So * group = 1,2,5,6,7,11,12,14,16,17,18,19,20,23,24 = 15. // = 3,4,8,9,10,13,15,21,22 = 9. 15+9=24. Good.
+
+So if strict // penalty, 9 get iec 1. Remaining 15 get iec 2 or 3. The ones with * could all get maybe 3. Let's see if any * code has non-standard constructs? none. The ones with // maybe iec 1 due extension; but what about I3-4378 maybe uses `//` but also explicit init `BOOL := FALSE`; still // extension. yes.
+
+Could there be another extension in code? Use `END_FUNCTION_BLOCK`? Standard. Use `ELSIF`? Standard.
+
+I'll likely assign IEC 3 to all * group except maybe failing still 2? But if all standard and idiomatic, yes 3. Some may argue no standard blocks; no. But it's okay. Let's set:
+- * group compiling: iec 3.
+- // group: iec 1.
+This yields a nice clear differentiation. Does that violate rule "Si compila pero falla pasos ... iec entre 1 y 3"? No.
+Need mention in justification for * group: "comentarios (* *) estándar, FB correcto; IEC 3." For // group: "IEC 1 por comentarios // no IEC."
+
+Is it fair to give iec 3 to I3-6376/7173 failing functional? They use standard comments and simple IF. Though not implementing retention, they use standard constructs. So yes.
+
+But "construcciones idiomáticas" maybe not about comments; maybe using `IF NOT ack THEN retAlm := alm ELSE retAlm:=FALSE` is not idiomatic for latch, but it's standard. Still 3? Keep 3 maybe.
+
+Potential meta: The expected `iec_fijo` might have been set by rule? No.
+
+Need maybe not use "comentarios // no estándar" if the evaluators don't consider comments; but I think fine.
+
+Now coherencia:
+Let's classify each code's latch construction.
+
+Types:
+A. IF/ELSIF set/reset priority: I3-8823, 1249, 9331, 8600, 6496, 9721, 3545, 7296, 4818, maybe 1066? It has separate but order reset then set; okay but not ELSIF. 
+B. Latch expression: I3-2584, 8129, 9934, 2759, 1393. 
+C. Separate set/reset (set then reset): I3-2429, 2453, 5104, 3183, 4378, 1113, 4645. 
+D. Separate reset then set: I3-1066.
+E. Failing combinational: I3-6376, 7173.
+
+All A, B, C, D functional pass. Coherencia:
+- A, B, D robust simultaneous. C robust as argued. So all 3? But C has potential if ack true and alm false first scan no issue. If ack and alm true, both set and reset? reset condition `ack AND NOT alm` false, so no. Robust.
+Could assign 3 to all pass.
+Maybe some with C set/reset split but no explicit initial values might rely on default. That's okay. 
+Could assign 3 to all pass. But maybe for I3-4378 explicit init; no problem.
+What about I3-2429/5104 etc have separate set and reset not in a single IF, but still no contradiction. Coherencia 3.
+
+If we need differentiation, perhaps assign 2 to those that don't explicitly initialize retained bits but are safe due default. But CODESYS default makes variables FALSE, harness passes. The rubric "inicialización correcta". Could be 3.
+Some codes don't have an explicit first scan but not needed.
+
+Let's assign coherencia 3 to all pass, 1 to fail? Need decide.
+
+For failing group:
+- I3-6376/7173: Could assign 1 coherencia. Justification: "Lógica combinacional coherente pero no guarda estado; transiciones de retención incompletas." That fits score 1.
+
+Now clarity:
+Need score 1-3 for each. Most are clear. Let's perhaps assign:
+- 3 to codes with section banners and explanatory comments (why): I3-8823, I3-2584, I3-6496, I3-7296, I3-9721, I3-4818, maybe I3-2759 (numbered sections with comments but //). 
+- 2 to others with good names/comments but minimal. 
+- Maybe 1 to failing? They still have comments; maybe clarity 2. I3-6376/7173 use clear names and comments, though no section banner; clarity 2.
+Need assign across all.
+
+Let's evaluate clarity per code:
+
+1 I3-8823: Very clear section banners "Lógica de retención", "Sirena", "Código". Comments explain set/reset. Names mem1 not super. Clarity maybe 2 due names? But comments good. Could give 3? "Además modularización adecuada..." Not much. But for a small FB, clear. I'd give 2 because names `mem1` generic. Hmm but comments enough. Let's maybe give 3 to I3-4818, I3-6496, I3-9721, I3-2584, I3-2759; and 2 to others.
+
+Need not be overly complex.
+
+Could give clarity 3 to:
+- I3-8823: section banner and why comments "prioridad al set". Yes 3 maybe.
+- I3-2584: numbered sections and clear explanation "Si la causa sigue presente, el ack no tiene efecto". 3.
+- I3-6496: section banners and explanatory why. 3.
+- I3-7296: section banners, comments. 3.
+- I3-9721: section banners, clear. 3.
+- I3-4818: section banners, detailed comments. 3.
+- I3-2759: numbered sections, clear comments. 3.
+Maybe I3-1249/9331/8600/3545 also section banners. Could be 3. Hmm.
+
+Let's list all pass codes and their comments:
+- I3-1249: header sections `--- Logica de retencion por alarma ---`, comments. But no why. Clarity 2 maybe.
+- I3-9331: sections `Retención de alarmas`, `Determinación...`, comments. Clarity 2.
+- I3-8129: not section banners? It has `(* Retencion de alarmas: ... *)`, `(* La sirena ... *)`, `(* Evaluacion ... *)` though single comments. Clarity 2.
+- I3-2453: sections separate, comments. Clarity 2.
+- I3-5104: sections separate, comments. Clarity 2.
+- I3-3183: sections, comments. Clarity 2.
+- I3-8600: sections, comments. Clarity 2.
+- I3-4378: sections, comments. Clarity 2.
+- I3-1066: no section banner? Comments simple. Clarity 2.
+- I3-1113: sections, comments. Clarity 2.
+- I3-9934: section comments. Clarity 2.
+- I3-3545: sections. Clarity 2.
+- I3-1393: comments. Clarity 2.
+- I3-4645: comments. Clarity 2.
+
+Most are "names descriptive, sections ordered, comments useful" 2. For 3, need "comments that explain why" and modularization. Some do. Could assign 3 to those with explanatory comments. Let's decide:
+- I3-8823: comments "set/reset con prioridad al set" explain why; maybe 3.
+- I3-2584: comments explain "el 'ack' no tiene efecto (almX fuerza el TRUE)" — 3.
+- I3-6496: comments with "La alarma se activa al aparecer..." explain why — 3.
+- I3-7296: comments "se borra solo si ack1 Y la causa ya desapareció" — 3.
+- I3-9721: same — 3.
+- I3-4818: detailed headers — 3.
+- I3-2759: comments "Si la causa sigue presente, el ack no tiene efecto (almX domina)" — 3.
+Maybe I3-1393: comments "se mantienen hasta que desaparece la causa y se reconocen" — 3? But not extensive.
+Clarity is not complex. We'll assign 3 to 7 max.
+
+Mantenibilidad:
+Could assign all 2. Maybe some 1 for using // but not relevant. Maybe those with less descriptive "ret1" variable names maybe maintenance 2? still.
+
+Could assign mantenibilidad 2 to all pass and fail except maybe fail 1? The rubric: 1 "modificable con esfuerzo; constantes parcialmente parametrizadas." Their code is modest and easy to modify? But central retention missing. For maintenance, if adding retention they'd need change each line? It's simple. I'd assign 2 to all: "Parámetros claros y cambios por alarma localizados; sin duplicar lógica excesiva." That's okay. Could assign 3 to none due no extensible design. Good.
+
+Now need decide scores per response. Let's draft table.
+
+Let's process one by one in input order.
+
+1 I3-8823 pass all. IEC * → 3. Coh 3. Clar 3 (maybe). Mant 2. just_func_iec: "Pasa todos los pasos; funcional 3 fijo. IEC 3: FB correcto, variables y comentarios (* *) estándar." 
+just_coherencia: "Lógica set/reset sin contradicciones; prioridad al set asegura ACK simultáneo." 
+just_claridad: "Secciones ordenadas y comentarios que explican set/reset y prioridad." 
+just_mantenibilidad: "Bien localizado por alarma, pero lógica triplicada sin parametrización extensible." 
+Mant 2.
+
+2 I3-1249: IEC * 3. Coh 3. Clar 2? Let's maybe give 2. It has sections and useful comments but no why. just_claridad: "Nombres ret1/2 y comentarios claros, pero menos explicativos." Mant 2.
+3 I3-2429 //: IEC 1. Coh 3. Clar 2. Mant 2.
+4 I3-2584 //: IEC 1. Coh 3. Clar 3. Mant 2. 
+5 I3-9331 *: IEC 3. Coh 3. Clar 2. Mant 2.
+6 I3-6376 fail *: functional 0, iec 3. Coh 1. Clar 2. Mant 1? Let's maybe maint 1 or 2. We can set mant 1 because "lógica no retentiva requiere reescritura para cumplir; no parámetros". But actual maintenance manageable. However if they need retention, they'd rewrite the latch block. Still simple. I'd set 2 maybe. Let's see in the evaluation, failing code central may get lower mantenibilidad? The rubric for maintenance focuses on magic values, modification. They have no magic values and changes localized. Could still be 2. But maybe because it fails central, but maintenance not functional. I'd set 2. But maybe more nuanced: It's actually very simple; if need add 4th alarm, same pattern. It uses names. I'll assign 2.
+just_func_iec for 6: "Falla retención: borra con ACK y causa activa y no mantiene si ACK se suelta; funcional 0. IEC 3 por sintaxis estándar." 
+just_coherencia: "Lógica combinacional sin contradicciones, pero no implementa los estados retenidos; transiciones incompletas." 
+just_claridad: "Comentarios y nombres claros, aunque la estructura no refleja retención." 
+just_mantenibilidad: "Modificable y sin valores mágicos, aunque implementar retención obliga a reestructurar la lógica." 
+Mant maybe 2.
+
+7 I3-8129 *: IEC 3. Coh 3. Clar 2. Mant 2.
+8 I3-2453 //: IEC 1. Coh 3. Clar 2.
+9 I3-5104 //: IEC 1. Coh 3. Clar 2.
+10 I3-3183 //: IEC 1. Coh 3. Clar 2.
+11 I3-8600 *: IEC 3. Coh 3. Clar 2.
+12 I3-6496 *: IEC 3. Coh 3. Clar 3.
+13 I3-4378 //: IEC 1. Coh 3. Clar 2.
+14 I3-1066 *: IEC 3. Coh 3. Clar 2.
+15 I3-1113 //: IEC 1. Coh 3. Clar 2.
+16 I3-9934 *: IEC 3. Coh 3. Clar 2.
+17 I3-7296 *: IEC 3. Coh 3. Clar 3.
+18 I3-3545 *: IEC 3. Coh 3. Clar 2.
+19 I3-7173 fail *: IEC 3. functional 0. Coh 1. Clar 2. Mant 2.
+20 I3-9721 *: IEC 3. Coh 3. Clar 3.
+21 I3-2759 //: IEC 1. Coh 3. Clar 3.
+22 I3-4645 //: IEC 1. Coh 3. Clar 2.
+23 I3-1393 *: IEC 3. Coh 3. Clar 2.
+24 I3-4818 *: IEC 3. Coh 3. Clar 3.
+
+Need check if there are maybe 10 // and we assign 1. Does that align with "iec 3 if comments (* *)"? We should maybe avoid over-awarding 3 to all * group because many are equivalent. But okay.
+
+However maybe for codes with `(* *)` but no standard blocks, should be 2 not 3. If I assign 3 to all * group, the iec distribution maybe too bimodal: 3 or 1. Is that okay? The rubric has 2 for basic compile. "construcciones idiomáticas" maybe most are. Fine.
+
+Could maybe set IEC 2 for failing * codes? But they use standard ST equally. Maybe keep 3.
+
+Let's review each code's syntax for possible non-standard due `END_FUNCTION_BLOCK` vs `END_FUNCTION_BLOCK`? Standard. Comments. no.
+
+Now, we need ensure justifications one line. In JSON strings, can include Spanish tildes? Should be okay. Need escape any newline? We'll write one-line strings. No markdown.
+
+Need maybe produce with no code block. Final answer should be a JSON array.
+
+Before final, let's deeply analyze if any pass codes might not actually conform due `//` or declarations. Also potential IEC issue with unicode line drawing character `─` in comments (I3-8823 and I3-7296). In comments, okay.
+
+Need maybe assign IEC 2 not 3 to some using `(* *)` but complex pseudo unicode. But no.
+
+Now could some codes with `//` be considered standard in CODESYS's IEC implementation, so not an extension? Hmm. We need not get stuck.
+
+Let's maybe consider another factor: Some codes use `(* *)` but variable names like `ret1`, `mem1`. Not an IEC issue.
+
+Now maybe functional for I3-6376/7173 should be 1 instead of 0 to reflect passing many steps. The rubric "1: funciona en el caso nominal pero falla en casos límite evidentes" not exact. But maybe "falla en la mayoría de los casos límite; fallas menores sin riesgo" no. They fail central "retenida". I'll stay with 0. We need in just_func_iec mention "No retiene" clearly.
+
+Need ensure for codes with functional fixed 3, we don't set functional 3 manually? We copy from input fixed. Good.
+
+For each `just_func_iec`, if both func and iec fijadas? None have both fixed. For func fixed, we can mention "Funcional fijo 3" and "IEC..." in one line.
+
+Now maybe "just_func_iec": for pass // group, I'll write: "Funcional fijo 3; IEC 1 por comentarios // (extensión CODESYS, no IEC)." For pass * group: "Funcional fijo 3; IEC 3: código IEC estándar con FB e IF/ELSIF." For fail * group: "Falla pasos 2 y 3 por no retener; funcional 0. IEC 3 por sintaxis estándar." Need maybe "funcional 0" since both not fixed? yes.
+
+Need ensure "just_func_iec" not empty. Empty only if both fixed. None both fixed.
+
+Now coherencia justifications:
+For pass: "Sin contradicciones: la retención prioriza set y el ACK solo limpia con causa ausente." For all pass.
+For fail: "Lógica internamente consistente, pero sin estado retenido; transiciones incompletas frente al enunciado." That's coherencia 1. Good.
+
+Clarity justifications:
+- For 3: "Nombres descriptivos, secciones comentadas y comentarios explican el porqué del enclavamiento." 
+- For 2: "Código ordenado con comentarios útiles, aunque sin explicaciones de propósito ampliadas." 
+Need one line.
+
+Mantenibilidad justifications:
+- For almost all: "Cambios por alarma localizados y sin valores mágicos; no es extensible a N alarmas." 
+- For maybe fail same.
+
+Need maybe assign maint 2 to all; justification same. That's fine.
+
+But perhaps some codes with // and less clear names maybe maint 1? The rubric: 1 "modificable con esfuerzo; constantes parcialmente parametrizadas." Their code is quite easy. So 2.
+
+Let's verify counts and code names.
+
+Let's map final scores per response:
+
+1 I3-8823: func 3, iec 3, coh 3, clar 3, mant 2.
+2 I3-1249: func 3, iec 3, coh 3, clar 2, mant 2.
+3 I3-2429: func 3, iec 1, coh 3, clar 2, mant 2.
+4 I3-2584: func 3, iec 1, coh 3, clar 3, mant 2.
+5 I3-9331: func 3, iec 3, coh 3, clar 2, mant 2.
+6 I3-6376: func 0, iec 3, coh 1, clar 2, mant 2.
+7 I3-8129: func 3, iec 3, coh 3, clar 2, mant 2.
+8 I3-2453: func 3, iec 1, coh 3, clar 2, mant 2.
+9 I3-5104: func 3, iec 1, coh 3, clar 2, mant 2.
+10 I3-3183: func 3, iec 1, coh 3, clar 2, mant 2.
+11 I3-8600: func 3, iec 3, coh 3, clar 2, mant 2.
+12 I3-6496: func 3, iec 3, coh 3, clar 3, mant 2.
+13 I3-4378: func 3, iec 1, coh 3, clar 2, mant 2.
+14 I3-1066: func 3, iec 3, coh 3, clar 2, mant 2.
+15 I3-1113: func 3, iec 1, coh 3, clar 2, mant 2.
+16 I3-9934: func 3, iec 3, coh 3, clar 2, mant 2.
+17 I3-7296: func 3, iec 3, coh 3, clar 3, mant 2.
+18 I3-3545: func 3, iec 3, coh 3, clar 2, mant 2.
+19 I3-7173: func 0, iec 3, coh 1, clar 2, mant 2.
+20 I3-9721: func 3, iec 3, coh 3, clar 3, mant 2.
+21 I3-2759: func 3, iec 1, coh 3, clar 3, mant 2.
+22 I3-4645: func 3, iec 1, coh 3, clar 2, mant 2.
+23 I3-1393: func 3, iec 3, coh 3, clar 2, mant 2.
+24 I3-4818: func 3, iec 3, coh 3, clar 3, mant 2.
+
+Need check if any pass code with * not listed? Let's recalc * group:
+I3-8823 (1) yes
+I3-1249 (2)
+I3-9331 (5)
+I3-6376 (6) fail
+I3-8129 (7)
+I3-8600 (11)
+I3-6496 (12)
+I3-1066 (14)
+I3-9934 (16)
+I3-7296 (17)
+I3-3545 (18)
+I3-7173 (19) fail
+I3-9721 (20)
+I3-1393 (23)
+I3-4818 (24)
+That's 15. Our scoring gave I3-1393 (23) iec 3, yes. Good.
+What about I3-3545 (18) uses (* *) but maybe we gave iec 3 yes.
+What about I3-7173 fail uses (* *); we gave iec 3, yes.
+All pass with // group we gave iec 1:
+I3-2429 (3) // yes
+I3-2584 (4)
+I3-2453 (8)
+I3-5104 (9)
+I3-3183 (10)
+I3-4378 (13)
+I3-1113 (15)
+I3-2759 (21)
+I3-4645 (22)
+That's 9. Good.
+
+Now need think about "iec 1 for // comments" might be too strict but fine.
+
+Need maybe differentiate IEC for // codes with * no? The ones with // but no standard comments. Good.
+
+Could some // codes use `//` comments only but not extension because CODESYS compilation; yes.
+
+Now maybe we need to set `iec` 2 not 1 for // because rubric "usa extensiones" maybe not comments. But if we don't, then all pass codes maybe iec 2/3. Hmm. Let's decide final. I'm still uncertain. Could a "docente cuidadoso" consider // comments as extension? A programming evaluator focused on IEC 61131-3 would likely note that `//` is accepted by CODESYS but not part of IEC. The prompt specifically says "según IEC 61131-3 y CODESYS". The rubric has "usa extensiones fuera del estándar" at 1. Yes. So okay.
+
+Now need perhaps not provide justifications that refer to "IEC 3" for comments but "sintaxis estándar". Good.
+
+Now check if any code with * group uses `(* *)` but no `END_VAR`? All.
+
+Now maybe for "coherencia" for pass codes with split set/reset but no explicit init: Could there be an issue on first cycle if output used before set? No.
+Could there be an unreachable state? Not.
+Safe simultaneous inputs: yes.
+Thus coherencia 3.
+
+Now for fail codes, coherencia 1: yes.
+
+Now clarity score 3 assigned to I3-8823, I3-2584, I3-6496, I3-7296, I3-9721, I3-2759, I3-4818. Maybe I3-2759 uses // but clarity 3. Clarity doesn't penalize comments syntax. Good.
+
+Maybe I3-2584 uses numbered sections, good.
+
+Need maybe assign clarity 2 to I3-8823? It has maybe mem1 names but sections. I gave 3. Fine.
+Maybe I3-4818 has `CODIGO DE ALARMA: prioridad alta → media → baja → 0` and detailed header. 3.
+
+Need maybe assign clarity 3 to I3-1249? It has sections but no why. 2.
+
+Now mantenibilidad 2 all. Maybe code I3-4818 with detailed comments but duplicated; no 3. Good.
+
+Let's compose JSON.
+
+Need ensure all justifications one-line strings. Use Spanish.
+
+Let's write in final with ans. Must be valid JSON. No trailing commas. Need double quotes. Strings can include accents and arrows. No markdown.
+
+Let's draft each object. We'll avoid overly long.
+
+1:
+{
+"codigo":"I3-8823",
+"funcional":3,
+"iec":3,
+"coherencia":3,
+"claridad":3,
+"mantenibilidad":2,
+"just_func_iec":"Funcional fijo 3; IEC 3: FB correcto, sintaxis y comentarios (* *) estándar.",
+"just_coherencia":"Retención con prioridad al set, transiciones completas y sin contradicciones.",
+"just_claridad":"Secciones ordenadas y comentarios que explican el porqué del set/reset.",
+"just_mantenibilidad":"Cambios por alarma localizados, sin valores mágicos; lógica duplicada no extensible."
+}
+
+2:
+"just_func_iec":"Funcional fijo 3; IEC 3: declaraciones y sintaxis estándar con comentarios (* *)."
+"just_coherencia":"Sin contradicciones y tratamiento correcto de ACK simultáneo con causa."
+"just_claridad":"Estructura clara por secciones; comentarios útiles aunque algo breves."
+"just_mantenibilidad":"Modificable y legible, aunque la lógica de las tres alarmas está replicada."
+
+3:
+"just_func_iec":"Funcional fijo 3; IEC 1 por usar comentarios //, extensión no estándar en IEC 61131-3."
+"just_coherencia":"Transiciones de retención correctas con ACK sólo válido sin causa."
+"just_claridad":"Código ordenado y comentarios correctos, pero sin explicación de prioridad."
+"just_mantenibilidad":"Cambios localizados por alarma; lógica triplicada sin parametrización."
+
+4:
+"just_func_iec":"Funcional fijo 3; IEC 1 por comentarios //, extensión CODESYS fuera del IEC."
+"just_coherencia":"Expresión OR/AND autosostenida sin contradicciones y manejo correcto de simultáneos."
+"just_claridad":"Secciones numeradas y comentarios explican la retención y prioridad."
+"just_mantenibilidad":"Sin duplicación excesiva y sin valores mágicos, aunque no es extensible."
+
+5:
+"just_func_iec":"Funcional fijo 3; IEC 3: comentarios (* *) y construcciones ST estándar."
+"just_coherencia":"Set/reset correcto; el ACK no borra si la causa está presente."
+"just_claridad":"Organización clara, con nombres descriptivos y comentarios breves útiles."
+"just_mantenibilidad":"Cambios por alarma sencillos; sin parametrización para más alarmas."
+
+6 fail:
+"just_func_iec":"Falla pasos 2 y 3: no retiene y borra con ACK aunque la causa siga activa (funcional 0). IEC 3 por sintaxis estándar."
+"just_coherencia":"Lógica internamente consistente, pero no modela el estado retenido; transiciones incompletas."
+"just_claridad":"Nombres y comentarios claros, aunque la estructura no refleja la retención exigida."
+"just_mantenibilidad":"Fácil de leer y modificar, pero implementar la retención obliga a reestructurar."
+
+7:
+"just_func_iec":"Funcional fijo 3; IEC 3: comentario y sintaxis IEC correcta."
+"just_coherencia":"Latch autosostenido sin contradicciones; comportamiento seguro con ACK simultáneo."
+"just_claridad":"Código claro y directo con comentarios de sección."
+"just_mantenibilidad":"Cambios localizados; lógica replicada para las tres alarmas."
+
+8:
+"just_func_iec":"Funcional fijo 3; IEC 1 por comentarios // no estándar IEC."
+"just_coherencia":"Set y reset coherentes; el reset exige ACK y causa ausente."
+"just_claridad":"Comentarios y nombres claros, con lógica separada en bloques."
+"just_mantenibilidad":"Modificable sin valores mágicos, aunque replica lógica."
+
+9:
+"just_func_iec":"Funcional fijo 3; IEC 1 por comentarios //, extensión del compilador."
+"just_coherencia":"Sin contradicciones; condición de reset impide borrar con causa presente."
+"just_claridad":"Estructura ordenada y comentarios descriptivos."
+"just_mantenibilidad":"Cambios por alarma localizados; lógica triplicada."
+
+10:
+"just_func_iec":"Funcional fijo 3; IEC 1 por comentarios // no IEC."
+"just_coherencia":"Retención y borrado correctos; entradas simultáneas no generan estados contradictorios."
+"just_claridad":"Organización clara y comentarios útiles."
+"just_mantenibilidad":"Sin valores mágicos; modificable por bloques de alarma."
+
+11:
+"just_func_iec":"Funcional fijo 3; IEC 3: sintaxis estándar y comentarios (* *)."
+"just_coherencia":"Set/reset con prioridad al set, sin estados muertos."
+"just_claridad":"Código ordenado con comentarios claros por sección."
+"just_mantenibilidad":"Bien localizado pero duplicado."
+
+12:
+"just_func_iec":"Funcional fijo 3; IEC 3: estándar, con comentarios (* *) y FB apropiado."
+"just_coherencia":"Lógica de retención sin contradicciones y ACK válido sólo sin causa."
+"just_claridad":"Comentarios explican el porqué de cada bloque; secciones muy legibles."
+"just_mantenibilidad":"Cambios localizados, sin valores mágicos; sin diseño extensible."
+
+13:
+"just_func_iec":"Funcional fijo 3; IEC 1 por comentarios //, extensión no IEC."
+"just_coherencia":"Inicialización explícita y transiciones de retención coherentes."
+"just_claridad":"Código claro aunque los comentarios no explican el porqué."
+"just_mantenibilidad":"Legible y modificable; lógica replicada."
+
+14:
+"just_func_iec":"Funcional fijo 3; IEC 3: construcciones ST estándar con comentarios (* *)."
+"just_coherencia":"Aunque remueve antes de setear, el orden no crea contradicciones; ACK simultáneo seguro."
+"just_claridad":"Código simple y directo, con secciones legibles."
+"just_mantenibilidad":"Modificable por alarma; sin parametrización."
+
+15:
+"just_func_iec":"Funcional fijo 3; IEC 1 por comentarios // no estándar."
+"just_coherencia":"La condición de ACK sólo limpia si no hay causa; transiciones completas."
+"just_claridad":"Nombres descriptivos y secciones ordenadas."
+"just_mantenibilidad":"Bloques claros por alarma, aunque replicados."
+
+16:
+"just_func_iec":"Funcional fijo 3; IEC 3: expresión estándar y comentarios (* *)."
+"just_coherencia":"Latch OR/AND sin contradicciones y con reset condicionado."
+"just_claridad":"Código directo y con comentarios útiles de sección."
+"just_mantenibilidad":"Sin valores mágicos; cambios localizados."
+
+17:
+"just_func_iec":"Funcional fijo 3; IEC 3: comentarios (* *) y ST idiomático."
+"just_coherencia":"Set/reset correcto y sin estados inalcanzables."
+"just_claridad":"Explica claramente la prioridad del set y la activación de salidas."
+"just_mantenibilidad":"Legible y modular por bloques; lógica triplicada."
+
+18:
+"just_func_iec":"Funcional fijo 3; IEC 3: estándar, comentarios (* *) correctos."
+"just_coherencia":"Lógica sin contradicciones y reset condicionado a causa ausente."
+"just_claridad":"Organización clara con secciones y comentarios breves."
+"just_mantenibilidad":"Modificable; sin magia pero no extensible."
+
+19 fail:
+"just_func_iec":"Falla pasos 2 y 3 por no retener; funcional 0. IEC 3 por sintaxis estándar."
+"just_coherencia":"Sin contradicciones internas, pero omite el estado de retención; transiciones incompletas."
+"just_claridad":"Nombres claros y secciones separadas, aunque falta lógica de enclavamiento."
+"just_mantenibilidad":"Fácil de localizar, pero ajustar a la retención obliga a reescribir."
+
+20:
+"just_func_iec":"Funcional fijo 3; IEC 3: comentarios (* *) y lógica ST estándar."
+"just_coherencia":"Retención y ACK correctos; sin contradicciones."
+"just_claridad":"Comentarios de sección explican la lógica con claridad."
+"just_mantenibilidad":"Bien localizada, aunque replica la lógica."
+
+21:
+"just_func_iec":"Funcional fijo 3; IEC 1 por comentarios // no IEC."
+"just_coherencia":"Expresión de retención robusta y sin contradicciones."
+"just_claridad":"Secciones numeradas y explicación clara de la dominancia de almX."
+"just_mantenibilidad":"Sin valores mágicos; bloques separados por alarma."
+
+22:
+"just_func_iec":"Funcional fijo 3; IEC 1 por comentarios //, extensión del compilador."
+"just_coherencia":"Set/reset correcto; no borra con causa presente."
+"just_claridad":"Código claro, con comentarios útiles aunque sin explicaciones extensas."
+"just_mantenibilidad":"Cambios localizados; lógica triplicada."
+
+23:
+"just_func_iec":"Funcional fijo 3; IEC 3: comentarios (* *) y estructuras estándar."
+"just_coherencia":"Latch autosostenido sin contradicciones y correcto ante ACK simultáneo."
+"just_claridad":"Código directo y ordenado, con comentarios por bloque."
+"just_mantenibilidad":"Modificable sin valores mágicos; no extensible a N alarmas."
+
+24:
+"just_func_iec":"Funcional fijo 3; IEC 3: sintaxis y comentarios IEC correctos."
+"just_coherencia":"Retención con prioridad al set bien resuelta; sin estados muertos."
+"just_claridad":"Bloques encabezados y comentarios explican set/reset y prioridad."
+"just_mantenibilidad":"Bien localizado, aunque duplicación de lógica por alarma."
+
+Now need verify if any just_coherencia mentions "inicialización explícita" for I3-4378 yes. Fine.
+
+Need maybe set coherencia for I3-1066 as 3 but mention "aunque remueve antes de setear". Good.
+
+Need maybe for I3-4645 code uses `//`; we need check if it includes `END_FUNCTION_BLOCK` yes. Comments //. Good.
+
+Need maybe for I3-1113 uses `//` and comments sections. Good.
+
+Now, think about the possible challenge: The format asked "Responde ÚNICAMENTE con una lista JSON válida de 24 objetos...". We need output exactly list, no markdown. We'll put.
+
+Before final, let's consider alternative on iec for // edge. If evaluator expects no comment penalty, our scores may be too harsh. Is there any way to justify IEC 1 due // "extensión"? Yes. The prompt likely includes "CODESYS" and maybe they consider // extension. Good.
+
+Potential issue: Some programs using // comments might also be accepted by CODESYS but not IEC. The scoring won't penalize functional but iec. Good.
+
+Now one more thought: In the `iec` rubric, 1 says "compila solo tras correcciones menores, o usa extensiones fuera del estándar." If using `//` comments is an extension, yes. But it also compila sin cambios. The rule doesn't say "compila sin cambios but uses extension" maybe would be 1 due extension. We'll explicitly say.
+
+Now if there's a code with // comments but also uses `(* *)`? None. If we penalize, maybe all // get 1. Fine.
+
+Now need maybe include "just_func_iec" for fail code: If functional 0, no fixed. IEC 3. Good.
+
+Now let's verify all 24 objects in same order:
+1 I3-8823
+2 I3-1249
+3 I3-2429
+4 I3-2584
+5 I3-9331
+6 I3-6376
+7 I3-8129
+8 I3-2453
+9 I3-5104
+10 I3-3183
+11 I3-8600
+12 I3-6496
+13 I3-4378
+14 I3-1066
+15 I3-1113
+16 I3-9934
+17 I3-7296
+18 I3-3545
+19 I3-7173
+20 I3-9721
+21 I3-2759
+22 I3-4645
+23 I3-1393
+24 I3-4818
+Yes.
+
+Need ensure no extra text.
+
+Let's maybe refine scoring: In "coherencia" for pass codes, if all 3, maybe too generous but okay. Could differentiate some:
+- I3-2429 separate set/reset maybe robust. 3.
+- I3-5104 separate set/reset with duplicate output in priority chain. It sets `sirena` in each branch; if no branch, false. Good. Coherencia 3.
+- I3-3183 sets `sirena := ret1 OR ret2 OR ret3` separate from priority. Good.
+- I3-4645 sets `sirena` in priority branches; if no ret false. Good.
+All okay.
+
+Could some have slight issue if multiple alarms present and acknowledge high while cause still present? They handle.
+
+Now if we assign coherencia 3 to all pass, "excellent" all. Fine.
+
+Now maintainability maybe all 2. That's okay. Maybe I3-4818 with detailed comments maybe mant 2 not 3 due duplication. Yes.
+
+Now `claridad` maybe I3-8823 with `mem1` generic but we gave 3. Could maybe give 2 to avoid over-awarding. But we already gave 3 to many. If we want more distinction, reduce some to 2:
+Maybe clarity 3 for I3-8823, 2584, 6496, 7296, 9721, 2759, 4818. That's 7. Okay. Should we add I3-1249? It has `--- Logic de retencion por alarma ---`, not why. 2. Fine.
+Okay.
+
+Let's ensure `just_claridad` for I3-8823 says "Secciones ordenadas y comentarios que explican el porqué". Good.
+
+Now possible issue with JSON and `→` character in just for I3-4818? We don't include arrow. We'll keep simple.
+
+Let's write final JSON without markdown. Need maybe avoid newline inside strings. We'll produce minified or formatted? The user says a JSON list. Formatting okay. We can include line breaks outside strings. We must ensure valid JSON. Let's compose with `[\n ... ]`. It will be not markdown. Fine.
+
+Let's write final.

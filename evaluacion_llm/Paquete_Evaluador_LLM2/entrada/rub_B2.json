@@ -1,0 +1,201 @@
+{
+ "tarea": "B2",
+ "titulo": "Válvula con retardo TON",
+ "nivel": "Basico",
+ "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el control de una válvula de drenaje de un tanque. Cuando el sensor de nivel alto se active y permanezca activo durante 5 segundos continuos, la válvula debe abrir. Si el nivel deja de estar alto, la válvula debe cerrar de inmediato, sin retardo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Valvula con variable de entrada nivelAlto (BOOL) y salida valvula (BOOL). Usa el tiempo T#5S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+ "protocolo_prueba": "Harness: PRG_Test_B2.st\n\nBANCO DE PRUEBA AUTOVERIFICABLE — Tarea B2 (valvula con retardo TON de 5 s)\n    ---------------------------------------------------------------------------\n    PLANTILLA PARA TAREAS CON TEMPORIZADORES.\n\n    Diferencia clave respecto a PRG_Test_B1: el tiempo de asentamiento es\n    DISTINTO EN CADA PASO. Un valor fijo corto (200 ms) haria fallar a bloques\n    correctos, porque evaluaria la salida antes de que venza el temporizador\n    interno del bloque bajo prueba. Con un TON de 5 s, el paso que espera la\n    apertura necesita mas de 5 s de asentamiento.\n\n    Usa esta plantilla (y no la de B1) en las tareas B2, B5, B6, I1, I2, I4,\n    I5 e I8, que incluyen temporizacion. La de B1 solo sirve para logica\n    puramente combinacional o de enclavamiento sin retardos.\n\n    ATENCION AL TIEMPO REAL: la simulacion corre en tiempo real, de modo que\n    un banco con esperas de 6 s por paso tarda unos 20 s por respuesta. Para\n    24 respuestas de una tarea son unos 8 minutos; asumible. En tareas con\n    retardos largos (B5 usa TOF de 30 s; I1 encadena 20+4+15 s) conviene\n    estimar el tiempo total antes de lanzar el lote.\n\n--- Pasos (CASE paso OF) ---\n\n        0:  (* Reposo *)\n            nivelAlto := FALSE;\n            tEspera   := T#500MS;\n            esperado  := FALSE;\n        1:  (* Nivel alto durante 3 s: aun NO debe abrir (el TON pide 5 s) *)\n            nivelAlto := TRUE;\n            tEspera   := T#3S;\n            esperado  := FALSE;\n        2:  (* Se mantiene 3 s mas (6 s acumulados): ya debe abrir *)\n            nivelAlto := TRUE;\n            tEspera   := T#3S;\n            esperado  := TRUE;\n        3:  (* Cae el nivel: debe cerrar de inmediato, sin retardo *)\n            nivelAlto := FALSE;\n            tEspera   := T#200MS;\n            esperado  := FALSE;\n        4:  (* Nuevo ciclo completo: comprueba el rearme del temporizador *)\n            nivelAlto := TRUE;\n            tEspera   := T#6S;\n            esperado  := TRUE;\n        5:  (* Cierre final *)\n            nivelAlto := FALSE;\n            tEspera   := T#200MS;\n            esperado  := FALSE;",
+ "respuestas": [
+  {
+   "codigo": "B2-9847",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; // Sensor de nivel alto\nEND_VAR\n\nVAR_OUTPUT\n    valvula : BOOL; // Salida para controlar la válvula\nEND_VAR\n\nVAR\n    timer : TON; // Timer de retardo\n    estado : BOOL; // Estado de la válvula\nEND_VAR\n\n// Inicialización del timer\nIF timer.Q = FALSE THEN\n    timer(IN := nivelAlto, PT := T#5S);\nEND_IF;\n\n// Control de la válvula\nIF nivelAlto THEN\n    // Si el nivel está alto y el timer ha terminado, abrir la válvula\n    IF timer.Q THEN\n        estado := TRUE;\n    END_IF;\nELSE\n    // Si el nivel no está alto, cerrar la válvula inmediatamente\n    estado := FALSE;\n    timer(IN := FALSE); // Reiniciar el timer\nEND_IF;\n\n// Asignar el estado de la válvula a la salida\nvalvula := estado;"
+  },
+  {
+   "codigo": "B2-6674",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Valvula de drenaje *)\nEND_VAR\nVAR\n    tRetardo : TON; (* Temporizador de retardo a la conexion *)\nEND_VAR\n\n(* La valvula abre tras 5 s continuos de nivel alto y cierra de inmediato si baja *)\ntRetardo(IN := nivelAlto, PT := T#5S);\nvalvula := tRetardo.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-1651",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; // Sensor de nivel alto\nEND_VAR\n\nVAR_OUTPUT\n    valvula : BOOL; // Salida para controlar la válvula\nEND_VAR\n\nVAR\n    timer : TON; // Timer de conteo ascendente\n    estado : BOOL; // Estado de la válvula\nEND_VAR\n\n// Inicialización del timer\nIF NOT nivelAlto THEN\n    timer(IN := FALSE);\n    estado := FALSE;\nEND_IF;\n\n// Control de la válvula\nIF nivelAlto THEN\n    timer(IN := TRUE, PT := T#5S);\n    IF timer.Q THEN\n        estado := TRUE;\n    END_IF;\nELSE\n    estado := FALSE;\n    timer(IN := FALSE);\nEND_IF;\n\n// Asignación de la salida\nvalvula := estado;"
+  },
+  {
+   "codigo": "B2-3609",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Valvula de drenaje *)\nEND_VAR\nVAR\n    tRetardo : TON; (* Temporizador de retardo a la conexion *)\nEND_VAR\n\n(* Retardo de 5 s para abrir la valvula; cierra de inmediato al desactivarse el sensor *)\ntRetardo(IN := nivelAlto, PT := T#5S);\nvalvula := tRetardo.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-5560",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto del tanque *)\nEND_VAR\n\nVAR_OUTPUT\n    valvula : BOOL; (* TRUE = válvula abierta, FALSE = válvula cerrada *)\nEND_VAR\n\nVAR\n    tonRetardo : TON; (* Temporizador de retardo para confirmar nivel alto *)\nEND_VAR\n\n(* ---------------------------------------------------------------\n   Lógica de control:\n   - El temporizador TON se habilita mientras nivelAlto esté activo.\n   - Si nivelAlto se desactiva antes de 5 s, el temporizador se\n     reinicia automáticamente (IN := FALSE).\n   - Cuando nivelAlto permanece activo >= 5 s, tonRetardo.Q = TRUE\n     y la válvula abre.\n   - Si nivelAlto cae, la válvula cierra de inmediato (sin retardo).\n--------------------------------------------------------------- *)\n\n(* Llamada al temporizador: activo solo mientras nivelAlto sea TRUE *)\ntonRetardo(\n    IN := nivelAlto,\n    PT := T#5S\n);\n\n(* La válvula abre cuando el temporizador confirma 5 s continuos de nivel alto.\n   Si nivelAlto cae, tonRetardo.Q vuelve a FALSE de inmediato porque\n   el temporizador se reinicia, cerrando la válvula sin retardo. *)\nvalvula := tonRetardo.Q;"
+  },
+  {
+   "codigo": "B2-5675",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto del tanque *)\nEND_VAR\n\nVAR_OUTPUT\n    valvula : BOOL; (* TRUE = válvula abierta, FALSE = válvula cerrada *)\nEND_VAR\n\nVAR\n    tonRetardo : TON; (* Temporizador de retardo para confirmar nivel alto *)\nEND_VAR\n\n(*\n    Control de válvula de drenaje:\n    - La válvula abre cuando nivelAlto permanece activo durante 5 segundos continuos.\n    - La válvula cierra de inmediato si nivelAlto deja de estar activo.\n*)\n\n(* Activar temporizador solo mientras nivelAlto esté activo *)\ntonRetardo(IN := nivelAlto, PT := T#5S);\n\n(* La válvula abre cuando el temporizador completa los 5 segundos *)\n(* Si nivelAlto cae, tonRetardo.Q se pone FALSE de inmediato (IN=FALSE resetea el TON) *)\nvalvula := tonRetardo.Q;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-7015",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Válvula de drenaje *)\nEND_VAR\nVAR\n    tRetardo : TON; (* Temporizador de retardo *)\nEND_VAR\n\n(* La válvula se abre si el nivel alto se mantiene durante 5 segundos continuos *)\ntRetardo(IN := nivelAlto, PT := T#5S);\nvalvula := tRetardo.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-6278",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; // Indica si el sensor de nivel alto está activo\nEND_VAR\n\nVAR_OUTPUT\n    valvula : BOOL; // Comando para abrir (TRUE) o cerrar (FALSE) la válvula de drenaje\nEND_VAR\n\nVAR\n    temporizador : TON; // Temporizador con retardo a la conexión (On-Delay)\nEND_VAR\n\n// El temporizador evalúa si el nivel alto se mantiene activo por 5 segundos continuos.\n// Si nivelAlto pasa a FALSE, el temporizador se reinicia y su salida Q pasa a FALSE de inmediato.\ntemporizador(IN := nivelAlto, PT := T#5S);\n\n// La válvula se abre solo cuando el temporizador ha cumplido el tiempo establecido.\nvalvula := temporizador.Q;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-3727",
+   "resultado_codesys": "Compila. Falla 3 de 6 pasos del harness (pasos 1,2,4; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Válvula de drenaje *)\nEND_VAR\nVAR\n    tNivelAlto : TP; (* Temporizador para el nivel alto *)\nEND_VAR\n\n(* Temporiza el tiempo que el nivel está alto *)\ntNivelAlto(IN := nivelAlto, PT := T#5S);\n\n(* La válvula se abre si el nivel está alto durante 5 segundos *)\nvalvula := tNivelAlto.Q;\n\n(* La válvula se cierra inmediatamente si el nivel deja de estar alto *)\nIF NOT nivelAlto THEN\n    valvula := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-6755",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto del tanque *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Valvula de drenaje: TRUE = abierta *)\nEND_VAR\nVAR\n    tRetardo : TON; (* Temporizador de retardo a la conexion *)\nEND_VAR\n\n(* La valvula abre solo si el nivel alto se mantiene 5 s continuos *)\n(* Si nivelAlto cae, TON resetea y la valvula cierra de inmediato  *)\ntRetardo(IN := nivelAlto, PT := T#5S);\nvalvula := tRetardo.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-7829",
+   "resultado_codesys": "Compila. Falla 3 de 6 pasos del harness (pasos 1,2,4; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Válvula de drenaje *)\nEND_VAR\nVAR\n    tNivelAlto : TP; (* Temporizador para el nivel alto *)\nEND_VAR\n\n(* Temporizador que se activa cuando el nivel está alto *)\ntNivelAlto(IN := nivelAlto, PT := T#5S);\n\n(* La válvula se abre si el temporizador ha expirado *)\nvalvula := tNivelAlto.Q;\n\n(* La válvula se cierra inmediatamente si el nivel deja de estar alto *)\nIF NOT nivelAlto THEN\n    valvula := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-7426",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; // Entrada del sensor de nivel alto\nEND_VAR\n\nVAR_OUTPUT\n    valvula : BOOL; // Salida para controlar la válvula\nEND_VAR\n\nVAR\n    timerNivelAlto : TON; // Temporizador para el retardo de 5 segundos\nEND_VAR\n\n// Inicialización del temporizador\ntimerNivelAlto(IN := nivelAlto, PT := T#5S);\n\n// Lógica de control de la válvula\nIF timerNivelAlto.Q THEN\n    valvula := TRUE; // Abre la válvula si el nivel alto se mantiene por 5 segundos\nELSE\n    valvula := FALSE; // Cierra la válvula si el nivel no es alto\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-8183",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Estado de la válvula de drenaje *)\nEND_VAR\nVAR\n    tRetardo : TON; (* Temporizador de retardo *)\nEND_VAR\n\n(* La válvula se abre si el nivel alto se mantiene durante 5 segundos *)\ntRetardo(IN := nivelAlto, PT := T#5S);\nvalvula := tRetardo.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-4395",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; // Entrada del sensor de nivel alto\nEND_VAR\n\nVAR_OUTPUT\n    valvula : BOOL; // Salida para controlar la válvula\nEND_VAR\n\nVAR\n    timer : TON; // Temporizador para el retardo de 5 segundos\nEND_VAR\n\n// Inicialización del temporizador\ntimer(IN := nivelAlto, PT := T#5S);\n\n// Lógica de control de la válvula\nIF timer.Q THEN\n    valvula := TRUE; // Abre la válvula si el temporizador ha expirado\nELSE\n    valvula := FALSE; // Cierra la válvula si el nivel no es alto\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-4528",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; // Sensor de nivel alto del tanque\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; // Comando para abrir (TRUE) o cerrar (FALSE) la válvula\nEND_VAR\nVAR\n    temporizador : TON; // Temporizador de retardo a la conexión (Timer On Delay)\nEND_VAR\n\n// El temporizador se activa con el sensor de nivel alto.\n// Si nivelAlto es TRUE por 5 segundos continuos, la salida Q del temporizador será TRUE.\n// Si nivelAlto pasa a FALSE, el temporizador se reinicia y Q pasa a FALSE inmediatamente.\ntemporizador(IN := nivelAlto, PT := T#5S);\n\n// La válvula se abre solo cuando el temporizador ha cumplido el tiempo establecido.\nvalvula := temporizador.Q;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-8816",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Valvula de drenaje *)\nEND_VAR\nVAR\n    tRetardo : TON; (* Temporizador de retardo a la conexion *)\nEND_VAR\n\n(* Retardo de 5 s para abrir la valvula; cierre inmediato al desactivarse el sensor *)\ntRetardo(IN := nivelAlto, PT := T#5S);\nvalvula := tRetardo.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-9944",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; // Señal del sensor de nivel alto\nEND_VAR\n\nVAR_OUTPUT\n    valvula : BOOL;   // Comando para abrir (TRUE) o cerrar (FALSE) la válvula\nEND_VAR\n\nVAR\n    tonRetardo : TON; // Temporizador de retardo a la conexión (Timer On Delay)\nEND_VAR\n\n// Configuración y ejecución del temporizador\n// IN: Inicia el conteo si nivelAlto es TRUE. Se resetea inmediatamente si es FALSE.\n// PT: Tiempo de retardo establecido en 5 segundos.\ntonRetardo(IN := nivelAlto, PT := T#5S);\n\n// La salida del temporizador (Q) se activa tras 5 segundos continuos de nivel alto.\n// Si nivelAlto pasa a FALSE, Q se desactiva de inmediato, cerrando la válvula.\nvalvula := tonRetardo.Q;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-6018",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto del tanque *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Valvula de drenaje: TRUE = abierta *)\nEND_VAR\nVAR\n    tRetardo : TON; (* Temporizador de retardo a la conexion *)\nEND_VAR\n\n(* La valvula abre solo si el nivel alto se mantiene 5 s continuos.\n   Si el nivel deja de estar alto, el temporizador se reinicia\n   y la valvula cierra de inmediato. *)\ntRetardo(IN := nivelAlto, PT := T#5S);\nvalvula := tRetardo.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-4891",
+   "resultado_codesys": "Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('nivelAlto' no es ninguna entrada de 'FB_VALVULA').",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR\n    nivelAlto : BOOL; // Entrada: estado del sensor de nivel alto\n    valvula : BOOL;   // Salida: estado de la válvula de drenaje\n    timer : TON;      // Temporizador para el retardo de 5 segundos\nEND_VAR\n\n// Implementación del bloque de función\ntimer(IN := nivelAlto, PT := T#5S); // Configuración del temporizador\n\n// Lógica de control de la válvula\nIF timer.Q THEN\n    valvula := TRUE;  // Abre la válvula si el temporizador ha alcanzado el tiempo establecido\nELSE\n    valvula := FALSE; // Cierra la válvula si el nivel alto no se mantiene\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-3672",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Válvula de drenaje *)\nEND_VAR\nVAR\n    tRetardo : TON; (* Temporizador de retardo *)\nEND_VAR\n\n(* La válvula abre si el nivel alto se mantiene durante 5 segundos continuos *)\ntRetardo(IN := nivelAlto, PT := T#5S);\nvalvula := tRetardo.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-5243",
+   "resultado_codesys": "Compila. Falla 1 de 6 pasos del harness (pasos 1; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; // Sensor de nivel alto\nEND_VAR\n\nVAR_OUTPUT\n    valvula : BOOL; // Control de la válvula\nEND_VAR\n\nVAR\n    timer : TON; // Timer de 5 segundos\n    estado : BOOL; // Estado de la válvula\nEND_VAR\n\n// Inicialización del timer\nIF NOT nivelAlto THEN\n    timer(IN := FALSE);\n    estado := FALSE;\nEND_IF;\n\n// Control de la válvula\nIF nivelAlto THEN\n    timer(IN := TRUE);\n    IF timer.Q THEN\n        estado := TRUE;\n    END_IF;\nELSE\n    estado := FALSE;\n    timer(IN := FALSE);\nEND_IF;\n\n// Asignación de la salida\nvalvula := estado;"
+  },
+  {
+   "codigo": "B2-6383",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto del tanque *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Valvula de drenaje: TRUE = abierta *)\nEND_VAR\nVAR\n    tRetardo : TON; (* Temporizador de retardo a la conexion *)\nEND_VAR\n\n(* La valvula abre solo si el nivel alto se mantiene 5 s continuos *)\n(* Si nivelAlto cae, TON reinicia y la valvula cierra de inmediato *)\ntRetardo(IN := nivelAlto, PT := T#5S);\nvalvula := tRetardo.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-2583",
+   "resultado_codesys": "Compila. Falla 3 de 6 pasos del harness (pasos 1,2,4; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Válvula de drenaje *)\nEND_VAR\nVAR\n    tNivel : TP; (* Temporizador para el nivel alto *)\nEND_VAR\n\n(* Temporizador que se activa cuando el nivel está alto *)\ntNivel(IN := nivelAlto, PT := T#5S);\n\n(* La válvula se abre si el temporizador ha expirado *)\nvalvula := tNivel.Q;\n\n(* La válvula se cierra inmediatamente si el nivel deja de estar alto *)\nIF NOT nivelAlto THEN\n    valvula := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B2-2211",
+   "resultado_codesys": "Compila. Pasa los 6 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto del tanque *)\nEND_VAR\n\nVAR_OUTPUT\n    valvula : BOOL; (* TRUE = válvula abierta, FALSE = válvula cerrada *)\nEND_VAR\n\nVAR\n    tonRetardo : TON; (* Temporizador de retardo para confirmación de nivel alto *)\nEND_VAR\n\n(*\n    Control de válvula de drenaje:\n    - La válvula abre cuando nivelAlto permanece activo durante 5 segundos continuos.\n    - La válvula cierra de inmediato si nivelAlto deja de estar activo.\n*)\n\n(* Activar temporizador solo mientras nivelAlto esté activo *)\ntonRetardo(IN := nivelAlto, PT := T#5S);\n\n(* La válvula abre cuando el temporizador completa los 5 segundos *)\n(* Si nivelAlto cae, tonRetardo.Q se resetea de inmediato y la válvula cierra *)\nvalvula := tonRetardo.Q;\n\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}

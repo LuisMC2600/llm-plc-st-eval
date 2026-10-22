@@ -1,0 +1,577 @@
+{
+ "lote": 1,
+ "casos": [
+  {
+   "codigo": "J05",
+   "tarea": "A2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el control por lotes de un reactor con la siguiente receta secuencial: (fase 1) dosificar el componente A abriendo vA hasta que se active nivelA; (fase 2) dosificar el componente B abriendo vB hasta que se active nivelB; (fase 3) calentar activando calentador hasta que temp alcance 60.0 grados o más; (fase 4) mezclar activando mezclador durante 120 segundos; (fase 5) descargar abriendo vDescarga hasta que se active nivelVacio; después, reposo (fase 0). btnInicio arranca la receta solo desde reposo; durante una receta en curso se ignora. btnAbort aborta en cualquier fase de 1 a 5: cierra vA, vB, calentador y mezclador de inmediato; si nivelVacio está inactivo (hay producto en el reactor), pasa a la fase 5 y descarga hasta que se active nivelVacio antes de volver a reposo; si nivelVacio ya está activo, vuelve directamente a reposo. Un abort durante la fase 5 continúa la descarga. En reposo, btnAbort no tiene efecto. La salida fase reporta en todo momento la fase activa (0 a 5), incluida la descarga provocada por un abort. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Batch con variables de entrada nivelA, nivelB, nivelVacio, btnInicio, btnAbort (BOOL) y temp (REAL), y salidas vA, vB, calentador, mezclador, vDescarga (BOOL) y fase (INT). Usa el tiempo T#120S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 8,
+     "requisito": "Temperatura 60.0: fase 4 con solo el mezclador activo: mezcla CALCULO (umbral mayor o igual) y TEMPORIZACION o SECUENCIA (arranque de la mezcla) [v2]"
+    },
+    {
+     "paso": 9,
+     "requisito": "Mezcla: aun no cumple 120 s"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Batch\nVAR_INPUT\n    nivelA : BOOL; (* Nivel del componente A *)\n    nivelB : BOOL; (* Nivel del componente B *)\n    nivelVacio : BOOL; (* Nivel vacío del reactor *)\n    btnInicio : BOOL; (* Botón de inicio *)\n    btnAbort : BOOL; (* Botón de abortar *)\n    temp : REAL; (* Temperatura del reactor *)\nEND_VAR\nVAR_OUTPUT\n    vA : BOOL; (* Válvula del componente A *)\n    vB : BOOL; (* Válvula del componente B *)\n    calentador : BOOL; (* Calentador *)\n    mezclador : BOOL; (* Mezclador *)\n    vDescarga : BOOL; (* Válvula de descarga *)\n    fase : INT; (* Fase actual *)\nEND_VAR\nVAR\n    tMezclar : TP; (* Temporizador para mezclar *)\n    inicioPulsado : BOOL := FALSE; (* Bandera para detectar pulsación de btnInicio *)\n    abortPulsado : BOOL := FALSE; (* Bandera para detectar pulsación de btnAbort *)\nEND_VAR\n\n(* Control de inicio *)\nIF btnInicio AND NOT inicioPulsado AND fase = 0 THEN\n    fase := 1;\n    inicioPulsado := TRUE;\nEND_IF\n\n(* Control de abort *)\nIF btnAbort AND NOT abortPulsado THEN\n    abortPulsado := TRUE;\n    CASE fase OF\n        1..4:\n            vA := FALSE;\n            vB := FALSE;\n            calentador := FALSE;\n            mezclador := FALSE;\n            IF NOT nivelVacio THEN\n                fase := 5;\n            ELSE\n                fase := 0;\n            END_IF;\n        5:\n            IF NOT nivelVacio THEN\n                fase := 5;\n            ELSE\n                fase := 0;\n            END_IF;\n    END_CASE;\nEND_IF\n\n(* Control de las fases *)\nCASE fase OF\n    1:\n        vA := TRUE;\n        IF nivelA THEN\n            vA := FALSE;\n            fase := 2;\n        END_IF;\n    2:\n        vB := TRUE;\n        IF nivelB THEN\n            vB := FALSE;\n            fase := 3;\n        END_IF;\n    3:\n        calentador := TRUE;\n        IF temp >= 60.0 THEN\n            calentador := FALSE;\n            fase := 4;\n        END_IF;\n    4:\n        mezclador := TRUE;\n        tMezclar(IN := TRUE, PT := T#120S);\n        IF tMezclar.Q THEN\n            mezclador := FALSE;\n            fase := 5;\n        END_IF;\n    5:\n        vDescarga := TRUE;\n        IF nivelVacio THEN\n            vDescarga := FALSE;\n            fase := 0;\n        END_IF;\n    0:\n        (* Reposo *)\n        vA := FALSE;\n        vB := FALSE;\n        calentador := FALSE;\n        mezclador := FALSE;\n        vDescarga := FALSE;\n        IF btnAbort THEN\n            abortPulsado := TRUE;\n        END_IF;\nEND_CASE\n\n(* Reinicio de las banderas *)\nIF NOT btnInicio THEN\n    inicioPulsado := FALSE;\nEND_IF\nIF NOT btnAbort THEN\n    abortPulsado := FALSE;\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J15",
+   "tarea": "A2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el control por lotes de un reactor con la siguiente receta secuencial: (fase 1) dosificar el componente A abriendo vA hasta que se active nivelA; (fase 2) dosificar el componente B abriendo vB hasta que se active nivelB; (fase 3) calentar activando calentador hasta que temp alcance 60.0 grados o más; (fase 4) mezclar activando mezclador durante 120 segundos; (fase 5) descargar abriendo vDescarga hasta que se active nivelVacio; después, reposo (fase 0). btnInicio arranca la receta solo desde reposo; durante una receta en curso se ignora. btnAbort aborta en cualquier fase de 1 a 5: cierra vA, vB, calentador y mezclador de inmediato; si nivelVacio está inactivo (hay producto en el reactor), pasa a la fase 5 y descarga hasta que se active nivelVacio antes de volver a reposo; si nivelVacio ya está activo, vuelve directamente a reposo. Un abort durante la fase 5 continúa la descarga. En reposo, btnAbort no tiene efecto. La salida fase reporta en todo momento la fase activa (0 a 5), incluida la descarga provocada por un abort. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Batch con variables de entrada nivelA, nivelB, nivelVacio, btnInicio, btnAbort (BOOL) y temp (REAL), y salidas vA, vB, calentador, mezclador, vDescarga (BOOL) y fase (INT). Usa el tiempo T#120S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 8,
+     "requisito": "Temperatura 60.0: fase 4 con solo el mezclador activo: mezcla CALCULO (umbral mayor o igual) y TEMPORIZACION o SECUENCIA (arranque de la mezcla) [v2]"
+    },
+    {
+     "paso": 9,
+     "requisito": "Mezcla: aun no cumple 120 s"
+    },
+    {
+     "paso": 10,
+     "requisito": "Mezcla: cumplio 120 s y pasa a descarga"
+    },
+    {
+     "paso": 11,
+     "requisito": "Vacio: vuelve a reposo"
+    },
+    {
+     "paso": 12,
+     "requisito": "Nueva receta (funcion nominal)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Batch\nVAR_INPUT\n    nivelA : BOOL; (* Sensor de nivel para componente A *)\n    nivelB : BOOL; (* Sensor de nivel para componente B *)\n    nivelVacio : BOOL; (* Sensor de nivel para tanque vacío *)\n    btnInicio : BOOL; (* Botón de inicio de receta *)\n    btnAbort : BOOL; (* Botón de aborto de receta *)\n    temp : REAL; (* Temperatura actual del reactor *)\nEND_VAR\nVAR_OUTPUT\n    vA : BOOL; (* Válvula para componente A *)\n    vB : BOOL; (* Válvula para componente B *)\n    calentador : BOOL; (* Calentador del reactor *)\n    mezclador : BOOL; (* Mezclador del reactor *)\n    vDescarga : BOOL; (* Válvula de descarga *)\n    fase : INT; (* Fase actual del proceso *)\nEND_VAR\nVAR\n    tMezcla : TON; (* Temporizador para la fase de mezcla *)\n    recetaEnCurso : BOOL; (* Indicador de receta en curso *)\nEND_VAR\n\n(* Inicialización de salidas y variables *)\nvA := FALSE;\nvB := FALSE;\ncalentador := FALSE;\nmezclador := FALSE;\nvDescarga := FALSE;\n\n(* Control de fases del proceso *)\nIF NOT recetaEnCurso THEN\n    IF btnInicio THEN\n        recetaEnCurso := TRUE;\n        fase := 1;\n    ELSE\n        fase := 0;\n    END_IF;\nELSE\n    CASE fase OF\n        1: (* Fase 1: Dosificación de A *)\n            vA := NOT nivelA;\n            IF nivelA THEN\n                vA := FALSE;\n                fase := 2;\n            END_IF;\n        2: (* Fase 2: Dosificación de B *)\n            vB := NOT nivelB;\n            IF nivelB THEN\n                vB := FALSE;\n                fase := 3;\n            END_IF;\n        3: (* Fase 3: Calentamiento *)\n            calentador := temp < 60.0;\n            IF temp >= 60.0 THEN\n                calentador := FALSE;\n                fase := 4;\n                tMezcla(IN := TRUE, PT := T#120S);\n            END_IF;\n        4: (* Fase 4: Mezcla *)\n            mezclador := tMezcla.Q;\n            IF tMezcla.Q THEN\n                mezclador := FALSE;\n                fase := 5;\n            END_IF;\n        5: (* Fase 5: Descarga *)\n            vDescarga := NOT nivelVacio;\n            IF nivelVacio THEN\n                vDescarga := FALSE;\n                recetaEnCurso := FALSE;\n                fase := 0;\n            END_IF;\n    END_CASE;\nEND_IF;\n\n(* Manejo de aborto *)\nIF btnAbort AND recetaEnCurso THEN\n    vA := FALSE;\n    vB := FALSE;\n    calentador := FALSE;\n    mezclador := FALSE;\n    IF fase <> 5 THEN\n        fase := 5;\n    END_IF;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J49",
+   "tarea": "A2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el control por lotes de un reactor con la siguiente receta secuencial: (fase 1) dosificar el componente A abriendo vA hasta que se active nivelA; (fase 2) dosificar el componente B abriendo vB hasta que se active nivelB; (fase 3) calentar activando calentador hasta que temp alcance 60.0 grados o más; (fase 4) mezclar activando mezclador durante 120 segundos; (fase 5) descargar abriendo vDescarga hasta que se active nivelVacio; después, reposo (fase 0). btnInicio arranca la receta solo desde reposo; durante una receta en curso se ignora. btnAbort aborta en cualquier fase de 1 a 5: cierra vA, vB, calentador y mezclador de inmediato; si nivelVacio está inactivo (hay producto en el reactor), pasa a la fase 5 y descarga hasta que se active nivelVacio antes de volver a reposo; si nivelVacio ya está activo, vuelve directamente a reposo. Un abort durante la fase 5 continúa la descarga. En reposo, btnAbort no tiene efecto. La salida fase reporta en todo momento la fase activa (0 a 5), incluida la descarga provocada por un abort. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Batch con variables de entrada nivelA, nivelB, nivelVacio, btnInicio, btnAbort (BOOL) y temp (REAL), y salidas vA, vB, calentador, mezclador, vDescarga (BOOL) y fase (INT). Usa el tiempo T#120S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 8,
+     "requisito": "Temperatura 60.0: fase 4 con solo el mezclador activo: mezcla CALCULO (umbral mayor o igual) y TEMPORIZACION o SECUENCIA (arranque de la mezcla) [v2]"
+    },
+    {
+     "paso": 9,
+     "requisito": "Mezcla: aun no cumple 120 s"
+    },
+    {
+     "paso": 17,
+     "requisito": "Abort sin producto: directo a reposo"
+    },
+    {
+     "paso": 18,
+     "requisito": "Nueva receta (funcion nominal)"
+    },
+    {
+     "paso": 19,
+     "requisito": "nivelA: fase 2"
+    },
+    {
+     "paso": 20,
+     "requisito": "nivelB: fase 3 (calentando)"
+    },
+    {
+     "paso": 21,
+     "requisito": "Abort en fase 3: calentador cerrado y descarga"
+    },
+    {
+     "paso": 22,
+     "requisito": "Sigue la descarga tras el abort"
+    },
+    {
+     "paso": 23,
+     "requisito": "Abort durante la descarga: continua"
+    },
+    {
+     "paso": 24,
+     "requisito": "Vacio: reposo"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Batch\nVAR_INPUT\n    nivelA : BOOL; (* Sensor de nivel para componente A *)\n    nivelB : BOOL; (* Sensor de nivel para componente B *)\n    nivelVacio : BOOL; (* Sensor de nivel vacío del reactor *)\n    btnInicio : BOOL; (* Botón de inicio de la receta *)\n    btnAbort : BOOL; (* Botón de aborto de la receta *)\n    temp : REAL; (* Temperatura actual del reactor *)\nEND_VAR\nVAR_OUTPUT\n    vA : BOOL; (* Válvula para dosificar componente A *)\n    vB : BOOL; (* Válvula para dosificar componente B *)\n    calentador : BOOL; (* Calentador del reactor *)\n    mezclador : BOOL; (* Mezclador del reactor *)\n    vDescarga : BOOL; (* Válvula de descarga del reactor *)\n    fase : INT; (* Fase actual del proceso *)\nEND_VAR\nVAR\n    tMezcla : TON; (* Temporizador para la fase de mezcla *)\n    recetaEnCurso : BOOL; (* Indica si la receta está en curso *)\nEND_VAR\n\n(* Control de la receta por lotes *)\nIF NOT recetaEnCurso THEN\n    IF btnInicio AND (fase = 0) THEN\n        recetaEnCurso := TRUE;\n        fase := 1;\n    END_IF;\nELSE\n    CASE fase OF\n        1: (* Fase 1: Dosificación de A *)\n            vA := NOT nivelA;\n            IF nivelA THEN\n                vA := FALSE;\n                fase := 2;\n            END_IF;\n        2: (* Fase 2: Dosificación de B *)\n            vB := NOT nivelB;\n            IF nivelB THEN\n                vB := FALSE;\n                fase := 3;\n            END_IF;\n        3: (* Fase 3: Calentamiento *)\n            calentador := (temp < 60.0);\n            IF temp >= 60.0 THEN\n                calentador := FALSE;\n                fase := 4;\n                tMezcla(IN := TRUE, PT := T#120S);\n            END_IF;\n        4: (* Fase 4: Mezcla *)\n            mezclador := tMezcla.Q;\n            IF NOT tMezcla.Q THEN\n                mezclador := FALSE;\n                fase := 5;\n            END_IF;\n        5: (* Fase 5: Descarga *)\n            vDescarga := NOT nivelVacio;\n            IF nivelVacio THEN\n                vDescarga := FALSE;\n                recetaEnCurso := FALSE;\n                fase := 0;\n            END_IF;\n    END_CASE;\n\n    (* Manejo del botón de aborto *)\n    IF btnAbort THEN\n        vA := FALSE;\n        vB := FALSE;\n        calentador := FALSE;\n        mezclador := FALSE;\n        IF fase <> 5 THEN\n            fase := 5;\n        END_IF;\n    END_IF;\nEND_IF;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J03",
+   "tarea": "A3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA"
+    },
+    {
+     "paso": 4,
+     "requisito": "Eco correcto: ok y se conserva nIntentos 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "ok permanece"
+    },
+    {
+     "paso": 9,
+     "requisito": "Vence el intento 2: pasa al 3"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Com\nVAR_INPUT\n    txReq  : BOOL; (* Solicitud de transmisión *)\n    rxOk   : BOOL; (* Confirmación de recepción del dispositivo externo *)\n    rxData : INT;  (* Dato recibido (eco) *)\nEND_VAR\n\nVAR_OUTPUT\n    txData   : INT;  (* Dato transmitido *)\n    ocupado  : BOOL; (* Intercambio en curso *)\n    ok       : BOOL; (* Último intercambio exitoso *)\n    error    : BOOL; (* Fallaron los 3 intentos *)\n    nIntentos: INT;  (* Número de intento en curso / último *)\nEND_VAR\n\nVAR\n    txReq_prev : BOOL;        (* Valor anterior de txReq para detectar flanco *)\n    timer      : TON;         (* Temporizador de plazo por intento *)\n    timerRun   : BOOL;        (* Habilita el temporizador *)\n    TEST_VALUE : INT := 100;  (* Valor de prueba fijo *)\n    MAX_INT    : INT := 3;    (* Máximo número de intentos *)\nEND_VAR\n\n(* ── Temporizador ── *)\ntimer(IN := timerRun, PT := T#500MS);\n\n(* ── Detección de flanco ascendente en txReq ── *)\nIF txReq AND NOT txReq_prev THEN\n    IF NOT ocupado THEN\n        (* Iniciar nuevo intercambio *)\n        ok        := FALSE;\n        error     := FALSE;\n        ocupado   := TRUE;\n        nIntentos := 1;\n        txData    := TEST_VALUE;\n        timerRun  := TRUE;   (* Arrancar temporizador del intento 1 *)\n    END_IF;\n    (* Si ocupado = TRUE, el flanco se ignora *)\nEND_IF;\n\n(* ── Lógica principal durante un intercambio ── *)\nIF ocupado THEN\n\n    IF rxOk THEN\n        (* Ha llegado respuesta del dispositivo *)\n        IF rxData = txData THEN\n            (* ── Intento correcto ── *)\n            timerRun := FALSE;\n            ocupado  := FALSE;\n            ok       := TRUE;\n        ELSE\n            (* ── Respuesta incorrecta: tratar como fallo de intento ── *)\n            timerRun := FALSE;          (* Detener y resetear temporizador *)\n            IF nIntentos < MAX_INT THEN\n                nIntentos := nIntentos + 1;\n                timerRun  := TRUE;      (* Nuevo plazo para el siguiente intento *)\n            ELSE\n                (* Agotados los 3 intentos *)\n                ocupado := FALSE;\n                error   := TRUE;\n            END_IF;\n        END_IF;\n\n    ELSIF timer.Q THEN\n        (* ── Plazo vencido sin confirmación ── *)\n        timerRun := FALSE;              (* Resetear temporizador *)\n        IF nIntentos < MAX_INT THEN\n            nIntentos := nIntentos + 1;\n            timerRun  := TRUE;          (* Nuevo plazo para el siguiente intento *)\n        ELSE\n            (* Agotados los 3 intentos *)\n            ocupado := FALSE;\n            error   := TRUE;\n        END_IF;\n    END_IF;\n\nEND_IF;\n\n(* ── Guardar estado anterior de txReq ── *)\ntxReq_prev := txReq;"
+  },
+  {
+   "codigo": "J06",
+   "tarea": "A3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Flanco de txReq: intento 1 con txData 100 (funcion nominal)"
+    },
+    {
+     "paso": 2,
+     "requisito": "0.40 s: aun en el intento 1 (plazo demasiado corto)"
+    },
+    {
+     "paso": 3,
+     "requisito": "0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA"
+    },
+    {
+     "paso": 4,
+     "requisito": "Eco correcto: ok y se conserva nIntentos 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "ok permanece"
+    },
+    {
+     "paso": 6,
+     "requisito": "Nuevo intercambio: ok se borra e intento 1"
+    },
+    {
+     "paso": 7,
+     "requisito": "Eco erroneo (55 frente a 100): la respuesta erronea cuenta como intento fallido (condicion anomala) [v2]"
+    },
+    {
+     "paso": 8,
+     "requisito": "Flanco de txReq durante el intercambio: se ignora"
+    },
+    {
+     "paso": 9,
+     "requisito": "Vence el intento 2: pasa al 3"
+    },
+    {
+     "paso": 10,
+     "requisito": "Vence el intento 3: error y ocupado apagado"
+    },
+    {
+     "paso": 11,
+     "requisito": "error permanece y nIntentos se conserva"
+    },
+    {
+     "paso": 12,
+     "requisito": "Nuevo intercambio: error se borra"
+    },
+    {
+     "paso": 13,
+     "requisito": "~0.41-0.46 s del intento 1: aun ocupado"
+    },
+    {
+     "paso": 14,
+     "requisito": "Eco dentro del plazo: ok (plazo demasiado corto)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Com\nVAR_INPUT\n    txReq : BOOL; (* Petición de transmisión *)\n    rxOk : BOOL; (* Confirmación de recepción *)\n    rxData : INT; (* Datos recibidos *)\nEND_VAR\nVAR_OUTPUT\n    txData : INT; (* Datos a transmitir *)\n    ocupado : BOOL; (* Estado ocupado *)\n    ok : BOOL; (* Confirmación de éxito *)\n    error : BOOL; (* Confirmación de error *)\n    nIntentos : INT; (* Número de intentos *)\nEND_VAR\nVAR\n    tEspera : TP; (* Temporizador de espera *)\n    estado : INT; (* Estado actual del intercambio *)\n    intentos : INT; (* Contador de intentos *)\nEND_VAR\n\n(* Estados: 0 - Inactivo, 1 - En espera de respuesta, 2 - Éxito, 3 - Error *)\nIF txReq AND NOT ocupado THEN\n    estado := 1;\n    intentos := 1;\n    txData := 100;\n    ocupado := TRUE;\n    tEspera(IN := TRUE, PT := T#500MS);\nEND_IF\n\nIF estado = 1 THEN\n    IF tEspera.Q THEN\n        IF rxOk AND rxData = txData THEN\n            estado := 2;\n            ok := TRUE;\n        ELSE\n            estado := 3;\n            error := TRUE;\n        END_IF\n        ocupado := FALSE;\n    END_IF\nEND_IF\n\nIF estado = 3 AND intentos < 3 THEN\n    estado := 1;\n    intentos := intentos + 1;\n    tEspera(IN := TRUE, PT := T#500MS);\nEND_IF\n\nnIntentos := intentos;\n\nIF estado = 2 THEN\n    ocupado := FALSE;\n    ok := TRUE;\nEND_IF\n\nIF estado = 3 AND intentos = 3 THEN\n    ocupado := FALSE;\n    error := TRUE;\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J11",
+   "tarea": "A3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA"
+    },
+    {
+     "paso": 4,
+     "requisito": "Eco correcto: ok y se conserva nIntentos 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "ok permanece"
+    },
+    {
+     "paso": 7,
+     "requisito": "Eco erroneo (55 frente a 100): la respuesta erronea cuenta como intento fallido (condicion anomala) [v2]"
+    },
+    {
+     "paso": 8,
+     "requisito": "Flanco de txReq durante el intercambio: se ignora"
+    },
+    {
+     "paso": 9,
+     "requisito": "Vence el intento 2: pasa al 3"
+    },
+    {
+     "paso": 10,
+     "requisito": "Vence el intento 3: error y ocupado apagado"
+    },
+    {
+     "paso": 11,
+     "requisito": "error permanece y nIntentos se conserva"
+    },
+    {
+     "paso": 14,
+     "requisito": "Eco dentro del plazo: ok (plazo demasiado corto)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Com\nVAR_INPUT\n    txReq : BOOL;  // Petición de transmisión\n    rxOk  : BOOL;  // Confirmación de recepción\n    rxData: INT;   // Datos recibidos\nEND_VAR\n\nVAR_OUTPUT\n    txData  : INT;  // Datos a transmitir\n    ocupado : BOOL; // Indica si se está ocupado en un intercambio\n    ok      : BOOL; // Indica si el intercambio fue exitoso\n    error   : BOOL; // Indica si el intercambio falló\n    nIntentos: INT;  // Número de intentos realizados\nEND_VAR\n\nVAR\n    estado    : INT := 0; // Estado del intercambio (0: Idle, 1: Enviando, 2: Esperando respuesta)\n    intentos  : INT := 0; // Contador de intentos\n    timer     : TON;     // Temporizador para esperar la respuesta\n    valorTx   : INT := 0; // Valor a transmitir\n    inicioIntercambio : BOOL := FALSE; // Indica si se ha iniciado un intercambio\nEND_VAR\n\n// Inicialización del temporizador\ntimer(IN := FALSE, PT := T#500MS);\n\n// Máquina de estados\nCASE estado OF\n    0: // Estado Idle\n        IF txReq AND NOT inicioIntercambio THEN\n            inicioIntercambio := TRUE;\n            estado := 1;\n            intentos := 1;\n            nIntentos := intentos;\n            valorTx := 100;\n            txData := valorTx;\n            ocupado := TRUE;\n            timer(IN := TRUE);\n        END_IF\n\n    1: // Estado Enviando\n        IF rxOk AND (rxData = valorTx) THEN\n            estado := 0;\n            ok := TRUE;\n            ocupado := FALSE;\n            inicioIntercambio := FALSE;\n        ELSIF timer.Q THEN\n            IF intentos < 3 THEN\n                intentos := intentos + 1;\n                nIntentos := intentos;\n                timer(IN := TRUE);\n            ELSE\n                estado := 0;\n                error := TRUE;\n                ocupado := FALSE;\n                inicioIntercambio := FALSE;\n            END_IF\n        END_IF\n\n    2: // Estado Esperando respuesta\n        // Este estado no se utiliza en este código, pero se mantiene por claridad.\n        // El estado de espera se maneja en el estado 1.\nEND_CASE\n\n// Mantener ok y error activos hasta el siguiente intercambio\nIF estado = 0 THEN\n    IF ok THEN\n        ok := FALSE;\n    END_IF\n    IF error THEN\n        error := FALSE;\n    END_IF\nEND_IF"
+  },
+  {
+   "codigo": "J17",
+   "tarea": "A3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA"
+    },
+    {
+     "paso": 4,
+     "requisito": "Eco correcto: ok y se conserva nIntentos 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "ok permanece"
+    },
+    {
+     "paso": 6,
+     "requisito": "Nuevo intercambio: ok se borra e intento 1"
+    },
+    {
+     "paso": 7,
+     "requisito": "Eco erroneo (55 frente a 100): la respuesta erronea cuenta como intento fallido (condicion anomala) [v2]"
+    },
+    {
+     "paso": 8,
+     "requisito": "Flanco de txReq durante el intercambio: se ignora"
+    },
+    {
+     "paso": 9,
+     "requisito": "Vence el intento 2: pasa al 3"
+    },
+    {
+     "paso": 10,
+     "requisito": "Vence el intento 3: error y ocupado apagado"
+    },
+    {
+     "paso": 11,
+     "requisito": "error permanece y nIntentos se conserva"
+    },
+    {
+     "paso": 12,
+     "requisito": "Nuevo intercambio: error se borra"
+    },
+    {
+     "paso": 13,
+     "requisito": "~0.41-0.46 s del intento 1: aun ocupado"
+    },
+    {
+     "paso": 14,
+     "requisito": "Eco dentro del plazo: ok (plazo demasiado corto)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Com\nVAR_INPUT\n    txReq : BOOL; (* Solicitud de transmisión *)\n    rxOk : BOOL; (* Confirmación de recepción *)\n    rxData : INT; (* Datos recibidos *)\nEND_VAR\nVAR_OUTPUT\n    txData : INT; (* Datos a transmitir *)\n    ocupado : BOOL; (* Indica si el intercambio está en curso *)\n    ok : BOOL; (* Indica si el intercambio fue exitoso *)\n    error : BOOL; (* Indica si el intercambio falló *)\n    nIntentos : INT; (* Número de intento actual *)\nEND_VAR\nVAR\n    intentoActual : INT := 0; (* Contador de intentos *)\n    valorPrueba : INT := 100; (* Valor de prueba a transmitir *)\n    tLimite : TON; (* Temporizador de límite de tiempo *)\n    txReqAnt : BOOL := FALSE; (* Estado anterior de txReq *)\n    intercambioEnCurso : BOOL := FALSE; (* Estado del intercambio *)\nEND_VAR\n\n(* Detectar flanco ascendente de txReq *)\nIF txReq AND NOT txReqAnt THEN\n    IF NOT intercambioEnCurso THEN\n        (* Iniciar nuevo intercambio *)\n        txData := valorPrueba;\n        ocupado := TRUE;\n        ok := FALSE;\n        error := FALSE;\n        intentoActual := 1;\n        intercambioEnCurso := TRUE;\n        tLimite(IN := TRUE, PT := T#500MS);\n    END_IF;\nEND_IF;\n\n(* Control de intentos y recepción *)\nIF intercambioEnCurso THEN\n    IF tLimite.Q THEN\n        (* Tiempo límite alcanzado, intento fallido *)\n        intentoActual := intentoActual + 1;\n        IF intentoActual > 3 THEN\n            (* Todos los intentos fallaron *)\n            error := TRUE;\n            ocupado := FALSE;\n            intercambioEnCurso := FALSE;\n        ELSE\n            (* Iniciar nuevo intento *)\n            tLimite(IN := TRUE, PT := T#500MS);\n        END_IF;\n    ELSIF rxOk AND (rxData = valorPrueba) THEN\n        (* Intento exitoso *)\n        ok := TRUE;\n        ocupado := FALSE;\n        intercambioEnCurso := FALSE;\n    END_IF;\nEND_IF;\n\n(* Actualizar salidas *)\nnIntentos := intentoActual;\n\n(* Almacenar estado anterior de txReq *)\ntxReqAnt := txReq;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J19",
+   "tarea": "A3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA"
+    },
+    {
+     "paso": 4,
+     "requisito": "Eco correcto: ok y se conserva nIntentos 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "ok permanece"
+    },
+    {
+     "paso": 9,
+     "requisito": "Vence el intento 2: pasa al 3"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Com\nVAR_INPUT\n    txReq : BOOL;  (* Peticion de transmision *)\n    rxOk : BOOL;   (* Confirmacion de recepcion *)\n    rxData : INT;  (* Datos recibidos (eco) *)\nEND_VAR\nVAR_OUTPUT\n    txData : INT;  (* Datos a transmitir *)\n    ocupado : BOOL;(* Intercambio en curso *)\n    ok : BOOL;     (* Intercambio correcto *)\n    error : BOOL;  (* Intercambio fallido tras 3 intentos *)\n    nIntentos : INT; (* Numero de intento actual *)\nEND_VAR\nVAR\n    flancoReq : R_TRIG; (* Detector de flanco para txReq *)\n    flancoRx : R_TRIG;  (* Detector de flanco para rxOk *)\n    temporizador : TON; (* Temporizador de 500 ms *)\n    resetTemp : BOOL;   (* Señal para reiniciar el temporizador *)\nEND_VAR\n\n(* Deteccion de flancos *)\nflancoReq(CLK := txReq);\nflancoRx(CLK := rxOk);\n\n(* Inicio de un nuevo intercambio si no esta ocupado *)\nIF flancoReq.Q AND NOT ocupado THEN\n    ocupado := TRUE;\n    ok := FALSE;\n    error := FALSE;\n    nIntentos := 1;\n    txData := 100;\n    resetTemp := TRUE;\nELSE\n    resetTemp := FALSE;\nEND_IF;\n\n(* Temporizador del intento en curso (se reinicia con resetTemp) *)\ntemporizador(IN := ocupado AND NOT resetTemp, PT := T#500MS);\n\n(* Logica durante el intercambio *)\nIF ocupado THEN\n    (* Evaluacion de la respuesta *)\n    IF flancoRx.Q THEN\n        IF rxData = txData THEN\n            (* Respuesta correcta (eco valido) *)\n            ok := TRUE;\n            ocupado := FALSE;\n        ELSE\n            (* Respuesta incorrecta: falla el intento *)\n            IF nIntentos < 3 THEN\n                nIntentos := nIntentos + 1;\n                resetTemp := TRUE;\n            ELSE\n                error := TRUE;\n                ocupado := FALSE;\n            END_IF;\n        END_IF;\n    (* Evaluacion del timeout *)\n    ELSIF temporizador.Q THEN\n        IF nIntentos < 3 THEN\n            nIntentos := nIntentos + 1;\n            resetTemp := TRUE;\n        ELSE\n            error := TRUE;\n            ocupado := FALSE;\n        END_IF;\n    END_IF;\nEND_IF;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J23",
+   "tarea": "A3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Flanco de txReq: intento 1 con txData 100 (funcion nominal)"
+    },
+    {
+     "paso": 2,
+     "requisito": "0.40 s: aun en el intento 1 (plazo demasiado corto)"
+    },
+    {
+     "paso": 3,
+     "requisito": "0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA"
+    },
+    {
+     "paso": 4,
+     "requisito": "Eco correcto: ok y se conserva nIntentos 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "ok permanece"
+    },
+    {
+     "paso": 6,
+     "requisito": "Nuevo intercambio: ok se borra e intento 1"
+    },
+    {
+     "paso": 7,
+     "requisito": "Eco erroneo (55 frente a 100): la respuesta erronea cuenta como intento fallido (condicion anomala) [v2]"
+    },
+    {
+     "paso": 8,
+     "requisito": "Flanco de txReq durante el intercambio: se ignora"
+    },
+    {
+     "paso": 9,
+     "requisito": "Vence el intento 2: pasa al 3"
+    },
+    {
+     "paso": 10,
+     "requisito": "Vence el intento 3: error y ocupado apagado"
+    },
+    {
+     "paso": 11,
+     "requisito": "error permanece y nIntentos se conserva"
+    },
+    {
+     "paso": 12,
+     "requisito": "Nuevo intercambio: error se borra"
+    },
+    {
+     "paso": 13,
+     "requisito": "~0.41-0.46 s del intento 1: aun ocupado"
+    },
+    {
+     "paso": 14,
+     "requisito": "Eco dentro del plazo: ok (plazo demasiado corto)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Com\nVAR_INPUT\n    txReq : BOOL; (* Petición de transmisión *)\n    rxOk : BOOL; (* Confirmación de recepción *)\n    rxData : INT; (* Datos recibidos *)\nEND_VAR\nVAR_OUTPUT\n    txData : INT; (* Datos a transmitir *)\n    ocupado : BOOL; (* Estado de ocupado *)\n    ok : BOOL; (* Confirmación de éxito *)\n    error : BOOL; (* Confirmación de error *)\n    nIntentos : INT; (* Número de intentos *)\nEND_VAR\nVAR\n    tEspera : TP; (* Temporizador de espera *)\n    estado : INT; (* Estado actual del intercambio *)\n    intentos : INT; (* Contador de intentos *)\nEND_VAR\n\n(* Estados: 0 = Inactivo, 1 = En espera de respuesta, 2 = Éxito, 3 = Error *)\nIF txReq AND NOT ocupado THEN\n    estado := 1;\n    intentos := 1;\n    txData := 100;\n    ocupado := TRUE;\n    tEspera(IN := TRUE, PT := T#500MS);\nEND_IF\n\nCASE estado OF\n    1: (* Esperando respuesta *)\n        IF tEspera.Q THEN\n            IF rxOk AND rxData = txData THEN\n                estado := 2;\n                ok := TRUE;\n                ocupado := FALSE;\n            ELSE\n                intentos := intentos + 1;\n                IF intentos > 3 THEN\n                    estado := 3;\n                    error := TRUE;\n                    ocupado := FALSE;\n                ELSE\n                    tEspera(IN := TRUE, PT := T#500MS);\n                END_IF;\n            END_IF;\n        END_IF;\n    2: (* Éxito *)\n        (* Mantener ok activo hasta el siguiente intercambio *)\n    3: (* Error *)\n        (* Mantener error activo hasta el siguiente intercambio *)\nEND_CASE;\n\nnIntentos := intentos;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J35",
+   "tarea": "A3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA"
+    },
+    {
+     "paso": 4,
+     "requisito": "Eco correcto: ok y se conserva nIntentos 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "ok permanece"
+    },
+    {
+     "paso": 6,
+     "requisito": "Nuevo intercambio: ok se borra e intento 1"
+    },
+    {
+     "paso": 7,
+     "requisito": "Eco erroneo (55 frente a 100): la respuesta erronea cuenta como intento fallido (condicion anomala) [v2]"
+    },
+    {
+     "paso": 8,
+     "requisito": "Flanco de txReq durante el intercambio: se ignora"
+    },
+    {
+     "paso": 9,
+     "requisito": "Vence el intento 2: pasa al 3"
+    },
+    {
+     "paso": 12,
+     "requisito": "Nuevo intercambio: error se borra"
+    },
+    {
+     "paso": 13,
+     "requisito": "~0.41-0.46 s del intento 1: aun ocupado"
+    },
+    {
+     "paso": 14,
+     "requisito": "Eco dentro del plazo: ok (plazo demasiado corto)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Com\nVAR_INPUT\n    txReq : BOOL; (* Solicitud de transmision *)\n    rxOk : BOOL; (* Confirmacion de recepcion *)\n    rxData : INT; (* Datos recibidos *)\nEND_VAR\nVAR_OUTPUT\n    txData : INT; (* Datos a transmitir *)\n    ocupado : BOOL; (* Indicador de intercambio en curso *)\n    ok : BOOL; (* Indicador de intercambio exitoso *)\n    error : BOOL; (* Indicador de error en el intercambio *)\n    nIntentos : INT; (* Numero de intento actual *)\nEND_VAR\nVAR\n    txReqPrev : BOOL; (* Estado previo de txReq *)\n    intentoActual : INT; (* Contador de intentos *)\n    tTimeout : TON; (* Temporizador de timeout *)\n    intercambioActivo : BOOL; (* Indicador de intercambio activo *)\nEND_VAR\n\n(* Inicializacion de variables *)\nIF NOT intercambioActivo THEN\n    IF txReq AND NOT txReqPrev THEN\n        (* Inicio de un nuevo intercambio *)\n        txData := 100;\n        ocupado := TRUE;\n        ok := FALSE;\n        error := FALSE;\n        intentoActual := 1;\n        nIntentos := intentoActual;\n        intercambioActivo := TRUE;\n        tTimeout(IN := TRUE, PT := T#500MS);\n    END_IF;\nELSE\n    (* Proceso de intercambio en curso *)\n    IF tTimeout.Q THEN\n        (* Timeout del intento actual *)\n        intentoActual := intentoActual + 1;\n        IF intentoActual > 3 THEN\n            (* Todos los intentos fallaron *)\n            error := TRUE;\n            ocupado := FALSE;\n            intercambioActivo := FALSE;\n        ELSE\n            (* Iniciar siguiente intento *)\n            nIntentos := intentoActual;\n            tTimeout(IN := TRUE, PT := T#500MS);\n        END_IF;\n    ELSIF rxOk AND (rxData = txData) THEN\n        (* Intento exitoso *)\n        ok := TRUE;\n        ocupado := FALSE;\n        intercambioActivo := FALSE;\n    END_IF;\nEND_IF;\n\n(* Actualizar estado previo de txReq *)\ntxReqPrev := txReq;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J43",
+   "tarea": "A3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Flanco de txReq: intento 1 con txData 100 (funcion nominal)"
+    },
+    {
+     "paso": 2,
+     "requisito": "0.40 s: aun en el intento 1 (plazo demasiado corto)"
+    },
+    {
+     "paso": 3,
+     "requisito": "0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA"
+    },
+    {
+     "paso": 4,
+     "requisito": "Eco correcto: ok y se conserva nIntentos 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "ok permanece"
+    },
+    {
+     "paso": 6,
+     "requisito": "Nuevo intercambio: ok se borra e intento 1"
+    },
+    {
+     "paso": 7,
+     "requisito": "Eco erroneo (55 frente a 100): la respuesta erronea cuenta como intento fallido (condicion anomala) [v2]"
+    },
+    {
+     "paso": 8,
+     "requisito": "Flanco de txReq durante el intercambio: se ignora"
+    },
+    {
+     "paso": 9,
+     "requisito": "Vence el intento 2: pasa al 3"
+    },
+    {
+     "paso": 10,
+     "requisito": "Vence el intento 3: error y ocupado apagado"
+    },
+    {
+     "paso": 11,
+     "requisito": "error permanece y nIntentos se conserva"
+    },
+    {
+     "paso": 12,
+     "requisito": "Nuevo intercambio: error se borra"
+    },
+    {
+     "paso": 13,
+     "requisito": "~0.41-0.46 s del intento 1: aun ocupado"
+    },
+    {
+     "paso": 14,
+     "requisito": "Eco dentro del plazo: ok (plazo demasiado corto)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Com\nVAR_INPUT\n    txReq : BOOL; (* Petición de transmisión *)\n    rxOk : BOOL; (* Confirmación de recepción *)\n    rxData : INT; (* Datos recibidos *)\nEND_VAR\nVAR_OUTPUT\n    txData : INT; (* Datos a transmitir *)\n    ocupado : BOOL; (* Estado ocupado *)\n    ok : BOOL; (* Confirmación de éxito *)\n    error : BOOL; (* Error en la transmisión *)\n    nIntentos : INT; (* Número de intentos *)\nEND_VAR\nVAR\n    tEspera : TP; (* Temporizador de espera *)\n    estado : INT := 0; (* Estado del intercambio *)\n    intentos : INT := 0; (* Contador de intentos *)\n    valorTx : INT := 0; (* Valor a transmitir *)\nEND_VAR\n\n(* Estado 0: Esperando petición *)\nIF txReq AND NOT ocupado THEN\n    estado := 1;\n    intentos := 1;\n    valorTx := 100;\n    txData := valorTx;\n    ocupado := TRUE;\n    tEspera(IN := TRUE, PT := T#500MS);\nEND_IF\n\n(* Estado 1: Esperando respuesta *)\nIF estado = 1 THEN\n    IF tEspera.Q THEN\n        IF rxOk AND rxData = valorTx THEN\n            estado := 2;\n            ok := TRUE;\n        ELSE\n            estado := 0;\n            intentos := intentos + 1;\n            IF intentos <= 3 THEN\n                estado := 1;\n                tEspera(IN := TRUE, PT := T#500MS);\n            ELSE\n                estado := 3;\n                error := TRUE;\n            END_IF\n        END_IF\n    END_IF\nEND_IF\n\n(* Estado 2: Transmisión exitosa *)\nIF estado = 2 THEN\n    ocupado := FALSE;\nEND_IF\n\n(* Estado 3: Transmisión fallida *)\nIF estado = 3 THEN\n    ocupado := FALSE;\nEND_IF\n\n(* Actualizar nIntentos *)\nnIntentos := intentos;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J45",
+   "tarea": "A3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA"
+    },
+    {
+     "paso": 4,
+     "requisito": "Eco correcto: ok y se conserva nIntentos 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "ok permanece"
+    },
+    {
+     "paso": 7,
+     "requisito": "Eco erroneo (55 frente a 100): la respuesta erronea cuenta como intento fallido (condicion anomala) [v2]"
+    },
+    {
+     "paso": 8,
+     "requisito": "Flanco de txReq durante el intercambio: se ignora"
+    },
+    {
+     "paso": 9,
+     "requisito": "Vence el intento 2: pasa al 3"
+    },
+    {
+     "paso": 10,
+     "requisito": "Vence el intento 3: error y ocupado apagado"
+    },
+    {
+     "paso": 11,
+     "requisito": "error permanece y nIntentos se conserva"
+    },
+    {
+     "paso": 14,
+     "requisito": "Eco dentro del plazo: ok (plazo demasiado corto)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Com\nVAR_INPUT\n    txReq : BOOL;  // Petición de transmisión\n    rxOk  : BOOL;  // Confirmación de recepción\n    rxData: INT;   // Datos recibidos\nEND_VAR\n\nVAR_OUTPUT\n    txData  : INT;  // Datos a transmitir\n    ocupado : BOOL; // Estado de ocupado\n    ok      : BOOL; // Estado de éxito\n    error   : BOOL; // Estado de error\n    nIntentos: INT; // Número de intentos\nEND_VAR\n\nVAR\n    estado    : INT := 0; // Estado actual del intercambio\n    intentos  : INT := 0; // Contador de intentos\n    tiempoEspera: TON; // Temporizador para el plazo de espera\n    valorTx   : INT := 0; // Valor a transmitir\nEND_VAR\n\n// Inicialización del temporizador\ntiempoEspera(IN := FALSE, PT := T#500MS);\n\n// Máquina de estados\nCASE estado OF\n    0: // Estado inicial\n        IF txReq THEN\n            valorTx := 100; // Valor de prueba\n            txData := valorTx;\n            ocupado := TRUE;\n            intentos := 1;\n            nIntentos := intentos;\n            tiempoEspera(IN := TRUE); // Iniciar temporizador\n            estado := 1; // Pasar al estado de espera de respuesta\n        END_IF\n\n    1: // Estado de espera de respuesta\n        IF rxOk AND (rxData = valorTx) THEN\n            ok := TRUE;\n            ocupado := FALSE;\n            estado := 0; // Terminar intercambio\n        ELSIF tiempoEspera.Q THEN\n            IF intentos < 3 THEN\n                intentos := intentos + 1;\n                nIntentos := intentos;\n                tiempoEspera(IN := TRUE); // Reiniciar temporizador\n            ELSE\n                error := TRUE;\n                ocupado := FALSE;\n                estado := 0; // Terminar intercambio\n            END_IF\n        END_IF\n\n    ELSE\n        estado := 0; // Restablecer estado en caso de error\nEND_CASE\n\n// Mantener ok y error activos hasta el siguiente intercambio\nIF estado = 0 THEN\n    ok := FALSE;\n    error := FALSE;\nEND_IF"
+  },
+  {
+   "codigo": "J50",
+   "tarea": "A3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA"
+    },
+    {
+     "paso": 4,
+     "requisito": "Eco correcto: ok y se conserva nIntentos 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "ok permanece"
+    },
+    {
+     "paso": 6,
+     "requisito": "Nuevo intercambio: ok se borra e intento 1"
+    },
+    {
+     "paso": 7,
+     "requisito": "Eco erroneo (55 frente a 100): la respuesta erronea cuenta como intento fallido (condicion anomala) [v2]"
+    },
+    {
+     "paso": 8,
+     "requisito": "Flanco de txReq durante el intercambio: se ignora"
+    },
+    {
+     "paso": 10,
+     "requisito": "Vence el intento 3: error y ocupado apagado"
+    },
+    {
+     "paso": 12,
+     "requisito": "Nuevo intercambio: error se borra"
+    },
+    {
+     "paso": 13,
+     "requisito": "~0.41-0.46 s del intento 1: aun ocupado"
+    },
+    {
+     "paso": 14,
+     "requisito": "Eco dentro del plazo: ok (plazo demasiado corto)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Com\nVAR_INPUT\n    txReq : BOOL;  // Petición de transmisión\n    rxOk  : BOOL;  // Confirmación de recepción correcta\n    rxData: INT;   // Datos recibidos\nEND_VAR\n\nVAR_OUTPUT\n    txData : INT;  // Datos a transmitir\n    ocupado: BOOL;  // Indica si el sistema está ocupado\n    ok     : BOOL;  // Indica si el intercambio fue exitoso\n    error  : BOOL;  // Indica si el intercambio falló\n    nIntentos: INT; // Número de intentos realizados\nEND_VAR\n\nVAR\n    estado    : INT := 0; // Estado actual del intercambio\n    intentos  : INT := 0; // Contador de intentos\n    timer     : TON;      // Temporizador para el plazo de 500 ms\n    valorTx   : INT := 0; // Valor a transmitir\n    inicioInt : BOOL := FALSE; // Indica si se ha iniciado un intento\nEND_VAR\n\n// Estado 0: Esperando petición de transmisión\nIF txReq AND NOT inicioInt THEN\n    estado := 1;\n    intentos := 1;\n    nIntentos := intentos;\n    valorTx := 100;\n    txData := valorTx;\n    ocupado := TRUE;\n    ok := FALSE;\n    error := FALSE;\n    timer(IN := TRUE, PT := T#500MS);\n    inicioInt := TRUE;\nEND_IF\n\n// Estado 1: Esperando respuesta\nIF estado = 1 THEN\n    IF rxOk AND rxData = valorTx THEN\n        estado := 2;\n        ok := TRUE;\n        ocupado := FALSE;\n    ELSIF timer.Q THEN\n        IF intentos < 3 THEN\n            intentos := intentos + 1;\n            nIntentos := intentos;\n            timer(IN := TRUE, PT := T#500MS);\n        ELSE\n            estado := 3;\n            error := TRUE;\n            ocupado := FALSE;\n        END_IF\n    END_IF\nEND_IF\n\n// Estado 2: Intercambio exitoso\nIF estado = 2 THEN\n    // Mantener ok activo hasta la siguiente petición\nEND_IF\n\n// Estado 3: Intercambio fallido\nIF estado = 3 THEN\n    // Mantener error activo hasta la siguiente petición\nEND_IF\n\n// Reiniciar el estado si se recibe una nueva petición mientras se está ocupado\nIF txReq AND inicioInt THEN\n    // Ignorar la nueva petición\nEND_IF\n\n// Reiniciar el estado al finalizar el intercambio\nIF estado = 2 OR estado = 3 THEN\n    inicioInt := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}

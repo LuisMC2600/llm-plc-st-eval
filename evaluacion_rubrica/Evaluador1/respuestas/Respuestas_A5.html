@@ -1,0 +1,1277 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A5 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>A5 — Registro de eventos en buffer circular (Avanzado)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja A5 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa un registro de eventos en buffer circular. Define una estructura ST_Evento con los campos codigo (INT) y marca (TIME). El bloque lleva un tiempo acumulado desde su arranque, sumando en cada ejecución el valor de la entrada ciclo (TIME), que es el período de ejecución del bloque. Al activarse nuevoEvento (transición de FALSE a TRUE), registra el valor de la entrada evento junto con ese tiempo acumulado como marca, en el arreglo buffer, de tipo ARRAY[0..19] OF ST_Evento. El primer evento se guarda en la posición 0 y los siguientes en posiciones consecutivas; cuando el arreglo se llena, se sobrescribe el registro más antiguo. La salida indice apunta a la posición del último evento registrado y vale -1 mientras no se haya registrado ninguno. La salida nEventos indica cuántas posiciones del arreglo contienen eventos válidos (0 a 20). Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Registro con variables de entrada evento (INT), nuevoEvento (BOOL) y ciclo (TIME), y salidas buffer (ARRAY[0..19] OF ST_Evento), indice (INT) y nEventos (INT). Incluye la declaración TYPE de ST_Evento. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_A5.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea A5 (FB_Registro: buffer circular de eventos)
+    ---------------------------------------------------------------------------
+    Validado en codesys/validar_harness_A5.py: 9 implementaciones (2 correctas,
+    que acumulan el tiempo antes y despues de registrar, y 7 defectuosas).
+    Tabla generada desde el validador.
+    TIEMPO VIRTUAL: ciclo := T#10MS fijo; pasos por numero de llamadas (una por
+    scan). Para el ultimo evento se acepta marca = g*10 ms o (g-1)*10 ms.
+    pM/p2 = -1: no se comprueba contenido en ese paso.
+
+    Paso: llamadas/eventos -&gt; (indice, nEventos, comprobacion de contenido)
+  0 5 llamadas sin evento ..................... (-1, 0)
+  1 evento 11 con nuevoEvento sostenido 3 llamadas (0, 1)  buffer[0]=11 + marca
+  2 2 llamadas sin flanco ..................... (0, 1)
+  3 19 eventos (12..30) ....................... (19, 20) buffer[19]=30 + marca; buffer[0]=11
+  4 1 evento (31): sobrescribe el mas antiguo . (0, 20)  buffer[0]=31 + marca; buffer[1]=12
+  5 2 eventos (32, 33) ........................ (2, 20)  buffer[2]=33 + marca; buffer[3]=14
+
+--- Pasos (CASE paso OF) ---
+
+        0: nEv := 0; libres := 5; sost := 0; cod0 := 0; eIdx := -1; eN := 0; pM := -1; cM := 0; p2 := -1; c2 := 0;
+        1: nEv := 1; libres := 0; sost := 3; cod0 := 11; eIdx := 0; eN := 1; pM := 0; cM := 11; p2 := -1; c2 := 0;
+        2: nEv := 0; libres := 2; sost := 0; cod0 := 0; eIdx := 0; eN := 1; pM := -1; cM := 0; p2 := -1; c2 := 0;
+        3: nEv := 19; libres := 0; sost := 0; cod0 := 12; eIdx := 19; eN := 20; pM := 19; cM := 30; p2 := 0; c2 := 11;
+        4: nEv := 1; libres := 0; sost := 0; cod0 := 31; eIdx := 0; eN := 20; pM := 0; cM := 31; p2 := 1; c2 := 12;
+        5: nEv := 2; libres := 0; sost := 0; cod0 := 32; eIdx := 2; eN := 20; pM := 2; cM := 33; p2 := 3; c2 := 14;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#A5-1851">A5-1851</a><a href="#A5-9329">A5-9329</a><a href="#A5-6029">A5-6029</a><a href="#A5-4425">A5-4425</a><a href="#A5-3558">A5-3558</a><a href="#A5-7727">A5-7727</a><a href="#A5-7771">A5-7771</a><a href="#A5-3414">A5-3414</a><a href="#A5-4442">A5-4442</a><a href="#A5-5130">A5-5130</a><a href="#A5-3386">A5-3386</a><a href="#A5-7063">A5-7063</a><a href="#A5-4556">A5-4556</a><a href="#A5-8849">A5-8849</a><a href="#A5-7832">A5-7832</a><a href="#A5-2051">A5-2051</a><a href="#A5-8294">A5-8294</a><a href="#A5-1206">A5-1206</a><a href="#A5-2632">A5-2632</a><a href="#A5-6758">A5-6758</a><a href="#A5-1636">A5-1636</a><a href="#A5-2042">A5-2042</a><a href="#A5-9447">A5-9447</a><a href="#A5-2012">A5-2012</a></div>
+<div class="caja resp" id="A5-1851"><div class="cod"><h3>A5-1851</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT; (* Código del evento *)
+    nuevoEvento : BOOL; (* Indica si se debe registrar un nuevo evento *)
+    ciclo : TIME; (* Período de ejecución del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice : INT; (* Índice de la posición del último evento registrado *)
+    nEventos : INT; (* Número de eventos válidos en el buffer *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0s; (* Tiempo acumulado desde el arranque *)
+    eventoAnterior : BOOL := FALSE; (* Estado anterior de nuevoEvento *)
+END_VAR
+
+(* Definición de la estructura ST_Evento *)
+TYPE ST_Evento :
+STRUCT
+    codigo : INT; (* Código del evento *)
+    marca : TIME; (* Marca de tiempo del evento *)
+END_STRUCT
+END_TYPE
+
+(* Acumulación del tiempo *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Registro de nuevo evento *)
+IF nuevoEvento AND NOT eventoAnterior THEN
+    (* Incrementar el índice y ajustarlo al rango del buffer *)
+    indice := (indice + 1) MOD 20;
+    
+    (* Registrar el evento en el buffer *)
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+    
+    (* Actualizar el número de eventos válidos *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+END_IF;
+
+(* Actualizar el estado anterior de nuevoEvento *)
+eventoAnterior := nuevoEvento;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-9329"><div class="cod"><h3>A5-9329</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (1 errores).<div class="err">Mensajes del compilador: L?nea 1 Se esperaba END_TYPE&#x27; en lugar de &#x27;;&#x27;</div></div><pre>TYPE
+    ST_Evento : STRUCT
+        codigo : INT;  (* Código del evento *)
+        marca : TIME;  (* Marca de tiempo del evento *)
+    END_STRUCT;
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT;      (* Código del evento actual *)
+    nuevoEvento : BOOL; (* Señal de nuevo evento *)
+    ciclo : TIME;      (* Período de ejecución del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice : INT := -1;  (* Índice del último evento registrado *)
+    nEventos : INT := 0; (* Número de eventos registrados *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0S; (* Tiempo acumulado desde el arranque *)
+    nuevoEventoPrev : BOOL := FALSE; (* Estado anterior de nuevoEvento *)
+END_VAR
+
+(* Acumula el tiempo de ejecución *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detecta transición de FALSE a TRUE en nuevoEvento *)
+IF (nuevoEvento AND NOT nuevoEventoPrev) THEN
+    (* Incrementa el índice circular *)
+    indice := (indice + 1) MOD 20;
+    
+    (* Registra el evento en el buffer *)
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+    
+    (* Actualiza el número de eventos registrados *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF
+END_IF
+
+(* Actualiza el estado anterior de nuevoEvento *)
+nuevoEventoPrev := nuevoEvento;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-6029"><div class="cod"><h3>A5-6029</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>TYPE ST_Evento :
+STRUCT
+    codigo : INT;  (* Código del evento *)
+    marca  : TIME; (* Tiempo acumulado en el momento del evento *)
+END_STRUCT
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento      : INT;  (* Valor del evento a registrar *)
+    nuevoEvento : BOOL; (* Señal para registrar un nuevo evento (flanco de subida) *)
+    ciclo       : TIME; (* Período de ejecución del bloque *)
+END_VAR
+
+VAR_OUTPUT
+    buffer      : ARRAY[0..19] OF ST_Evento; (* Arreglo circular de eventos *)
+    indice      : INT := -1;                 (* Posición del último evento registrado (-1 si no hay) *)
+    nEventos    : INT := 0;                  (* Número de eventos válidos en el buffer (0 a 20) *)
+END_VAR
+
+VAR
+    tiempoAcumulado : TIME := T#0s;  (* Tiempo acumulado desde el arranque *)
+    prevNuevoEvento : BOOL := FALSE; (* Memoria para detectar el flanco de subida *)
+END_VAR
+
+(* Acumular el tiempo de ciclo en cada ejecución *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detectar transición de FALSE a TRUE en nuevoEvento *)
+IF nuevoEvento AND NOT prevNuevoEvento THEN
+    
+    (* Incrementar índice y aplicar lógica de buffer circular *)
+    indice := indice + 1;
+    IF indice &gt; 19 THEN
+        indice := 0;
+    END_IF;
+    
+    (* Registrar el evento y la marca de tiempo en la posición actual *)
+    buffer[indice].codigo := evento;
+    buffer[indice].marca  := tiempoAcumulado;
+    
+    (* Incrementar el contador de eventos válidos hasta un máximo de 20 *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+    
+END_IF;
+
+(* Guardar el estado actual para la detección de flanco en el próximo ciclo *)
+prevNuevoEvento := nuevoEvento;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-4425"><div class="cod"><h3>A5-4425</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT; (* Código del evento *)
+    nuevoEvento : BOOL; (* Indica si se ha producido un nuevo evento *)
+    ciclo : TIME; (* Tiempo de ciclo de ejecución *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer de eventos *)
+    indice : INT; (* Índice del último evento registrado *)
+    nEventos : INT; (* Número de eventos válidos en el buffer *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0s; (* Tiempo acumulado desde el arranque *)
+    eventoAnterior : BOOL := FALSE; (* Estado anterior de nuevoEvento *)
+END_VAR
+
+(* Definición de la estructura ST_Evento *)
+TYPE ST_Evento :
+    STRUCT
+        codigo : INT; (* Código del evento *)
+        marca : TIME; (* Marca de tiempo del evento *)
+    END_STRUCT
+END_TYPE
+
+(* Acumulación del tiempo *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Registro de eventos *)
+IF nuevoEvento AND NOT eventoAnterior THEN
+    IF indice = -1 THEN
+        indice := 0;
+    ELSE
+        indice := (indice + 1) MOD 20;
+    END_IF
+
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF
+END_IF
+
+(* Actualización del estado anterior de nuevoEvento *)
+eventoAnterior := nuevoEvento;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-3558"><div class="cod"><h3>A5-3558</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (3 errores).<div class="err">Mensajes del compilador: L?nea 6 (Decl) Se esperaba ,, AT o :&#x27; en lugar de &#x27;VAR_OUTPUT&#x27; || L?nea 12 (Decl) Se esperaba ,, AT o :&#x27; en lugar de &#x27;VAR&#x27; || L?nea 3, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;tiempoAcumulado&#x27;</div></div><pre>// Declaración del tipo de datos ST_Evento
+TYPE ST_Evento :
+STRUCT
+    codigo : INT;   // Código del evento
+    marca  : TIME;  // Marca de tiempo del evento
+END_STRUCT
+END_TYPE
+
+// Declaración del bloque de función FB_Registro
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento     : INT;   // Código del evento a registrar
+    nuevoEvento: BOOL;  // Indica si hay un nuevo evento
+    ciclo      : TIME;  // Tiempo de ciclo de ejecución
+END_VAR_INPUT
+
+VAR_OUTPUT
+    buffer     : ARRAY[0..19] OF ST_Evento; // Buffer circular de eventos
+    indice     : INT := -1;                 // Índice del último evento registrado
+    nEventos   : INT := 0;                  // Número de eventos registrados
+END_VAR_OUTPUT
+
+VAR
+    tiempoAcumulado : TIME := T#0s;         // Tiempo acumulado desde el arranque
+    nuevoEventoAnt  : BOOL := FALSE;        // Estado anterior de nuevoEvento
+END_VAR
+
+// Cuerpo del bloque de función
+BEGIN
+    // Actualizar el tiempo acumulado
+    tiempoAcumulado := tiempoAcumulado + ciclo;
+
+    // Detectar flanco ascendente de nuevoEvento
+    IF (nuevoEvento AND NOT nuevoEventoAnt) THEN
+        // Incrementar el índice circularmente
+        indice := (indice + 1) MOD 20;
+
+        // Registrar el nuevo evento en el buffer
+        buffer[indice].codigo := evento;
+        buffer[indice].marca  := tiempoAcumulado;
+
+        // Actualizar el número de eventos registrados
+        IF nEventos &lt; 20 THEN
+            nEventos := nEventos + 1;
+        END_IF
+    END_IF
+
+    // Actualizar el estado anterior de nuevoEvento
+    nuevoEventoAnt := nuevoEvento;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-7727"><div class="cod"><h3>A5-7727</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (1 errores).<div class="err">Mensajes del compilador: L?nea 1 Se esperaba END_TYPE&#x27; en lugar de &#x27;;&#x27;</div></div><pre>(* Declaración del tipo de dato para un evento *)
+TYPE
+    ST_Evento :
+    STRUCT
+        codigo : INT;  (* Código del evento *)
+        marca  : TIME; (* Tiempo acumulado en el momento del evento *)
+    END_STRUCT;
+END_TYPE
+
+
+(* Bloque de función: registro de eventos en buffer circular *)
+FUNCTION_BLOCK FB_Registro
+
+VAR_INPUT
+    evento      : INT;  (* Código del evento a registrar *)
+    nuevoEvento : BOOL; (* Flanco ascendente activa el registro *)
+    ciclo       : TIME; (* Período de ejecución del bloque *)
+END_VAR
+
+VAR_OUTPUT
+    buffer   : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice   : INT;                        (* Posición del último evento registrado; -1 si ninguno *)
+    nEventos : INT;                        (* Cantidad de posiciones válidas en el buffer (0-20) *)
+END_VAR
+
+VAR
+    tiempoAcumulado  : TIME; (* Tiempo acumulado desde el arranque del bloque *)
+    nuevoEventoAntes : BOOL; (* Valor de nuevoEvento en el ciclo anterior, para detectar flanco *)
+    nextPos          : INT;  (* Próxima posición de escritura en el buffer *)
+END_VAR
+
+(* ── Inicialización implícita (primera ejecución) ─────────────────────────
+   IEC 61131-3 garantiza que las variables se inicializan a su valor por
+   defecto: BOOL → FALSE, INT → 0, TIME → T#0s.
+   indice se inicializa explícitamente a -1 en la declaración no es posible
+   con valor negativo en todos los entornos, por lo que se gestiona aquí. *)
+
+(* Acumular tiempo de ciclo *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detectar flanco ascendente en nuevoEvento *)
+IF nuevoEvento AND NOT nuevoEventoAntes THEN
+
+    (* Calcular la posición de escritura en el buffer circular *)
+    (* nextPos ya apunta a la posición correcta (inicia en 0) *)
+
+    (* Escribir el evento en el buffer *)
+    buffer[nextPos].codigo := evento;
+    buffer[nextPos].marca  := tiempoAcumulado;
+
+    (* Actualizar la salida indice con la posición recién escrita *)
+    indice := nextPos;
+
+    (* Avanzar el contador de eventos válidos hasta el máximo (20) *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+
+    (* Avanzar nextPos de forma circular *)
+    nextPos := nextPos + 1;
+    IF nextPos &gt; 19 THEN
+        nextPos := 0;
+    END_IF;
+
+END_IF;
+
+(* Guardar estado de nuevoEvento para el próximo ciclo *)
+nuevoEventoAntes := nuevoEvento;
+
+(* Nota: indice vale 0 en el primer ciclo antes de cualquier evento.
+   Para cumplir el requisito de -1 inicial se usa la siguiente lógica: *)
+(* Se reescribe indice a -1 solo mientras no se haya registrado ningún evento *)
+IF nEventos = 0 THEN
+    indice := -1;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-7771"><div class="cod"><h3>A5-7771</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT;        // Código del evento
+    nuevoEvento : BOOL;   // Indica si se ha producido un nuevo evento
+    ciclo : TIME;        // Tiempo de ejecución del bloque
+END_VAR
+
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento;  // Buffer circular de eventos
+    indice : INT;                      // Índice del último evento registrado
+    nEventos : INT;                    // Número de eventos válidos en el buffer
+END_VAR
+
+VAR
+    tiempoAcumulado : TIME;  // Tiempo acumulado desde el arranque del bloque
+    posBuffer : INT;         // Posición actual en el buffer
+END_VAR
+
+TYPE
+    ST_Evento :
+    STRUCT
+        codigo : INT;  // Código del evento
+        marca : TIME;   // Marca de tiempo del evento
+    END_STRUCT
+END_TYPE
+
+METHOD FB_Registro : VOID
+VAR
+    i : INT;
+END_VAR
+
+// Inicialización en el primer arranque
+IF tiempoAcumulado = T#0s THEN
+    indice := -1;
+    nEventos := 0;
+    posBuffer := 0;
+END_IF
+
+// Acumulación del tiempo de ciclo
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+// Registro de nuevo evento
+IF nuevoEvento THEN
+    // Almacenar el evento en el buffer
+    buffer[posBuffer].codigo := evento;
+    buffer[posBuffer].marca := tiempoAcumulado;
+
+    // Actualizar el índice y el número de eventos
+    indice := posBuffer;
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF
+
+    // Avanzar la posición en el buffer circular
+    posBuffer := (posBuffer + 1) MOD 20;
+END_IF
+
+END_METHOD</pre></div>
+<div class="caja resp" id="A5-3414"><div class="cod"><h3>A5-3414</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (3 errores).<div class="err">Mensajes del compilador: L?nea 6 (Decl) Se esperaba ,, AT o :&#x27; en lugar de &#x27;VAR_OUTPUT&#x27; || L?nea 12 (Decl) Se esperaba ,, AT o :&#x27; en lugar de &#x27;VAR&#x27; || L?nea 3, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;tiempoAcumulado&#x27;</div></div><pre>// Declaración del tipo de datos para un evento
+TYPE ST_Evento :
+STRUCT
+    codigo : INT;   // Código del evento
+    marca  : TIME;  // Marca de tiempo del evento
+END_STRUCT
+END_TYPE
+
+// Declaración del bloque de función FB_Registro
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento     : INT;   // Código del evento entrante
+    nuevoEvento: BOOL;  // Indica si hay un nuevo evento
+    ciclo      : TIME;  // Período de ejecución del bloque
+END_VAR_INPUT
+
+VAR_OUTPUT
+    buffer     : ARRAY[0..19] OF ST_Evento; // Buffer circular de eventos
+    indice     : INT := -1;                 // Índice del último evento registrado
+    nEventos   : INT := 0;                  // Número de eventos registrados
+END_VAR_OUTPUT
+
+VAR
+    tiempoAcumulado : TIME := T#0s; // Tiempo acumulado desde el arranque
+    nuevoEventoPrev : BOOL := FALSE; // Estado anterior de nuevoEvento
+END_VAR
+
+// Cuerpo del bloque de función
+BEGIN
+    // Actualizar el tiempo acumulado
+    tiempoAcumulado := tiempoAcumulado + ciclo;
+
+    // Detectar transición de FALSE a TRUE en nuevoEvento
+    IF (nuevoEvento AND NOT nuevoEventoPrev) THEN
+        // Incrementar el índice circular
+        indice := (indice + 1) MOD 20;
+
+        // Registrar el evento en el buffer
+        buffer[indice].codigo := evento;
+        buffer[indice].marca  := tiempoAcumulado;
+
+        // Actualizar el número de eventos registrados
+        IF nEventos &lt; 20 THEN
+            nEventos := nEventos + 1;
+        END_IF
+    END_IF
+
+    // Actualizar el estado anterior de nuevoEvento
+    nuevoEventoPrev := nuevoEvento;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-4442"><div class="cod"><h3>A5-4442</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (1 errores).<div class="err">Mensajes del compilador: L?nea 3, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;tiempoAcumulado&#x27;</div></div><pre>// Declaración del tipo de datos para el evento
+TYPE ST_Evento :
+STRUCT
+    codigo : INT;   // Código del evento
+    marca  : TIME;  // Marca de tiempo del evento
+END_STRUCT
+END_TYPE
+
+// Declaración del bloque de función
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento     : INT;   // Código del evento entrante
+    nuevoEvento: BOOL;  // Indica si hay un nuevo evento
+    ciclo      : TIME;  // Período de ejecución del bloque
+END_VAR
+VAR_OUTPUT
+    buffer     : ARRAY[0..19] OF ST_Evento; // Buffer circular de eventos
+    indice     : INT := -1;                 // Índice del último evento registrado
+    nEventos   : INT := 0;                  // Número de eventos registrados
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0s;         // Tiempo acumulado desde el arranque
+    nuevoEventoPrev : BOOL := FALSE;        // Estado anterior de nuevoEvento
+END_VAR
+
+// Cuerpo del bloque de función
+BEGIN
+    // Actualizar el tiempo acumulado
+    tiempoAcumulado := tiempoAcumulado + ciclo;
+
+    // Detectar transición de FALSE a TRUE en nuevoEvento
+    IF (nuevoEvento AND NOT nuevoEventoPrev) THEN
+        // Incrementar el índice circularmente
+        indice := (indice + 1) MOD 20;
+
+        // Registrar el nuevo evento en el buffer
+        buffer[indice].codigo := evento;
+        buffer[indice].marca  := tiempoAcumulado;
+
+        // Actualizar el número de eventos registrados
+        IF nEventos &lt; 20 THEN
+            nEventos := nEventos + 1;
+        END_IF
+    END_IF
+
+    // Actualizar el estado anterior de nuevoEvento
+    nuevoEventoPrev := nuevoEvento;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-5130"><div class="cod"><h3>A5-5130</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>TYPE ST_Evento :
+STRUCT
+    codigo : INT; (* Codigo del evento *)
+    marca : TIME; (* Marca de tiempo *)
+END_STRUCT
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT; (* Codigo del evento a registrar *)
+    nuevoEvento : BOOL; (* Disparador para registrar evento *)
+    ciclo : TIME; (* Periodo de ejecucion del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer circular *)
+    indice : INT := -1; (* Posicion del ultimo evento *)
+    nEventos : INT := 0; (* Cantidad de eventos validos *)
+END_VAR
+VAR
+    detectorFlanco : R_TRIG; (* Detector de flanco de subida *)
+    tiempoAcumulado : TIME := T#0S; (* Tiempo desde el arranque *)
+END_VAR
+
+(* Acumular el tiempo de ciclo *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detectar transicion de FALSE a TRUE en nuevoEvento *)
+detectorFlanco(CLK := nuevoEvento);
+
+IF detectorFlanco.Q THEN
+    (* Calcular siguiente posicion en el buffer circular *)
+    indice := (indice + 1) MOD 20;
+    
+    (* Registrar datos en el buffer *)
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+    
+    (* Incrementar contador de eventos hasta un maximo de 20 *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-3386"><div class="cod"><h3>A5-3386</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (1 errores).<div class="err">Mensajes del compilador: L?nea 1 Se esperaba END_TYPE&#x27; en lugar de &#x27;;&#x27;</div></div><pre>TYPE
+    ST_Evento : STRUCT
+        codigo : INT;  (* Código del evento *)
+        marca : TIME;  (* Marca de tiempo del evento *)
+    END_STRUCT;
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT;      (* Código del evento entrante *)
+    nuevoEvento : BOOL; (* Señal de nuevo evento *)
+    ciclo : TIME;      (* Período de ejecución del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice : INT;       (* Índice del último evento registrado *)
+    nEventos : INT;     (* Número de eventos válidos en el buffer *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0S; (* Tiempo acumulado desde el arranque *)
+    eventoPrevio : BOOL := FALSE;   (* Estado previo de nuevoEvento *)
+    posicion : INT := 0;            (* Posición actual en el buffer *)
+END_VAR
+
+(* Acumula el tiempo de ejecución *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detecta el flanco de subida de nuevoEvento *)
+IF (nuevoEvento AND NOT eventoPrevio) THEN
+    (* Registra el nuevo evento en el buffer *)
+    buffer[posicion].codigo := evento;
+    buffer[posicion].marca := tiempoAcumulado;
+    
+    (* Actualiza el índice y el número de eventos *)
+    indice := posicion;
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+    
+    (* Avanza la posición en el buffer, con retorno circular *)
+    posicion := (posicion + 1) MOD 20;
+END_IF;
+
+(* Actualiza el estado previo de nuevoEvento *)
+eventoPrevio := nuevoEvento;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-7063"><div class="cod"><h3>A5-7063</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>TYPE ST_Evento :
+STRUCT
+    codigo : INT;   (* Código del evento *)
+    marca  : TIME;  (* Tiempo acumulado en el momento del evento *)
+END_STRUCT
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento      : INT;      (* Código del evento a registrar *)
+    nuevoEvento : BOOL;     (* Disparador para registrar el evento (flanco de subida) *)
+    ciclo       : TIME;     (* Período de ejecución del bloque *)
+END_VAR
+
+VAR_OUTPUT
+    buffer      : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice      : INT := -1;                 (* Índice del último evento registrado (-1 si está vacío) *)
+    nEventos    : INT := 0;                  (* Cantidad de eventos válidos en el buffer (0 a 20) *)
+END_VAR
+
+VAR
+    tiempoAcumulado : TIME := T#0s;          (* Tiempo total acumulado desde el arranque *)
+    prevNuevoEvento : BOOL := FALSE;         (* Memoria para detectar el flanco de subida *)
+END_VAR
+
+(* 1. Acumular el tiempo de ejecución en cada ciclo *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* 2. Detectar transición de FALSE a TRUE en nuevoEvento *)
+IF nuevoEvento AND NOT prevNuevoEvento THEN
+    
+    (* 3. Calcular el nuevo índice (buffer circular de 0 a 19) *)
+    indice := indice + 1;
+    IF indice &gt; 19 THEN
+        indice := 0;
+    END_IF;
+    
+    (* 4. Registrar los datos en el buffer *)
+    buffer[indice].codigo := evento;
+    buffer[indice].marca  := tiempoAcumulado;
+    
+    (* 5. Actualizar la cantidad de eventos válidos (tope en 20) *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+    
+END_IF;
+
+(* 6. Actualizar la memoria del flanco para el siguiente ciclo *)
+prevNuevoEvento := nuevoEvento;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-4556"><div class="cod"><h3>A5-4556</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (1 errores).<div class="err">Mensajes del compilador: L?nea 1 Se esperaba END_TYPE&#x27; en lugar de &#x27;;&#x27;</div></div><pre>(* Declaración del tipo de dato para un evento *)
+TYPE
+    ST_Evento :
+    STRUCT
+        codigo : INT;  (* Código del evento *)
+        marca  : TIME; (* Tiempo acumulado en el momento del evento *)
+    END_STRUCT;
+END_TYPE
+
+
+(* Bloque de función: registro de eventos en buffer circular *)
+FUNCTION_BLOCK FB_Registro
+
+VAR_INPUT
+    evento      : INT;  (* Código del evento a registrar *)
+    nuevoEvento : BOOL; (* Flanco ascendente activa el registro *)
+    ciclo       : TIME; (* Período de ejecución del bloque *)
+END_VAR
+
+VAR_OUTPUT
+    buffer   : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice   : INT;                        (* Posición del último evento registrado; -1 si ninguno *)
+    nEventos : INT;                        (* Cantidad de posiciones válidas (0..20) *)
+END_VAR
+
+VAR
+    tiempoAcumulado  : TIME; (* Tiempo acumulado desde el arranque *)
+    nuevoEventoPrev  : BOOL; (* Valor de nuevoEvento en el ciclo anterior *)
+    siguientePosicion: INT;  (* Próxima posición de escritura en el buffer *)
+END_VAR
+
+(* ── Inicialización implícita en primer ciclo ─────────────────────────────
+   IEC 61131-3 garantiza que las variables se inicializan a su valor por
+   defecto (0 / FALSE / T#0s) antes de la primera ejecución.
+   indice se inicializa explícitamente a -1 en la lógica de arranque.     *)
+
+(* Acumular tiempo de ejecución *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detectar flanco ascendente de nuevoEvento *)
+IF nuevoEvento AND NOT nuevoEventoPrev THEN
+
+    (* Calcular la posición de escritura en el buffer circular *)
+    siguientePosicion := (indice + 1) MOD 20;
+    (* Nota: cuando indice = -1, (-1 + 1) MOD 20 = 0, posición correcta *)
+
+    (* Registrar el evento *)
+    buffer[siguientePosicion].codigo := evento;
+    buffer[siguientePosicion].marca  := tiempoAcumulado;
+
+    (* Actualizar índice al último evento registrado *)
+    indice := siguientePosicion;
+
+    (* Actualizar contador de eventos válidos (máximo 20) *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+
+END_IF;
+
+(* Guardar estado de nuevoEvento para detección de flanco en el próximo ciclo *)
+nuevoEventoPrev := nuevoEvento;</pre></div>
+<div class="caja resp" id="A5-8849"><div class="cod"><h3>A5-8849</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (1 errores).<div class="err">Mensajes del compilador: L?nea 1 Se esperaba END_TYPE&#x27; en lugar de &#x27;;&#x27;</div></div><pre>TYPE
+    ST_Evento : STRUCT
+        codigo : INT;  (* Código del evento *)
+        marca  : TIME; (* Marca de tiempo acumulado *)
+    END_STRUCT;
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento     : INT;  (* Código del evento a registrar *)
+    nuevoEvento: BOOL; (* Flanco ascendente dispara el registro *)
+    ciclo      : TIME; (* Período de ejecución del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer   : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice   : INT;                        (* Posición del último evento registrado; -1 si ninguno *)
+    nEventos : INT;                        (* Cantidad de posiciones válidas en el buffer (0-20) *)
+END_VAR
+VAR
+    tAcumulado    : TIME; (* Tiempo acumulado desde el arranque *)
+    prevNuevoEvento: BOOL; (* Valor anterior de nuevoEvento para detección de flanco *)
+    nextIndice    : INT;  (* Próxima posición de escritura en el buffer *)
+END_VAR
+
+(* Acumular tiempo de ciclo en cada ejecución *)
+tAcumulado := tAcumulado + ciclo;
+
+(* Detectar flanco ascendente de nuevoEvento *)
+IF nuevoEvento AND NOT prevNuevoEvento THEN
+
+    (* Escribir en la posición nextIndice del buffer circular *)
+    buffer[nextIndice].codigo := evento;
+    buffer[nextIndice].marca  := tAcumulado;
+
+    (* Actualizar índice del último evento registrado *)
+    indice := nextIndice;
+
+    (* Avanzar el puntero de escritura de forma circular *)
+    nextIndice := (nextIndice + 1) MOD 20;
+
+    (* Incrementar contador de eventos válidos hasta el máximo *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+
+END_IF;
+
+(* Actualizar valor previo para la próxima ejecución *)
+prevNuevoEvento := nuevoEvento;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-7832"><div class="cod"><h3>A5-7832</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT;        // Código del evento
+    nuevoEvento : BOOL;  // Indica si se ha producido un nuevo evento
+    ciclo : TIME;        // Tiempo de ejecución del bloque
+END_VAR
+
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento;  // Buffer circular de eventos
+    indice : INT;                        // Índice del último evento registrado
+    nEventos : INT;                      // Número de eventos válidos en el buffer
+END_VAR
+
+VAR
+    tiempoAcumulado : TIME;  // Tiempo acumulado desde el arranque
+    pos : INT;               // Posición actual en el buffer
+END_VAR
+
+TYPE ST_Evento :
+STRUCT
+    codigo : INT;  // Código del evento
+    marca : TIME;   // Marca de tiempo del evento
+END_STRUCT
+END_TYPE
+
+METHOD FB_Registro : VOID
+    // Inicialización en el primer arranque
+    IF NOT (indice = -1) THEN
+        tiempoAcumulado := tiempoAcumulado + ciclo;
+    END_IF;
+
+    // Registro de nuevo evento
+    IF nuevoEvento THEN
+        // Guardar el evento en el buffer
+        buffer[pos].codigo := evento;
+        buffer[pos].marca := tiempoAcumulado;
+
+        // Actualizar el índice y el número de eventos
+        IF indice = -1 THEN
+            indice := 0;
+            nEventos := 1;
+        ELSE
+            indice := (indice + 1) MOD 20;
+            IF nEventos &lt; 20 THEN
+                nEventos := nEventos + 1;
+            END_IF;
+        END_IF;
+
+        // Actualizar la posición para el próximo evento
+        pos := indice;
+    END_IF;
+END_METHOD</pre></div>
+<div class="caja resp" id="A5-2051"><div class="cod"><h3>A5-2051</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>(* Declaración del tipo de dato para un evento *)
+TYPE ST_Evento :
+STRUCT
+    codigo : INT;  (* Código del evento *)
+    marca  : TIME; (* Tiempo acumulado en el momento del evento *)
+END_STRUCT
+END_TYPE
+
+
+(* Bloque de función: registro de eventos en buffer circular *)
+FUNCTION_BLOCK FB_Registro
+
+VAR_INPUT
+    evento      : INT;  (* Código del evento a registrar *)
+    nuevoEvento : BOOL; (* Flanco ascendente dispara el registro *)
+    ciclo       : TIME; (* Período de ejecución del bloque *)
+END_VAR
+
+VAR_OUTPUT
+    buffer   : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice   : INT;                        (* Posición del último evento registrado (-1 = ninguno) *)
+    nEventos : INT;                        (* Cantidad de posiciones válidas (0-20) *)
+END_VAR
+
+VAR
+    tiempoAcumulado  : TIME; (* Tiempo acumulado desde el arranque *)
+    nuevoEventoAntes : BOOL; (* Estado anterior de nuevoEvento para detección de flanco *)
+    siguientePos     : INT;  (* Próxima posición de escritura en el buffer *)
+END_VAR
+
+(* ── Inicialización implícita (primera ejecución) ──────────────────────────
+   IEC 61131-3 garantiza que las variables se inicializan a su valor por
+   defecto: BOOL → FALSE, INT → 0, TIME → T#0s.
+   indice debe comenzar en -1, por lo que se inicializa explícitamente
+   mediante una variable auxiliar de primer ciclo si fuera necesario;
+   aquí se aprovecha que siguientePos = 0 y nEventos = 0 para deducir
+   el estado inicial, y se fuerza indice = -1 cuando nEventos = 0.       *)
+
+(* ── 1. Acumular tiempo de ciclo ──────────────────────────────────────── *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* ── 2. Detectar flanco ascendente en nuevoEvento ─────────────────────── *)
+IF nuevoEvento AND NOT nuevoEventoAntes THEN
+
+    (* 2a. Escribir el evento en la posición actual del buffer *)
+    buffer[siguientePos].codigo := evento;
+    buffer[siguientePos].marca  := tiempoAcumulado;
+
+    (* 2b. Actualizar salida indice *)
+    indice := siguientePos;
+
+    (* 2c. Avanzar el contador de posición siguiente (circular) *)
+    siguientePos := siguientePos + 1;
+    IF siguientePos &gt; 19 THEN
+        siguientePos := 0;
+    END_IF;
+
+    (* 2d. Actualizar cantidad de eventos válidos (máximo 20) *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+
+ELSE
+    (* Sin nuevo evento: mantener indice en -1 si aún no hay registros *)
+    IF nEventos = 0 THEN
+        indice := -1;
+    END_IF;
+END_IF;
+
+(* ── 3. Memorizar estado de nuevoEvento para el próximo ciclo ─────────── *)
+nuevoEventoAntes := nuevoEvento;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-8294"><div class="cod"><h3>A5-8294</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).</div><pre>TYPE ST_Evento :
+STRUCT
+    codigo : INT; (* Código del evento *)
+    marca : TIME; (* Marca de tiempo del evento *)
+END_STRUCT
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT; (* Código del evento *)
+    nuevoEvento : BOOL; (* Indica si se debe registrar un nuevo evento *)
+    ciclo : TIME; (* Período de ejecución del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer de eventos *)
+    indice : INT; (* Índice del último evento registrado *)
+    nEventos : INT; (* Número de eventos válidos en el buffer *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0s; (* Tiempo acumulado desde el arranque *)
+    ultimoEvento : INT := -1; (* Índice del último evento registrado *)
+    eventosRegistrados : INT := 0; (* Número de eventos registrados *)
+END_VAR
+
+(* Acumula el tiempo de ciclo *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Registro de nuevo evento *)
+IF nuevoEvento THEN
+    (* Incrementa el índice y ajusta si se llena el buffer *)
+    ultimoEvento := (ultimoEvento + 1) MOD 20;
+    
+    (* Registra el evento en el buffer *)
+    buffer[ultimoEvento].codigo := evento;
+    buffer[ultimoEvento].marca := tiempoAcumulado;
+    
+    (* Actualiza el número de eventos válidos *)
+    IF eventosRegistrados &lt; 20 THEN
+        eventosRegistrados := eventosRegistrados + 1;
+    END_IF;
+    
+    (* Actualiza el índice y el número de eventos *)
+    indice := ultimoEvento;
+    nEventos := eventosRegistrados;
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-1206"><div class="cod"><h3>A5-1206</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>TYPE ST_Evento :
+STRUCT
+    codigo : INT; (* Codigo del evento *)
+    marca : TIME; (* Marca de tiempo *)
+END_STRUCT
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT; (* Codigo del evento a registrar *)
+    nuevoEvento : BOOL; (* Transicion para registrar evento *)
+    ciclo : TIME; (* Periodo de ejecucion del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer circular *)
+    indice : INT := -1; (* Posicion del ultimo evento *)
+    nEventos : INT := 0; (* Cantidad de eventos validos *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0S; (* Tiempo desde el arranque *)
+    trigEvento : R_TRIG; (* Detector de flanco ascendente *)
+END_VAR
+
+(* Acumular el tiempo de ciclo *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detectar flanco ascendente de nuevoEvento *)
+trigEvento(CLK := nuevoEvento);
+
+IF trigEvento.Q THEN
+    (* Calcular nuevo indice circular *)
+    indice := (indice + 1) MOD 20;
+    
+    (* Guardar evento y marca de tiempo *)
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+    
+    (* Incrementar contador de eventos validos hasta 20 *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-2632"><div class="cod"><h3>A5-2632</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (1 errores).<div class="err">Mensajes del compilador: L?nea 1 Se esperaba END_TYPE&#x27; en lugar de &#x27;;&#x27;</div></div><pre>TYPE
+    ST_Evento : STRUCT
+        codigo : INT;  (* Código del evento *)
+        marca  : TIME; (* Marca de tiempo acumulado *)
+    END_STRUCT;
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento     : INT;  (* Código del evento a registrar *)
+    nuevoEvento: BOOL; (* Flanco ascendente dispara el registro *)
+    ciclo      : TIME; (* Período de ejecución del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer   : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice   : INT;                        (* Posición del último evento registrado; -1 si ninguno *)
+    nEventos : INT;                        (* Número de posiciones válidas en el buffer (0..20) *)
+END_VAR
+VAR
+    tAcumulado    : TIME; (* Tiempo acumulado desde el arranque *)
+    prevEvento    : BOOL; (* Valor anterior de nuevoEvento para detección de flanco *)
+    nextPos       : INT;  (* Próxima posición de escritura en el buffer *)
+END_VAR
+
+(* Acumular tiempo de ciclo en cada ejecución *)
+tAcumulado := tAcumulado + ciclo;
+
+(* Detectar flanco ascendente de nuevoEvento *)
+IF nuevoEvento AND NOT prevEvento THEN
+
+    (* Escribir el evento en la posición actual del buffer circular *)
+    buffer[nextPos].codigo := evento;
+    buffer[nextPos].marca  := tAcumulado;
+
+    (* Actualizar índice de último evento registrado *)
+    indice := nextPos;
+
+    (* Avanzar el contador de posición con envoltura circular *)
+    nextPos := (nextPos + 1) MOD 20;
+
+    (* Incrementar contador de eventos válidos hasta el máximo *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+
+END_IF;
+
+(* Guardar estado actual del flanco para la siguiente ejecución *)
+prevEvento := nuevoEvento;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-6758"><div class="cod"><h3>A5-6758</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>TYPE ST_Evento :
+STRUCT
+    codigo : INT; (* Codigo del evento *)
+    marca : TIME; (* Marca de tiempo *)
+END_STRUCT
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT; (* Codigo del evento a registrar *)
+    nuevoEvento : BOOL; (* Disparador para registrar evento *)
+    ciclo : TIME; (* Periodo de ejecucion del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice : INT := -1; (* Posicion del ultimo evento registrado *)
+    nEventos : INT := 0; (* Numero de eventos validos en el buffer *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0S; (* Tiempo acumulado desde el arranque *)
+    trigEvento : R_TRIG; (* Detector de flanco ascendente *)
+END_VAR
+
+(* Acumular el tiempo de ciclo en cada ejecucion *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detectar transicion de FALSE a TRUE en nuevoEvento *)
+trigEvento(CLK := nuevoEvento);
+
+IF trigEvento.Q THEN
+    (* Actualizar el indice de forma circular *)
+    IF indice &lt; 19 THEN
+        indice := indice + 1;
+    ELSE
+        indice := 0;
+    END_IF;
+    
+    (* Registrar el evento y la marca de tiempo en el buffer *)
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+    
+    (* Incrementar el numero de eventos validos hasta un maximo de 20 *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-1636"><div class="cod"><h3>A5-1636</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>TYPE ST_Evento :
+STRUCT
+    codigo : INT;  // Código del evento
+    marca  : TIME; // Tiempo acumulado en el momento del evento
+END_STRUCT
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento      : INT;  // Código del evento a registrar
+    nuevoEvento : BOOL; // Señal para registrar evento (flanco de subida)
+    ciclo       : TIME; // Período de ejecución para el tiempo acumulado
+END_VAR
+
+VAR_OUTPUT
+    buffer      : ARRAY[0..19] OF ST_Evento; // Buffer circular de eventos
+    indice      : INT := -1;                 // Posición del último evento (-1 si está vacío)
+    nEventos    : INT := 0;                  // Cantidad de eventos válidos (0 a 20)
+END_VAR
+
+VAR
+    tiempoAcumulado : TIME := T#0s;          // Tiempo total acumulado desde el arranque
+    prevNuevoEvento : BOOL := FALSE;         // Memoria para detección de flanco de subida
+END_VAR
+
+// 1. Acumular el tiempo de ejecución en cada ciclo
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+// 2. Detectar transición de FALSE a TRUE en nuevoEvento (flanco de subida)
+IF nuevoEvento AND NOT prevNuevoEvento THEN
+    
+    // 3. Actualizar el índice de forma circular (0 a 19)
+    indice := indice + 1;
+    IF indice &gt; 19 THEN
+        indice := 0;
+    END_IF;
+    
+    // 4. Registrar el evento en la posición actual del buffer
+    buffer[indice].codigo := evento;
+    buffer[indice].marca  := tiempoAcumulado;
+    
+    // 5. Actualizar el contador de eventos válidos (saturado en 20)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+    
+END_IF;
+
+// 6. Actualizar la memoria del estado anterior para el detector de flanco
+prevNuevoEvento := nuevoEvento;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-2042"><div class="cod"><h3>A5-2042</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT;        // Código del evento
+    nuevoEvento : BOOL;  // Indica si se ha producido un nuevo evento
+    ciclo : TIME;       // Tiempo de ejecución del bloque
+END_VAR
+
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento;  // Buffer circular de eventos
+    indice : INT;                        // Índice de la posición del último evento registrado
+    nEventos : INT;                      // Número de eventos válidos en el buffer
+END_VAR
+
+VAR
+    tiempoAcumulado : TIME;  // Tiempo acumulado desde el arranque del bloque
+    primeraVez : BOOL := TRUE;  // Bandera para inicializar el tiempo acumulado
+END_VAR
+
+TYPE
+    ST_Evento :
+    STRUCT
+        codigo : INT;  // Código del evento
+        marca : TIME;  // Marca de tiempo del evento
+    END_STRUCT
+END_TYPE
+
+// Inicialización del tiempo acumulado en la primera ejecución
+IF primeraVez THEN
+    tiempoAcumulado := T#0s;
+    primeraVez := FALSE;
+END_IF
+
+// Actualización del tiempo acumulado
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+// Registro de un nuevo evento
+IF nuevoEvento THEN
+    // Incrementar el índice y ajustarlo al rango del buffer circular
+    indice := (indice + 1) MOD 20;
+    
+    // Registrar el evento en la posición actual del índice
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+    
+    // Actualizar el número de eventos válidos
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF
+END_IF</pre></div>
+<div class="caja resp" id="A5-9447"><div class="cod"><h3>A5-9447</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (1 errores).<div class="err">Mensajes del compilador: L?nea 1 Se esperaba END_TYPE&#x27; en lugar de &#x27;;&#x27;</div></div><pre>TYPE
+    ST_Evento : STRUCT
+        codigo : INT;  (* Código del evento *)
+        marca  : TIME; (* Marca de tiempo acumulado *)
+    END_STRUCT;
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento     : INT;  (* Código del evento a registrar *)
+    nuevoEvento: BOOL; (* Flanco ascendente dispara el registro *)
+    ciclo      : TIME; (* Período de ejecución del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer   : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice   : INT;                        (* Posición del último evento registrado; -1 si ninguno *)
+    nEventos : INT;                        (* Cantidad de posiciones válidas en el buffer (0..20) *)
+END_VAR
+VAR
+    tAcumulado    : TIME; (* Tiempo acumulado desde el arranque *)
+    prevEvento    : BOOL; (* Valor anterior de nuevoEvento para detección de flanco *)
+    nextPos       : INT;  (* Próxima posición de escritura en el buffer *)
+END_VAR
+
+(* Acumular tiempo de ciclo en cada ejecución *)
+tAcumulado := tAcumulado + ciclo;
+
+(* Detectar flanco ascendente de nuevoEvento *)
+IF nuevoEvento AND NOT prevEvento THEN
+
+    (* Escribir el evento en la posición actual del buffer circular *)
+    buffer[nextPos].codigo := evento;
+    buffer[nextPos].marca  := tAcumulado;
+
+    (* Actualizar índice de último evento registrado *)
+    indice := nextPos;
+
+    (* Avanzar el contador de posición con envoltura circular *)
+    nextPos := (nextPos + 1) MOD 20;
+
+    (* Incrementar nEventos hasta el máximo de 20 *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+
+END_IF;
+
+(* Guardar estado actual de nuevoEvento para la próxima ejecución *)
+prevEvento := nuevoEvento;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-2012"><div class="cod"><h3>A5-2012</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 6 pasos del harness (pasos 0; numerados desde 0).</div><pre>TYPE ST_Evento :
+STRUCT
+    codigo : INT;  (* Código del evento *)
+    marca : TIME;  (* Marca de tiempo del evento *)
+END_STRUCT
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT;      (* Código del evento entrante *)
+    nuevoEvento : BOOL; (* Señal de nuevo evento *)
+    ciclo : TIME;      (* Período de ejecución del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice : INT;       (* Índice del último evento registrado *)
+    nEventos : INT;     (* Número de eventos válidos en el buffer *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0S; (* Tiempo acumulado desde el arranque *)
+    nuevoEventoAnt : BOOL := FALSE; (* Estado anterior de nuevoEvento *)
+    posActual : INT := 0;           (* Posición actual en el buffer *)
+END_VAR
+
+(* Acumula el tiempo de ejecución *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detecta transición de FALSE a TRUE en nuevoEvento *)
+IF (nuevoEvento AND NOT nuevoEventoAnt) THEN
+    (* Registra el evento en la posición actual del buffer *)
+    buffer[posActual].codigo := evento;
+    buffer[posActual].marca := tiempoAcumulado;
+    
+    (* Actualiza el índice del último evento registrado *)
+    indice := posActual;
+    
+    (* Incrementa el número de eventos registrados, hasta un máximo de 20 *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+    
+    (* Avanza la posición actual en el buffer, con comportamiento circular *)
+    posActual := (posActual + 1) MOD 20;
+END_IF;
+
+(* Actualiza el estado anterior de nuevoEvento *)
+nuevoEventoAnt := nuevoEvento;
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

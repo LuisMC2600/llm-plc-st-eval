@@ -1,0 +1,16 @@
+{
+    "modo":  "respuestas",
+    "ciclos_ms":  [
+                      10
+                  ],
+    "salida_csv":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\results_codesys\\sens_dialecto_simulacion.csv",
+    "carpeta_dobles":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\dobles",
+    "tareas":  [
+                   "B3",
+                   "C7"
+               ],
+    "carpeta_harness":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys",
+    "limite":  0,
+    "plantilla":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\Plantilla_Simulacion.project",
+    "carpeta_codigo":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\processed_sens_dialecto"
+}

@@ -1,0 +1,1051 @@
+We need answer only JSON list 24 objects same order. Need evaluate each. Need understand task and harness. Need score per rubric. We need produce JSON valid. Need be careful.
+
+We have to act as evaluator. Need read all. We can compute scores.
+
+We need produce for each: codigo, funcional, iec, coherencia, claridad, mantenibilidad, just_func_iec line, just_coherencia, just_claridad, just_mantenibilidad. If funcional/iec fixed copy exactly. If fixed are null set ourselves. For no compile funcional=0 iec=0 fixed. For compiles passes all funcional=3 fixed. If compiles but interface non conforme? All compiles presumably FB name okay. Need assign.
+
+Need recall harness steps. Let's reconstruct chronological harness: t=0 start. Step 0: rest, presence false altura false, wait 200ms, expect banda true, piston false, counts 0,0. Step 1: low piece presence TRUE altura false, wait 300ms, expect banda true, piston false, altas 0, bajas 1. Step 2: remove low, presence false, wait 200ms, expect banda true, piston false, altas 0, bajas 1. Step 3: high piece presence TRUE altura TRUE, wait 200ms, expect banda true, piston false, altas 1, bajas 1. Step 4: t=2.4s? after step 3 ends? Need understand timing: Step0 t=0, wait 200ms => t=0.2? Step1 t=0.2? But enunciado says detection high t=0.7? Let's sum: step0 wait 200ms end t=0.2 maybe; step1 300ms end t=0.5; step2 200ms end t=0.7; step3 high starts t=0.7? Wait harness says detección alta en t=0.7s. Let's calculate: Step0 from t=0 to 0.2; step1 0.2-0.5; step2 0.5-0.7; step3 starts at 0.7, detection high at start. Then wait 200ms -> step3 ends t=0.9. Step4 starts t=0.9? Wait they say step 4 evalúa en t=2.4s, 0.3s antes de activación 2.7. But wait step4 wait 1500ms after starting at 0.9 => eval at 2.4. Yes. Step5 wait 800ms => eval at 3.2. Step6 wait 800ms => eval at 4.0. Good.
+
+Need score functional for compiles but fails. We have result codesys giving fail steps. Need determine functional according to steps and protocol. Functional 0: no implementa lógica pedida o falla en nominal. 1 funciona nominal but fails evident edge (flancos, reset, emergency). 2 correct nominal and most limits; minor fails no risk. 3 all.
+
+Need parse each code; many fail all or many because they count wrong and no pulse. We need assign 0/1/2. Need use protocol. Need maybe cases with fail 7/7 means not even banda? Some might produce banda true but harness fail all because outputs/counters wrong? Falla 7 of 7 means even step0 failed. For step0 expects banda true in rest, presence false; many code has banda true. Why fail step0? Could be simulation initial output values? Maybe because harness checks outputs only at end of step? If code compiled and banda true at end step0 should pass. If fails 7/7 maybe something else, like counters reset? Need inspect.
+
+Let's go sequentially.
+
+Important: We need produce scores. There are 24 objects. Need not include markdown.
+
+Need understand each code enough.
+
+Let's list responses:
+
+1 I5-9795 compiles passes all -> funcional fixed 3. iec null.
+2 I5-6031 passes all -> funcional 3.
+3 I5-2725 no compila -> funcional 0, iec 0 fixed.
+4 I5-5960 passes all -> funcional 3.
+5 I5-5429 passes all -> funcional 3.
+6 I5-7024 compiles fails 3,4,5 (so passes 0,1,2,6? Actually fails 3 of 7 pasos 3,4,5; passes 0,1,2,6). Need assess.
+7 I5-3559 fail 6: passes only step0? fails 1,2,3,4,5,6.
+8 I5-2602 fail 6 same.
+9 I5-3769 fail 6 same.
+10 I5-4146 fail 4 steps 3,4,5,6 passes 0,1,2.
+11 I5-8743 passes all.
+12 I5-3551 fail 7.
+13 I5-3570 no compila.
+14 I5-9566 fail 4 steps 3,4,5,6.
+15 I5-2807 fail 6.
+16 I5-9964 fail 6.
+17 I5-4776 passes all.
+18 I5-8715 fails 1 step 5 (passes all except step5).
+19 I5-6743 passes all.
+20 I5-6738 passes all.
+21 I5-6315 passes all.
+22 I5-3665 passes all.
+23 I5-2293 fail 6.
+24 I5-8675 fail 7.
+
+Need assign iec for compiles: 1 if extensiones fuera estándar; 2 correct declarations/types; 3 idiomático standard (POU adecuado, TIME correct, standard blocks TON/TP/R_TRIG well instantiated). Most compile use standard blocks. Some use comments // (acceptable? IEC 61131-3 ST supports //? In CODESYS yes; standard? Actually IEC 61131-3 allows //? I think yes in ST comments? Standard has (* *), but // is common extension. But compiler accepted. "No penalizar" perhaps. Need score iec. Since iec_fijo null need assign 1-3. Most use correct standard blocks. 3 if idiomático. Need discriminate maybe standard blocks TON/TP/R_TRIG correctly instanced. Some use TON/TP. We'll assign 2 or 3 based on idiomatic. Need not be too harsh.
+
+Need score coherencia, claridad, mantenibilidad per code. Need line justifications one line each.
+
+We need decide all 24. Need output JSON.
+
+Let's analyze each in detail.
+
+Need maybe compare code correctness for all tests, not just harness. Harness only covers nominal low and high one cycle. The task: banda continuously; sensorPresencia detects each piece; if altura active at that moment high count and after 2s piston for 1s. Count altas and bajas. Flancos important to count once. Need detect presence flanks. Cases with simultaneous? Harness only simple.
+
+Need evaluate functional for failing codes.
+
+First, fixed values: For pass all funcional=3 fixed. For no compile 0. For compile fail null.
+
+Let's review codes one by one.
+
+**I5-9795** (pass all, funcional=3 fixed). Need iec assign. Code uses TON, TP, R_TRIG standard, but cleanup logic convoluted: 
+```
+(* Cuando el pulso termina, limpiar bandera *)
+IF NOT tPulso.Q AND NOT tRetardo.Q AND bPiezaAlta THEN
+ IF tRetardo.ET = T#0S AND NOT tRetardo.IN THEN bPiezaAlta := FALSE; END_IF
+END_IF;
+IF tPulso.Q = FALSE AND tRetardo.Q = FALSE AND tRetardo.ET >= T#2S THEN bPiezaAlta := FALSE; END_IF;
+```
+Potential issues: It uses tRetardo.ET >= T#2S, after TON done and IN false? In CODESYS TON ET resets? Some strange. But passes harness. Logic is redundant/convoluted but works. It might fail multiple high pieces? Need examine for coherencia. Actually with a single high piece, bPiezaAlta set true at flanco. tRetardo starts. After 2s tRetardo.Q true, tPulso (TP) starts. Also cleanup condition second: tPulso.Q false? At moment Q true so no. Wait tRetardo.Q true, tPulso.Q true, first condition false; second false. When tPulso.Q falls after 1s, tRetardo.Q probably still true? Since IN=bPiezaAlta true and tRetardo PT passed, Q stays true while IN true. So after tPulso.Q false and tRetardo.Q true => second condition requires tRetardo.Q false -> false. First condition requires NOT tRetardo.Q false. So bPiezaAlta never cleared? Wait need inspect: 
+```
+tRetardo(IN := bPiezaAlta, PT := T#2S);
+tPulso(IN := tRetardo.Q, PT := T#1S);
+IF NOT tPulso.Q AND NOT tRetardo.Q AND bPiezaAlta THEN ...
+IF tPulso.Q = FALSE AND tRetardo.Q = FALSE AND tRetardo.ET >= T#2S THEN bPiezaAlta := FALSE;
+```
+At end of pulse, tPulso.Q false, tRetardo.Q true because bPiezaAlta still true, so not clear. Then tRetardo.Q remains true, tPulso(IN:=true) stays Q? Wait TP behavior: TP has IN and Q pulse: When IN TRUE after rising edge, Q true for PT, then false even if IN remains TRUE? Actually TP: Q is TRUE for duration PT after rising edge, regardless of IN? Let's recall TP: if IN rises, Q true for PT, then false. If IN remains true, Q false after done. Yes. So after 1s tPulso.Q false but tRetardo.Q remains true because bPiezaAlta true. Does that cause tPulso to retrigger? TP only retriggers on rising edge of IN, so no. So bPiezaAlta never becomes false, tRetardo.Q stays true. Then if a new high piece comes, bPiezaAlta already true; tRetardo already Q true. But maybe detector at flanco nAltas count increments. The tPulso will not retrigger because IN remains true. So subsequent high pieces might not activate piston. But harness only one high. However this is a robustness/latent issue. But funcional fixed 3 due passed all. We can reflect in coherencia maybe not 3 due to dead flag cleanup logic. Need not penalize functional. The rubric criteria separate. For coherencia: conditions contradictory? Dead states? The cleanup flag is never cleared? Let's verify maybe first or second can clear. When maybe tRetardo.IN false? bPiezaAlta remains true, so tRetardo.IN true. Q true. ET maybe PT. Second condition tRetardo.Q false false. So never. Thus state `bPiezaAlta` never clears. But functional harness passes because only one high. Does this mean "estados muertos que impiden operar"? It would prevent a second high piece from being desviated, but not in tested harness. In coherencia maybe 1 or 2? It uses apparent contradictory comments and dead cleanup. I'd give coherencia 1 because cleanup can't execute and repeated high pieces would fail. But functional fixed 3 due all tested steps? Wait rubric says if passes all steps functional=3. Other criteria can be lower. Yes. Need not be overly generous.
+
+But we need be consistent. Could give coherencia 2 with "lógica funcional para un ciclo, limpieza robusta redundante". But the cleanup conditions are dead. Let's analyze deeply: 
+- First IF condition: NOT tPulso.Q AND NOT tRetardo.Q AND bPiezaAlta. Is there a scan after bPiezaAlta set and before tRetardo.Q true where tPulso.Q false and tRetardo.Q false? At the detection scan, after bPiezaAlta true, tRetardo called. Since tRetardo IN true, ET starts. It doesn't reach PT immediately. Q false. tPulso.Q false. So first IF condition true at same scan! Then inner IF `tRetardo.ET = T#0S AND NOT tRetardo.IN`? At this scan tRetardo.IN is true because bPiezaAlta true. So inner false. No clear.
+- Later second IF: false as bPiezaAlta true and tRetardo.Q true.
+- Could tRetardo.Q become false if bPiezaAlta false? no.
+So bPiezaAlta never cleared. But does that matter for tRetardo? It stays Q true. The TP tPulso already done. So subsequent high pieces count but no desvío. Could also affect nAltas? counts ok. So a latent bug.
+
+IEC: uses TON, TP, R_TRIG correctly. But cleanup logic not idiomatic. Maybe iec 2 or 3. Since declarations/types correct, standard blocks. Idiomatic enough? It uses standard blocks, but overcomplicated cleanup reduces idiomatic. Could give iec 2.
+
+Clarity: names mostly descriptive (tRetardo,tPulso,rPresencia,bPiezaAlta) but cleanup comments are confusing and contradictory, magical conditions ET>=T#2S. Sectioned. Maybe 2. There are comments but some wrong. Could be 2. Mantenibilidad: constants T#2S/T#1S directly in code but given task specified; no FB params. Duplicate logic in cleanup. Could modify by locating constants. T#2S/T#1S appear multiple. Maybe 2? Need rubric says 3 if parameters as constants declared; design extensible. Here constants used directly but task asked use T#2S/T#1S. Could be 1 or 2. Values magic? They're time literals, task specified. Maybe 2. But no internal constants declared; changes localizado. I'll decide.
+
+Need not include just for fixed func/iec? Format says just_func_iec "una línea, o "" si las dos estaban fijadas". If funcional fixed but iec not, need provide just_func_iec? It says "una línea, o "" si las dos estaban fijadas". Since one fixed, we should include line for the one assigned (iec). Could include "IEC: ...". We'll produce a concise line.
+
+Need decide all scores.
+
+Let's continue.
+
+**I5-6031** pass all. Code:
+```
+banda:=TRUE;
+flancoPresencia; if Q then if sensorAltura nAltas++; esperaPiston:=TRUE; else nBajas++; endif
+timerRetardo(IN:=esperaPiston, PT:=T#2S);
+IF timerRetardo.Q THEN esperaPiston := FALSE; END_IF
+timerPiston(IN:=timerRetardo.Q, PT:=T#1S);
+piston:=timerPiston.Q;
+```
+This is clean. Potential issue: timerRetardo.Q remains true? `esperaPiston` false at same scan when Q true. But tRetardo is TON. When IN false in same scan after call? Important order: call timerRetardo first; if Q true, set esperaPiston false. TON Q remains true for the rest of scan? In ST, timer block call sets Q based on IN. After call, assigments don't affect Q until next call. So timerPiston called that same scan with tRetardo.Q true. Next scan esperaPiston false, tRetardo.Q false. TP timerPiston had IN true one scan; enough to trigger. Works. After pulse, no issue. For multiple high pieces: When a new high piece detected, if previous pulse done, esperaPiston true again. tRetardo starts. Good. However if a new high piece occurs while previous TP is still active? edge sets esperaPiston true, tRetardo starts; previous TP already Q true. At the 2s later, tRetardo.Q true, TP may still? TP will not retrigger because IN already true? Actually TP input = tRetardo.Q. It was false after previous pulse if tRetardo.Q went false. If new high piece while tPiston Q still true? The tRetardo input true, but `tPiston.IN := tRetardo.Q`; tRetardo.Q false during the 2s. So tPiston.IN false, Q eventually false after previous pulse. Then at 2s tRetardo.Q rises, triggers. Good. So robust.
+
+IEC: standard blocks R_TRIG, TON, TP. Clean. I'd give iec 3? It uses idiomatic TP for pulse after TON. Yes. Could give 3. Don't worry.
+
+Coherencia: clean no contradictions, initial flags false by default. 3? Interlocks complete? Could handle simultaneous? No simultaneous inputs just sensors. Good. I'd give 3 maybe or 2. It doesn't explicitly reset contadors but default? Counters not initialized to 0, but VAR_OUTPUT INT defaults to 0 in CODESYS? The harness likely expects default 0. In IEC initial value for INT? If not initialized, it may be 0 in CODESYS but standard? Variables without initial value may be undefined? The harness passed all, so CODESYS zero initial. Could note not initialized. Coherencia 2 maybe because no explicit initialization. But code passed; without initialization, PLC retention? Usually local vars initialized to 0. Let's use 2/3. Rubric coherencia: 3 robust. This is robust. I'd give coherencia 3.
+
+Clarity: names descriptive, comments brief and ordered. 3? It has modular? It's a single FB but no internal functions. Comments per block. 2 or 3. For clarity structural 3 requires modularization adecuada. Single FB with sequential sections maybe is acceptable for simple task. Could 3? The rubric says "además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué." This code has no separate function but FB itself. Comments mostly "what" not why. I'd give 2. Many others will be 2.
+
+Mantenibilidad: constants T#2S/T#1S as literals in timer calls, not declared as VAR CONSTANT. But simple. Modified localized. 2.
+
+**I5-2725** no compila fixed funcional=0 iec=0. Need score coherencia, claridad, mantenibilidad reading code. We need not be too punitive? Criteria independent. Code has syntax error due `piezaDetectada` used without BOOL? Actually declarations okay. There is syntax error likely because `timer1(PTR := T#2S)` incorrect token PTR? Wait compiler messages line 11? Let's see code: comments use //. There are syntax errors at line 11 maybe `IF sensorPresencia THEN` line? Actually line 11 perhaps `IF timerPiston.Q THEN`? The code has `timer1(IN := FALSE);` ok. Maybe `END_IF`? The error says expected ; before IF? Looks like perhaps there is an `IF NOT piezaDetectada THEN` with semicolon? But messages due `PTR`? This code does not have PTR. Wait line numbers maybe code posted after not same; actually error line 11 col 1 "Se esperaba ';' en lugar de 'piezaDetectada'". This could be from missing END_IF? They used `IF NOT piezaDetectada THEN` as initial comment? Let's not matter. No compila.
+
+Need score coherencia: has logic: start timer on presence, wait Q, then check sensorAltura after delay (wrong: should check at detection). Uses flag piezaDetectada reset when sensorPresencia false. There are issues but coherent. Could give 1. It has state logic for one piece but counts after delay based on current sensorAltura not at detection. Also no edge detect but uses piezaDetectada to avoid repeated low? For low piece, it starts timer1 on sensorPresencia true, waits 2s, then if sensorAltura false counts low. Harness fails because counts delayed? It fails all? Probably. Coherencia 1.
+
+Clarity: comments but names somewhat descriptive; code structure basic. 1/2. Use // comments. Syntax invalid. I'd give claridad 1.
+
+Mantenibilidad: magic values T#2S/T#1S throughout, but constant task. No parametrization. 1.
+
+**I5-5960** pass all. Same clean pattern as I5-6031 but with `VAR_OUTPUT nAltas : INT :=0; nBajas :=0` and comments with //. It uses R_TRIG, TON, TP. Good.
+
+IEC: maybe 3. Clear standard blocks. Could use // but not an issue.
+
+Coherencia: same robust, explicit init outputs. 3 maybe. It starts `esperaPiston` default false. Good. Could give 3.
+
+Clarity: good comments, structured with numbered steps. 3? It has no internal functions but small task. I'd give 2 or 3. Many pass all cleaner ones maybe 3 if well structured. Rubric 3 requires modularization. Single FB is appropriate for task; separation between I/O is via VAR_INPUT/VAR_OUTPUT. Comments are clear and explain. Could give 3 for clarity to some. Need be consistent.
+
+Mantenibilidad: 2 (literal times). Could maybe 2.
+
+**I5-5429** pass all. Code:
+```
+rPresencia; if edge then if sensorAltura then nAltas++, piezaAlta true else nBajas++.
+timerRetardo(IN:=piezaAlta AND NOT timerPiston.Q, PT:=T#2S);
+timerPiston(IN:=timerRetardo.Q, PT:=T#1S);
+piston := timerPiston.IN AND NOT timerPiston.Q;
+IF timerPiston.Q THEN piezaAlta := FALSE; END_IF;
+```
+This is somewhat unusual: tPiston is TON, output piston when IN true and Q false (during delay). When Q true (1s elapsed), piston false and clears piezaAlta. It uses TON instead of TP for 1s. Does it pass? Yes. The TON input is `timerRetardo.Q`. At moment tRetardo.Q true, tPiston.IN true. `piston := timerPiston.IN AND NOT timerPiston.Q`. While timerPiston is timing, Q false, so piston true. After 1s Q true, piston false, then `piezaAlta := false`, tRetardo maybe still Q? Actually next scan tRetardo input maybe piezaAlta false but during previous scan it saw piezaAlta true AND NOT timerPiston.Q? At the exact scan when timerPiston.Q true, timerRetardo called before timerPiston? Wait order: timerRetardo(IN:=piezaAlta AND NOT timerPiston.Q). At start of scan before timerPiston called, `timerPiston.Q` is still false from previous scan? Let's see previous scan: timerPiston called with IN true, PT 1s. During timing, Q false. At scan where ET reaches PT, timerPiston call sets Q true. But timerRetardo call earlier in that scan used old timerPiston.Q false and piezaAlta true, so tRetardo.IN true. After timerPiston Q true, later `IF timerPiston.Q THEN piezaAlta := FALSE`. Next scan timerRetardo gets piezaAlta false AND NOT timerPiston.Q? Since after timerPiston call maybe Q reset? Need TP/TON behavior when IN false after Q true: next scan timerPiston call IN=tRetardo.Q false, Q resets false. So fine. For multiple high pieces, works? Need if high piece while timerPiston.Q true, piezaAlta set true; timerRetardo input piezaAlta AND NOT timerPiston.Q = false because Q true, so tRetardo does not start until timerPiston.Q false next scan. Then starts with slight extra cycle; but sensor detection likely okay. Pass harness.
+
+IEC: uses TON for pulse instead of TP, less idiomatic but correct. Declarations correct. Maybe iec 2 because uses TON where TP more suitable, and manual output `IN AND NOT Q`. But standard blocks still standard. Could be 2.
+
+Coherencia: logic coherent. The `piston := timerPiston.IN AND NOT timerPiston.Q` avoids one-cycle pulse but uses TON as pulse. No dead states. Could be 2 or 3. I'd give 2 due non-standard pattern but understandable.
+
+Clarity: excellent comments with sections, descriptive names. 3 maybe. It explains why.
+Mantenibilidad: times literals, but localized. 2.
+
+**I5-7024** compiles fails steps 3,4,5 (passes 0,1,2,6). Let's understand code:
+```
+rPresencia; if q then bPiezaAlta:=sensorAltura; bContado:=FALSE; if bPiezaAlta then tRetardo.IN := FALSE; END_IF; endif
+tRetardo(IN:=bPiezaAlta AND NOT tPiston.Q, PT:=T#2S);
+tPiston(IN:=tRetardo.Q, PT:=T#1S);
+piston := tPiston.IN AND NOT tPiston.Q;
+IF tPiston.Q AND NOT bContado THEN
+  nAltas:=nAltas+1;
+  bContado:=TRUE;
+  bPiezaAlta:=FALSE;
+  tRetardo.IN := FALSE;
+  tPiston.IN := FALSE;
+END_IF;
+IF rPresencia.Q AND NOT sensorAltura THEN nBajas:=nBajas+1; END_IF;
+```
+Let's simulate. High in step3: edge q -> bPiezaAlta true, bContado false, tRetardo.IN false (but then tRetardo call with IN true? Actually after IF, tRetardo(IN:=bPiezaAlta AND NOT tPiston.Q, PT...) so IN true (because tPiston.Q false). So tRetardo starts. It counts nAltas only when tPiston.Q AND NOT bContado (after 1s pulse). But by then harness step3 expected nAltas=1 immediately at detection; it will fail step3 because nAltas stays 0 until 3s later. Step4 (t=2.4s) before activation expects nAltas 1, piston false. In this code at 2.4s nAltas still 0 because tPiston.Q false (no 1s done). So fails step4 due nAltas. Step5 (t=3.2s) might piston true? Let's see: tRetardo delayed 2s from high; at t=2.7s tRetardo.Q true, tPiston starts. At 3.2s tPiston.Q true after 1s? Actually high at t=0.7, tRetardo.Q true at 2.7, tPiston.Q true at 3.7. At 3.2s piston output during timing true. nAltas? At 3.2s tPiston.Q false, so nAltas still 0. Step5 expects piston true and altas 1. It will fail piston? Actually piston is true at 3.2 (during 1s) yes, but nAltas fails, maybe harness checks all, step 5 fails. Step6 t=4.0: tPiston.Q true at 3.7, code at that scan increments nAltas and sets bPiezaAlta false, piston false. At 4.0 nAltas 1, piston false, so passes step6? Harness says pass 6? It fails 3,4,5 and passes 6 yes. So functional? It counts high late. This fails "caso nominal" partly. In protocol, step3 expects immediate count. Step4/5. Functional 1? It implements logic but counts high at end of piston not at detection, timing piston correct (starts 2s after, lasts 1s). The nominal behavior of piston might be mostly correct, but counters fail in most steps. The case nominal includes counting and piston. Since fail 3 of 7, maybe functional 1: works partially but fails count timing (evidente). Or 0? Rubric 0 "falla en el caso nominal". Did piston activate correct? Step5 may check piston true and nAltas; if one value fails, the step fails. The piston sequence seems correct: low counted, high piston delayed. But nAltas not counted until after pulse. This is a serious logic error. But task's nominal includes counting; it fails. I'd assign funcional 1 (implements main sequence but counters wrong). Could be 0 because fail nominal? The fail steps 3/4/5 include detection and piston. But it passes low piece and final high count. Hmm. "0: no implementa la lógica pedida o falla en el caso nominal. 1: funciona en el caso nominal pero falla en casos límite evidentes". It doesn't function in case nominal because counters not counted at detection. But maybe functionally it produces output piston for high; only count delayed. The harness step3 fails due nAltas. "Caso nominal" is high piece; fails. So maybe 0 or 1. Need decide. Let's compare other failing codes. I5-7024 at least has correct piston timing and counts low correctly. It fails 3 steps. Could be 1 if we interpret nominal as basic logic: counts low and high (eventually) and piston. But the count timing "al detectar" is required. I'd give 1: "falla en pasos de cuenta/espera porque nAltas se incrementa al terminar el pulso". Functional 1.
+
+IEC: compiles correct declarations standard. Uses R_TRIG, TON. TON for pulse. Not entirely idiomatic. maybe 2.
+Coherencia: Logic has late count, and the "tRetardo.IN := FALSE" before calling tRetardo is overwritten. Potential dead assignments. The high count path is tied to end of piston, not detection; no immediate high count. But not contradictory. It also checks `rPresencia.Q AND NOT sensorAltura` for nBajas; in same scan edge, sensorAltura is true for high so not count low, ok. It uses bContado to count only once. bPiezaAlta set false at end; works for single. Coherencia maybe 2? It has weird manual reset before timer call. We'll give 2? Maybe 1 because nAltas count path delayed causes logical mismatch. But score 1 says redundant/conditions muertas sin efecto grave. The `IF bPiezaAlta THEN tRetardo.IN := FALSE` is dead/overwritten. And `tPiston.IN := FALSE` at end possibly not effective. There are dead assignments. Could be 1. I'd give coherencia 1.
+
+Clarity: comments, names descriptive, sections. But logic misleading comments "Contar piezas bajas (flanco...)" okay. Maybe 2.
+Mantenibilidad: T# literals, no constants. 1 or 2. I'd give 1 due duplicate logic and scattered count. Hmm.
+
+**I5-3559** fail 6 (passes only step0). Code:
+```
+banda true
+IF sensorPresencia AND NOT piezaDetectada THEN
+ piezaDetectada:=TRUE;
+ piezaAlta:=sensorAltura;
+ timerRetraso(IN:=TRUE, PT:=T#2S);
+END_IF
+IF timerRetraso.Q THEN
+ timerRetraso(IN:=FALSE);
+ IF piezaAlta THEN timerPiston(IN:=TRUE, PT:=T#1S); nAltas++;
+ ELSE nBajas++;
+ END_IF
+ piezaDetectada:=FALSE;
+END_IF
+IF timerPiston.Q THEN piston:=FALSE; timerPiston(IN:=FALSE); ELSE piston:=timerPiston.Q; END_IF
+```
+Problems: Counts low/high after 2s delay, not at detection. Also piston logic: In TimerRetraso.Q true, for high, starts timerPiston and increments nAltas, pistón? It sets `piston := timerPiston.Q` in ELSE path. In same scan after calling timerPiston(IN:=TRUE), `timerPiston.Q` false, so piston false. Next scan timerPiston called? Wait timerPiston is not called unless timerRetraso.Q? Actually in code, timerPiston is not called every scan except Q? There is no call outside `IF timerRetraso.Q`? It calls timerPiston(IN:=TRUE) once in that branch. In subsequent scans, timerPiston block is not called with IN kept true? In ST, if you don't call a timer, its Q/ET may retain previous values? In CODESYS, FB retains internal state, but not processing time. Actually to time, it must be called each scan. Not calling timerPiston means its ET doesn't update, so Q never true. Hence piston output might stay false forever. Let's simulate: Step1 low piece: sensorPresencia true -> starts timerRetraso, piezaDetectada true. Step1 waits 300ms. no Q. Counts low at step1? no. Fails step1. Step2 sensor false, no effect. Step3 high: sensorPresencia true but piezaDetectada still true? It was never reset for low because timerRetraso.Q didn't happen. So it won't detect high! Fails all except step0. So clearly major.
+
+Functional: fails nominal low/high; probably 0. It implements some initial sequence but not functional. I'd give 0.
+
+IEC: compiles correct. Uses TON standard. But not properly used (timers not called periodically) maybe not extension. I'd give 2? It compiles and declarations correct; but not idiomático. If criterion 1 for "compila solo tras correcciones menores" not. 2. Hmm "usa extensiones fuera del estándar" no. It uses standard blocks but misused. I'd give iec=1? Rubric: 1 if uses extensions or compila only after corrections; 2 compila sin cambios; declaraciones y tipos correctos. This compiles. So iec 2. Could give 1? It's not "solo tras correcciones" because compiled. So 2.
+
+Coherencia: Major logic flaws: piezaDetectada never reset unless timerRetraso.Q, so only first piece processed. TimerPiston not called each scan so piston never completes. States dead. 0 or 1. It doesn't initialize counters but okay. I'd give 0 due states muertos.
+
+Clarity: Names clear, comments but logic scattered. Maybe 1. Structural basic with comments. 1.
+Mantenibilidad: T# literals, logic not modular. 1.
+
+**I5-2602** fail 6. Code:
+```
+IF sensorPresencia THEN
+ IF sensorAltura THEN nAltas++; piezaAltaDetectada:=TRUE; tRetraso(IN:=TRUE, PT:=T#2S);
+ ELSE nBajas++;
+ END_IF
+END_IF
+IF tRetraso.Q THEN
+ tPiston(IN:=piezaAltaDetectada, PT:=T#1S);
+ piezaAltaDetectada:=FALSE;
+END_IF
+piston := tPiston.Q;
+```
+Problems: Counts low every scan while sensorPresencia true! Step1 low presence TRUE for 300ms -> nBajas increments every cycle, maybe huge >1. Fail. High also counts nAltas every scan? High presence TRUE step3 200ms -> nAltas multiple. It also starts tRetraso repeatedly but not edge. tPiston? TON or? It uses TON for piston. `timerPiston` must be called each scan? It is only called inside `IF tRetraso.Q THEN`. Actually same issue: it's not called every scan with IN true. But tRetraso.Q may only be true one scan since `piezaAltaDetectada` set false after; so tPiston gets one call, but not called after, so Q never becomes true. piston output false. So high piston doesn't activate. Major. Functional 0.
+
+Need note tPiston is TON with IN=piezaAltaDetectada passed true once. Since no further calls, no timing. It fails all.
+
+IEC: compiles correct declarations. Standard blocks but not used correctly. iec 2 maybe.
+Coherencia: contradictory/buggy no edge detection, timers not cycled. 0.
+Clarity: names clear but comments simple. 1.
+Mantenibilidad: 1.
+
+**I5-3769** fail 6. Similar:
+```
+IF sensorPresencia THEN if altura nAltas++; piezaAltaDetectada:=TRUE; tRetraso(IN:=TRUE, PT:=T#2S); else nBajas++; endif
+IF piezaAltaDetectada AND tRetraso.Q THEN
+ tPulso(IN:=TRUE, PT:=T#1S);
+ piezaAltaDetectada:=FALSE;
+END_IF
+piston:=tPulso.Q;
+```
+Uses TP (`tPulso : TON`? Actually declared tPulso : TON? Code says tPulso : TON; comment "Temporizador de pulso" but type TON. If TON, same no periodic call? It calls tPulso only when condition true; TON won't time. If it were TP, still only called once starts, but TP one scan may or may not time? Need periodic calls. So fails. Counts every scan. 0.
+
+IEC: compiles, declarations correct but type TON with comment pulso. Could give 2.
+Coherencia 0. Clarity 1. Mant 1.
+
+**I5-4146** fail steps 3,4,5,6 passes 0,1,2. Code:
+```
+banda true
+IF (sensorPresencia AND NOT estadoAnteriorPresencia) THEN
+ IF sensorAltura THEN
+   temporizadorRetraso(IN:=TRUE);
+   activarPiston:=TRUE;
+ ELSE nBajas++;
+ END_IF
+END_IF
+estadoAnteriorPresencia:=sensorPresencia
+IF activarPiston THEN
+ IF temporizadorRetraso.Q THEN
+    temporizadorPiston(IN:=TRUE);
+    temporizadorRetraso(IN:=FALSE);
+ END_IF
+ IF temporizadorPiston.Q THEN
+    piston:=FALSE; temporizadorPiston(IN:=FALSE); activarPiston:=FALSE; nAltas++;
+ ELSE
+    piston:=TRUE;
+ END_IF
+ELSE piston:=FALSE;
+END_IF
+```
+Problems: Uses manual edge detection (okay). Counts nBajas at low edge (pass step1). For high, sets activarPiston true and starts retraso 2s. It does NOT count nAltas at detection. It counts nAltas when temporizadorPiston.Q true (after pulse done). In the piston timing branch, while activarPiston true and retraso not done, `temporizadorPiston.Q` false so it sets `piston := TRUE` even before 2s! Let's see: After high detection, activarPiston true. `IF temporizadorRetraso.Q` false. Then `IF temporizadorPiston.Q` false (initial), ELSE piston := TRUE. So piston activates immediately, not after 2s, and stays true until the 1s timer ends after retraso. Thus fails step3 expects piston false; step4 false; step5 maybe piston maybe still true? Let's simulate. High at 0.7, piston true immediately, temporizadorRetraso counts. At 2.7s Q true, start temporizadorPiston, set retraso IN false. temporizadorPiston is TON and called every scan? The code calls `temporizadorPiston(IN:=TRUE)` only when retraso.Q true (likely one scan), and not every scan outside. But there is a call in `IF temporizadorPiston.Q`? It calls `temporizadorPiston(IN:=FALSE)` only when Q true. Since not called with IN true periodically, Q maybe remains false and timer never finishes? Actually after one call with IN true at t=2.7, in the same scan after call, then the IF sees Q false, sets piston true. Next scan `activarPiston` true, `temporizadorRetraso.Q` maybe false because IN false. Then `IF temporizadorPiston.Q` sees Q false (timer not called), piston true forever. So step5 expects piston true yes, step6 expects piston false after 4.0, but piston remains true => fails step6. It fails step3 due piston true immediate, step4 due piston true, step5 maybe nAltas 0 (since Q false), step6 piston true/nAltas 0. So passes only low steps.
+
+Functional: fails high nominal, piston immediate. 0 or 1? It counts low and high maybe eventually? nAltas never increments because timerPiston.Q never true. But high detection maybe not count. Incoherent. 0.
+
+IEC: compiles, manual edge instead of R_TRIG. Declarations correct, standard TON but not well used. Could be 2. Maybe 1? Since no extension. 2.
+Coherencia: 0? Contradictory immediate piston and stalled timer. 0/1. It is somewhat structured but behavior wrong. I'd give 0.
+
+Clarity: comments and names fairly descriptive but misleading comments. Maybe 2? It says "inicialización de temporizadores" and both timers with false. Not bad. But logic poor. I'd give 2? Need be careful: clarity structural about names/sections/comments. It has buena names, comments. But some comments say "Control del pistón" and "Activar el pistón durante 1 segundo" reasonable. I'd give 2. Mant 1.
+
+**I5-8743** pass all. Similar to I5-6031. Uses R_TRIG, TON, TP. Clean. Outputs initialized nAltas/nBajas 0. 
+IEC: 3 likely.
+Coherencia: 3 maybe. There is possible handling multiple high pieces? `esperandoPiston` false when tonRetardo.Q; then TP triggers. If another high piece while previous esperando false? At edge sets true. Works. 3.
+Clarity: good comments numbered. 2 or 3. I'd give 3 for clarity? It is well structured. But maybe no modularization. The task is simple. Hmm.
+Mantenibilidad: T# literals. 2.
+
+**I5-3551** fail 7. Code:
+```
+banda true
+IF sensorPresencia AND NOT piezaDetectada THEN
+ tEspera(IN:=TRUE, PT:=T#2S);
+ piezaDetectada:=TRUE;
+END_IF
+IF tEspera.Q AND sensorAltura THEN
+ tPiston(IN:=TRUE, PT:=T#1S);
+ nAltas++;
+ELSE
+ nBajas++;
+END_IF
+piston:=tPiston.Q
+IF tEspera.Q THEN piezaDetectada:=FALSE; END_IF
+```
+Problems: Counts low every scan in ELSE when tEspera.Q false and sensorAltura false. At step0 with sensorPresencia false, tEspera not started, Q false, so it increments nBajas every cycle. Step0 expects 0; fails. Step1 expects 1 but counts huge. High: after 2s checks sensorAltura at present (may be false by then) maybe count low. Pistol timers are TP? It declares tEspera : TP, tPiston : TP. TP needs periodic calls? It calls tPiston only when Q condition; TP won't time after one call. But fail all. Functional 0.
+IEC: compiles; standard TP (though `TP` may be CODESYS? Standard has TP). Uses TP but tEspera is TP for retardo, not ideal. Could be 2. Because compiles correctly. Maybe 1? Actually TP not an extension. 2.
+Coherencia: 0.
+Clarity: names ok, comments minimal. 1.
+Mant 1.
+
+**I5-3570** no compila. Code uses `timer1(PTR:=T#2S)` invalid. fixed 0,0. Coherencia: timer not periodic, counts after delay based on current sensorAltura. 0/1. Because no compila. I'd give coherencia 1? It has some logic but bad. Let's analyze code:
+```
+IF NOT piezaDetectada THEN timer1(IN:=FALSE); timer2(IN:=FALSE); piston:=FALSE;
+IF sensorPresencia AND NOT piezaDetectada THEN piezaDetectada:=TRUE; timer1(IN:=TRUE); timer1(PTR:=T#2S);
+IF timer1.Q THEN timer1(IN:=FALSE); IF sensorAltura THEN nAltas++; timer2(IN:=TRUE); timer2(PTR:=T#1S); piston:=TRUE; ELSE nBajas++; END_IF
+IF timer2.Q THEN timer2(IN:=FALSE); piston:=FALSE;
+banda true
+IF sensorPresencia = FALSE THEN piezaDetectada := FALSE; END_IF
+```
+Invalid PTR token. The logic counts based on current sensorAltura after delay, not at detection. Timer calls only in branches, not periodic; likely won't work. But some structure. Coherencia 0/1. Since no compila fixed functional/iec but other criteria evaluate code. Let's give coherencia 0 because invalid token and dead logic? Hmm, "condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar." The code has timer2 not called periodically, piezaDetectada etc. I'd give 0.
+
+Clarity: names descriptive, comments but sparse. 1.
+Mantenibilidad: 1.
+
+**I5-9566** fail steps 3,4,5,6 passes 0,1,2. Similar to 4146 but different? Code:
+```
+banda true
+IF sensorPresencia AND NOT presenciaDetectada THEN
+ presenciaDetectada:=TRUE;
+ piezaAlta:=sensorAltura;
+ IF piezaAlta THEN timerRetraso(IN:=TRUE, PT:=T#2S); ELSE nBajas++; END_IF
+END_IF
+IF timerRetraso.Q THEN
+ timerRetraso(IN:=FALSE);
+ timerDuracion(IN:=TRUE, PT:=T#1S);
+ piston:=TRUE;
+END_IF
+IF timerDuracion.Q THEN
+ timerDuracion(IN:=FALSE);
+ piston:=FALSE;
+ nAltas++;
+END_IF
+IF NOT sensorPresencia THEN presenciaDetectada:=FALSE;
+```
+Problems: Low counted once due flag. High not counted at detection: nAltas increments after timerDuracion.Q. TimerDuracion only called in branch when timerRetraso.Q true (one scan), so won't time. But piston set true once timerRetraso done. It might stay true because timerDuracion.Q never true. Let's simulate high: Step3 sensor high -> presenciaDetectada true, piezaAlta true, start retraso. It doesn't count nAltas. piston false (initial). Step3 expects nAltas 1, piston false; fails because nAltas 0. Step4 at 2.4 nAltas 0, piston false; fails nAltas? expect altas 1. Step5 at 3.2: retraso.Q true at 2.7, branch sets timerDuracion call, piston true. TimerDuracion not called next scans; Q false. nAltas still 0. Step5 expects piston true, altas 1; fails nAltas. Step6 at 4.0: piston maybe true still because `IF timerDuracion.Q` never true; expects false and altas 1; fails. So passes low. Functional 1? It does sequence somewhat, piston activates after delay but doesn't deactivate due timer not cycled. Counts late. Similar to 4146. Could assign 1? It fails nominal high in many checks. But at least low is good and high starts piston. Hmm.
+
+Functional rubric: 0 no implementa lógica pedida o falla en caso nominal. This code doesn't implement high count and piston off. The "caso nominal" high piece sequence fails. So 0. But I earlier thought I5-7024 maybe 1. Need consistency: 7024 has correct piston activation/deactivation and low/high count eventually but nAltas delayed. 9566 has piston stuck ON, high count late; worse. I'd give 0 for 9566. For 7024 maybe 1? Let's revisit later.
+
+IEC: compiles correct declarations. Uses TON standard but not periodic. Could be 1/2. I'd give 2.
+Coherencia: timerDuracion not cyclic; piston stuck; high count late. 0/1. I'd give 0.
+Clarity: names descriptive, comments. 2? 
+Mantenibilidad: 1.
+
+**I5-2807** fail 6 (passes step0 only? Fails 1,2,3,4,5,6). Code:
+```
+banda true
+IF sensorPresencia AND NOT piezaDetectada THEN
+ piezaDetectada:=TRUE;
+ IF sensorAltura THEN nAltas++; ELSE nBajas++;
+ END_IF
+END_IF
+tEspera(IN:=piezaDetectada, PT:=T#2S); // TP
+IF tEspera.Q THEN
+ piston:=TRUE;
+ tPiston(IN:=TRUE, PT:=T#1S);
+ELSE
+ piston:=FALSE;
+END_IF
+IF tPiston.Q THEN piezaDetectada:=FALSE; END_IF
+```
+It uses TP for wait and TP for piston. Counts once via flag. But tEspera is TP triggered when piezaDetectada true. After 2s tEspera.Q true; then sets piston true and triggers tPiston. But tPiston is only called once when tEspera.Q true; TP may not time without periodic calls? Actually tPiston call is inside `IF tEspera.Q THEN`. tEspera.Q is true for one scan? TP Q is true for PT duration (2s) after rising edge, then false. So if tEspera.PT=2s, Q remains true for 2s? Wait TP: Q is true for PT after IN rising. So tEspera.Q true from t=0.7+2=2.7 to 4.7? Actually TP Q remains true 2s. But the code triggers tPiston with IN true at every scan while tEspera.Q true. It also sets piston := TRUE in that branch. But tPiston is TP with PT=1s. It is called each scan while tEspera.Q true, so tPiston times and Q true for 1s after IN rising. But `ELSE piston := FALSE` means when tEspera.Q false, piston false. For high, tEspera.Q stays true for 2s, and tPiston.Q true for 1s; but the code sets piston := TRUE (not tPiston.Q) for the entire 2s of tEspera.Q, so piston stays on 2s, not 1s! Let's simulate more: At step1 low piece: `piezaDetectada` true, sensorAltura false, nBajas++ once. tEspera starts. Step1 (0.2-0.5) no Q, piston false, count 1. So step1 should pass? Harness says fails 1. Wait why fail? Because if tEspera is TP called every scan with IN=piezaDetectada true, maybe Q stays false until 2s; yes. Count expected 1. Band true. Piston false. Pass step1. But harness says fail step1. Maybe because when tEspera.Q eventually true after 2s, but low piece? Hmm not. Let's step timing. Step1: sensorPresencia true at t=0.2? Wait step1 starts at t=0.2, presence true for 300ms. Code detects first scan presence true -> nBajas 1, piezaDetectada true. tEspera is TP(IN:=true, PT:=2s), Q false. piston := false. So expect low step passes at end t=0.5? yes. Why harness fail step1? Maybe because outputs nAltas/nBajas declared as outputs and harness sees huge? Wait code nBajas increments once. But maybe at step2 presence false, piezaDetectada remains true until tEspera.Q? `IF tPiston.Q THEN piezaDetectada := FALSE;` for low tPiston never triggered, so piezaDetectada stays true. Thus after 2s tEspera.Q true for 2s, but the code in tEspera.Q branch does not check sensorAltura; it always sets piston:=TRUE and triggers tPiston! Ah! For low piece, after 2s, it will activate piston also! That is bad. But step1 before 2s expected piston false and count 1; should pass. Step2 at t=0.7? Wait step2 ends t=0.7, still before 2s; count 1, piston false; pass. Harness fail 1,2 indicates maybe there is some problem at step1/2 due nBajas count? Let's calculate if `piezaDetectada` is BOOL default false. SensorPresencia true at step1. IF `sensorPresencia AND NOT piezaDetectada THEN` true, increments nBajas and sets piezaDetectada. Next scan same step, presence still true but piezaDetectada true, no increment. Good. nBajas 1. piston false. Band true. So should pass step1. Why harness says fail 6 (pasos 1,2,3,4,5,6) means only pass 0. Probably because tEspera(IN:=piezaDetectada, PT:=T#2S) with TP: when IN true, Q maybe true immediately? Wait TP (pulse timer) has behavior: on rising edge, Q is TRUE for time PT. ET may start. Q is true immediately at the rising edge. Yes! TP Q is true from the moment of rising edge for PT duration. So tEspera.Q is TRUE immediately when piezaDetectada true. Thus at step1, `tEspera.Q` true -> piston := TRUE (for low piece!) and tPiston triggered. So step1 fails because piston expected false. Also tPiston eventually makes piezaDetectada false after 1s, maybe after step. So yes.
+
+So this code uses TP for "wait" but TP Q is active immediately, so it activates piston immediately; and for low too. Then tPiston maybe toggles. It fails. Functional 0.
+
+IEC: compiles, uses TP incorrectly for delay (should TON). Standard blocks but not idiomatic. Could be 1? Since uses standard but incorrect semantics; maybe 1? Rubric IEC for compiles: 1 if uses extensions; 2 if declarations/types correct; 3 if idiomático. It compiles and declarations correct, but not idiomático. That's 2. Could argue "usa TP para espera" is not idiomatic, but still standard. Not extension. So iec 2. But maybe "puntuación 1 si usa construcciones no idiomáticas..." No rubric: "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar..." So choose 2 for compiles not idiomático but no extension. We can give iec 1 if uses TP incorrectly? Maybe not.
+
+Coherencia 0.
+Clarity: names okay, comments minimal. 1.
+Mant 1.
+
+**I5-9964** fail 6. Code:
+```
+FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT ...
+VAR_OUTPUT banda, piston only (not nAltas/nBajas!)
+VAR
+ nAltas : INT :=0;
+ nBajas : INT :=0;
+ timer1 : TON;
+ timer2 : TON;
+ estado : INT :=0;
+END_VAR
+CASE estado OF
+0: banda true; IF sensorPresencia THEN estado:=1; timer1(IN:=TRUE,PT:=T#2S); END_IF
+1: IF timer1.Q THEN IF sensorAltura THEN estado:=2; timer2(IN:=TRUE,PT:=T#1S); nAltas++; ELSE estado:=0; nBajas++; END_IF END_IF
+2: piston:=TRUE; IF timer2.Q THEN piston:=FALSE; estado:=0; END_IF
+ELSE estado:=0
+END_CASE
+```
+It does not declare nAltas/nBajas as VAR_OUTPUT; they are local. Harness likely cannot access outputs? The task requires outputs nAltas/nBajas, so harness probably expects FB outputs. The compilation might succeed but harness can't simulate interface? Result says compila fails 6 of 7, passes? It likely sees nAltas/nBajas not as outputs? Actually CODE codesys result may harness with FB variables? If no outputs, harness cannot check counters, but maybe compiler gave warnings? Let's assume fail steps due nAltas/nBajas missing/output not wired. Also state machine: band true only in state 0; in other states banda may not be assigned, retaining old? Could produce true while other states due latch? But not safe. Counts nBajas/nAltas at delayed time not edge. No piston during one second? State 2 sets piston true; timer2 is TON called only when entering state2, but not called each scan in state2. Actually in CASE state2, there is no timer2 call unless `IF timer2.Q` check, but no `timer2(IN:=TRUE)` call. On entering state2 it called timer2 once. Next scans state2, timer2 not called; Q never true, so piston stays true forever. Thus fails. Functional 0.
+
+IEC: It compiles? The FB missing nAltas/nBajas outputs is interface non conforme. But compiles. It uses standard TON. However because outputs missing, it violates task and harness maybe no simulation. But result says "Compila. Falla 6 de 7..." maybe harness can access local? Hmm no. But maybe compiler auto? It likely has no output so harness fail interface? But the result says compila and fails steps, so maybe the harness connects to local? I don't know. But for IEC, compiles. I'd give iec 1? It uses standard types but missing required outputs. The declarations are correct syntactically but not conforme with required interface. The rubric IEC doesn't mention interface, functional simulation not. But "declaraciones y tipos correctos" yes. However nAltas/nBajas are outputs by task but declared local INT, not VAR_OUTPUT. That's a design error; harness perhaps can still compile. It doesn't use extension. Could give iec 2. But maybe for "compila but interfaz no conforme" functional 0/1/2 reading code, never 3. For IEC, missing required outputs maybe "tipos correctos" but interface not. I'd give 1: "compila sin cambios pero POU no expone nAltas/nBajas como salidas". The iec rubric 1 is for extension or after corrections, but this is an interface violation. 2 says declarations and types correctos: nAltas/nBajas as local INT are correct type, but not as output. Not correct relative to spec. 1 probably. We'll use 1.
+
+Coherencia: state machine partly coherent but timer2 not called, band not assigned all states. 0/1. I'd give 0.
+Clarity: state machine structure, case is clear, names okay. 2? Comments minimal. Maybe 2.
+Mantenibilidad: hard-coded times, local counters not outputs. 1.
+
+**I5-4776** pass all. Code uses TP for retardo 2s and F_TRIG to detect end, TP for piston. Clever:
+```
+trigPresencia(CLK:=sensorPresencia);
+piezaAlta := FALSE;
+IF trigPresencia.Q THEN IF sensorAltura THEN nAltas++; piezaAlta:=TRUE; ELSE nBajas++; END_IF; END_IF;
+tpRetardo(IN:=piezaAlta, PT:=T#2S);
+ftrigRetardo(CLK:=tpRetardo.Q);
+tpPiston(IN:=ftrigRetardo.Q, PT:=T#1S);
+piston:=tpPiston.Q;
+```
+This works: high detection sets piezaAlta true for one scan; TP generates 2s pulse Q. At end of retardo, Q falls, F_TRIG Q one scan triggers TP piston 1s. This is idiomatic use of TP and F_TRIG. More complex than TON+TP but works. It handles multiple high: if piezaAlta true one scan, retraso pulse. For continuous high? detection only edge. Good. `piezaAlta := FALSE` each scan before edge ensures one scan. Nice.
+
+IEC: uses TP, F_TRIG, R_TRIG idiomatically. 3. It uses F_TRIG standard? Yes.
+Coherencia: robust. 3.
+Clarity: comments are explanatory. Good. Could 3.
+Mantenibilidad: T# literals no constants. 2.
+
+**I5-8715** compiles fails 1 step (paso 5). This is important. Code:
+```
+rPresencia; if edge then bPiezaAlta:=sensorAltura; if high nAltas++ bEsperando true else nBajas++. 
+tRetardo(IN:=bEsperando, PT:=T#2S);
+IF tRetardo.Q THEN bEsperando:=FALSE; tRetardo(IN:=FALSE); END_IF
+tPiston(IN:=tRetardo.Q, PT:=T#1S);
+piston := tPiston.IN AND NOT tPiston.Q;
+IF tPiston.Q THEN tPiston(IN:=FALSE); END_IF;
+```
+This is similar to I5-5429 but uses TON for piston and output = IN AND NOT Q. It passes all except step5 (t=3.2s). Step5 expects piston TRUE within pulse. Why fails? Let's simulate. High at 0.7, bEsperando true. tRetardo TON. tRetardo.Q true at 2.7. At that scan, after tRetardo, IF tRetardo.Q then bEsperando false; then call tPiston(IN:=tRetardo.Q, PT:=T#1S). But wait tRetardo.Q is true only one scan? It will be true at 2.7 scan. Then `tPiston` TON called with IN true. The output `piston := tPiston.IN AND NOT tPiston.Q`. But tPiston.IN is input variable of the TON block; in this same scan, tPiston.IN likely true (passed). tPiston.Q is false because just started. So piston true at 2.7. Then next scan tRetardo.Q false because bEsperando false. tPiston is called with IN:=tRetardo.Q false. So tPiston resets immediately after one scan. Therefore piston output after the first scan? Wait at next scan, tPiston called with IN false, Q resets false. But if tPiston was not allowed to time, its Q remains false. `piston := tPiston.IN AND NOT tPiston.Q` with IN=false, Q=false => piston false. Thus piston is true only one scan at 2.7, not for 1 second. But the harness step5 at t=3.2 expects piston true, but it will be false, hence fail only step5. Step4 t=2.4 expects piston false, pass. Step6 t=4.0 expects false, pass. Perfect. So functionality: piston not held 1s; it emits one-cycle pulse at start. Counters and delay maybe okay. So it fails only step5. Functional score? According rubric: 2 correct nominal and majority of limit cases; failures minor without risk. Here the main piston duration is wrong: should be 1 second but is one scan. However it does activate piston at correct time but not duration. This is a case nominal? It fails step5 which is "dentro del pulso"; exit output lacks duration. The function misses the required 1s activation. So functional maybe 1? It passes 6/7 but the one fail is core (piston duration). Rubric: 2: correcto en el caso nominal y en la mayoría de casos límite; fallas menores sin riesgo. Is piston not staying on a minor failure? It's not "sin riesgo" because it fails main desvío duration. But it passes the detection/delay. For binary criteria, if fails any step cannot be 3 fixed. It can be 2 if "fallas menores". A one-cycle pulse instead of 1s is significant: piece may not be diverted. So maybe functional 1: funciona parcialmente (detects and counts but piston pulse too short). However it passes all except step5. If the only fail is "dentro del pulso", but the pulse doesn't exist; step5 is main. But 1 means "funciona en el caso nominal pero falla en casos límite evidentes". It doesn't fully function nominal (needs 1s piston). Could be 1. Need decide.
+
+Let's understand the logic: Actually the TON tPiston input `tRetardo.Q` only lasts one scan, so TON never times. Output formula `tPiston.IN AND NOT tPiston.Q` would be true only when IN true and Q false. If tPiston.Q never true, it is true only one scan at tRetardo.Q true. So indeed one-scan pulse. That fails step5. If it had output `piston := tPiston.IN OR tPiston.Q` maybe no. It is a core functionality failure. So functional=1.
+
+IEC: compiles correct standard blocks, but misuse of TON for one scan. iec 2 maybe? Not idiomatic. 
+Coherencia: logic coherent but timerPiston reset after one scan due bEsperando false; output uses IN AND NOT Q incorrectly. Maybe the programmer tried to mimic TP. There is no contradiction but it fails duration. Could be 2? It has `IF tPiston.Q THEN tPiston(IN:=FALSE);` but Q never becomes true (for one scan input). This is a dead condition. Also bEsperando false as soon as retardo.Q true, which kills tPiston input. The logic is flawed. Coherencia 1.
+
+Clarity: names/comments good. 2/3.
+Mant 2.
+
+**I5-6743** pass all. Similar to 4776 but uses F_TRIG. Clever. Scores like 4776.
+
+**I5-6738** pass all. Code:
+```
+rPresencia; if edge high nAltas++; bEsAlta:=TRUE; else nBajas++; bEsAlta:=FALSE; endif
+tRetardo(IN:=bEsAlta, PT:=T#2S);
+IF tRetardo.Q THEN bEsAlta:=FALSE; END_IF
+tPulso(IN:=tRetardo.Q, PT:=T#1S);
+piston:=tPulso.Q;
+```
+Clean. Potential issue? tRetardo.Q true for one scan? bEsAlta false after Q? Let's simulate: tRetardo called with bEsAlta true until Q. At Q scan, after tRetardo call Q true, sets bEsAlta false. tPulso starts on tRetardo.Q. Next scan tRetardo.Q false, but TP pulse has triggered. Works. Good. It also sets bEsAlta false for low, okay. If new high piece while previous bEsAlta true? Wait previous high bEsAlta remains true until tRetardo.Q. If another high piece arrives before 2s, bEsAlta already true, nAltas increments, but no new retrigger? It's TON with IN already true, so the new high piece delay is not restarted. In real system, pieces may arrive while previous pending, but task simple maybe. This is a limit case not tested. Could still robust? If two high pieces within 2s, piston will activate only once at first 2s from first detection, and second piece not diverted separately. This is an inherent design limitation of single flag. Many pass all codes have same issue (single bEsAlta/esperaPiston). The harness doesn't test simultaneous consecutive highs. But "flancos" count each. Does the task require each high piece? It counts each, but desvío piston each high? "si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse" each high piece. If multiple high pieces closer than 2s, a more robust design would need a queue or edge memory. However most simple solutions accept only one pending. The rubric mentions "secuencias de fallo" not tested. No code can handle overlapping without queue. Probably not penalize.
+
+IEC 3. Coherencia 3. Clarity 2/3. Mant 2.
+
+**I5-6315** pass all. Code is weird:
+```
+tRetardo(IN:=piezaAlta, PT:=T#2S);
+tPulso(IN:=tRetardo.Q, PT:=T#1S);
+IF tPulso.Q = FALSE AND tRetardo.Q THEN
+    piezaAlta := FALSE;
+END_IF;
+piston := tPulso.Q;
+```
+This is similar to I5-6738 but the cleanup condition `tPulso.Q = FALSE AND tRetardo.Q` looks wrong: it clears piezaAlta when tRetardo.Q true and tPulso.Q false. But at Q scan tPulso.Q true? Let's simulate: tRetardo.Q true, tPulso called, TP Q becomes true on rising edge (same scan), so cleanup false. After 1s, tPulso.Q false, tRetardo.Q maybe still true because piezaAlta remains true. Then cleanup clears piezaAlta. That is okay. But after clear, tRetardo.Q false next scan. Works. However the comment "Cuando el pulso termina..." but condition checked in same scan after tPulso updated; yes works after pulse end. There's no second condition? It works for single high. But for a period after pulse end and before scan? no issue. It uses TP Q true for 1s. Good. Potential issue if tPulso.Q false at same scan as tRetardo.Q true due TP Q not true because TP not called? In ST, TP call done before condition, Q is true on rising edge. So false. Good. It passes harness.
+
+IEC: standard TON, TP, R_TRIG. Fine 2/3. Cleanup condition not idiomatic but okay. Could 2.
+Coherencia: Logic coherent. 3? The condition clearing after pulse uses tRetardo.Q rather than `piezaAlta` but works. Perhaps 3.
+Clarity: comments a bit off (says tPulso.Q cae al terminar). 2.
+Mant 2.
+
+**I5-3665** pass all. Similar to 4776/6743.
+```
+trigPresencia; pulsoAlta:=FALSE; if edge high nAltas++, pulsoAlta:=TRUE else nBajas++.
+tRetardo(IN:=pulsoAlta, PT:=T#2S); // TP
+trigFinRetardo(CLK:=tRetardo.Q); // F_TRIG
+tPiston(IN:=trigFinRetardo.Q, PT:=T#1S); // TP
+piston:=tPiston.Q;
+```
+Works. Like 4776 but with same. IEC 3. Coherencia 3. Clarity 2/3. Mant 2.
+
+**I5-2293** fail 6. Code:
+```
+IF sensorPresencia THEN
+ IF sensorAltura THEN nAltas++; piezaAltaDetectada:=TRUE; tRetraso(IN:=TRUE, PT:=T#2S);
+ ELSE nBajas++;
+ END_IF
+END_IF
+IF tRetraso.Q THEN
+ tPulso(IN:=piezaAltaDetectada, PT:=T#1S);
+ piezaAltaDetectada:=FALSE;
+END_IF
+piston:=tPulso.Q;
+```
+This is same as 2602/3769 but tPulso is TP? declares tPulso : TP; yes. But still timer tRetraso is TON, tPulso TP. Counts every scan without edge. tPulso called only when tRetraso.Q true (one scan). Because tPulso is TP, if it is called once with IN true, does TP Q set true for PT even without subsequent calls? No, TP should be called periodically to update ET and Q; if not called, Q may remain true? In CODESYS, timer FB uses system time? Actually CODESYS timers require call each cycle; if not called, outputs not updated. So likely no. But regardless fail. Functional 0.
+IEC: compiles. Uses TON/TP standard. iec 2.
+Coherencia 0.
+Clarity 1.
+Mant 1.
+
+**I5-8675** fail 7. Similar to 3551 but no edge. Code:
+```
+IF sensorPresencia AND NOT piezaDetectada THEN tEspera(IN:=TRUE, PT:=T#2S); piezaDetectada:=TRUE; END_IF
+IF tEspera.Q AND sensorAltura THEN tPiston(IN:=TRUE, PT:=T#1S); nAltas++; ELSE nBajas++; END_IF
+piston:=tPiston.Q;
+IF tPiston.Q THEN piezaDetectada:=FALSE; END_IF
+```
+Fails all because at step0, tEspera.Q maybe? Wait tEspera is TP. At step0, piezaDetectada false, tEspera IN false, Q false. Then the second IF: tEspera.Q false AND sensorAltura false -> ELSE nBajas++ every scan. Step0 expects nBajas 0, fails. So all. Functional 0.
+IEC compiles, standard TP but incorrect. 2.
+Coherencia 0.
+Clarity 1.
+Mant 1.
+
+Now need assign final scores for all.
+
+Let's construct table.
+
+We need maybe use fixed functional values. Let's list:
+
+1 I5-9795: funcional=3 fixed. iec ? maybe 2. coher 1? claridad 2? mant 2? Need final.
+
+Let's be systematic.
+
+We need output for each with justifications. The just_func_iec should mention if fixed or assigned. For pass all, funcional fixed, iec assigned; so line maybe "IEC: emplea TON/TP/R_TRIG estándar, aunque la limpieza con ET>=T#2S no es idiomática." Could include funcional fixed note? The instruction says just_func_iec: "una línea, o \"\" si las dos estaban fijadas". If only one fixed, we can mention code assigned criteria. We'll produce text.
+
+Need ensure no markdown.
+
+Let's assign each.
+
+I think for pass all codes:
+- functional fixed 3.
+- IEC: 2 or 3.
+- coherencia maybe 2 or 3.
+- clarity 2 or 3.
+- mantenibilidad 2.
+
+Let's decide per pass all.
+
+**I5-9795**: IEC 2. Coherencia 1? No maybe 2? Let's reconsider. It passes but cleanup never clears. But coherencia criterion includes "transiciones completas; robusta". This code has dead conditions; flag never clears. That is a significant logical defect though not exposed by harness. Could be 1. It says "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." The dead cleanup will affect subsequent high pieces, so effect grave in real but not in harness. But according to harness pass all fixed funcional. Coherencia can be 1. However are we sure flag never clears? Let's test more carefully with tRetardo.ET after Q done and bPiezaAlta true. In CODESYS TON when IN true and PT reached, Q true and ET stays PT? Yes. After calling tRetardo each scan with IN true, Q remains true, ET=PT. The cleanup second condition: `IF tPulso.Q = FALSE AND tRetardo.Q = FALSE AND tRetardo.ET >= T#2S THEN bPiezaAlta := FALSE;` Q true so false. First condition: NOT tPulso.Q (true after pulse) AND NOT tRetardo.Q (false) -> false. So never. But maybe after tPulso.Q becomes false, `tPulso(IN := tRetardo.Q, PT := T#1S)` with TP has Q false but `tRetardo.Q` true; does TP retrigger on IN true? No, because IN remained true from previous scans? It may see IN true continuously, no rising edge. So no. bPiezaAlta remains true. If power cycle no. So defect.
+
+Could also at the detection scan, first condition true before tRetardo.IN? It uses `tRetardo.IN` after call? In code:
+```
+tRetardo(IN := bPiezaAlta, PT := T#2S);
+...
+IF NOT tPulso.Q AND NOT tRetardo.Q AND bPiezaAlta THEN
+    IF tRetardo.ET = T#0S AND NOT tRetardo.IN THEN
+        bPiezaAlta := FALSE;
+    END_IF;
+END_IF;
+```
+At detection scan, after tRetardo call, `tRetardo.ET` may be 0, `tRetardo.IN` is true (since input variable held from block call). So inner condition `NOT tRetardo.IN` false. So no clear. Good.
+
+Thus coherencia 1 (dead cleanup). Clarity: The cleanup comments are misleading; but names clear. I'd give claridad 2. Mant: has duplicated cleanup conditions and direct comparisons; 1? It has no constants. Maybe 2? Let's think. Maintainability: "valores mágicos por todas partes" no, T#2S/T#1S literals are explicit. But logic is fragile; to add another delay modify multiple lines. I'd give 1 or 2. Since not parametrized, 2 maybe "cambios localizados" not. There are multiple T#2S literals and duplicated cleanup. I'd give 1? Hmm. The rubric 1: "modificable con esfuerzo; constantes parcialmente parametrizadas." The code is modified with effort due cleanup. So 1.
+
+Let's settle: 
+1: iec2, coher1, clar2, mant1.
+
+**I5-6031**: pass all. IEC 3? Need no fixed. coher 3, clar 2, mant 2. Maybe IEC 3. Use standard blocks idiomatic. Good.
+
+**I5-2725**: no comp fixed 0,0. coher 1? clar 1, mant 1. Need IE fixed 0, func fixed 0.
+
+**I5-5960**: pass all. Similar to 6031. IEC 3. coher 3. clar 2 maybe 3? Since commented steps with //. I'd give clar 2. Mant 2.
+
+**I5-5429**: pass all. IEC 2 (TON used for pulse). coher 2? Let's decide. It works but uses TON with output `IN AND NOT Q`; maybe not idiomatic but logical. Coherencia 2. Clar 3? It has excellent comment sections. Maybe 3. Mant 2.
+
+**I5-7024**: fail steps 3,4,5. funcional? Need decide. We'll assign 1. iec 2. coher 1. clar 2. mant 1.
+Just func/iec: "Cuenta nAltas al final del pulso y no en la detección; iec compila estándar." Good.
+
+**I5-3559**: fail 6. funcional 0. iec 2. coher 0. clar 1. mant 1.
+
+**I5-2602**: fail 6. funcional 0. iec 2. coher 0. clar 1. mant 1.
+
+**I5-3769**: fail 6. funcional 0. iec 2. coher 0. clar 1. mant 1.
+
+**I5-4146**: fail 4. funcional 0? Need decide. Let's be consistent with I5-9566. It has immediate piston and high count late; fail high nominal. 0. iec 2. coher 0. clar 2. mant 1.
+But is there a case for funcional 1? It passes low piece and high detection but piston wrong. Maybe no because piston inmediato and no high count. 0.
+
+**I5-8743**: pass all. IEC 3. coher 3. clar 2/3. We'll give clar 2? It is well structured comments; maybe 3. Let's decide after all. Could give clar 3 to exemplary clean code. However there are many pass all clean; need differentiate. For I5-8743, comments are concise and code simple. I'd give clar 3? The structure isn't modular but the task is a single FB. I'd reserve clarity 3 for excellent comments with why and perhaps sections. I5-5429 has strong section comments; I5-5960 numbered. Could give 3 to I5-5429 only. But no need.
+
+**I5-3551**: fail 7. funcional 0. iec 2. coher 0. clar 1. mant 1.
+
+**I5-3570**: no comp fixed 0,0. coher 0 or 1. I'd give coher 0, clar 1, mant 1.
+
+**I5-9566**: fail 4. funcional 0. iec 2. coher 0. clar 2? Actually similar to 4146 but code comments "Inicialización de banda". It has names clear. Maybe clar 1? It doesn't have as many sections but comments enough. I'd give 1 or 2. Since names are descriptive, comments simple. Let's use 2 for clarity for all compiled reasonable. But if score 2 for I5-4146, maybe 2 for 9566. Coher 0. mant 1.
+
+**I5-2807**: fail 6. funcional 0. iec maybe 1? Need decide. It uses TP as delay incorrectly. Standard blocks but not idiomatic. 2. coher 0. clar 1. mant 1.
+
+**I5-9964**: fail 6. funcional 0 (missing outputs). iec 1 (no outputs). coher 0. clar 2 (state machine). mant 1.
+
+**I5-4776**: pass all. IEC 3. coher 3. clar 3? It uses clear comments and modular logic. I'd give clar 3. Mant 2.
+
+**I5-8715**: fail step5. funcional 1. iec 2. coher 1. clar 2 (good comments) maybe 2. mant 2?
+Let's decide: It has comments and sections. It fails due one-cycle TON. Maintenance maybe 2.
+
+**I5-6743**: pass all. IEC 3. coher 3. clar maybe 3? It has structured comments. Use 2 or 3. It is similar to 4776. I'd give clar 3 maybe. But avoid too many high. Hmm.
+
+**I5-6738**: pass all. IEC 3. coher 3. clar 2. mant 2.
+
+**I5-6315**: pass all. IEC 2 (cleanup not idiomatic). coher 2? It works but cleanup condition `tPulso.Q = FALSE AND tRetardo.Q` is non-obvious. Could be 2. Clar 2. Mant 2.
+
+**I5-3665**: pass all. IEC 3. coher 3. clar 2/3. Mant 2.
+
+**I5-2293**: fail 6. funcional 0. iec 2. coher 0. clar 1. mant 1.
+
+**I5-8675**: fail 7. funcional 0. iec 2. coher 0. clar 1. mant 1.
+
+Need ensure functional values for compile fail not fixed? For I5-3559 etc compile but fail, we assign 0/1. For I5-7024 we assign 1. For I5-8715 assign 1. Are there any compile fail fixed 0. Pass all fixed 3.
+
+Let's examine I5-7024 functional maybe should be 0? Let's compare with rubric. It fails 3 of 7: step3 (high detection expected nAltas 1), step4 (nAltas 1), step5 (nAltas 1 maybe plus piston true?). It passes low step and final. It does implement piston sequence correctly? Let's verify piston timing at step5 maybe:
+At t=3.2 (step5), tPiston started at 2.7, output `piston := tPiston.IN AND NOT tPiston.Q`. With TON, tPiston.IN = tRetardo.Q. At t=2.7, tRetardo.Q true, tPiston starts. Next scans tRetardo.Q? In I5-7024, tRetardo input is bPiezaAlta AND NOT tPiston.Q. At t=2.7, tPiston Q false. After tPiston call, tRetardo.Q true. Next scan tPiston still running Q false, tRetardo input bPiezaAlta true AND NOT false = true, so tRetardo.Q remains true. Wait I need simulate. bPiezaAlta true until tPiston.Q true. tRetardo TON sees IN true continuously until tPiston.Q true. So tRetardo.Q remains true. Thus tPiston.IN true continuously during 1s. So tPiston TON times for 1s. Output `tPiston.IN AND NOT tPiston.Q` true during timing 1s. At t=3.2 true. At t=3.7, tPiston.Q true, output false. Then code increments nAltas and clears bPiezaAlta. Next scan tRetardo IN false? tPiston.Q maybe true? Let's see after clearing, call tRetardo(IN := bPiezaAlta AND NOT tPiston.Q). tPiston.Q still true in next scan? tPiston call later with IN = tRetardo.Q. Wait tRetardo.Q may be true because previous scan bPiezaAlta true and tPiston.Q false? But after previous scan we set bPiezaAlta false. At next scan, tRetardo IN = bPiezaAlta false AND NOT tPiston.Q? tPiston.Q from previous scan maybe true. So IN false, Q resets false. But tPiston was called with IN=tRetardo.Q true? Let's step:
+- Scan at 3.7: before calls, tPiston.Q false? Actually at 3.7 ET reaches PT, previous Q false, output true at start? Let's order: tRetardo call first sees bPiezaAlta true, NOT tPiston.Q (previous false) => IN true, Q true. Then tPiston called with IN true, PT 1s; ET reaches PT, Q true. Output formula uses tPiston.IN true AND NOT tPiston.Q false => piston false. Then IF tPiston.Q AND NOT bContado true -> nAltas++, bPiezaAlta false, tRetardo.IN false (direct), tPiston.IN false.
+- Next scan: tRetardo called with `bPiezaAlta AND NOT tPiston.Q`; tPiston.Q is still true because block hasn't been called with IN? Wait tPiston internal Q from last scan true. The expression uses current `tPiston.Q` (output variable) before calling tPiston block. It is true. So tRetardo IN false (bPiezaAlta false anyway). Then tPiston called with IN:=tRetardo.Q. tRetardo.Q after tRetardo call may be false because IN false. So tPiston IN false, Q resets false. Good. So after scan 3.7 nAltas increments. So at step5 t=3.2, nAltas still 0, piston true. Step5 fails because nAltas expected 1. Good. It does count at 3.7. So at step6 t=4.0 nAltas 1, piston false. Pass. So functionality: nAltas delayed until after piston, but piston timing correct. Is that "falla en caso nominal" because count not available at detection? The task requires counting at detection. So maybe functional 1: cumulative count eventually correct after delay. But real system might display count lag. I'd assign 1.
+
+**I5-8715 functional 1 or 0?** It fails only step5 due piston off. It counts high at detection. Piston should be on 1s; code gives one scan pulse. That is a more critical failure of physical output. But it does activate at correct start and off after 1 scan. Does high piece get diverted? No, insufficient piston duration. In nominal high, piston is essentially a blip less than expected. I'd assign 1 maybe not 0 because other logic correct. The difference between 0 and 1: 0 "no implementa lógica pedida o falla en el caso nominal". It fails the nominal high case's output duration. But it does implement main detection/retardo. Hmm. In the harness it passes 6 of 7; most checks pass. I'd assign 1 as it works partially and the failure is in one limit (duration). But it's not a "límite", it's the core requirement. Yet "funcional 1: funciona en el caso nominal pero falla en casos límite evidentes." It doesn't fully work nominal. Maybe better 0? Let's look at rubric: 0 also for "no implementa la lógica pedida o falla en el caso nominal". The piston pulse duration is part of nominal. So if strictly, 0. But then what is functional 1? It says "funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." It should be for codes that pass basic but fail edge. I5-8715 fails an essential pulse duration in nominal, so according to rubric 0. But it passes 6/7 harness steps, including low and high detection and pre/post pulse. That suggests it's almost correct. The "caso nominal" might be the complete harness with piston inside pulse (step5). It fails that, but not all. The rules say if compiles but fails pasos: funcional 0, 1 o 2 según rúbrica, usando qué pasos fallan. They expect maybe 2 for minor fail in one step. Functional 2: "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." This code is correct in the majority of steps; the only failure is missing sustain, which is not minor in realidad but maybe "sin riesgo"? Hmm. Could be 1 or 2. The rubric doesn't have a perfect. Maybe give 1 because it's a main output failure, not minor. But then I5-7024 also main count delay. Could be 1. Good.
+
+For I5-9964 missing outputs but compiles, fails 6. Functional 0.
+
+Now need refine IEC scores. Let's define:
+- 3 for compiles and uses idiomatic standard blocks: TON/TP/R_TRIG/F_TRIG well instanced. Pass-all codes with simple TON+TP likely 3.
+- 2 for compiles and correct declaration/types but non-idiomatic or misuse of blocks.
+- 1 for compiles but requires corrections or interface non conforme? The rubric specifically "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." These all compile, no extensions. So for compiles, min 2 unless uses invalid/extension. I5-9964 uses no extension but missing outputs; is that "compila solo tras correcciones menores" no, it compiled. Could still be 2 because declarations/types correct syntactically (nAltas,nBajas local). But relative to spec not correct. Maybe not penalize IEC if compiles and no extension; give 2. But I earlier considered 1. Let's adhere rubric: `iec` when compiles: 1 if usa extensiones fuera del estándar; 2 if declaraciones y tipos son correctos; 3 además idiomático. Missing outputs means "declaraciones y tipos son correctos"? The local types are correct. So 2. So I5-9964 iec 2. Could include just "FB no declara nAltas/nBajas como salidas; aún así compila con tipos estándar." But rubric doesn't cover; maybe wouldn't be 3.
+
+What about I5-2725 no comp fixed iec=0. Fine.
+
+For compiles using standard but not idiomatic: assign 2. For pass-all using standard idiomatic: assign 3. For I5-9795 maybe 2 because uses standard but cleanup not idiomatic. I5-5429 maybe 2 (TON pulse). I5-8715 2. I5-6315 2? It uses TON+TP but cleanup weird, standard. Could be 2.
+
+Let's list IE for each:
+
+1 I5-9795: 2
+2 I5-6031: 3
+3 I5-2725: 0 fixed
+4 I5-5960: 3
+5 I5-5429: 2
+6 I5-7024: 2
+7 I5-3559: 2
+8 I5-2602: 2
+9 I5-3769: 2
+10 I5-4146: 2
+11 I5-8743: 3
+12 I5-3551: 2
+13 I5-3570: 0 fixed
+14 I5-9566: 2
+15 I5-2807: 2
+16 I5-9964: 2 (or 1?) I'd set 2.
+17 I5-4776: 3
+18 I5-8715: 2
+19 I5-6743: 3
+20 I5-6738: 3
+21 I5-6315: 2
+22 I5-3665: 3
+23 I5-2293: 2
+24 I5-8675: 2
+
+Could I give iec 2 to all compiles that pass/fail? That's consistent. But pass-all idiomáticos get 3.
+
+Now coherencia:
+1 I5-9795: 1 (dead cleanup)
+2 I5-6031: 3
+3 I5-2725: 1 maybe (no comp but reading code). Could be 0. It has logic flawed but no compile; still coherencia 1? "sin inicializar con efecto, estados muertos" It has timer calls in branches, not periodic. I'd give 0? Let's decide: Since fixed no compile, coherencia evaluate code. It uses `IF NOT piezaDetectada THEN` maybe resets timers, then detects. It never calls timers periodically except control branch; tRetraso? Actually after starting timer1 on presence, in subsequent scans it calls timer1 only within `IF timer1.Q`? It does not call timer1 every scan. So timer1 never times. That's a fatal logical deadness. 0. Let's assign coher 0. Clarity 1.
+4 I5-5960: 3
+5 I5-5429: 2 or 3. Let's analyze for overlapping high. The TON pulse uses `timerPiston.Q` to gate tRetardo; when piston Q true clears piezaAlta. It can handle new high? If a new high edge occurs while timerPiston.Q true, sets piezaAlta true but tRetardo input false until Q false. After next scan Q false, starts. That works. Coherencia robust. The use `piston := timerPiston.IN AND NOT timerPiston.Q` maybe if Q false and IN false gives false. Looks robust. I'd give 3 maybe? But the output during the first scan after tRetardo.Q true? tPiston.IN true and Q false; piston true. Good. It is clever but correct. Coherencia 3. I earlier thought 2 due non-standard, but logical robust. I can give 3 for coherencia while iec 2. Yes.
+
+6 I5-7024: 1
+7 I5-3559: 0
+8 I5-2602: 0
+9 I5-3769: 0
+10 I5-4146: 0
+11 I5-8743: 3
+12 I5-3551: 0
+13 I5-3570: 0? Let's assign 0.
+14 I5-9566: 0
+15 I5-2807: 0
+16 I5-9964: 0
+17 I5-4776: 3
+18 I5-8715: 1
+19 I5-6743: 3
+20 I5-6738: 3
+21 I5-6315: 2? Maybe 3. Let's analyze after pulse cleanup: It clears piezaAlta when `tPulso.Q = FALSE AND tRetardo.Q`. At pulse end, tPulso.Q false, tRetardo.Q true, clears. If a new high edge occurs before pulse ends, piezaAlta still true; edge sets nAltas++ but piezaAlta already true; tRetardo already Q true. After pulse end cleanup clears piezaAlta, missing the new high's delay. This is a latent flaw for overlapping high. Most single-flag solutions share this. Should we penalize coherencia? The harness doesn't test. We generally don't penalize for overlapping. For I5-6031, if new high edge occurs while previous `esperaPiston` true, it sets true but tRetardo already timing; not reset; once tRetardo.Q true, it sets false. It will still only produce one pulse at original 2s for both pieces. All simple solutions fail overlapping. The coherencia 3 seems okay for simple sequential piece handling. So I5-6315 maybe 3 too. But the cleanup condition is non-obvious but works. I'd give 3? Hmm.
+Let's simulate I5-6315 for single: During tPulso true, cleanup false. At tPulso false (at 3.7), tRetardo.Q true, piezaAlta false. Next scan tRetardo IN false Q false. Works. It doesn't have dead code. Coherencia 3. But comment says "Cuando el pulso termina, desactivar bandera" and condition does that. Fine. I'd give 3. 
+22 I5-3665: 3
+23 I5-2293: 0
+24 I5-8675: 0
+
+Need consider I5-9795 coherencia maybe 1 as above.
+
+Clarity:
+Need assign 1-3.
+
+Let's set:
+1 I5-9795: 2 (descriptive names, ordered sections but comments misleading)
+2 I5-6031: 2
+3 I5-2725: 1
+4 I5-5960: 3? Maybe comments numbered, clear. The code is clean. I'd give 3? Let's use 2/3. Hmm.
+5 I5-5429: 3 (good sections, why comments)
+6 I5-7024: 2 (clear sections but logic comments okay)
+7 I5-3559: 1
+8 I5-2602: 1
+9 I5-3769: 1
+10 I5-4146: 2 (clear names and comments, though logic flawed) 
+11 I5-8743: 2/3. It has numbered steps and comments. Could give 3. 
+12 I5-3551: 1
+13 I5-3570: 1
+14 I5-9566: 2 (names clear, comments brief)
+15 I5-2807: 1
+16 I5-9964: 2 (state machine CASE reflects structure, names okay)
+17 I5-4776: 3 (excellent comments, sectioned)
+18 I5-8715: 2/3. It has clear section separators. Could give 3. But code failing due TON; still structure clear. I'd give 2 because comments include incorrect note "tRetardo.Q permanece TRUE un ciclo" maybe okay. It actually explains. Maybe 3. 
+19 I5-6743: 3 (sections)
+20 I5-6738: 2
+21 I5-6315: 2
+22 I5-3665: 2/3. Comments not as many. I'd give 2.
+23 I5-2293: 1
+24 I5-8675: 1
+
+Need calibrate clarity: The task is simple, many pass all have clear comments. In rubric 3 requires "modularización adecuada" which none have internal modules, but the FB itself is the requested POU, and separation E/S via VAR_INPUT/OUTPUT. Not every answer can get 3. Could give 2 for most, 3 for exceptionally organized (5429,4776 maybe 6743). Let's not overuse 3. Let's assign clarity 2 to most pass all, with 3 to 5429 and 4776 maybe 6743? Hmm.
+
+Maybe in clarity criterion, names descriptive + sections + comments is already "2" not "3"? Rubric:
+- 2: nombres descriptivos, secciones ordenadas, comentarios útiles.
+- 3: además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican porqué.
+The answers are already a FUNCTION_BLOCK FB_Clasificadora with E/S separated. But they don't have extra modularization. Does using an FB count? The requested POU is an FB reutilizable; yes, "POU adecuado" likely. Could a clean simple solution get 3? It is an FB with clear separation, comments why. I think yes. The rubric may permit 3 for clean.
+
+But for failing codes with clear structure but broken logic, can clarity still be 2/3. Yes, clarity about code not behavior.
+
+Need not be too generous.
+
+Let's decide final scores per code.
+
+Let's create table:
+
+| idx | codigo | func | iec | coher | clar | mant |
+We need final.
+
+Let's maybe assign more systematically:
+
+For each code, think rubric.
+
+### 1 I5-9795
+func fixed 3. iec 2 (standard blocks but overcomplicated cleanup). coher 1 (dead cleanup/flag never cleared). clar 2 (structures and names good but cleanup comments misleading). mant 1 (duplicated cleanup, magic time literals). 
+Justifications:
+- just_func_iec: "IEC: bloques estándar TON/TP/R_TRIG correctos, pero la limpieza con ET/T#2S no es idiomática."
+- coherencia: "Bandera bPiezaAlta nunca se limpia de forma alcanzable; fallaría en piezas altas sucesivas."
+- claridad: "Nombres y secciones claros, aunque los comentarios de limpieza confunden."
+- mantenibilidad: "Lógica de limpieza duplicada y tiempos literales; modificar es frágil."
+
+Could coherencia maybe 2? But "bandera never cleared" could prevent subsequent high; but not maybe if tPulso false and tRetardo.Q false? no. It's defect. 1 okay.
+
+### 2 I5-6031
+func fixed 3. iec 3. coher 3. clar 2. mant 2.
+Just: "IEC idiomática con R_TRIG/TON/TP." Coher: "Inicialización correcta y transiciones completas; sin estados muertos." Clar: "Nombres descriptivos y comentarios ordenados, aunque sin secciones numeradas." Mant: "Tiempos T#2S/T#1S como literales localizados; aún fácil de ajustar."
+
+### 3 I5-2725
+func/iec fixed 0. coher 0. clar 1. mant 1.
+Just_func_iec: "" (both fixed). Coher: "Temporizadores no se llaman por ciclo y la lógica evalúa altura al final, no al detectar." Clar: "Nombres básicos y comentarios, pero sintaxis inválida y flujo desordenado." Mant: "Valores mágicos y lógica repetida; requiere reescritura."
+
+### 4 I5-5960
+func fixed 3. iec 3. coher 3. clar 3? Hmm. Let's give clar 2 or 3. This code has comments // and numbered steps. I'd give 3? But to avoid too many 3, 2. Let's say clar 2, mant 2. 
+Just coher "Contadores inicializados; secuencia de flanco y temporización robusta." Clar: "Código ordenado con pasos numerados y comentarios claros." Mant: "Tiempos literales; cambios localizados pero no parametrizados."
+
+### 5 I5-5429
+func fixed 3. iec 2. coher 3. clar 3. mant 2.
+Just: "IEC: TON para pulso con salida manual IN AND NOT Q, aunque correcto." Coh: "Lógica consistente y robusta; limpia piezaAlta al terminar el pistón." Clar: "Secciones delimitadas, comentarios explican el razonamiento." Mant: "Tiempos T#2S/T#1S embebidos; modificación localizada."
+
+### 6 I5-7024
+func null assign 1. iec 2. coher 1. clar 2. mant 1.
+Just: "Cuenta nAltas al terminar el pulso, no en el flanco; falla pasos 3-5." IEC: "Bloques estándar, pero TON no se usa idiomáticamente para pulso." Coher: "Asignaciones muertas (tRetardo.IN:=FALSE previo) y conteo fuera de fase." Clar: "Secciones y nombres claros; lógica comentada no refleja el defecto." Mant: "Tiempos literales y conteo disperso; ajuste delicado."
+
+### 7 I5-3559
+func 0. iec 2. coher 0. clar 1. mant 1.
+Just: "No procesa correctamente ni bajas ni altas; temporizadores no se llaman cada ciclo." IEC: "Compila con TON estándar, pero su uso no es idiomático." Coher: "piezaDetectada/timer lógica impide segunda pieza y el pistón no completa." Clar: "Nombres básicos, comentarios escasos." Mant: "Poca separación; requiere reescritura."
+
+### 8 I5-2602
+func 0. iec 2. coher 0. clar 1. mant 1.
+Similar.
+
+### 9 I5-3769
+func 0. iec 2. coher 0. clar 1. mant 1.
+
+### 10 I5-4146
+func 0. iec 2. coher 0. clar 2. mant 1.
+Just: "Cuenta altas al final y activa pistón de inmediato; falla caso alto." IEC: "Compila con TON estándar, pero temporizador de pistón no cilado." Coher: "Salida piston activa antes del retardo y nAltas inalcanzable en tiempo." Clar: "Nombres descriptivos y comentarios, estructura básica." Mant: "Múltiples temporizadores con literales, sin parametrizar."
+
+Let's verify I5-4146: `temporizadorPiston` is TON and called in `IF temporizadorRetraso.Q THEN` only (one scan). So no timing. Piston active from high detection because in `IF activarPiston` else piston true. So yes.
+
+### 11 I5-8743
+func fixed 3. iec 3. coher 3. clar 2 or 3. Let's give clar 2. mant 2.
+Just: "IEC idiomática R_TRIG/TON/TP." Coher: "Ciclo completo, clear esperandoPiston; robusta para piezas secuenciales." Clar: "Buenas secciones y nombres, comentarios útiles." Mant: "Tiempos fijos literales; cambio localizado."
+
+### 12 I5-3551
+func 0. iec 2. coher 0. clar 1. mant 1.
+
+### 13 I5-3570
+func/iec fixed 0. coher 0. clar 1. mant 1.
+
+### 14 I5-9566
+func 0. iec 2. coher 0. clar 2. mant 1.
+Just: "Pistón queda activo porque timerDuracion no se evalúa cada ciclo; nAltas tardío." IEC: "Compila con TON, pero timer no periódico." Coher: "Condiciones muertas para apagar piston y conteo alto inalcanzable." Clar: "Nombres y comentarios básicos ordenados." Mant: "Literales de tiempo y lógica frágil."
+
+### 15 I5-2807
+func 0. iec 2. coher 0. clar 1. mant 1.
+Note: uses TP for wait causing immediate piston even for low. Func 0.
+Just: "Con TP, tEspera.Q es activo de inmediato; piston se activa para pieza baja y duración 2s." IEC: "Compila con TP estándar, pero no es el bloque correcto para retardo." Coher: "Contradice la temporización; el ELSE del pulso desactiva y bandera se cae."
+
+### 16 I5-9964
+func 0. iec 2. coher 0. clar 2. mant 1.
+Just: "No declara nAltas/nBajas como salidas y el pistón queda enclavado." IEC: "Compila con tipos estándar, pero POU no expone salidas requeridas." Coher: "Estado 2 no llama timer2 por ciclo; sin transición de apagado." Clar: "Máquina de estados estructurada, nombres legibles." Mant: "Sin parametrizar y temporizadores embebidos."
+
+Should functional be 0 because missing outputs. Yes.
+
+### 17 I5-4776
+func fixed 3. iec 3. coher 3. clar 3. mant 2.
+Just: "IEC idiomática con R_TRIG/TP/F_TRIG." Coher: "Fases de retardo y pulso separadas; sin estados residuales." Clar: "Secciones claras y comentarios explican el porqué." Mant: "Tiempos literales; lógica central limpia."
+
+### 18 I5-8715
+func 1. iec 2. coher 1. clar 2. mant 2.
+Just: "Pistón dura un solo ciclo porque tPiston arranca con tRetardo.Q y se resetea; falla paso 5." IEC: "Uso estándar pero poco idiomático de TON para pulso." Coher: "tPiston nunca llega a Q: condición IF tPiston.Q es inalcanzable en la práctica." Clar: "Buenas secciones y nombres; comentario sobre flanco es engañoso." Mant: "Tiempos literales, pero lógica localizada."
+
+Wait does tPiston never reach Q? It is called with IN=tRetardo.Q one scan true; next scan false. TON requires IN true continuous; so ET resets. Yes Q never true. So dead. Coher 1.
+
+### 19 I5-6743
+func fixed 3. iec 3. coher 3. clar 2/3. Let's give clar 2? It has good comments. Could give 3 because comments. Let's reserve 3 for some. We'll give 2.
+Mant 2.
+
+### 20 I5-6738
+func fixed 3. iec 3. coher 3. clar 2. mant 2.
+
+### 21 I5-6315
+func fixed 3. iec 2. coher 3? Maybe 2. Let's assign 2? It works but cleanup condition is a bit non-obvious. Could have latent overlapping but not tested. The code is not dead. I'd give coher 2: "Lógica funcional, aunque la condición de limpieza depende de tRetardo.Q." But it's correct. Hmm. I'll give coher 2.
+Clar 2. Mant 2.
+Just: "IEC: bloques estándar, pero limpieza no idiomática." Coher: "Funciona, aunque la limpieza de piezaAlta queda acoplada al estado de tRetardo.Q." Clar: "Nombres y secciones claros; comentario simplificado." Mant: "Tiempos literales; lógica compacta."
+
+### 22 I5-3665
+func fixed 3. iec 3. coher 3. clar 2. mant 2.
+
+### 23 I5-2293
+func 0. iec 2. coher 0. clar 1. mant 1.
+Just: "Cuenta cada ciclo y el temporizador de pulso no se llama periódicamente." 
+
+### 24 I5-8675
+func 0. iec 2. coher 0. clar 1. mant 1.
+
+Need maybe for all failing compiles with `iec` null and not fixed, if we assign 2. Could use 3 for standard TP? For I5-2807 uses TP incorrectly; maybe 2. Good.
+
+Potential issue: The output JSON must have values integers, not null. For fixed values, copy exact. For funcional_fijo null we set integer. For iec_fijo null set integer.
+
+Need ensure for no compile I5-2725, I5-3570: funcional=0, iec=0 fixed; just_func_iec should be "". Since both fixed? Yes funcional_fijo and iec_fijo both 0. In format, if both fixed, just_func_iec = "". We'll use "".
+
+Need ensure for pass all, funcional_fijo fixed, iec_fijo null; just_func_iec not empty. Fine.
+
+Need maybe "funcional_fijo" fields not included? The desired output objects only include keys: codigo, funcional, iec, coherencia, claridad, mantenibilidad, just_func_iec, just_coherencia, just_claridad, just_mantenibilidad. We should not include "funcional_fijo". We just code.
+
+Need maybe order same as input. Yes.
+
+Let's double-check all codes in order:
+
+1 I5-9795
+2 I5-6031
+3 I5-2725
+4 I5-5960
+5 I5-5429
+6 I5-7024
+7 I5-3559
+8 I5-2602
+9 I5-3769
+10 I5-4146
+11 I5-8743
+12 I5-3551
+13 I5-3570
+14 I5-9566
+15 I5-2807
+16 I5-9964
+17 I5-4776
+18 I5-8715
+19 I5-6743
+20 I5-6738
+21 I5-6315
+22 I5-3665
+23 I5-2293
+24 I5-8675
+
+Check that pass all fixed funcional 3 for: 1,2,4,5,11,17,19,20,21,22. Also maybe 18? No 18 fails step5. I5-8715 not fixed. Good.
+
+Let's revisit I5-9795: result "Compila. Pasa los 7 pasos del harness." yes fixed 3. I5-6315 passes all. Yes.
+
+Let's ensure no missing pass-all: I5-5429 pass, 8743, 4776, 6743, 6738, 6315, 3665. Yes.
+
+Let's maybe consider `iec_fijo` for pass all ? null, we assign.
+
+Need maybe adjust coherencia for I5-9795; perhaps if we give 1, okay. But some evaluators might expect coherencia 2 with "cleanup not okay". But our justification supports.
+
+Need maybe adjust I5-5429 coherencia: Is there any hidden issue? It sets `timerRetardo(IN:=piezaAlta AND NOT timerPiston.Q)`. If timerPiston.Q true at scan after piston done, it clears piezaAlta. But if a new high edge occurs exactly in the same scan before `timerPiston.Q` true? Hmm edge sets piezaAlta true; then timerRetardo sees NOT timerPiston.Q maybe false if q from previous cycle? At moment after piston Q true scan, later code clears piezaAlta. Next scan timerPiston.Q may reset false. So new high after that starts. Fine. It's robust. 3.
+Similarly I5-6031: If high edge occurs while esperaPiston true, not restart. But coherencia 3 for sequential.
+
+Could pass all 6031 have issue with counter initialization? It doesn't initialize nAltas/nBajas; in CODESYS default 0. Could coherencia 2. But fixed functional 3 despite harness. For our coherencia we can give 2 due no explicit init. However most PLC locals default 0. Rubric mentions "variables sin inicializar con efecto". Since outputs are not explicitly initialized, but they start at 0. Not a contradiction. Could 3. We'll keep.
+
+Need maybe not assign too many coherencia 3. Let's see coherencia distribution:
+1:1,2:3,3:0,4:3,5:3,6:1,7:0,8:0,9:0,10:0,11:3,12:0,13:0,14:0,15:0,16:0,17:3,18:1,19:3,20:3,21:2,22:3,23:0,24:0. That's many 3s for pass all. Fine.
+
+Clarity distribution:
+1:2,2:2,3:1,4:2,5:3,6:2,7:1,8:1,9:1,10:2,11:2,12:1,13:1,14:2,15:1,16:2,17:3,18:2,19:2,20:2,21:2,22:2,23:1,24:1.
+Maybe I5-5960 could clarify 3 but okay.
+
+Mant distribution mostly 2 for pass all, 1 for fail. Good.
+
+Need maybe for I5-9964 mant 1. yes.
+
+Now need craft exact JSON.
+
+Need ensure line strings are one line, no unescaped quotes or newlines. Use \n? No newlines in JSON strings. We'll keep simple.
+
+Must respond only list, no markdown. We need ensure valid JSON (double quotes, commas). We'll produce in one block.
+
+Let's draft JSON with 24 objects.
+
+Need be careful with Spanish accents? Use plain or Unicode? The input has accents. We can use Unicode in JSON. That's valid. We'll include concise Spanish justifications.
+
+Let's write.
+
+But before final, let's re-evaluate all functional assignments per rules:
+
+- I5-7024 compiles fails 3 steps: functional null -> our 1. OK.
+- I5-3559 fail 6: our 0. OK.
+- I5-2602 fail 6: our 0.
+- I5-3769 fail 6: 0.
+- I5-4146 fail 4: 0.
+- I5-3551 fail 7: 0.
+- I5-9566 fail 4: 0.
+- I5-2807 fail 6: 0.
+- I5-9964 fail 6: 0.
+- I5-8715 fail 1: 1.
+- I5-2293 fail 6: 0.
+- I5-8675 fail 7: 0.
+
+Could any of these fail 4 but implement some nominal (low) get 0? We decide 0. Maybe I5-4146 and I5-9566 could be 1? Let's see rubric: 1 "funciona en el caso nominal pero falla en casos límite evidentes". Here low nominal? The nominal high piece fails. So 0. Good.
+
+For I5-3559 fail 6 and passes only step0; definitely 0.
+I5-2602 fail 6 but step0? 0.
+I5-3769 same.
+I5-2293 same.
+I5-8675 same.
+I5-2807 fail 6 but passes only step0; 0.
+I5-9964 fail 6 and missing outputs; 0.
+
+Need maybe I5-7024 only fails nAltas not output. Could be 1 because low and piston output are fine but counters delayed. Good.
+
+I5-8715 fails only step5. Functional could be 2? Let's revisit. It passes all except step5. The failure is piston does not stay ON; the output is one-cycle pulse. The harness may at step5 see piston false; so piston duration 0 sec not 1. The task requires piston 1s, which is central. Functional 1 maybe. But according to rule "Si compila pero falla pasos: funcional 0, 1 o 2 según rúbrica, usando qué pasos fallan y el protocolo." If 6/7 pass, maybe 2: "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo". Is not holding piston a minor failure? It means the physical diverter may not divert the piece; I'd consider no risk? It is a functional failure, not safety. But the system fails to divert. In many grading, a single step fail is not "menor". However if piece only needs a brief pulse? But task says 1s, so not.
+
+Maybe assign functional 1: "funciona en el caso nominal" no. Hmm. The category 1 is specifically edge/reset/paro failures, not core duration. But 0 would be harsh for 6/7. The rubric itself is coarse; I'd choose 1.
+
+Could I5-7024 with 3 fails be 0? It fails high count but piston output works. It still detects and desvía; count late. This is less severe than I5-8715? Actually count immediate requirement fail. But test fails 3. Functional 1.
+
+Let's maybe assign functional 2 to I5-8715? If we view as "correcto en la mayoría de casos, falla menor". But "menor sin riesgo" no. I'd keep 1.
+
+Now, `iec_fijo` for no comp? Fixed 0. We must copy exactly. For `funcional_fijo` pass all fixed 3. In output, maybe if fixed 3 no need mention in just_func_iec? We'll mention iec assigned. Good.
+
+Let's double-check each code's "iec_fijo": In input, all `iec_fijo` null except no compiles? For no compiles `iec_fijo` is 0? In JSON: for I5-2725 "iec_fijo": 0, yes; I5-3570 "iec_fijo": 0. For compiles null. We copy.
+
+For pass all, `funcional_fijo` 3. For no compile `funcional_fijo` 0. For fail compile, `funcional_fijo` null. Good.
+
+Let's maybe look at I5-2725: `resultado_codesys`: "No compila (4 errores)." We fixed 0/0.
+
+Need ensure just_func_iec for 3 and 13 empty string because both fixed. For 1? func fixed, iec null so not empty. For all compile fails both null except no. Good.
+
+Let's craft JSON with exact order.
+
+Potential issue: In JSON, strings containing quotes? We will avoid quote marks inside. Use simple.
+
+Let's prepare final:
+
+[
+ {"codigo":"I5-9795","funcional":3,"iec":2,"coherencia":1,"claridad":2,"mantenibilidad":1,"just_func_iec":"Compila con TON/TP/R_TRIG estándar, pero la limpieza con ET/T#2S no es idiomática.","just_coherencia":"La bandera bPiezaAlta no se limpia de forma alcanzable; fallaría con una segunda pieza alta.","just_claridad":"Nombres y secciones claros, aunque los comentarios de limpieza confunden.","just_mantenibilidad":"Lógica de limpieza duplicada y tiempos literales; es frágil de modificar."},
+...
+Need no line breaks? JSON can have line breaks but we need valid. I'll put one object per line maybe. That's fine.
+
+Let's ensure all strings one line. The JSON as a whole can have newlines between objects.
+
+Need verify object count.
+
+Let's continue compiling all in final.
+
+Before final, let's consider if "just_func_iec" for fixed only one: If I mention only IEC, okay. For pass all, iec assigned. For no compiles, empty because both fixed. For compile fail, both func and iec assigned; line can mention both. Good.
+
+Let's maybe standardize just_func_iec:
+- If both fixed -> ""
+- Otherwise include "IEC: ..." and if func assigned include "Funcional: ...".
+
+Need maybe for I5-7024 include both func and iec. We'll write "Funcional: cuenta nAltas al terminar el pulso, no al flanco; IEC: TON estándar no idiomático para pulso." Good.
+
+Let's draft all.
+
+Wait, `iec` for pass all with `iec_fijo` null: if I assign 3, good. For I5-5429 iec 2 due TON pulse. For I5-9795 iec 2. For I5-6315 iec 2. For I5-8715 iec 2. Good.
+
+Let's maybe evaluate I5-6315 IEC: uses TON and TP standard; cleanup condition not idiomatic but okay. 2.
+
+Now exact final text.
+
+Double-check maybe there is no "I5-4776" etc with accents.
+
+Let's write final carefully.
+
+Potential issue: In JSON, empty string `""` okay.
+
+Let's produce:
+
+[
+ {
+  "codigo": "I5-9795",
+  "funcional": 3,
+  "iec": 2,
+  "coherencia": 1,
+  "claridad": 2,
+  "mantenibilidad": 1,
+  "just_func_iec": "Compila con TON/TP/R_TRIG estándar, pero la limpieza con ET/T#2S no es idiomática.",
+  "just_coherencia": "La bandera bPiezaAlta no se limpia de forma alcanzable; fallaría con una segunda pieza alta.",
+  "just_claridad": "Nombres y secciones claros, aunque los comentarios de limpieza confunden.",
+  "just_mantenibilidad": "Lógica de limpieza duplicada y tiempos literales; es frágil de modificar."
+ },
+...
+Need mention "B1" no, codes I5-...
+
+Let's continue.
+
+I5-6031:
+ "just_coherencia": "Inicialización correcta y transiciones completas; lógica sin estados muertos.",
+ "just_claridad": "Nombres descriptivos y comentarios ordenados, aunque sin secciones numeradas.",
+ "mant": "Tiempos literales localizados; cambio sencillo."
+
+I5-2725 no compile:
+ "just_func_iec": "",
+ "just_coherencia": "Temporizadores no se llaman por ciclo y la altura se evalúa tras el retardo, no en el flanco.",
+ "just_claridad": "Nombres básicos y comentarios, pero sintaxis inválida y flujo desordenado.",
+ "just_mantenibilidad": "Valores mágicos y lógica repetida; requiere reescritura."
+
+Need maybe for no compile coherencia 0? We set 0. Good.
+
+I5-5960:
+ func 3 iec 3 coher 3 clar 2 mant 2.
+
+I5-5429:
+ func 3 iec 2 coher 3 clar 3 mant 2.
+
+I5-7024:
+ func 1 iec 2 coher 1 clar 2 mant 1.
+
+I5-3559:
+ func 0 iec 2 coher 0 clar 1 mant 1.
+
+I5-2602:
+ similar.
+
+Need maybe distinguish justifications not identical but can be similar.
+
+Let's write all in final. Ensure no mistakes in codigo order.
+
+Let's maybe before final, run mentally through JSON validity:
+- Quotes inside strings? We use accents but no double quotes.
+- Newline? We'll format with newlines outside strings.
+- No trailing comma after last object? Need avoid trailing comma.
+
+Let's craft final exactly.
+
+Potential issue: The final answer should be "ÚNICAMENTE con una lista JSON válida de 24 objetos". I'll output only JSON. No markdown code fences.
+
+Let's produce final now.

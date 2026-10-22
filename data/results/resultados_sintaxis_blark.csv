@@ -1,0 +1,145 @@
+modelo,tarea,nivel,estrategia,ejecucion,parsea,tipo_error,mensaje,archivo
+gpt-4o,B1,Basico,zero_shot,1,1,,,data/processed/gpt-4o/B1/zero_shot/ejec_1.st
+gpt-4o,B1,Basico,zero_shot,2,1,,,data/processed/gpt-4o/B1/zero_shot/ejec_2.st
+gpt-4o,B1,Basico,zero_shot,3,1,,,data/processed/gpt-4o/B1/zero_shot/ejec_3.st
+gpt-4o,B1,Basico,few_shot,1,1,,,data/processed/gpt-4o/B1/few_shot/ejec_1.st
+gpt-4o,B1,Basico,few_shot,2,1,,,data/processed/gpt-4o/B1/few_shot/ejec_2.st
+gpt-4o,B1,Basico,few_shot,3,1,,,data/processed/gpt-4o/B1/few_shot/ejec_3.st
+gpt-4o,B2,Basico,zero_shot,1,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/gpt-4o/B2/zero_shot/ejec_1.st
+gpt-4o,B2,Basico,zero_shot,2,1,,,data/processed/gpt-4o/B2/zero_shot/ejec_2.st
+gpt-4o,B2,Basico,zero_shot,3,1,,,data/processed/gpt-4o/B2/zero_shot/ejec_3.st
+gpt-4o,B2,Basico,few_shot,1,1,,,data/processed/gpt-4o/B2/few_shot/ejec_1.st
+gpt-4o,B2,Basico,few_shot,2,1,,,data/processed/gpt-4o/B2/few_shot/ejec_2.st
+gpt-4o,B2,Basico,few_shot,3,1,,,data/processed/gpt-4o/B2/few_shot/ejec_3.st
+gpt-4o,B3,Basico,zero_shot,1,1,,,data/processed/gpt-4o/B3/zero_shot/ejec_1.st
+gpt-4o,B3,Basico,zero_shot,2,0,UnexpectedCharacters,"No terminal matches 'c' in the current parser context, at line 18 col 5      cuenta := 0;     ^ Expected one of:  	* SEMICOLON 	* COLON 	* SET_ASSIGNMENT 	* DOT",data/processed/gpt-4o/B3/zero_shot/ejec_2.st
+gpt-4o,B3,Basico,zero_shot,3,1,,,data/processed/gpt-4o/B3/zero_shot/ejec_3.st
+gpt-4o,B3,Basico,few_shot,1,1,,,data/processed/gpt-4o/B3/few_shot/ejec_1.st
+gpt-4o,B3,Basico,few_shot,2,1,,,data/processed/gpt-4o/B3/few_shot/ejec_2.st
+gpt-4o,B3,Basico,few_shot,3,1,,,data/processed/gpt-4o/B3/few_shot/ejec_3.st
+gpt-4o,B4,Basico,zero_shot,1,1,,,data/processed/gpt-4o/B4/zero_shot/ejec_1.st
+gpt-4o,B4,Basico,zero_shot,2,1,,,data/processed/gpt-4o/B4/zero_shot/ejec_2.st
+gpt-4o,B4,Basico,zero_shot,3,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/gpt-4o/B4/zero_shot/ejec_3.st
+gpt-4o,B4,Basico,few_shot,1,1,,,data/processed/gpt-4o/B4/few_shot/ejec_1.st
+gpt-4o,B4,Basico,few_shot,2,1,,,data/processed/gpt-4o/B4/few_shot/ejec_2.st
+gpt-4o,B4,Basico,few_shot,3,1,,,data/processed/gpt-4o/B4/few_shot/ejec_3.st
+gpt-4o,B5,Basico,zero_shot,1,1,,,data/processed/gpt-4o/B5/zero_shot/ejec_1.st
+gpt-4o,B5,Basico,zero_shot,2,1,,,data/processed/gpt-4o/B5/zero_shot/ejec_2.st
+gpt-4o,B5,Basico,zero_shot,3,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/gpt-4o/B5/zero_shot/ejec_3.st
+gpt-4o,B5,Basico,few_shot,1,1,,,data/processed/gpt-4o/B5/few_shot/ejec_1.st
+gpt-4o,B5,Basico,few_shot,2,1,,,data/processed/gpt-4o/B5/few_shot/ejec_2.st
+gpt-4o,B5,Basico,few_shot,3,1,,,data/processed/gpt-4o/B5/few_shot/ejec_3.st
+gpt-4o,B6,Basico,zero_shot,1,1,,,data/processed/gpt-4o/B6/zero_shot/ejec_1.st
+gpt-4o,B6,Basico,zero_shot,2,1,,,data/processed/gpt-4o/B6/zero_shot/ejec_2.st
+gpt-4o,B6,Basico,zero_shot,3,1,,,data/processed/gpt-4o/B6/zero_shot/ejec_3.st
+gpt-4o,B6,Basico,few_shot,1,1,,,data/processed/gpt-4o/B6/few_shot/ejec_1.st
+gpt-4o,B6,Basico,few_shot,2,1,,,data/processed/gpt-4o/B6/few_shot/ejec_2.st
+gpt-4o,B6,Basico,few_shot,3,1,,,data/processed/gpt-4o/B6/few_shot/ejec_3.st
+gpt-4o,I1,Intermedio,zero_shot,1,0,UnexpectedCharacters,"No terminal matches 'V' in the current parser context, at line 6 col 1  VAR_OUTPUT ^ Expected one of:  	* DEREFERENCED 	* COLON 	* _AT 	* COMMA ",data/processed/gpt-4o/I1/zero_shot/ejec_1.st
+gpt-4o,I1,Intermedio,zero_shot,2,1,,,data/processed/gpt-4o/I1/zero_shot/ejec_2.st
+gpt-4o,I1,Intermedio,zero_shot,3,1,,,data/processed/gpt-4o/I1/zero_shot/ejec_3.st
+gpt-4o,I1,Intermedio,few_shot,1,1,,,data/processed/gpt-4o/I1/few_shot/ejec_1.st
+gpt-4o,I1,Intermedio,few_shot,2,1,,,data/processed/gpt-4o/I1/few_shot/ejec_2.st
+gpt-4o,I1,Intermedio,few_shot,3,1,,,data/processed/gpt-4o/I1/few_shot/ejec_3.st
+gpt-4o,I2,Intermedio,zero_shot,1,1,,,data/processed/gpt-4o/I2/zero_shot/ejec_1.st
+gpt-4o,I2,Intermedio,zero_shot,2,1,,,data/processed/gpt-4o/I2/zero_shot/ejec_2.st
+gpt-4o,I2,Intermedio,zero_shot,3,1,,,data/processed/gpt-4o/I2/zero_shot/ejec_3.st
+gpt-4o,I2,Intermedio,few_shot,1,1,,,data/processed/gpt-4o/I2/few_shot/ejec_1.st
+gpt-4o,I2,Intermedio,few_shot,2,1,,,data/processed/gpt-4o/I2/few_shot/ejec_2.st
+gpt-4o,I2,Intermedio,few_shot,3,1,,,data/processed/gpt-4o/I2/few_shot/ejec_3.st
+gpt-4o,I3,Intermedio,zero_shot,1,1,,,data/processed/gpt-4o/I3/zero_shot/ejec_1.st
+gpt-4o,I3,Intermedio,zero_shot,2,1,,,data/processed/gpt-4o/I3/zero_shot/ejec_2.st
+gpt-4o,I3,Intermedio,zero_shot,3,1,,,data/processed/gpt-4o/I3/zero_shot/ejec_3.st
+gpt-4o,I3,Intermedio,few_shot,1,1,,,data/processed/gpt-4o/I3/few_shot/ejec_1.st
+gpt-4o,I3,Intermedio,few_shot,2,1,,,data/processed/gpt-4o/I3/few_shot/ejec_2.st
+gpt-4o,I3,Intermedio,few_shot,3,1,,,data/processed/gpt-4o/I3/few_shot/ejec_3.st
+gpt-4o,I4,Intermedio,zero_shot,1,1,,,data/processed/gpt-4o/I4/zero_shot/ejec_1.st
+gpt-4o,I4,Intermedio,zero_shot,2,1,,,data/processed/gpt-4o/I4/zero_shot/ejec_2.st
+gpt-4o,I4,Intermedio,zero_shot,3,1,,,data/processed/gpt-4o/I4/zero_shot/ejec_3.st
+gpt-4o,I4,Intermedio,few_shot,1,1,,,data/processed/gpt-4o/I4/few_shot/ejec_1.st
+gpt-4o,I4,Intermedio,few_shot,2,1,,,data/processed/gpt-4o/I4/few_shot/ejec_2.st
+gpt-4o,I4,Intermedio,few_shot,3,1,,,data/processed/gpt-4o/I4/few_shot/ejec_3.st
+gpt-4o,I5,Intermedio,zero_shot,1,1,,,data/processed/gpt-4o/I5/zero_shot/ejec_1.st
+gpt-4o,I5,Intermedio,zero_shot,2,1,,,data/processed/gpt-4o/I5/zero_shot/ejec_2.st
+gpt-4o,I5,Intermedio,zero_shot,3,1,,,data/processed/gpt-4o/I5/zero_shot/ejec_3.st
+gpt-4o,I5,Intermedio,few_shot,1,1,,,data/processed/gpt-4o/I5/few_shot/ejec_1.st
+gpt-4o,I5,Intermedio,few_shot,2,1,,,data/processed/gpt-4o/I5/few_shot/ejec_2.st
+gpt-4o,I5,Intermedio,few_shot,3,1,,,data/processed/gpt-4o/I5/few_shot/ejec_3.st
+gpt-4o,I6,Intermedio,zero_shot,1,1,,,data/processed/gpt-4o/I6/zero_shot/ejec_1.st
+gpt-4o,I6,Intermedio,zero_shot,2,1,,,data/processed/gpt-4o/I6/zero_shot/ejec_2.st
+gpt-4o,I6,Intermedio,zero_shot,3,0,UnexpectedCharacters,"No terminal matches 'V' in the current parser context, at line 6 col 1  VAR_OUTPUT ^ Expected one of:  	* DEREFERENCED 	* COLON 	* _AT 	* COMMA ",data/processed/gpt-4o/I6/zero_shot/ejec_3.st
+gpt-4o,I6,Intermedio,few_shot,1,1,,,data/processed/gpt-4o/I6/few_shot/ejec_1.st
+gpt-4o,I6,Intermedio,few_shot,2,1,,,data/processed/gpt-4o/I6/few_shot/ejec_2.st
+gpt-4o,I6,Intermedio,few_shot,3,1,,,data/processed/gpt-4o/I6/few_shot/ejec_3.st
+claude-sonnet-4-6,B1,Basico,zero_shot,1,1,,,data/processed/claude-sonnet-4-6/B1/zero_shot/ejec_1.st
+claude-sonnet-4-6,B1,Basico,zero_shot,2,1,,,data/processed/claude-sonnet-4-6/B1/zero_shot/ejec_2.st
+claude-sonnet-4-6,B1,Basico,zero_shot,3,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/B1/zero_shot/ejec_3.st
+claude-sonnet-4-6,B1,Basico,few_shot,1,1,,,data/processed/claude-sonnet-4-6/B1/few_shot/ejec_1.st
+claude-sonnet-4-6,B1,Basico,few_shot,2,1,,,data/processed/claude-sonnet-4-6/B1/few_shot/ejec_2.st
+claude-sonnet-4-6,B1,Basico,few_shot,3,1,,,data/processed/claude-sonnet-4-6/B1/few_shot/ejec_3.st
+claude-sonnet-4-6,B2,Basico,zero_shot,1,1,,,data/processed/claude-sonnet-4-6/B2/zero_shot/ejec_1.st
+claude-sonnet-4-6,B2,Basico,zero_shot,2,1,,,data/processed/claude-sonnet-4-6/B2/zero_shot/ejec_2.st
+claude-sonnet-4-6,B2,Basico,zero_shot,3,1,,,data/processed/claude-sonnet-4-6/B2/zero_shot/ejec_3.st
+claude-sonnet-4-6,B2,Basico,few_shot,1,1,,,data/processed/claude-sonnet-4-6/B2/few_shot/ejec_1.st
+claude-sonnet-4-6,B2,Basico,few_shot,2,1,,,data/processed/claude-sonnet-4-6/B2/few_shot/ejec_2.st
+claude-sonnet-4-6,B2,Basico,few_shot,3,1,,,data/processed/claude-sonnet-4-6/B2/few_shot/ejec_3.st
+claude-sonnet-4-6,B3,Basico,zero_shot,1,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/B3/zero_shot/ejec_1.st
+claude-sonnet-4-6,B3,Basico,zero_shot,2,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/B3/zero_shot/ejec_2.st
+claude-sonnet-4-6,B3,Basico,zero_shot,3,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/B3/zero_shot/ejec_3.st
+claude-sonnet-4-6,B3,Basico,few_shot,1,1,,,data/processed/claude-sonnet-4-6/B3/few_shot/ejec_1.st
+claude-sonnet-4-6,B3,Basico,few_shot,2,1,,,data/processed/claude-sonnet-4-6/B3/few_shot/ejec_2.st
+claude-sonnet-4-6,B3,Basico,few_shot,3,1,,,data/processed/claude-sonnet-4-6/B3/few_shot/ejec_3.st
+claude-sonnet-4-6,B4,Basico,zero_shot,1,1,,,data/processed/claude-sonnet-4-6/B4/zero_shot/ejec_1.st
+claude-sonnet-4-6,B4,Basico,zero_shot,2,1,,,data/processed/claude-sonnet-4-6/B4/zero_shot/ejec_2.st
+claude-sonnet-4-6,B4,Basico,zero_shot,3,1,,,data/processed/claude-sonnet-4-6/B4/zero_shot/ejec_3.st
+claude-sonnet-4-6,B4,Basico,few_shot,1,1,,,data/processed/claude-sonnet-4-6/B4/few_shot/ejec_1.st
+claude-sonnet-4-6,B4,Basico,few_shot,2,1,,,data/processed/claude-sonnet-4-6/B4/few_shot/ejec_2.st
+claude-sonnet-4-6,B4,Basico,few_shot,3,1,,,data/processed/claude-sonnet-4-6/B4/few_shot/ejec_3.st
+claude-sonnet-4-6,B5,Basico,zero_shot,1,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/B5/zero_shot/ejec_1.st
+claude-sonnet-4-6,B5,Basico,zero_shot,2,1,,,data/processed/claude-sonnet-4-6/B5/zero_shot/ejec_2.st
+claude-sonnet-4-6,B5,Basico,zero_shot,3,1,,,data/processed/claude-sonnet-4-6/B5/zero_shot/ejec_3.st
+claude-sonnet-4-6,B5,Basico,few_shot,1,1,,,data/processed/claude-sonnet-4-6/B5/few_shot/ejec_1.st
+claude-sonnet-4-6,B5,Basico,few_shot,2,1,,,data/processed/claude-sonnet-4-6/B5/few_shot/ejec_2.st
+claude-sonnet-4-6,B5,Basico,few_shot,3,1,,,data/processed/claude-sonnet-4-6/B5/few_shot/ejec_3.st
+claude-sonnet-4-6,B6,Basico,zero_shot,1,1,,,data/processed/claude-sonnet-4-6/B6/zero_shot/ejec_1.st
+claude-sonnet-4-6,B6,Basico,zero_shot,2,1,,,data/processed/claude-sonnet-4-6/B6/zero_shot/ejec_2.st
+claude-sonnet-4-6,B6,Basico,zero_shot,3,1,,,data/processed/claude-sonnet-4-6/B6/zero_shot/ejec_3.st
+claude-sonnet-4-6,B6,Basico,few_shot,1,1,,,data/processed/claude-sonnet-4-6/B6/few_shot/ejec_1.st
+claude-sonnet-4-6,B6,Basico,few_shot,2,1,,,data/processed/claude-sonnet-4-6/B6/few_shot/ejec_2.st
+claude-sonnet-4-6,B6,Basico,few_shot,3,1,,,data/processed/claude-sonnet-4-6/B6/few_shot/ejec_3.st
+claude-sonnet-4-6,I1,Intermedio,zero_shot,1,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/I1/zero_shot/ejec_1.st
+claude-sonnet-4-6,I1,Intermedio,zero_shot,2,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/I1/zero_shot/ejec_2.st
+claude-sonnet-4-6,I1,Intermedio,zero_shot,3,1,,,data/processed/claude-sonnet-4-6/I1/zero_shot/ejec_3.st
+claude-sonnet-4-6,I1,Intermedio,few_shot,1,1,,,data/processed/claude-sonnet-4-6/I1/few_shot/ejec_1.st
+claude-sonnet-4-6,I1,Intermedio,few_shot,2,1,,,data/processed/claude-sonnet-4-6/I1/few_shot/ejec_2.st
+claude-sonnet-4-6,I1,Intermedio,few_shot,3,1,,,data/processed/claude-sonnet-4-6/I1/few_shot/ejec_3.st
+claude-sonnet-4-6,I2,Intermedio,zero_shot,1,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/I2/zero_shot/ejec_1.st
+claude-sonnet-4-6,I2,Intermedio,zero_shot,2,1,,,data/processed/claude-sonnet-4-6/I2/zero_shot/ejec_2.st
+claude-sonnet-4-6,I2,Intermedio,zero_shot,3,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/I2/zero_shot/ejec_3.st
+claude-sonnet-4-6,I2,Intermedio,few_shot,1,1,,,data/processed/claude-sonnet-4-6/I2/few_shot/ejec_1.st
+claude-sonnet-4-6,I2,Intermedio,few_shot,2,1,,,data/processed/claude-sonnet-4-6/I2/few_shot/ejec_2.st
+claude-sonnet-4-6,I2,Intermedio,few_shot,3,1,,,data/processed/claude-sonnet-4-6/I2/few_shot/ejec_3.st
+claude-sonnet-4-6,I3,Intermedio,zero_shot,1,1,,,data/processed/claude-sonnet-4-6/I3/zero_shot/ejec_1.st
+claude-sonnet-4-6,I3,Intermedio,zero_shot,2,1,,,data/processed/claude-sonnet-4-6/I3/zero_shot/ejec_2.st
+claude-sonnet-4-6,I3,Intermedio,zero_shot,3,1,,,data/processed/claude-sonnet-4-6/I3/zero_shot/ejec_3.st
+claude-sonnet-4-6,I3,Intermedio,few_shot,1,1,,,data/processed/claude-sonnet-4-6/I3/few_shot/ejec_1.st
+claude-sonnet-4-6,I3,Intermedio,few_shot,2,1,,,data/processed/claude-sonnet-4-6/I3/few_shot/ejec_2.st
+claude-sonnet-4-6,I3,Intermedio,few_shot,3,1,,,data/processed/claude-sonnet-4-6/I3/few_shot/ejec_3.st
+claude-sonnet-4-6,I4,Intermedio,zero_shot,1,1,,,data/processed/claude-sonnet-4-6/I4/zero_shot/ejec_1.st
+claude-sonnet-4-6,I4,Intermedio,zero_shot,2,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/I4/zero_shot/ejec_2.st
+claude-sonnet-4-6,I4,Intermedio,zero_shot,3,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/I4/zero_shot/ejec_3.st
+claude-sonnet-4-6,I4,Intermedio,few_shot,1,1,,,data/processed/claude-sonnet-4-6/I4/few_shot/ejec_1.st
+claude-sonnet-4-6,I4,Intermedio,few_shot,2,1,,,data/processed/claude-sonnet-4-6/I4/few_shot/ejec_2.st
+claude-sonnet-4-6,I4,Intermedio,few_shot,3,1,,,data/processed/claude-sonnet-4-6/I4/few_shot/ejec_3.st
+claude-sonnet-4-6,I5,Intermedio,zero_shot,1,1,,,data/processed/claude-sonnet-4-6/I5/zero_shot/ejec_1.st
+claude-sonnet-4-6,I5,Intermedio,zero_shot,2,1,,,data/processed/claude-sonnet-4-6/I5/zero_shot/ejec_2.st
+claude-sonnet-4-6,I5,Intermedio,zero_shot,3,1,,,data/processed/claude-sonnet-4-6/I5/zero_shot/ejec_3.st
+claude-sonnet-4-6,I5,Intermedio,few_shot,1,1,,,data/processed/claude-sonnet-4-6/I5/few_shot/ejec_1.st
+claude-sonnet-4-6,I5,Intermedio,few_shot,2,1,,,data/processed/claude-sonnet-4-6/I5/few_shot/ejec_2.st
+claude-sonnet-4-6,I5,Intermedio,few_shot,3,1,,,data/processed/claude-sonnet-4-6/I5/few_shot/ejec_3.st
+claude-sonnet-4-6,I6,Intermedio,zero_shot,1,0,UnexpectedCharacters,"No terminal matches 'I' in the current parser context, at line 4 col 1  IF rawTemp < RAW_MIN OR rawTemp > RAW_MA ^ Expected one of:  	* SEMICOLON 	* _PROGRAM 	*",data/processed/claude-sonnet-4-6/I6/zero_shot/ejec_1.st
+claude-sonnet-4-6,I6,Intermedio,zero_shot,2,0,UnexpectedCharacters,"No terminal matches 'I' in the current parser context, at line 4 col 1  IF rawTemp < RAW_MIN OR rawTemp > RAW_MA ^ Expected one of:  	* SEMICOLON 	* _PROGRAM 	*",data/processed/claude-sonnet-4-6/I6/zero_shot/ejec_2.st
+claude-sonnet-4-6,I6,Intermedio,zero_shot,3,0,UnexpectedEOF,Unexpected end-of-input. Expected one of:  	* SEMICOLON 	* SEMICOLON 	* _RETURN 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* _IF 	* ,data/processed/claude-sonnet-4-6/I6/zero_shot/ejec_3.st
+claude-sonnet-4-6,I6,Intermedio,few_shot,1,1,,,data/processed/claude-sonnet-4-6/I6/few_shot/ejec_1.st
+claude-sonnet-4-6,I6,Intermedio,few_shot,2,1,,,data/processed/claude-sonnet-4-6/I6/few_shot/ejec_2.st
+claude-sonnet-4-6,I6,Intermedio,few_shot,3,1,,,data/processed/claude-sonnet-4-6/I6/few_shot/ejec_3.st

@@ -1,0 +1,212 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A4 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>A4 — Rampa de velocidad limitada (Avanzado)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja A4 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa un generador de consigna de velocidad con rampa. La salida CVvel debe seguir a la consigna SPvel con una pendiente máxima de 10.0 puntos porcentuales por segundo al subir y de 20.0 al bajar. Con paroRapido activo, CVvel debe descender hacia 0.0 con una pendiente de 40.0 puntos porcentuales por segundo, ignorando SPvel, y permanecer en 0.0 mientras paroRapido siga activo. La entrada ciclo (TIME) es el período de ejecución del bloque. No debe haber sobrepaso: CVvel nunca cruza el valor objetivo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Rampa con variables de entrada SPvel (REAL), paroRapido (BOOL) y ciclo (TIME), y salida CVvel (REAL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_A4.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea A4 (FB_Rampa: consigna con rampa)
+    ---------------------------------------------------------------------------
+    Validado en codesys/validar_harness_A4.py: 8 implementaciones (1 correcta y
+    7 defectuosas). Tabla generada desde el validador.
+
+    TIEMPO VIRTUAL: se pasa siempre ciclo := T#10MS y cada paso dura un NUMERO DE
+    LLAMADAS (una por scan), no un tiempo. El resultado no depende del ciclo real.
+    Tolerancia 0.01 en el valor final del paso; vigilancia de sobrepaso con 0.001
+    (vig = 1: CVvel &lt;= objetivo; vig = 2: CVvel &gt;= objetivo, en cada llamada).
+
+    Paso: (SP, paro) llamadas -&gt; CVvel esperado   [vigilancia]
+  0 (0.05,F)  1 -&gt;  0.05   escalon menor que el incremento (0.1): sin sobrepaso [CV &lt;= 0.05]
+  1 ( 0,F)    1 -&gt;  0.0    idem al bajar                                        [CV &gt;= 0]
+  2 (50,F)  300 -&gt; 30.0    subida 10 %/s
+  3 (50,F)  300 -&gt; 50.0    llega y se queda           [CV &lt;= 50]
+  4 (20,F)  100 -&gt; 30.0    bajada 20 %/s
+  5 (20,F)  100 -&gt; 20.0                               [CV &gt;= 20]
+  6 (80,F)  200 -&gt; 40.0
+  7 (80,T)   50 -&gt; 20.0    paro rapido 40 %/s
+  8 (80,T)  100 -&gt;  0.0                               [CV &gt;= 0]
+  9 (80,T)   50 -&gt;  0.0    permanece en 0 con paro    [CV &lt;= 0]
+ 10 (80,F)  100 -&gt; 10.0    sin paro: vuelve a subir
+ 11 (10.05,F) 1 -&gt; 10.05                              [CV &lt;= 10.05]
+ 12 ( 9,F)   10 -&gt;  9.0                               [CV &gt;= 9]
+El sobrepaso se prueba PRIMERO (pasos 0 y 1), desde 0.0 y sin acumulacion previa:
+asi el paso de fallo de un bloque que no acota no depende del redondeo de REAL
+de 32 bits frente al float de 64 bits del validador.
+
+--- Pasos (CASE paso OF) ---
+
+        0: SPvel := 0.05; paroRapido := FALSE; nLlamadas := 1; eCV := 0.05; vig := 1;
+        1: SPvel := 0.0; paroRapido := FALSE; nLlamadas := 1; eCV := 0.0; vig := 2;
+        2: SPvel := 50.0; paroRapido := FALSE; nLlamadas := 300; eCV := 30.0; vig := 0;
+        3: SPvel := 50.0; paroRapido := FALSE; nLlamadas := 300; eCV := 50.0; vig := 1;
+        4: SPvel := 20.0; paroRapido := FALSE; nLlamadas := 100; eCV := 30.0; vig := 0;
+        5: SPvel := 20.0; paroRapido := FALSE; nLlamadas := 100; eCV := 20.0; vig := 2;
+        6: SPvel := 80.0; paroRapido := FALSE; nLlamadas := 200; eCV := 40.0; vig := 0;
+        7: SPvel := 80.0; paroRapido := TRUE; nLlamadas := 50; eCV := 20.0; vig := 0;
+        8: SPvel := 80.0; paroRapido := TRUE; nLlamadas := 100; eCV := 0.0; vig := 2;
+        9: SPvel := 80.0; paroRapido := TRUE; nLlamadas := 50; eCV := 0.0; vig := 1;
+        10: SPvel := 80.0; paroRapido := FALSE; nLlamadas := 100; eCV := 10.0; vig := 0;
+        11: SPvel := 10.05; paroRapido := FALSE; nLlamadas := 1; eCV := 10.05; vig := 1;
+        12: SPvel := 9.0; paroRapido := FALSE; nLlamadas := 10; eCV := 9.0; vig := 2;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#A4-1899">A4-1899</a><a href="#A4-3118">A4-3118</a><a href="#A4-8514">A4-8514</a></div>
+<div class="caja resp" id="A4-1899"><div class="cod"><h3>A4-1899</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (16 errores).<div class="err">Mensajes del compilador: L?nea 12 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 12 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 12 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 12 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME&#x27; || L?nea 12 (Decl) Encontrado token inesperado &#x27;TIME&#x27; || L?nea 6, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 6, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 6, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 6, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;ciclo&#x27; || L?nea 7, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;dt&#x27; || L?nea 7, columna 1 (Impl) Se esperaba expresi?n en vez de &#x27;dt&#x27; || L?nea 7, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27;</div></div><pre>FUNCTION_BLOCK FB_Rampa
+VAR_INPUT
+    SPvel : REAL; (* Consigna de velocidad *)
+    paroRapido : BOOL; (* Paro rápido activo *)
+    ciclo : TIME; (* Ciclo de ejecución *)
+END_VAR
+VAR_OUTPUT
+    CVvel : REAL; (* Condicional de velocidad *)
+END_VAR
+VAR
+    error : REAL; (* Error entre SPvel y CVvel *)
+    dt : TIME; (* Tiempo transcurrido desde la última ejecución *)
+    dtSec : REAL; (* Tiempo transcurrido en segundos *)
+    rampaSubida : REAL; (* Pendiente de subida *)
+    rampaBajada : REAL; (* Pendiente de bajada *)
+    rampaParoRapido : REAL; (* Pendiente de paro rápido *)
+END_VAR
+
+(* Inicialización de las rampas *)
+rampaSubida := 10.0;
+rampaBajada := 20.0;
+rampaParoRapido := 40.0;
+
+(* Cálculo del tiempo transcurrido en segundos *)
+dt := ciclo;
+dtSec := dt / T#1S;
+
+(* Lógica de paro rápido *)
+IF paroRapido THEN
+    CVvel := MAX(0.0, CVvel - rampaParoRapido * dtSec);
+ELSE
+    (* Cálculo del error *)
+    error := SPvel - CVvel;
+
+    (* Ajuste de CVvel con rampa *)
+    IF error &gt; 0 THEN
+        CVvel := MIN(CVvel + rampaSubida * dtSec, SPvel);
+    ELSE
+        CVvel := MAX(CVvel - rampaBajada * dtSec, SPvel);
+    END_IF;
+END_IF;
+
+(* Evitar sobrepaso *)
+IF CVvel &gt; SPvel THEN
+    CVvel := SPvel;
+ELSIF CVvel &lt; 0.0 THEN
+    CVvel := 0.0;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A4-3118"><div class="cod"><h3>A4-3118</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 13 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Rampa
+VAR_INPUT
+    SPvel      : REAL; (* Consigna de velocidad [%] *)
+    paroRapido : BOOL; (* Paro rapido activo *)
+    ciclo      : TIME; (* Periodo de ejecucion del bloque *)
+END_VAR
+VAR_OUTPUT
+    CVvel : REAL; (* Salida de velocidad con rampa [%] *)
+END_VAR
+VAR
+    rampaSube  : REAL := 10.0; (* Pendiente maxima de subida [% / s] *)
+    rampaBAja  : REAL := 20.0; (* Pendiente maxima de bajada [% / s] *)
+    rampaParo  : REAL := 40.0; (* Pendiente de paro rapido [% / s] *)
+    dtSeg      : REAL;         (* Periodo de ciclo convertido a segundos *)
+    maxDelta   : REAL;         (* Incremento maximo permitido en este ciclo *)
+    error      : REAL;         (* Diferencia entre objetivo y CVvel *)
+END_VAR
+
+(* Convertir el periodo de ciclo de TIME a segundos *)
+dtSeg := TIME_TO_REAL(ciclo) / 1000.0;
+
+IF paroRapido THEN
+    (* --- Paro rapido: descender hacia 0.0 con pendiente rampaParo --- *)
+    IF CVvel &gt; 0.0 THEN
+        maxDelta := rampaParo * dtSeg;
+        CVvel := CVvel - maxDelta;
+        (* Evitar sobrepaso por debajo de 0.0 *)
+        IF CVvel &lt; 0.0 THEN
+            CVvel := 0.0;
+        END_IF;
+    ELSE
+        (* Mantener en 0.0 mientras paroRapido siga activo *)
+        CVvel := 0.0;
+    END_IF;
+ELSE
+    (* --- Seguimiento de SPvel con rampa de subida o bajada --- *)
+    error := SPvel - CVvel;
+
+    IF error &gt; 0.0 THEN
+        (* Subida: limitar incremento a rampaSube * dt *)
+        maxDelta := rampaSube * dtSeg;
+        IF error &lt;= maxDelta THEN
+            CVvel := SPvel; (* Alcanza el objetivo sin sobrepaso *)
+        ELSE
+            CVvel := CVvel + maxDelta;
+        END_IF;
+
+    ELSIF error &lt; 0.0 THEN
+        (* Bajada: limitar decremento a rampaBAja * dt *)
+        maxDelta := rampaBAja * dtSeg;
+        IF (-error) &lt;= maxDelta THEN
+            CVvel := SPvel; (* Alcanza el objetivo sin sobrepaso *)
+        ELSE
+            CVvel := CVvel - maxDelta;
+        END_IF;
+
+    (* Si error = 0.0, CVvel ya es igual a SPvel; no se hace nada *)
+    END_IF;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A4-8514"><div class="cod"><h3>A4-8514</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (4 errores).<div class="err">Mensajes del compilador: L?nea 1, columna 1 (Impl) El tipo &#x27;Tipo desconocido: &#x27;(REAL_TO_REAL(TIME_TO_REAL(ciclo)) / 1000.0)&#x27;&#x27; no puede convertirse en el tipo &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Tipo desconocido: &#x27;REAL_TO_REAL(TIME_TO_REAL(ciclo))&#x27; || L?nea 1, columna 1 (Impl) Identificador &#x27;REAL_TO_REAL&#x27; sin definir || L?nea 1, columna 1 (Impl) Se esperaba un nombre de programa, funci?n o instancia de bloque de funciones en lugar de &#x27;REAL_TO_REAL&#x27;</div></div><pre>FUNCTION_BLOCK FB_Rampa
+VAR_INPUT
+    SPvel : REAL;        // Setpoint de velocidad
+    paroRapido : BOOL;   // Indicador de paro rápido
+    ciclo : TIME;        // Período de ejecución del bloque
+END_VAR
+
+VAR_OUTPUT
+    CVvel : REAL;        // Salida de consigna de velocidad
+END_VAR
+
+VAR
+    incremento : REAL;   // Incremento calculado para CVvel
+    tiempoSegundos : REAL; // Tiempo de ciclo en segundos
+END_VAR
+
+// Conversión del tiempo de ciclo de TIME a REAL en segundos
+tiempoSegundos := REAL_TO_REAL(TIME_TO_REAL(ciclo)) / 1000.0;
+
+// Comportamiento de paro rápido
+IF paroRapido THEN
+    incremento := -40.0 * tiempoSegundos;
+    CVvel := CVvel + incremento;
+    IF CVvel &lt; 0.0 THEN
+        CVvel := 0.0;
+    END_IF
+ELSE
+    // Comportamiento normal de rampa
+    IF SPvel &gt; CVvel THEN
+        incremento := 10.0 * tiempoSegundos;
+        CVvel := CVvel + incremento;
+        IF CVvel &gt; SPvel THEN
+            CVvel := SPvel;
+        END_IF
+    ELSIF SPvel &lt; CVvel THEN
+        incremento := -20.0 * tiempoSegundos;
+        CVvel := CVvel + incremento;
+        IF CVvel &lt; SPvel THEN
+            CVvel := SPvel;
+        END_IF
+    END_IF
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

@@ -1,0 +1,206 @@
+==========================================================================================
+0. VERIFICACIÓN CONTRA CIFRAS PUBLICADAS (documento maestro v0.2 y analisis_salidas)
+==========================================================================================
+  [OK] Tabla 4.3 c1 global                                        obtenido=351  publicado=351
+  [OK] Tabla 4.3 c2 global                                        obtenido=518  publicado=518
+  [OK] Tabla 4.3 c1 Gemini                                        obtenido=141  publicado=141
+  [OK] Tabla 4.3 c2 Gemini                                        obtenido=143  publicado=143
+  [OK] Tabla 4.3 c1 Claude                                        obtenido=114  publicado=114
+  [OK] Tabla 4.3 c2 Claude                                        obtenido=136  publicado=136
+  [OK] Tabla 4.3 c1 GPT-4o                                        obtenido=54  publicado=54
+  [OK] Tabla 4.3 c2 GPT-4o                                        obtenido=119  publicado=119
+  [OK] Tabla 4.3 c1 Qwen                                          obtenido=42  publicado=42
+  [OK] Tabla 4.3 c2 Qwen                                          obtenido=120  publicado=120
+  [OK] Tabla 4.5 Basico c1 (k, n)                                 obtenido=(139, 192)  publicado=(139, 192)
+  [OK] Tabla 4.5 Basico c2 (k, n)                                 obtenido=(189, 192)  publicado=(189, 192)
+  [OK] Tabla 4.5 Intermedio c1 (k, n)                             obtenido=(104, 192)  publicado=(104, 192)
+  [OK] Tabla 4.5 Intermedio c2 (k, n)                             obtenido=(178, 192)  publicado=(178, 192)
+  [OK] Tabla 4.5 Avanzado c1 (k, n)                               obtenido=(52, 144)  publicado=(52, 144)
+  [OK] Tabla 4.5 Avanzado c2 (k, n)                               obtenido=(80, 144)  publicado=(80, 144)
+  [OK] Tabla 4.5 Complementaria c1 (k, n)                         obtenido=(56, 72)  publicado=(56, 72)
+  [OK] Tabla 4.5 Complementaria c2 (k, n)                         obtenido=(71, 72)  publicado=(71, 72)
+  [OK] Tabla 4.4 Gemini (zero, few, solo_z, solo_f, p)            obtenido=(70, 71, 2, 3, np.float64(1.0))  publicado=(70, 71, 2, 3, 1.0)
+  [OK] Tabla 4.4 Claude (zero, few, solo_z, solo_f, p)            obtenido=(56, 58, 10, 12, np.float64(0.832))  publicado=(56, 58, 10, 12, 0.832)
+  [OK] Tabla 4.4 GPT-4o (zero, few, solo_z, solo_f, p)            obtenido=(20, 34, 2, 16, np.float64(0.001))  publicado=(20, 34, 2, 16, 0.001)
+  [OK] Tabla 4.4 Qwen (zero, few, solo_z, solo_f, p)              obtenido=(21, 21, 10, 10, np.float64(1.0))  publicado=(21, 21, 10, 10, 1.0)
+  [OK] Tabla 4.6 Gemini                                           obtenido=(2, 0, 7)  publicado=(2, 0, 7)
+  [OK] Tabla 4.6 Claude                                           obtenido=(22, 0, 14)  publicado=(22, 0, 14)
+  [OK] Tabla 4.6 GPT-4o                                           obtenido=(43, 22, 31)  publicado=(43, 22, 31)
+  [OK] Tabla 4.6 Qwen                                             obtenido=(72, 6, 30)  publicado=(72, 6, 30)
+  [OK] Tabla 4.10 total Gemini                                    obtenido=12.71  publicado=12.71
+  [OK] Tabla 4.10 total Claude                                    obtenido=11.84  publicado=11.84
+  [OK] Tabla 4.10 total GPT-4o                                    obtenido=7.99  publicado=7.99
+  [OK] Tabla 4.10 total Qwen                                      obtenido=6.94  publicado=6.94
+  [OK] Tabla 4.10 total global                                    obtenido=9.87  publicado=9.87
+  [OK] Texto 4.8 total nivel B                                    obtenido=10.78  publicado=10.78
+  [OK] Texto 4.8 total nivel I                                    obtenido=9.48  publicado=9.48
+  [OK] Texto 4.8 total nivel A                                    obtenido=8.26  publicado=8.26
+  [OK] Texto 4.8 total nivel C                                    obtenido=11.67  publicado=11.67
+  [OK] S1 sin A1, Avanzado c1 (k, n)                              obtenido=(49, 120)  publicado=(49, 120)
+  [OK] S1 sin A1, Avanzado c2 (k, n)                              obtenido=(77, 120)  publicado=(77, 120)
+  [OK] rúbrica funcional = 3  <=>  c1_pasa = 1                    obtenido=600  publicado=600
+  [OK] rúbrica IEC = 0        <=>  c2_compila = 0                 obtenido=600  publicado=600
+
+  VERIFICACIÓN OK: 39/39 comprobaciones coinciden con lo publicado.
+
+==========================================================================================
+1. H-a  COMPLEJIDAD (Básico < Intermedio < Avanzado; Complementarias excluidas)
+==========================================================================================
+
+1a. Descriptiva por modelo y nivel
+           Básico                     Intermedio                 Avanzado                  
+  c1  Gemini 46/48 = 95.8 %             48/48 = 100.0 %            29/36 = 80.6 %            
+  c1  Claude 41/48 = 85.4 %             36/48 = 75.0 %             20/36 = 55.6 %            
+  c1  GPT-4o 30/48 = 62.5 %             11/48 = 22.9 %             3/36 = 8.3 %              
+  c1  Qwen   22/48 = 45.8 %             9/48 = 18.8 %              0/36 = 0.0 %              
+  c1  GLOBAL 139/192 = 72.4 %           104/192 = 54.2 %           52/144 = 36.1 %           
+  c2  Gemini 47/48 = 97.9 %             48/48 = 100.0 %            30/36 = 83.3 %            
+  c2  Claude 48/48 = 100.0 %            47/48 = 97.9 %             24/36 = 66.7 %            
+  c2  GPT-4o 48/48 = 100.0 %            40/48 = 83.3 %             13/36 = 36.1 %            
+  c2  Qwen   46/48 = 95.8 %             43/48 = 89.6 %             13/36 = 36.1 %            
+  c2  GLOBAL 189/192 = 98.4 %           178/192 = 92.7 %           80/144 = 55.6 %           
+  tot Gemini 12.81                      13.04                      11.97                     
+  tot Claude 12.33                      11.88                      10.64                     
+  tot GPT-4o 9.75                       6.62                       5.86                      
+  tot Qwen   8.23                       6.40                       4.58                      
+  tot GLOBAL 10.78                      9.48                       8.26                      
+  Complementarias (C3, C7, C8), solo referencia: c1 56/72 = 77.8 %; c2 71/72 = 98.6 %; total 11.67
+
+1b. Cochran-Armitage (respuesta como unidad; supone independencia: optimista)
+  c1  Gemini  Z =  -2.54  p = 0.011
+  c1  Claude  Z =  -3.03  p = 0.0024
+  c1  GPT-4o  Z =  -5.36  p = 8.4e-08
+  c1  Qwen    Z =  -4.97  p = 6.7e-07
+  c1  GLOBAL  Z =  -6.66  p = 2.8e-11
+  c2  Gemini  Z =  -2.76  p = 0.0057
+  c2  Claude  Z =  -4.86  p = 1.2e-06
+  c2  GPT-4o  Z =  -6.69  p = 2.2e-11
+  c2  Qwen    Z =  -6.22  p = 5e-10
+  c2  GLOBAL  Z = -10.42  p = 2.1e-25
+
+1c. GEE (clúster = tarea, 22 clústeres; varianza robusta con corrección de sesgo)
+    Pendiente por escalón de nivel; para c1/c2 se informa OR = exp(b) con IC 95 %
+  c1  GLOBAL  OR = 0.23 [0.09; 0.63]  p = 0.0042   (ajustado por modelo y estrategia)
+  c1  Gemini  OR = 0.29 [0.04; 1.91]  p = 0.2
+  c1  Claude  OR = 0.46 [0.18; 1.17]  p = 0.1
+  c1  GPT-4o  OR = 0.15 [0.04; 0.57]  p = 0.0052
+  c1  Qwen    OR = 0.19 [0.06; 0.60]  p = 0.0047
+  c2  GLOBAL  OR = 0.09 [0.02; 0.34]  p = 0.00047   (ajustado por modelo y estrategia)
+  c2  Gemini  OR = 0.17 [0.01; 2.29]  p = 0.18
+  c2  Claude  OR = 0.04 [0.00; 0.40]  p = 0.0064
+  c2  GPT-4o  OR = 0.08 [0.01; 0.58]  p = 0.012
+  c2  Qwen    OR = 0.13 [0.02; 0.81]  p = 0.028
+  tot GLOBAL  pendiente = -1.26 puntos/nivel [-1.90; -0.62]  p = 0.00012   (ajustado por modelo y estrategia)
+  tot Gemini  pendiente = -0.39 puntos/nivel [-1.33; +0.56]  p = 0.42
+  tot Claude  pendiente = -0.83 puntos/nivel [-2.09; +0.43]  p = 0.2
+  tot GPT-4o  pendiente = -2.01 puntos/nivel [-3.12; -0.89]  p = 0.00043
+  tot Qwen    pendiente = -1.82 puntos/nivel [-2.51; -1.14]  p = 1.6e-07
+
+1d. Tarea como unidad (22 tareas: 8 B, 8 I, 6 A). Jonckheere-Terpstra por permutación
+    (200 000 permutaciones, semilla 20261012, p unilateral para tendencia decreciente) y tau-b de Kendall
+  c1  Gemini  JT =   91.0  p_perm = 0.1903 | tau-b = -0.18  p = 0.36
+  c1  Claude  JT =  116.0  p_perm = 0.0115 | tau-b = -0.42  p = 0.024
+  c1  GPT-4o  JT =  123.0  p_perm = 0.0025 | tau-b = -0.51  p = 0.0061
+  c1  Qwen    JT =  122.5  p_perm = 0.0014 | tau-b = -0.55  p = 0.0039
+  c1  GLOBAL  JT =  130.5  p_perm = 0.0007 | tau-b = -0.54  p = 0.0022
+  c2  Gemini  JT =   89.5  p_perm = 0.2508 | tau-b = -0.20  p = 0.34
+  c2  Claude  JT =  114.5  p_perm = 0.0020 | tau-b = -0.56  p = 0.0045
+  c2  GPT-4o  JT =  115.5  p_perm = 0.0029 | tau-b = -0.55  p = 0.006
+  c2  Qwen    JT =  115.5  p_perm = 0.0062 | tau-b = -0.48  p = 0.013
+  c2  GLOBAL  JT =  133.5  p_perm = 0.0002 | tau-b = -0.62  p = 0.00078
+  tot Gemini  JT =   95.5  p_perm = 0.1808 | tau-b = -0.17  p = 0.35
+  tot Claude  JT =  101.0  p_perm = 0.1055 | tau-b = -0.22  p = 0.2
+  tot GPT-4o  JT =  123.5  p_perm = 0.0038 | tau-b = -0.46  p = 0.0086
+  tot Qwen    JT =  128.5  p_perm = 0.0014 | tau-b = -0.51  p = 0.0034
+  tot GLOBAL  JT =  136.0  p_perm = 0.0002 | tau-b = -0.59  p = 0.00072
+  Aciertos c1 por tarea (de 24):
+    Basico     B1=16 B2=19 B3=20 B4=17 B5=7 B6=17 B7=20 B8=23 | mín 7, máx 23
+    Intermedio I1=11 I2=11 I3=22 I4=11 I5=10 I6=17 I7=9 I8=13 | mín 9, máx 22
+    Avanzado   A1=3 A2=13 A3=10 A4=10 A5=7 A6=9 | mín 3, máx 13
+
+1d-bis. ¿Desciende también la parte de la rúbrica que NO se fija por CODESYS?
+    (coherencia + claridad + mantenibilidad, 0-9; funcional e IEC se derivan de c1/c2 por regla, sección 3.7.3)
+  Gemini  sub 3-5: 7.10 / 7.27 / 7.28  JT p_perm = 0.6242 | coher 2.96/2.90/2.94 | clari 2.38/2.40/2.53 | mante 1.77/1.98/1.81
+  Claude  sub 3-5: 7.06 / 6.88 / 7.14  JT p_perm = 0.6127 | coher 2.69/2.46/2.53 | clari 2.52/2.54/2.72 | mante 1.85/1.88/1.89
+  GPT-4o  sub 3-5: 5.56 / 4.25 / 4.72  JT p_perm = 0.1569 | coher 2.12/1.06/1.33 | clari 1.92/1.81/1.97 | mante 1.52/1.38/1.42
+  Qwen    sub 3-5: 4.77 / 4.04 / 3.83  JT p_perm = 0.0438 | coher 1.62/1.04/0.94 | clari 1.88/1.73/1.75 | mante 1.27/1.27/1.14
+  GLOBAL  sub 3-5: 6.12 / 5.61 / 5.74  JT p_perm = 0.1286 | coher 2.35/1.86/1.94 | clari 2.17/2.12/2.24 | mante 1.60/1.62/1.56
+
+1e. Sensibilidad sin A1 (INC-33)
+  c1  Gemini  46/48 = 95.8 % | 48/48 = 100.0 % | 28/30 = 93.3 %   CA p = 0.71 | JT p_perm = 0.4699
+  c1  Claude  41/48 = 85.4 % | 36/48 = 75.0 % | 18/30 = 60.0 %   CA p = 0.012 | JT p_perm = 0.0224
+  c1  GPT-4o  30/48 = 62.5 % | 11/48 = 22.9 % | 3/30 = 10.0 %   CA p = 5.6e-07 | JT p_perm = 0.0045
+  c1  Qwen    22/48 = 45.8 % | 9/48 = 18.8 % | 0/30 = 0.0 %   CA p = 2.6e-06 | JT p_perm = 0.0021
+  c1  GLOBAL  139/192 = 72.4 % | 104/192 = 54.2 % | 49/120 = 40.8 %   CA p = 1.8e-08 | JT p_perm = 0.0022
+  c2  Gemini  47/48 = 97.9 % | 48/48 = 100.0 % | 29/30 = 96.7 %   CA p = 0.79 | JT p_perm = 0.5592
+  c2  Claude  48/48 = 100.0 % | 47/48 = 97.9 % | 22/30 = 73.3 %   CA p = 3.3e-05 | JT p_perm = 0.0076
+  c2  GPT-4o  48/48 = 100.0 % | 40/48 = 83.3 % | 13/30 = 43.3 %   CA p = 2.9e-09 | JT p_perm = 0.0074
+  c2  Qwen    46/48 = 95.8 % | 43/48 = 89.6 % | 13/30 = 43.3 %   CA p = 6.5e-08 | JT p_perm = 0.0167
+  c2  GLOBAL  189/192 = 98.4 % | 178/192 = 92.7 % | 77/120 = 64.2 %   CA p = 5.9e-18 | JT p_perm = 0.0007
+
+==========================================================================================
+2. H-b  FEW-SHOT FRENTE A ZERO-SHOT
+==========================================================================================
+
+  c1  (McNemar exacto pareado por modelo x tarea x ejecución; Wilcoxon por celda modelo x tarea)
+    Gemini  zero 70/75 = 93.3 %     few 71/75 = 94.7 %     dif  +1.3 pp | solo zero  2, solo few  3  p = 1  p_Holm(4) = 1 | Wilcoxon p = 0.655
+    Claude  zero 56/75 = 74.7 %     few 58/75 = 77.3 %     dif  +2.7 pp | solo zero 10, solo few 12  p = 0.832  p_Holm(4) = 1 | Wilcoxon p = 0.719
+    GPT-4o  zero 20/75 = 26.7 %     few 34/75 = 45.3 %     dif +18.7 pp | solo zero  2, solo few 16  p = 0.00131  p_Holm(4) = 0.00525 | Wilcoxon p = 0.0149
+    Qwen    zero 21/75 = 28.0 %     few 21/75 = 28.0 %     dif  +0.0 pp | solo zero 10, solo few 10  p = 1  p_Holm(4) = 1 | Wilcoxon p = 0.964
+    GLOBAL  zero 167/300 = 55.7 %   few 184/300 = 61.3 %   dif  +5.7 pp | solo zero 24, solo few 41  p = 0.0464  p_Holm(4) = — | Wilcoxon p = 0.107
+
+  c2  (McNemar exacto pareado por modelo x tarea x ejecución; Wilcoxon por celda modelo x tarea)
+    Gemini  zero 71/75 = 94.7 %     few 72/75 = 96.0 %     dif  +1.3 pp | solo zero  1, solo few  2  p = 1  p_Holm(4) = 1 | Wilcoxon p = 0.564
+    Claude  zero 68/75 = 90.7 %     few 68/75 = 90.7 %     dif  +0.0 pp | solo zero  4, solo few  4  p = 1  p_Holm(4) = 1 | Wilcoxon p = 1
+    GPT-4o  zero 58/75 = 77.3 %     few 61/75 = 81.3 %     dif  +4.0 pp | solo zero  0, solo few  3  p = 0.25  p_Holm(4) = 0.75 | Wilcoxon p = 0.18
+    Qwen    zero 57/75 = 76.0 %     few 63/75 = 84.0 %     dif  +8.0 pp | solo zero  0, solo few  6  p = 0.0312  p_Holm(4) = 0.125 | Wilcoxon p = 0.0633
+    GLOBAL  zero 254/300 = 84.7 %   few 264/300 = 88.0 %   dif  +3.3 pp | solo zero  5, solo few 15  p = 0.0414  p_Holm(4) = — | Wilcoxon p = 0.0569
+
+  total de rúbrica (Wilcoxon pareado por tarea x ejecución dentro de modelo; global: 300 pares)
+    Gemini  zero 12.61  few 12.80  dif +0.19  Wilcoxon p = 0.14  (pares que mejoran 21, empeoran 16, iguales 38)
+    Claude  zero 12.05  few 11.63  dif -0.43  Wilcoxon p = 0.26  (pares que mejoran 19, empeoran 30, iguales 26)
+    GPT-4o  zero 7.11  few 8.87  dif +1.76  Wilcoxon p = 9.2e-06  (pares que mejoran 40, empeoran 10, iguales 25)
+    Qwen    zero 6.48  few 7.40  dif +0.92  Wilcoxon p = 0.0065  (pares que mejoran 42, empeoran 19, iguales 14)
+    GLOBAL  zero 9.56  few 10.17  dif +0.61  Wilcoxon p = 9.7e-05  (pares que mejoran 122, empeoran 75, iguales 103)
+
+  Global sin GPT-4o (¿la mejora global depende de un solo modelo?)
+    c1  zero 147/225 = 65.3 %   few 150/225 = 66.7 %   solo zero 22, solo few 25  p = 0.771
+    c2  zero 196/225 = 87.1 %   few 203/225 = 90.2 %   solo zero  5, solo few 12  p = 0.143
+    tot zero 10.38  few 10.61  dif +0.23  Wilcoxon p = 0.0793
+
+  c1 por nivel y estrategia (todos los modelos; exploratorio)
+    Basico         zero 67/96 = 69.8 %     few 72/96 = 75.0 %     solo zero 11, solo few 16  p = 0.44
+    Intermedio     zero 51/96 = 53.1 %     few 53/96 = 55.2 %     solo zero  7, solo few  9  p = 0.8
+    Avanzado       zero 25/72 = 34.7 %     few 27/72 = 37.5 %     solo zero  6, solo few  8  p = 0.79
+    Complementaria zero 24/36 = 66.7 %     few 32/36 = 88.9 %     solo zero  0, solo few  8  p = 0.0078
+
+  Categorías del criterio 1 por modelo y estrategia (exploratorio: ¿sobre qué actúan los ejemplos?)
+    Gemini  zero_shot PASA 70 | FALLA_LOGICA  1 | INTERFAZ_NO_CONFORME  0 | NO_COMPILA  4
+    Gemini  few_shot  PASA 71 | FALLA_LOGICA  1 | INTERFAZ_NO_CONFORME  0 | NO_COMPILA  3
+    Claude  zero_shot PASA 56 | FALLA_LOGICA 12 | INTERFAZ_NO_CONFORME  0 | NO_COMPILA  7
+    Claude  few_shot  PASA 58 | FALLA_LOGICA 10 | INTERFAZ_NO_CONFORME  0 | NO_COMPILA  7
+    GPT-4o  zero_shot PASA 20 | FALLA_LOGICA 18 | INTERFAZ_NO_CONFORME 20 | NO_COMPILA 17
+    GPT-4o  few_shot  PASA 34 | FALLA_LOGICA 25 | INTERFAZ_NO_CONFORME  2 | NO_COMPILA 14
+    Qwen    zero_shot PASA 21 | FALLA_LOGICA 30 | INTERFAZ_NO_CONFORME  6 | NO_COMPILA 18
+    Qwen    few_shot  PASA 21 | FALLA_LOGICA 42 | INTERFAZ_NO_CONFORME  0 | NO_COMPILA 12
+
+  Tareas con cambio de 3 o más aciertos (de 3+3) entre estrategias, por modelo (c1)
+    Gemini  ninguna
+    Claude  A6 0->3, I1 3->0
+    GPT-4o  B6 0->3, C8 0->3
+    Qwen    B6 3->0, B7 0->3
+
+==========================================================================================
+3. H-c  ESPECIALIZACIÓN (Qwen 2.5 Coder 14B, único modelo especializado en código, frente a cada generalista)
+==========================================================================================
+  c1  Qwen 42/150 = 28.0 %   vs Gemini  141/150 = 94.0 %  solo Qwen  2, solo generalista 101  p = 1.1e-27  p_Holm(3) = 3.2e-27
+  c1  Qwen 42/150 = 28.0 %   vs Claude  114/150 = 76.0 %  solo Qwen  2, solo generalista  74  p = 7.7e-20  p_Holm(3) = 1.5e-19
+  c1  Qwen 42/150 = 28.0 %   vs GPT-4o  54/150 = 36.0 %   solo Qwen 17, solo generalista  29  p = 0.1  p_Holm(3) = 0.1
+  c2  Qwen 120/150 = 80.0 %  vs Gemini  143/150 = 95.3 %  solo Qwen  1, solo generalista  24  p = 1.5e-06  p_Holm(3) = 4.6e-06
+  c2  Qwen 120/150 = 80.0 %  vs Claude  136/150 = 90.7 %  solo Qwen  7, solo generalista  23  p = 0.0052  p_Holm(3) = 0.01
+  c2  Qwen 120/150 = 80.0 %  vs GPT-4o  119/150 = 79.3 %  solo Qwen 13, solo generalista  12  p = 1  p_Holm(3) = 1
+  tot Qwen 6.94 vs Gemini  12.71  dif -5.77  Wilcoxon p = 3e-24  p_Holm(3) = 9.1e-24
+  tot Qwen 6.94 vs Claude  11.84  dif -4.90  Wilcoxon p = 1.7e-22  p_Holm(3) = 3.5e-22
+  tot Qwen 6.94 vs GPT-4o  7.99  dif -1.05  Wilcoxon p = 0.0009  p_Holm(3) = 0.0009
+
+Fin.

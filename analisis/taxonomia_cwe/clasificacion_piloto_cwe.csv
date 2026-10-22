@@ -1,0 +1,21 @@
+modelo,tarea,nivel,estrategia,ejecucion,tipo_error,regla,subtipo,categoria_plc,cwe_id,evidencia
+gpt-4o,B2,Basico,zero_shot,1,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+gpt-4o,B3,Basico,zero_shot,2,UnexpectedCharacters,P3,"construccion inexistente (seccion INIT, segun el articulo)",CONSTRUCCION,CWE-710,blark: asignacion inesperada en zona de declaracion; Articulo CITDES: seccion INIT ajena al estandar
+gpt-4o,B4,Basico,zero_shot,3,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+gpt-4o,B5,Basico,zero_shot,3,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+gpt-4o,I1,Intermedio,zero_shot,1,UnexpectedCharacters,P2,terminador inexistente END_VAR_INPUT/END_VAR_OUTPUT,CONSTRUCCION,CWE-710,blark: VAR_OUTPUT inesperado tras un bloque VAR_INPUT no cerrado con END_VAR
+gpt-4o,I6,Intermedio,zero_shot,3,UnexpectedCharacters,P2,terminador inexistente END_VAR_INPUT/END_VAR_OUTPUT,CONSTRUCCION,CWE-710,blark: VAR_OUTPUT inesperado tras un bloque VAR_INPUT no cerrado con END_VAR
+claude-sonnet-4-6,B1,Basico,zero_shot,3,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,B3,Basico,zero_shot,1,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,B3,Basico,zero_shot,2,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,B3,Basico,zero_shot,3,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,B5,Basico,zero_shot,1,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,I1,Intermedio,zero_shot,1,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,I1,Intermedio,zero_shot,2,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,I2,Intermedio,zero_shot,1,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,I2,Intermedio,zero_shot,3,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,I4,Intermedio,zero_shot,2,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,I4,Intermedio,zero_shot,3,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra
+claude-sonnet-4-6,I6,Intermedio,zero_shot,1,UnexpectedCharacters,P4,"seccion de declaracion ausente (artefacto de extraccion, INC-12)",CONSTRUCCION,CWE-710,"blark: cuerpo sin cabecera; BITACORA 2026-09-30: declaracion y cuerpo en dos bloques, el extractor v1 conservo uno"
+claude-sonnet-4-6,I6,Intermedio,zero_shot,2,UnexpectedCharacters,P4,"seccion de declaracion ausente (artefacto de extraccion, INC-12)",CONSTRUCCION,CWE-710,"blark: cuerpo sin cabecera; BITACORA 2026-09-30: declaracion y cuerpo en dos bloques, el extractor v1 conservo uno"
+claude-sonnet-4-6,I6,Intermedio,zero_shot,3,UnexpectedEOF,P1,POU sin cerrar (falta END_FUNCTION_BLOCK),CONSTRUCCION,CWE-710,blark: fin de entrada inesperado; deteccion estructural: el POU no se cierra

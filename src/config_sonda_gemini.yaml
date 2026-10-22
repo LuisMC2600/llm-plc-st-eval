@@ -1,0 +1,32 @@
+# =====================================================================
+# SONDA DE RAZONAMIENTO DE GEMINI (INC-28) - 6 llamadas, solo Google
+# Objetivo: medir cuantos tokens de razonamiento usa gemini-3.1-pro-preview
+# en la tarea mas larga (A6) cuando el tope no lo corta, para fijar el
+# "max_tokens_total" del experimento. Los parametros de generacion comunes
+# NO cambian: temperature 0.2 y 2500 tokens de respuesta visible.
+# Salida aislada en data/sonda_gemini. Descartable.
+# =====================================================================
+
+experimento:
+  nombre: "sonda_gemini_A6"
+  ejecuciones_por_tarea: 3
+  estrategias: ["zero_shot", "few_shot"]
+  filtro_tareas: ["A6"]
+
+generacion:
+  temperature: 0.2
+  max_tokens: 2500                  # tope de la respuesta visible (igual para todos)
+
+modelos:
+  - id: "gemini-3.1-pro-preview"
+    proveedor: "google"
+    max_tokens_total: 20000         # tope enviado a la API: razonamiento + respuesta
+
+rutas:
+  tareas: "tasks.json"
+  repositorio: "../data/sonda_gemini"
+  log: "../data/sonda_gemini/log.jsonl"
+
+reintentos:
+  max_intentos: 4
+  espera_base_s: 5

@@ -1,0 +1,265 @@
+{
+ "lote": 2,
+ "casos": [
+  {
+   "codigo": "V12",
+   "tarea": "I7",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un grupo de dos bombas en configuración dúplex. Cuando la entrada demanda se activa, debe arrancar una sola bomba, la principal de ese ciclo; al desactivarse la demanda, ambas se detienen. En cada nueva demanda (transición de FALSE a TRUE de demanda) el rol de principal se alterna entre bomba1 y bomba2 para igualar el desgaste; en la primera demanda tras el arranque del bloque, la principal es bomba1. Si la bomba principal tiene su falla activa (falla1 o falla2, respectivamente), debe funcionar en su lugar la otra bomba, siempre que esta no tenga falla, y debe activarse almFalla; si la falla desaparece con la demanda aún presente, vuelve a funcionar la principal y se detiene la de respaldo. almFalla solo indica falla de la bomba principal con demanda presente: la falla de la bomba de respaldo, por sí sola, no la activa. Si ambas bombas tienen falla, ninguna funciona y almFalla se activa. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Duplex con variables de entrada demanda, falla1, falla2 (BOOL) y salidas bomba1, bomba2, almFalla (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 9,
+     "requisito": "Ambas con falla: ninguna funciona y almFalla"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Duplex\nVAR_INPUT\n    demanda : BOOL; (* Demanda de arranque *)\n    falla1 : BOOL; (* Falla de la bomba 1 *)\n    falla2 : BOOL; (* Falla de la bomba 2 *)\nEND_VAR\nVAR_OUTPUT\n    bomba1 : BOOL; (* Bomba principal *)\n    bomba2 : BOOL; (* Bomba de respaldo *)\n    almFalla : BOOL; (* Alarma de falla de la bomba principal *)\nEND_VAR\nVAR\n    estado : INT := 0; (* Estado actual: 0 = detenido, 1 = bomba1 principal, 2 = bomba2 principal *)\n    demandaAnterior : BOOL := FALSE; (* Estado anterior de la demanda *)\nEND_VAR\n\n(* Control de la alternancia de bombas y manejo de fallas *)\nIF demanda THEN\n    IF NOT demandaAnterior THEN\n        (* Transición de FALSE a TRUE en demanda *)\n        estado := (estado + 1) MOD 3;\n        IF estado = 0 THEN\n            estado := 1; (* Asegura que la primera demanda arranque bomba1 *)\n        END_IF\n    END_IF\n\n    CASE estado OF\n        1:\n            IF falla1 THEN\n                bomba1 := FALSE;\n                bomba2 := NOT falla2;\n                almFalla := NOT falla2;\n            ELSE\n                bomba1 := TRUE;\n                bomba2 := FALSE;\n                almFalla := FALSE;\n            END_IF\n        2:\n            IF falla2 THEN\n                bomba2 := FALSE;\n                bomba1 := NOT falla1;\n                almFalla := NOT falla1;\n            ELSE\n                bomba2 := TRUE;\n                bomba1 := FALSE;\n                almFalla := FALSE;\n            END_IF\n    END_CASE\nELSE\n    bomba1 := FALSE;\n    bomba2 := FALSE;\n    almFalla := FALSE;\nEND_IF\n\n(* Actualización del estado anterior de la demanda *)\ndemandaAnterior := demanda;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V13",
+   "tarea": "I7",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un grupo de dos bombas en configuración dúplex. Cuando la entrada demanda se activa, debe arrancar una sola bomba, la principal de ese ciclo; al desactivarse la demanda, ambas se detienen. En cada nueva demanda (transición de FALSE a TRUE de demanda) el rol de principal se alterna entre bomba1 y bomba2 para igualar el desgaste; en la primera demanda tras el arranque del bloque, la principal es bomba1. Si la bomba principal tiene su falla activa (falla1 o falla2, respectivamente), debe funcionar en su lugar la otra bomba, siempre que esta no tenga falla, y debe activarse almFalla; si la falla desaparece con la demanda aún presente, vuelve a funcionar la principal y se detiene la de respaldo. almFalla solo indica falla de la bomba principal con demanda presente: la falla de la bomba de respaldo, por sí sola, no la activa. Si ambas bombas tienen falla, ninguna funciona y almFalla se activa. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Duplex con variables de entrada demanda, falla1, falla2 (BOOL) y salidas bomba1, bomba2, almFalla (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primera demanda tras el arranque: la principal es bomba1"
+    },
+    {
+     "paso": 5,
+     "requisito": "Nueva demanda: alterna de nuevo a bomba1"
+    },
+    {
+     "paso": 6,
+     "requisito": "Falla de la principal: arranca el respaldo y almFalla"
+    },
+    {
+     "paso": 7,
+     "requisito": "Desaparece la falla: vuelve la principal"
+    },
+    {
+     "paso": 8,
+     "requisito": "Falla solo del respaldo: sin alarma"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Duplex\nVAR_INPUT\n    demanda : BOOL;   // Entrada de demanda\n    falla1 : BOOL;    // Falla de la bomba 1\n    falla2 : BOOL;    // Falla de la bomba 2\nEND_VAR\n\nVAR_OUTPUT\n    bomba1 : BOOL;    // Salida para controlar la bomba 1\n    bomba2 : BOOL;    // Salida para controlar la bomba 2\n    almFalla : BOOL;  // Alarma de falla\nEND_VAR\n\nVAR\n    principal : BOOL; // Indica cuál es la bomba principal (TRUE para bomba1, FALSE para bomba2)\n    lastDemanda : BOOL; // Estado anterior de la demanda\nEND_VAR\n\n// Inicialización\nIF NOT demanda AND NOT lastDemanda THEN\n    principal := TRUE; // Inicialmente, bomba1 es la principal\nEND_IF\n\n// Alternancia de bombas\nIF demanda AND NOT lastDemanda THEN\n    principal := NOT principal; // Alternar la bomba principal en cada nueva demanda\nEND_IF\n\n// Lógica de control de bombas\nIF demanda THEN\n    IF principal THEN\n        IF NOT falla1 THEN\n            bomba1 := TRUE;\n            bomba2 := FALSE;\n            almFalla := FALSE;\n        ELSIF NOT falla2 THEN\n            bomba1 := FALSE;\n            bomba2 := TRUE;\n            almFalla := TRUE;\n        ELSE\n            bomba1 := FALSE;\n            bomba2 := FALSE;\n            almFalla := TRUE;\n        END_IF\n    ELSE\n        IF NOT falla2 THEN\n            bomba1 := FALSE;\n            bomba2 := TRUE;\n            almFalla := FALSE;\n        ELSIF NOT falla1 THEN\n            bomba1 := TRUE;\n            bomba2 := FALSE;\n            almFalla := TRUE;\n        ELSE\n            bomba1 := FALSE;\n            bomba2 := FALSE;\n            almFalla := TRUE;\n        END_IF\n    END_IF\nELSE\n    bomba1 := FALSE;\n    bomba2 := FALSE;\n    almFalla := FALSE;\nEND_IF\n\n// Actualizar el estado anterior de la demanda\nlastDemanda := demanda;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V14",
+   "tarea": "B1",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el control de arranque y paro de un motor trifásico. El motor debe arrancar al pulsar el botón de marcha y mantenerse encendido al soltarlo. Debe detenerse al pulsar el botón de paro o el paro de emergencia; tras un paro de emergencia el motor no debe rearrancar aunque el botón de marcha siga pulsado. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Motor con variables de entrada btnMarcha, btnParo, btnEmerg (BOOL) y salida motorOn (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 6,
+     "requisito": "Liberada la emergencia con la marcha pulsada el motor no rearranca solo"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo : BOOL;   (* Boton de paro *)\n    btnEmerg : BOOL;  (* Boton de paro de emergencia *)\nEND_VAR\nVAR_OUTPUT\n    motorOn : BOOL;   (* Estado del motor *)\nEND_VAR\nVAR\n    motorLatch : BOOL; (* Latch para mantener el motor encendido *)\nEND_VAR\n\n(* Control de arranque y paro del motor *)\nIF btnEmerg THEN\n    (* Si se activa el paro de emergencia, el motor se apaga y no puede rearrancar *)\n    motorLatch := FALSE;\nELSIF btnParo THEN\n    (* Si se pulsa el boton de paro, el motor se apaga *)\n    motorLatch := FALSE;\nELSIF btnMarcha THEN\n    (* Si se pulsa el boton de marcha, el motor se enciende y se mantiene encendido *)\n    motorLatch := TRUE;\nEND_IF\n\n(* Actualizar el estado del motor *)\nmotorOn := motorLatch;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V15",
+   "tarea": "I8",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa los permisivos de arranque de un compresor. El compresor (salida comp) arranca con una pulsación de btnMarcha (transición de FALSE a TRUE) y queda en marcha al soltarla, únicamente si en ese instante se cumplen todos los permisivos: presión de aceite correcta (pOilOk activa durante 3 segundos continuos), temperatura correcta (tempOk activa) y ausencia de alarmas (sinAlm activa). El compresor se detiene al pulsar btnParo o ante la pérdida de cualquier permisivo; una vez detenido, solo vuelve a arrancar con una nueva pulsación de btnMarcha, nunca por sí solo al recuperarse los permisivos. btnParo tiene prioridad sobre btnMarcha. La salida causaBloqueo indica en todo momento el permisivo que falta: 1 presión de aceite, 2 temperatura, 3 alarma activa, 0 ninguno; si faltan varios, reporta el de número menor. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Compresor con variables de entrada pOilOk, tempOk, sinAlm, btnMarcha, btnParo (BOOL) y salidas comp (BOOL) y causaBloqueo (INT). Usa el tiempo T#3S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Aceite correcto aun sin 3 s continuos: causa 1 y sin arranque"
+    },
+    {
+     "paso": 13,
+     "requisito": "Marcha con el aceite aun temporizando (temporizador reiniciado): no arranca y causa 1"
+    },
+    {
+     "paso": 18,
+     "requisito": "El aceite vuelve pero no lleva 3 s continuos: causa 1"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Compresor\nVAR_INPUT\n    pOilOk : BOOL; (* Presion de aceite correcta *)\n    tempOk : BOOL; (* Temperatura correcta *)\n    sinAlm : BOOL; (* Ausencia de alarmas *)\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo : BOOL; (* Boton de paro *)\nEND_VAR\nVAR_OUTPUT\n    comp : BOOL; (* Compresor en marcha *)\n    causaBloqueo : INT; (* Causa del bloqueo *)\nEND_VAR\nVAR\n    pOilOkTimer : TON; (* Temporizador para presion de aceite *)\n    btnMarchaRising : R_TRIG; (* Detector de flanco ascendente para btnMarcha *)\nEND_VAR\n\n(* Evaluar el flanco ascendente de btnMarcha *)\nbtnMarchaRising(CLK := btnMarcha);\n\n(* Temporizador para verificar que pOilOk este activo durante 3 segundos continuos *)\npOilOkTimer(IN := pOilOk, PT := T#3S);\n\n(* Determinar la causa del bloqueo *)\nIF NOT pOilOk THEN\n    causaBloqueo := 1;\nELSIF NOT tempOk THEN\n    causaBloqueo := 2;\nELSIF NOT sinAlm THEN\n    causaBloqueo := 3;\nELSE\n    causaBloqueo := 0;\nEND_IF\n\n(* Logica de control del compresor *)\nIF btnParo THEN\n    comp := FALSE; (* Prioridad al boton de paro *)\nELSIF comp THEN\n    (* Mantener el compresor en marcha si todos los permisivos se cumplen *)\n    IF NOT (pOilOkTimer.Q AND tempOk AND sinAlm) THEN\n        comp := FALSE; (* Detener si algun permisivo se pierde *)\n    END_IF\nELSE\n    (* Arrancar el compresor si se presiona btnMarcha y todos los permisivos se cumplen *)\n    IF btnMarchaRising.Q AND pOilOkTimer.Q AND tempOk AND sinAlm THEN\n        comp := TRUE;\n    END_IF\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V16",
+   "tarea": "I2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un proceso de llenado por etapas. En reposo, al pulsar btnInicio se abre la válvula de llenado (vLlenado) hasta que se active nivelAlto; después funciona el motor de mezcla (motorMezcla) durante 60 segundos; después se abre la válvula de descarga (vDescarga) hasta que se active nivelBajo; finalmente el proceso vuelve a reposo. El botón btnParo detiene el proceso en cualquier etapa, lleva todas las salidas a estado seguro (desactivadas) y regresa el proceso a reposo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Llenado con variables de entrada nivelAlto, nivelBajo, btnInicio, btnParo (BOOL) y salidas vLlenado, motorMezcla, vDescarga (BOOL). Usa el tiempo T#60S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 4,
+     "requisito": "~60.5 s: ya descarga"
+    },
+    {
+     "paso": 5,
+     "requisito": "Nivel bajo: vuelve a reposo"
+    },
+    {
+     "paso": 6,
+     "requisito": "Nuevo ciclo (funcion nominal)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Llenado\nVAR_INPUT\n    nivelAlto, nivelBajo, btnInicio, btnParo : BOOL;\nEND_VAR\n\nVAR_OUTPUT\n    vLlenado, motorMezcla, vDescarga : BOOL;\nEND_VAR\n\nVAR\n    estado : INT := 0; // 0: reposo, 1: llenado, 2: mezcla, 3: descarga\n    timerMezcla : TON;\nEND_VAR\n\n// Estado de reposo\nIF btnParo THEN\n    estado := 0;\n    vLlenado := FALSE;\n    motorMezcla := FALSE;\n    vDescarga := FALSE;\n    timerMezcla(IN := FALSE);\nELSIF btnInicio AND estado = 0 THEN\n    estado := 1;\n    vLlenado := TRUE;\nEND_IF\n\n// Estado de llenado\nIF estado = 1 THEN\n    IF nivelAlto THEN\n        estado := 2;\n        vLlenado := FALSE;\n        motorMezcla := TRUE;\n        timerMezcla(IN := TRUE, PT := T#60S);\n    END_IF\nEND_IF\n\n// Estado de mezcla\nIF estado = 2 THEN\n    IF timerMezcla.Q THEN\n        estado := 3;\n        motorMezcla := FALSE;\n        vDescarga := TRUE;\n    END_IF\nEND_IF\n\n// Estado de descarga\nIF estado = 3 THEN\n    IF nivelBajo THEN\n        estado := 0;\n        vDescarga := FALSE;\n    END_IF\nEND_IF"
+  },
+  {
+   "codigo": "V17",
+   "tarea": "I7",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un grupo de dos bombas en configuración dúplex. Cuando la entrada demanda se activa, debe arrancar una sola bomba, la principal de ese ciclo; al desactivarse la demanda, ambas se detienen. En cada nueva demanda (transición de FALSE a TRUE de demanda) el rol de principal se alterna entre bomba1 y bomba2 para igualar el desgaste; en la primera demanda tras el arranque del bloque, la principal es bomba1. Si la bomba principal tiene su falla activa (falla1 o falla2, respectivamente), debe funcionar en su lugar la otra bomba, siempre que esta no tenga falla, y debe activarse almFalla; si la falla desaparece con la demanda aún presente, vuelve a funcionar la principal y se detiene la de respaldo. almFalla solo indica falla de la bomba principal con demanda presente: la falla de la bomba de respaldo, por sí sola, no la activa. Si ambas bombas tienen falla, ninguna funciona y almFalla se activa. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Duplex con variables de entrada demanda, falla1, falla2 (BOOL) y salidas bomba1, bomba2, almFalla (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primera demanda tras el arranque: la principal es bomba1"
+    },
+    {
+     "paso": 3,
+     "requisito": "Nueva demanda: alterna a bomba2"
+    },
+    {
+     "paso": 5,
+     "requisito": "Nueva demanda: alterna de nuevo a bomba1"
+    },
+    {
+     "paso": 6,
+     "requisito": "Falla de la principal: arranca el respaldo y almFalla"
+    },
+    {
+     "paso": 7,
+     "requisito": "Desaparece la falla: vuelve la principal"
+    },
+    {
+     "paso": 8,
+     "requisito": "Falla solo del respaldo: sin alarma"
+    },
+    {
+     "paso": 11,
+     "requisito": "Cuarta demanda: alterna a bomba2"
+    },
+    {
+     "paso": 12,
+     "requisito": "Falla de la principal bomba2: respaldo bomba1 y almFalla"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Duplex\nVAR_INPUT\n    demanda : BOOL; (* Señal de demanda de bombeo *)\n    falla1  : BOOL; (* Falla de bomba 1 *)\n    falla2  : BOOL; (* Falla de bomba 2 *)\nEND_VAR\nVAR_OUTPUT\n    bomba1   : BOOL; (* Salida de bomba 1 *)\n    bomba2   : BOOL; (* Salida de bomba 2 *)\n    almFalla : BOOL; (* Alarma de falla en bomba principal *)\nEND_VAR\nVAR\n    principal1   : BOOL := TRUE;  (* TRUE = bomba1 es principal, FALSE = bomba2 es principal *)\n    demandaAntes : BOOL := FALSE; (* Valor de demanda en el ciclo anterior, para detectar flanco *)\n    flancoSubida : BOOL;          (* Flanco de subida de demanda *)\nEND_VAR\n\n(* Detectar flanco de subida de demanda *)\nflancoSubida := demanda AND NOT demandaAntes;\n\n(* En cada flanco de subida se alterna la bomba principal *)\nIF flancoSubida THEN\n    principal1 := NOT principal1;\nEND_IF;\n\n(* Lógica de control con demanda activa *)\nIF demanda THEN\n    IF principal1 THEN\n        (* Bomba 1 es la principal *)\n        IF NOT falla1 THEN\n            (* Principal sin falla: funciona bomba 1 *)\n            bomba1   := TRUE;\n            bomba2   := FALSE;\n            almFalla := FALSE;\n        ELSIF NOT falla2 THEN\n            (* Principal con falla, respaldo sin falla: funciona bomba 2 *)\n            bomba1   := FALSE;\n            bomba2   := TRUE;\n            almFalla := TRUE;\n        ELSE\n            (* Ambas con falla: ninguna funciona *)\n            bomba1   := FALSE;\n            bomba2   := FALSE;\n            almFalla := TRUE;\n        END_IF;\n    ELSE\n        (* Bomba 2 es la principal *)\n        IF NOT falla2 THEN\n            (* Principal sin falla: funciona bomba 2 *)\n            bomba1   := FALSE;\n            bomba2   := TRUE;\n            almFalla := FALSE;\n        ELSIF NOT falla1 THEN\n            (* Principal con falla, respaldo sin falla: funciona bomba 1 *)\n            bomba1   := TRUE;\n            bomba2   := FALSE;\n            almFalla := TRUE;\n        ELSE\n            (* Ambas con falla: ninguna funciona *)\n            bomba1   := FALSE;\n            bomba2   := FALSE;\n            almFalla := TRUE;\n        END_IF;\n    END_IF;\nELSE\n    (* Sin demanda: ambas bombas detenidas, sin alarma *)\n    bomba1   := FALSE;\n    bomba2   := FALSE;\n    almFalla := FALSE;\nEND_IF;\n\n(* Guardar estado de demanda para el próximo ciclo *)\ndemandaAntes := demanda;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V18",
+   "tarea": "A6",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa la gestión de modos de operación de una máquina con ocho actuadores. Los modos son automático (0), manual (1) y mantenimiento (2), seleccionados con la entrada selector (INT); al arrancar el bloque, el modo vigente es manual. Un cambio de modo solo se acepta mientras estadoSeguro esté activo: si no lo está, se mantiene el modo vigente aunque el selector cambie, y el cambio se aplica en cuanto estadoSeguro se active si el selector sigue indicando otro modo válido. Valores de selector fuera de 0 a 2 se ignoran. La salida modoActivo reporta el modo vigente. En modo automático, cada actuador[i] sigue a cmdAuto[i]; en modo manual, cada actuador[i] sigue a cmdManual[i]. En modo mantenimiento todos los actuadores parten apagados y solo pueden forzarse uno a uno: en cada transición de FALSE a TRUE de confirmarForzado, si idxForzado está entre 0 y 7, el actuador[idxForzado] toma el valor de valorForzado y lo conserva; un idxForzado fuera de rango se ignora. Si estadoSeguro se desactiva durante el mantenimiento, todos los forzados se anulan y los actuadores quedan apagados. Al salir del modo mantenimiento, todos los forzados se anulan. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Modos con variables de entrada selector (INT), estadoSeguro (BOOL), cmdAuto (ARRAY[0..7] OF BOOL), cmdManual (ARRAY[0..7] OF BOOL), idxForzado (INT), valorForzado (BOOL) y confirmarForzado (BOOL), y salidas modoActivo (INT) y actuador (ARRAY[0..7] OF BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 6,
+     "requisito": "Entrada a mantenimiento: todos los actuadores apagados"
+    },
+    {
+     "paso": 7,
+     "requisito": "Forzado de actuador[3] por flanco de confirmarForzado (funcion nominal)"
+    },
+    {
+     "paso": 8,
+     "requisito": "idxForzado fuera de rango (8): se ignora"
+    },
+    {
+     "paso": 9,
+     "requisito": "Forzado de actuador[5] (funcion nominal)"
+    },
+    {
+     "paso": 10,
+     "requisito": "Forzado a FALSE (funcion nominal)"
+    },
+    {
+     "paso": 15,
+     "requisito": "Al volver a mantenimiento los forzados anteriores no reaparecen"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Modos\nVAR_INPUT\n    selector        : INT;          (* 0=Auto, 1=Manual, 2=Mantenimiento *)\n    estadoSeguro    : BOOL;         (* Permiso para cambio de modo y forzados *)\n    cmdAuto         : ARRAY[0..7] OF BOOL;   (* Comandos en modo automático *)\n    cmdManual       : ARRAY[0..7] OF BOOL;   (* Comandos en modo manual *)\n    idxForzado      : INT;          (* Índice del actuador a forzar (0..7) *)\n    valorForzado    : BOOL;         (* Valor a aplicar al actuador forzado *)\n    confirmarForzado: BOOL;         (* Flanco ascendente aplica el forzado *)\nEND_VAR\n\nVAR_OUTPUT\n    modoActivo  : INT;                      (* Modo vigente: 0, 1 ó 2 *)\n    actuador    : ARRAY[0..7] OF BOOL;      (* Estado de los ocho actuadores *)\nEND_VAR\n\nVAR\n    modoInterno         : INT := 1;         (* Modo vigente interno; arranca en Manual *)\n    confirmarForzado_ant: BOOL := FALSE;    (* Valor anterior de confirmarForzado *)\n    estadoSeguro_ant    : BOOL := FALSE;    (* Valor anterior de estadoSeguro *)\n    i                   : INT;              (* Índice de bucle *)\nEND_VAR\n\n(* ─────────────────────────────────────────────────────────────────────────── *)\n(* 1. GESTIÓN DE CAMBIO DE MODO                                                *)\n(*    Solo se acepta un nuevo modo si estadoSeguro está activo                 *)\n(*    y el valor de selector es válido (0..2).                                 *)\n(* ─────────────────────────────────────────────────────────────────────────── *)\nIF estadoSeguro THEN\n    IF selector >= 0 AND selector <= 2 THEN\n        (* Detectar salida del modo mantenimiento para anular forzados *)\n        IF modoInterno = 2 AND selector <> 2 THEN\n            (* Apagar todos los actuadores al salir de mantenimiento *)\n            FOR i := 0 TO 7 DO\n                actuador[i] := FALSE;\n            END_FOR;\n        END_IF;\n\n        modoInterno := selector;    (* Aplicar el nuevo modo *)\n    END_IF;\nEND_IF;\n\n(* ─────────────────────────────────────────────────────────────────────────── *)\n(* 2. CONTROL DE ACTUADORES SEGÚN MODO VIGENTE                                 *)\n(* ─────────────────────────────────────────────────────────────────────────── *)\nCASE modoInterno OF\n\n    (* ── Modo 0: AUTOMÁTICO ─────────────────────────────────────────────── *)\n    0:\n        FOR i := 0 TO 7 DO\n            actuador[i] := cmdAuto[i];\n        END_FOR;\n\n    (* ── Modo 1: MANUAL ─────────────────────────────────────────────────── *)\n    1:\n        FOR i := 0 TO 7 DO\n            actuador[i] := cmdManual[i];\n        END_FOR;\n\n    (* ── Modo 2: MANTENIMIENTO ──────────────────────────────────────────── *)\n    2:\n        (* 2a. Si estadoSeguro se desactiva, anular todos los forzados *)\n        IF NOT estadoSeguro AND estadoSeguro_ant THEN\n            FOR i := 0 TO 7 DO\n                actuador[i] := FALSE;\n            END_FOR;\n        END_IF;\n\n        (* 2b. Aplicar forzado individual en flanco ascendente de confirmarForzado,\n               solo si estadoSeguro está activo e idxForzado es válido *)\n        IF confirmarForzado AND NOT confirmarForzado_ant THEN\n            IF estadoSeguro THEN\n                IF idxForzado >= 0 AND idxForzado <= 7 THEN\n                    actuador[idxForzado] := valorForzado;\n                END_IF;\n                (* idxForzado fuera de rango: se ignora silenciosamente *)\n            END_IF;\n        END_IF;\n\n    (* ── Valor de selector no contemplado: no debería ocurrir ───────────── *)\n    ELSE\n        modoInterno := 1;   (* Fallback seguro: Manual *)\n\nEND_CASE;\n\n(* ─────────────────────────────────────────────────────────────────────────── *)\n(* 3. ACTUALIZAR SALIDA Y VARIABLES DE MEMORIA                                 *)\n(* ─────────────────────────────────────────────────────────────────────────── *)\nmodoActivo          := modoInterno;\nconfirmarForzado_ant := confirmarForzado;\nestadoSeguro_ant    := estadoSeguro;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V19",
+   "tarea": "C3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: convierte a Structured Text el siguiente segmento de un programa en Ladder Diagram (IEC 61131-3), preservando exactamente su comportamiento. Descripción del segmento: Rama 1: el contacto normalmente abierto btnMarcha en paralelo con el contacto normalmente abierto motor, ambos en serie con el contacto normalmente cerrado btnParo, alimentan la bobina motor. Rama 2: el contacto normalmente abierto motor alimenta un temporizador TON llamado T1 con tiempo preestablecido de 10 segundos. Rama 3: el contacto normalmente abierto de T1.Q alimenta la bobina lampara. Programa en Structured Text (ST) conforme a IEC 61131-3, en un PROGRAM llamado PRG_Conversion con variables btnMarcha, btnParo (BOOL de entrada), motor, lampara (BOOL de salida) y T1 (TON). Usa el tiempo T#10S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "Lampara encendida tras ~10 s de motor (TON T1 de 10 s)"
+    },
+    {
+     "paso": 9,
+     "requisito": "Lampara encendida tras completar los 10 s"
+    }
+   ],
+   "codigo_st": "PROGRAM PRG_Conversion\nVAR_INPUT\n    btnMarcha : BOOL; (* Contacto NA *)\n    btnParo : BOOL; (* Contacto NC en la rama *)\nEND_VAR\nVAR_OUTPUT\n    motor : BOOL; (* Bobina *)\n    lampara : BOOL; (* Bobina *)\nEND_VAR\nVAR\n    T1 : TON; (* Temporizador *)\nEND_VAR\n\n(* Inicialización del temporizador *)\nIF NOT T1.Q THEN\n    T1(IN := FALSE, PT := T#10S);\nEND_IF\n\n(* Rama 1: btnMarcha en paralelo con motor, ambos en serie con btnParo *)\nmotor := (btnMarcha OR motor) AND NOT btnParo;\n\n(* Rama 2: motor alimenta el temporizador T1 *)\nIF motor THEN\n    T1(IN := TRUE);\nELSE\n    T1(IN := FALSE);\nEND_IF\n\n(* Rama 3: contacto NA de T1.Q alimenta la bobina lampara *)\nlampara := T1.Q;\n\nEND_PROGRAM"
+  },
+  {
+   "codigo": "V20",
+   "tarea": "B6",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una baliza de alarma. Mientras la condición de alarma esté activa, la lámpara debe parpadear con un ciclo de 1 segundo encendida y 1 segundo apagada. Sin alarma, la lámpara permanece apagada. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Baliza con variable de entrada alarma (BOOL) y salida lampara (BOOL). Usa tiempos T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Alarma activa: intervalos ON y OFF de 1 s +/- 150 ms medidos"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Baliza\nVAR_INPUT\n    alarma : BOOL; (* Condición de alarma *)\nEND_VAR\nVAR_OUTPUT\n    lampara : BOOL; (* Lámpara de la baliza *)\nEND_VAR\nVAR\n    tParpadeo : TP; (* Temporizador para el parpadeo *)\n    estado : BOOL; (* Estado actual de la lámpara *)\nEND_VAR\n\n(* Inicialización del temporizador *)\nIF alarma THEN\n    tParpadeo(IN := TRUE, PT := T#1S);\n    estado := NOT estado; (* Cambia el estado de la lámpara *)\nELSE\n    tParpadeo(IN := FALSE);\n    estado := FALSE; (* Apaga la lámpara *)\nEND_IF;\n\n(* Asigna el estado de la lámpara *)\nlampara := estado AND alarma;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V21",
+   "tarea": "I8",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa los permisivos de arranque de un compresor. El compresor (salida comp) arranca con una pulsación de btnMarcha (transición de FALSE a TRUE) y queda en marcha al soltarla, únicamente si en ese instante se cumplen todos los permisivos: presión de aceite correcta (pOilOk activa durante 3 segundos continuos), temperatura correcta (tempOk activa) y ausencia de alarmas (sinAlm activa). El compresor se detiene al pulsar btnParo o ante la pérdida de cualquier permisivo; una vez detenido, solo vuelve a arrancar con una nueva pulsación de btnMarcha, nunca por sí solo al recuperarse los permisivos. btnParo tiene prioridad sobre btnMarcha. La salida causaBloqueo indica en todo momento el permisivo que falta: 1 presión de aceite, 2 temperatura, 3 alarma activa, 0 ninguno; si faltan varios, reporta el de número menor. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Compresor con variables de entrada pOilOk, tempOk, sinAlm, btnMarcha, btnParo (BOOL) y salidas comp (BOOL) y causaBloqueo (INT). Usa el tiempo T#3S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Aceite correcto aun sin 3 s continuos: causa 1 y sin arranque"
+    },
+    {
+     "paso": 3,
+     "requisito": "Flanco de marcha con permisivos: arranca (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "Enclavado al soltar la marcha (autorretencion)"
+    },
+    {
+     "paso": 10,
+     "requisito": "Nuevo flanco de marcha: arranca (funcion nominal)"
+    },
+    {
+     "paso": 13,
+     "requisito": "Marcha con el aceite aun temporizando (temporizador reiniciado): no arranca y causa 1"
+    },
+    {
+     "paso": 14,
+     "requisito": "Los permisivos llegan con la marcha sostenida: no arranca sin flanco"
+    },
+    {
+     "paso": 15,
+     "requisito": "Reposo sin ordenes (funcion nominal)"
+    },
+    {
+     "paso": 17,
+     "requisito": "Perdida momentanea de aceite: se detiene"
+    },
+    {
+     "paso": 18,
+     "requisito": "El aceite vuelve pero no lleva 3 s continuos: causa 1"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Compresor\nVAR_INPUT\n    pOilOk : BOOL; (* Presión de aceite correcta *)\n    tempOk : BOOL; (* Temperatura correcta *)\n    sinAlm : BOOL; (* Ausencia de alarmas *)\n    btnMarcha : BOOL; (* Botón de marcha *)\n    btnParo : BOOL; (* Botón de paro *)\nEND_VAR\nVAR_OUTPUT\n    comp : BOOL; (* Compresor *)\n    causaBloqueo : INT; (* Causa de bloqueo *)\nEND_VAR\nVAR\n    tPresion : TP; (* Temporizador para presión de aceite *)\n    marchaAnterior : BOOL; (* Estado anterior del botón de marcha *)\n    permisivoCumplido : BOOL; (* Indica si todos los permisivos están cumplidos *)\nEND_VAR\n\n(* Temporizador para la presión de aceite *)\ntPresion(IN := pOilOk, PT := T#3S);\n\n(* Comprobar si todos los permisivos están cumplidos *)\npermisivoCumplido := tPresion.Q AND tempOk AND sinAlm;\n\n(* Determinar la causa de bloqueo *)\nIF NOT pOilOk THEN\n    causaBloqueo := 1;\nELSIF NOT tempOk THEN\n    causaBloqueo := 2;\nELSIF NOT sinAlm THEN\n    causaBloqueo := 3;\nELSE\n    causaBloqueo := 0;\nEND_IF;\n\n(* Control de arranque y paro del compresor *)\nIF btnParo THEN\n    comp := FALSE;\nELSIF btnMarcha AND NOT marchaAnterior AND permisivoCumplido THEN\n    comp := TRUE;\nEND_IF;\n\n(* Actualizar el estado anterior del botón de marcha *)\nmarchaAnterior := btnMarcha;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V22",
+   "tarea": "I2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un proceso de llenado por etapas. En reposo, al pulsar btnInicio se abre la válvula de llenado (vLlenado) hasta que se active nivelAlto; después funciona el motor de mezcla (motorMezcla) durante 60 segundos; después se abre la válvula de descarga (vDescarga) hasta que se active nivelBajo; finalmente el proceso vuelve a reposo. El botón btnParo detiene el proceso en cualquier etapa, lleva todas las salidas a estado seguro (desactivadas) y regresa el proceso a reposo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Llenado con variables de entrada nivelAlto, nivelBajo, btnInicio, btnParo (BOOL) y salidas vLlenado, motorMezcla, vDescarga (BOOL). Usa el tiempo T#60S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 4,
+     "requisito": "~60.5 s: ya descarga"
+    },
+    {
+     "paso": 5,
+     "requisito": "Nivel bajo: vuelve a reposo"
+    },
+    {
+     "paso": 6,
+     "requisito": "Nuevo ciclo (funcion nominal)"
+    },
+    {
+     "paso": 9,
+     "requisito": "Entra en mezcla en el segundo ciclo"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Llenado\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\n    nivelBajo : BOOL; (* Sensor de nivel bajo *)\n    btnInicio : BOOL; (* Botón de inicio del proceso *)\n    btnParo : BOOL;   (* Botón de paro del proceso *)\nEND_VAR\nVAR_OUTPUT\n    vLlenado : BOOL;  (* Válvula de llenado *)\n    motorMezcla : BOOL; (* Motor de mezcla *)\n    vDescarga : BOOL; (* Válvula de descarga *)\nEND_VAR\nVAR\n    estado : INT := 0; (* Estado del proceso *)\n    tMezcla : TON;     (* Temporizador para el motor de mezcla *)\nEND_VAR\n\n(* Lógica del proceso de llenado por etapas *)\nIF btnParo THEN\n    (* Si se presiona el botón de paro, detener todo y volver a reposo *)\n    estado := 0;\n    vLlenado := FALSE;\n    motorMezcla := FALSE;\n    vDescarga := FALSE;\nELSE\n    CASE estado OF\n        0: (* Estado de reposo *)\n            IF btnInicio THEN\n                estado := 1; (* Iniciar proceso de llenado *)\n            END_IF;\n        1: (* Llenado *)\n            vLlenado := TRUE;\n            IF nivelAlto THEN\n                vLlenado := FALSE;\n                estado := 2; (* Pasar al estado de mezcla *)\n                tMezcla(IN := TRUE, PT := T#60S); (* Iniciar temporizador de mezcla *)\n            END_IF;\n        2: (* Mezcla *)\n            motorMezcla := TRUE;\n            IF tMezcla.Q THEN\n                motorMezcla := FALSE;\n                estado := 3; (* Pasar al estado de descarga *)\n            END_IF;\n        3: (* Descarga *)\n            vDescarga := TRUE;\n            IF nivelBajo THEN\n                vDescarga := FALSE;\n                estado := 0; (* Volver al estado de reposo *)\n            END_IF;\n    END_CASE;\nEND_IF;\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}

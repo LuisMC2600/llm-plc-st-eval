@@ -1,0 +1,203 @@
+Necesito responder con JSON exacto. Debo clasificar cada caso V01 a V11. Analicemos código y fallos.
+
+Debo usar categorías exactas: TEMPORIZACION, SECUENCIA, SEGURIDAD, INICIALIZACION, FLANCO, CALCULO.
+
+Necesito justificación breve con línea/construcción.
+
+V01: Baliza. Enunciado parpadeo 1s on/off. Código:
+TON temporizador; estado_parpadeo; inicialización temporizador(IN := estado_parpadeo) . Luego IF alarma THEN temporizador(IN := NOT temporizador.Q); IF temporizador.Q THEN estado_parpadeo := NOT estado_parpadeo; lampara := estado_parpadeo. Esto tiene problema: TON temporizador(IN := NOT temporizador.Q) en cada ciclo; Q se activa cuando PT transcurre, luego IN se pone falso? Espera, lógica oscilador con TON un poco rara. t(IN := NOT t.Q). Si Q false => IN true, timer corre. Al llegar PT, Q true, IN false, timer reset Q false. Luego estado_parpadeo negado solo cuando Q true, generando ciclo? Q será true solo un ciclo? En ST, TON invocado con IN := NOT Q: cada llamada actualiza. Q desactivado al evaluar? En CODESYS TON: q = IN and elapsed >= PT? q podría ser true por un ciclo, pero cuando IN false, q se desactiva en misma llamada? Depende. Este oscilador típico con TON no produce flanco, y lampara = estado_parpadeo alterna solo en Q; podría dar 2s? Además hay una primera invocación redundante antes de IF. Categoría probable TEMPORIZACION. Fallo paso 1 intervalos ON/OFF 1s. Causa: temporizador no invocado/reiniciado? La construcción usa TON como oscilador (NOT Q) y además hay una llamada previa `temporizador(IN := estado_parpadeo, PT := T#1S);` antes del IF. Esto re-inicializa? La llamada previa puede interferir. Justificación: "La lámpara no sigue una onda simétrica de 1 s: el TON se rearma con 'NOT temporizador.Q' y se invoca dos veces por ciclo, con estado alternado; no garantiza ciclos de 1 s." Categoría TEMPORIZACION.
+
+V02: Ventilador horno. Enunciado: mientras quemador encendido ventilador funciona; al apagarse, 30 s adicionales. Código: tRetraso(IN := NOT quemadorOn, PT := T#30S); ventilador := quemadorOn OR tRetraso.Q. Esto es un temporizador de retardo a la conexión cuando quemador está apagado. Al apagarse, IN := TRUE, timer corre 30s. A los 29s ventilador debería ser TRUE? tRetraso.Q es FALSE hasta 30s, y quemadorOn FALSE, por lo que ventilador FALSE. Por eso falla: a los 29s apagado. Debería ser retardo a la desconexión (mantener encendido 30s luego apagar), no TON. Categoría TEMPORIZACION: tipo de temporizador equivocado: usa TON en lugar de retardo a la desconexión/TOF o lógica adicional. 
+
+V03: Reactor batch. Fallos? Paso 1 abort en reposo sin efecto; paso 2 inicio fase1; etc. Código CASE fase. Problema con abort: hay CASE 0-5 para salidas. Luego manejo de abort: IF btnAbort AND NOT abortPrev THEN ... IF NOT nivelVacio THEN fase:=5 ELSE fase:=0. Al inicio fase 0, si btnAbort en reposo, pero el CASE 0 se ejecuta antes del manejo, luego IF btnAbort true sin prev? En primer ciclo abortPrev inicializado FALSE? Código tiene inicializacion: IF NOT btnInicio THEN inicioPrev := FALSE; IF NOT btnAbort THEN abortPrev := FALSE; luego CASE. Si btnAbort true en reposo con abortPrev false => IF btnAbort AND NOT abortPrev then vA...; IF NOT nivelVacio THEN fase:=5 ELSE fase:=0. Si nivelVacio inactivo, abort en reposo pasaría a fase 5 en lugar de sin efecto. Eso es fallo paso 1. Es un problema de secuencia/abort? La causa raíz: manejo de abort no limita a fases 1-5, se activa en reposo. Podría categoría SEGURIDAD (abort/paro de emergencia, abortar receta) o SECUENCIA (transiciones). El enunciado pide abort en reposo sin efecto. Es lógica de secuencia/abort. Primera categoría principal? "SEGURIDAD" incluye respuesta incorrecta ante paro, aborto de receta. "SECUENCIA" transiciones de secuencia/máquina de estados. El fallo es en la respuesta al aborto, no secuencia principal. Sin embargo, el código en reposo no limita abort a fases activas. Creo SEGURIDAD es más adecuado: respuesta incorrecta ante el aborto. Pero el fallo primer paso fallido es "Abort en reposo: sin efecto". Entonces categoría SEGURIDAD. Aunque la causa raíz puede ser que el abort se evalúa fuera del CASE sin restricción de fase. V03 justificación: "El manejo de btnAbort se ejecuta siempre, incluso en fase 0, por lo que en reposo puede forzar fase := 5 si nivelVacio es FALSE." Categoría SEGURIDAD.
+
+V04: Semáforo. Código usa TP (temporizador de pulso). En estados: tVerde(IN:=TRUE, PT:=20s); luzV := tVerde.Q; IF tVerde.Q THEN estado:=1. ¿Qué falla? TP con IN:=TRUE genera una salida Q que es TRUE desde el inicio hasta que transcurra PT, no un pulso al final. Luego luzV := tVerde.Q, por lo que luzV estará encendida durante 20s, luego se apaga. Al cambiar estado a 1, tAmarillo(IN:=TRUE) produce luzA := Q encendida 4s, etc. Podría funcionar? Pero hay problema: en cada ciclo, `tVerde(IN:=TRUE, PT:=T#20S)` con TP: TP se dispara en flanco ascendente de IN. Si IN se mantiene TRUE, Q es TRUE durante PT. Entonces estado avanza cuando tVerde.Q se desactiva? La transición IF tVerde.Q THEN estado:=1 se ejecuta mientras Q TRUE, por lo que estado cambia a 1 inmediatamente en el primer ciclo del verde, no al final. Porque IF tVerde.Q THEN estado := 1; pero tVerde.Q es TRUE desde el primer ciclo, entonces estado 1 se asigna en el mismo ciclo. En estado 1, tAmarillo no se ejecuta hasta siguiente ciclo; luego luzA Q true, estado 2 inmediatamente, etc. Por lo tanto la secuencia se salta. De hecho los requisitos fallidos 2,3... miden tiempos. Categoría TEMPORIZACION? Es tipo de temporizador equivocado: usa TP en lugar de TON con espera a Q al final? O SECUENCIA por transiciones erróneas? "SECUENCIA: transiciones de la secuencia o máquina de estados ausentes o erróneas..." El problema: transición de estado ocurre en `IF tVerde.Q THEN estado := 1`, pero Q es TRUE durante todo el pulso, no cuando termina, por lo que la secuencia no espera el tiempo. Esa es transición errónea. O TEMPORIZACION por tipo de temporizador equivocado (TP vs TON) y no invocado correcto. El primer fallo es "Verde 20 s y paso a amarillo": la salida verde no dura 20s. Causa más directa: uso de TP con Q para transición: Q es TRUE durante 20s, por lo que estado cambia inmediatamente. Esa es secuencia/transición. Yo elegiría SECUENCIA: transición por nivel en Q del TP en lugar de esperar a que expire; no se mantiene el estado. Aunque la rama de temporización también podría ser. El uso de TP es técnicamente tipo de temporizador equivocado. La categoría TEMPORIZACION incluye "tipo de temporizador equivocado". Específicamente: "retardos, pulsos, intermitencias o plazos que no cumplen el tiempo especificado: tipo de temporizador equivocado..." Aquí el tipo TP no es correcto para secuencia; produce que la luz no dure el tiempo. La falla primaria es que los tiempos no se cumplen. "TEMPORIZACION" parece correcta. Pero la lógica de transición se salta. Podría ser ambas. Debemos asignar una categoría principal causal raíz. La raíz es usar TP y transicionar por nivel en Q. Es un tipo de temporizador equivocado, o mala interpretación del temporizador. Yo pondría TEMPORIZACION, porque los pasos fallidos miden duración de luces y el código no temporiza correctamente. Justificación: "Usa TP y `IF tVerde.Q THEN` para cambiar de estado; Q está activo durante todo el pulso, no al expirar, por lo que la secuencia no espera las duraciones." Eso combina.
+
+V05: Alarmas con retención. Código:
+IF NOT ack1 THEN retAlm1 := alm1; ELSE retAlm1 := FALSE; END_IF. Esto no retiene: si alm1 activa y ack1 false, retAlm1 := alm1 (TRUE). Si causa desaparece, alm1 FALSE, ack1 false, retAlm1 := FALSE. Por lo tanto no retiene. Fallos: ACK con causa presente: la alarma no se borra? Paso 2: Con alm1 true y ack1 true, cae en ELSE retAlm1 FALSE, se borra aunque causa presente. Paso 3: con causa retirada sin ack, retAlm1 FALSE, no retiene. Causa raíz: no implementa autorretención; es secuencia/retención? Categoría SECUENCIA incluye "pérdida de la autorretención o de la retención". Eso es exacto. Justificación: "La retención se asigna directamente retAlm1 := alm1, sin realimentación que la mantenga cuando alm1 desaparece o ack es bloqueado; falta autorretención." Categoría SECUENCIA.
+
+V06: Estrella-triángulo. Código con TON en estados. Fallos paso 2 "Pasada la transición de 8 s: en triangulo"; paso 3 "Tiempo muerto medido entre caída kY y subida kD"; paso 5 "Rearranque: vuelve a estrella sin saltar a triángulo (rearme del temporizador)". Analicemos.
+
+Código:
+IF btnParo THEN ... estado=0
+ELSE
+ CASE estado OF
+ 0: IF btnMarcha THEN kM TRUE; kY TRUE; tEstrella(IN:=TRUE, PT:=T#8S); estado:=1; END_IF
+ 1: IF tEstrella.Q THEN kY FALSE; tMuerto(IN:=TRUE, PT:=T#100MS); estado:=2; END_IF
+ 2: IF tMuerto.Q THEN kD TRUE; estado:=3; END_IF
+ 3: ...
+ END_CASE
+END_IF
+
+Problemas: tEstrella se invoca solo en el ciclo que btnMarcha? En estado 1 no se invoca tEstrella en cada ciclo. TON debe ser invocado en cada ciclo para actualizar. Declararon VAR tEstrella: TON; pero no se llama en estado 1. En CODESYS, un temporizador IEC no actualiza si no se llama. Por lo tanto tEstrella.Q nunca se activa. Similar tMuerto. Por lo tanto falla transición. Además temporizador no rearmado. El código no llama a los temporizadores en cada ciclo. Categoría TEMPORIZACION: temporizador no invocado en cada ciclo. Paso 2 falla porque timer no se invoca. Justificación: "tEstrella/tMuerto se instancian solo en el flanco de marcha/caída, no en cada ciclo en los estados 1 y 2, por lo que no acumulan tiempo." Esa es la causa.
+
+V07: Inversión de giro. Código:
+CASE estado OF
+ 0: IF btnFwd THEN estado:=1; ELSIF btnRev THEN estado:=2;
+ 1: fwd TRUE; rev FALSE; IF btnParo THEN estado:=0; ELSIF btnRev THEN estado:=2;
+ 2: fwd FALSE; rev TRUE; IF btnParo THEN estado:=0; ELSIF btnFwd THEN estado:=1;
+END_CASE.
+
+Problema: btnFwd/btnRev inputs permanecen activos? El requisito: para invertir es obligatorio pasar por paro. Código en estado 1 permite cambio directo a estado 2 con btnRev (ELSIF btnRev THEN estado:=2), prohibido. Fallos: reversa sin pasar por paro prohibida. Categoría SECUENCIA (transiciones de máquina de estados erróneas). Justificación: "En estado 1/2 permite transición directa a reversa/forward con ELSIF btnRev/btnFwd, saltando el paro obligatorio."
+
+V08: Ventilador horno otro código. Fallos: paso 2 "Post-enfriamiento: a los 29s aun encendido", paso 5, paso 7 rearme. Código:
+timer TON; IF NOT timer.Q THEN timer(IN:=FALSE, PT:=T#30S); END_IF;
+IF quemadorOn THEN ventilador := TRUE; timer(IN:=FALSE);
+ELSE
+  IF NOT timer.Q THEN timer(IN:=TRUE); END_IF;
+  ventilador := timer.Q;
+END_IF;
+
+Este es muy malo: `timer` se invoca condicionalmente solo si NOT timer.Q? Vamos a interpretar: Al apagarse quemador, timer(IN:=TRUE) se llama si NOT timer.Q. Luego en ese mismo ciclo `ventilador := timer.Q` (false). En siguientes ciclos, mientras timer no Q, se llama timer(IN:=TRUE). A los 30 s, cuando Q true, la llamada timer(IN:=TRUE) no se ejecuta? La condición IF NOT timer.Q THEN timer(IN:=TRUE); END_IF: si Q true, no se invoca el timer. Luego ventilador := timer.Q (true) por un ciclo? En el ciclo que Q se pone true, la condición fue NOT timer.Q antes de invocar; si Q ya estaba true del ciclo anterior, no se invoca; ventilador true. De todos modos, la lógica no deja ventilador encendido durante post-enfriamiento, solo al final, y con rearme mal. La falla: temporizador no implementa retardo a la desconexión; ventilador := timer.Q solo se activa al terminar, no durante el enfriamiento. Categoría TEMPORIZACION. Justificación: "Usa TON y asigna ventilador := timer.Q durante el post-enfriamiento, por lo que el ventilador no permanece encendido los 30 s; tipo de temporizador/lógica equivocada."
+
+V09: Registro buffer circular. Fallos:
+Paso 0: 5 llamadas sin evento: indice -1 y nEventos 0. Código solo asigna indice/nEventos dentro IF nuevoEvento, con variables inicializadas indice? En VAR_OUTPUT no se inicializa indice? indice : INT; Por defecto var output no inicializada? En CODESYS pueden ser 0? El fallo paso 0 indica que con sin evento, indice no es -1 y nEventos no 0. Código no asigna indice := -1 ni nEventos := 0 inicialmente. Además si no hay evento, outputs quedan por defecto (0 probablemente), no -1. Debería inicializar indice -1. Es categoría INICIALIZACION. Fallo primer paso: estado inicial incorrecto. Justificación: "No inicializa indice a -1 ni nEventos a 0 en el arranque; sin eventos los outputs quedan en valores por defecto (0)."
+
+V10: Estrella-triángulo otra versión. Código:
+timerStar(IN := FALSE, PT := T#8S); timerDelta(IN := FALSE, PT := T#100MS); deadTime(IN := FALSE, PT := T#100MS);
+CASE state...
+0: IF btnMarcha THEN kM TRUE; kY TRUE; timerStar(IN := TRUE); state:=1;
+...
+1: IF timerStar.Q THEN kY FALSE; timerStar(IN:=FALSE); deadTime(IN:=TRUE); state:=2;
+...
+
+Aquí se llama timerStar(IN:=FALSE) cada ciclo antes del CASE. Eso lo reinicia siempre. En estado 1, no se invoca timerStar(IN:=TRUE) cada ciclo; solo en el flanco de marcha. Además cada ciclo se llama timerStar(IN:=FALSE) antes del CASE, por lo que aunque se llamara, el TON se resetea. Y tMuerto similar. Es un fallo de temporizador no invocado en cada ciclo/reiniciado en cada ciclo. Los fallos: transición de 8s y tiempo muerto. Justificación: "Los temporizadores no se llaman en cada ciclo en su estado y además se resetean al inicio con IN:=FALSE; timerStar.Q nunca se mantiene."
+
+V11: Válvula drenaje. Código:
+tNivelAlto : TP; tNivelAlto(IN := nivelAlto, PT := T#5S);
+valvula := tNivelAlto.Q;
+IF NOT nivelAlto THEN valvula := FALSE; END_IF
+
+Uso TP. La válvula debe abrir cuando nivel alto permanezca 5s continuos. TP: si IN nivelAlto true, Q true durante 5s, luego false aunque IN siga true. La válvula `valvula:=Q` se activa inmediatamente, no después de 5s. Si nivelAlto deja de estar alto, se cierra. Falla paso 1: nivel alto 3s aún no abre; falla paso 2: 6s ya abre; paso 4 rearme. TP abre inmediatamente, no espera 5s. Debería usar TON. Categoría TEMPORIZACION: tipo de temporizador equivocado. Justificación: "Usa TP; su Q vale TRUE durante los 5 s desde el flanco, por lo que válvula abre de inmediato en lugar de esperar 5 s continuos."
+
+Ahora revisemos cada caso y aseguremos categorías.
+
+V03: Puede haber un bug adicional: "IF btnInicio AND NOT inicioPrev THEN fase := 1" en fase 0. Pero inicioPrev se actualiza al final. En reposo, btnInicio true, inicioPrev false en primer ciclo -> fase 1. Luego al final inicioPrev true. Si btnInicio sostenido durante receta, no importa. Abort: manejo se ejecuta tras CASE. En fase 0, si btnAbort y nivelVacio inactivo, fase:=5 y luego al final abortPrev true; en siguientes ciclos no se ejecuta (btnAbort AND NOT abortPrev) porque abortPrev true. Aunque btnAbort se mantenga, no se repite. Entonces abort en reposo una vez sí tiene efecto -> fallo. Posterior btnAbort? El requisito dice en reposo sin efecto. Eso es SEGURIDAD. Sin embargo, hay otro fallo en el código: En fase 4, timerMezcla(IN:=TRUE). En CODESYS, TON con IN true y PT 120s. Se llama en cada ciclo en fase 4. Al entrar, Q false. A los 120s, Q true. Pero transición: IF timerMezcla.Q THEN mezclador := FALSE; fase := 5; end. Eso funciona. En fase 5 tras nivelVacio, fase 0. Abort durante fase 5: Si btnAbort AND NOT abortPrev, cierra vA,B, calentador, mezclador. Si NOT nivelVacio (producto) fase:=5 (continúa descarga), si nivelVacio activo fase:=0. Eso está bien. Abort en fases... En fase 0, no debería. La pregunta pide primer paso fallido: es abort en reposo. Causa raíz: abort no restringido a fases 1-5. SEGURIDAD.
+
+¿Podría ser SECUENCIA? En las categorías, SEGURIDAD: "respuesta incorrecta ante el paro o el paro de emergencia (incluido el rearranque automático), enclavamientos entre salidas, permisivos, fallas de equipo, aborto de receta o respuestas erróneas de un dispositivo." Eso incluye aborto de receta. Entonces SEGURIDAD.
+
+V04: Revisemos el código en detalle:
+CASE estado OF
+0: tVerde(IN:=TRUE, PT:=T#20S); luzV:=tVerde.Q; luzA:=FALSE; luzR:=FALSE; IF tVerde.Q THEN estado:=1;
+1: tAmarillo(IN:=TRUE, PT:=T#4S); luzV:=FALSE; luzA:=tAmarillo.Q; luzR:=FALSE; IF tAmarillo.Q THEN estado:=2;
+2: tRojo(IN:=TRUE, PT:=T#15S); luzV:=FALSE; luzA:=FALSE; luzR:=tRojo.Q; IF tRojo.Q THEN estado:=0;
+
+TP: Q is TRUE for duration after rising edge, then false. In state 0, when state just set to 0 from state 2 maybe, tVerde(IN:=TRUE) raises edge, Q true; luzV true; IF Q true, estado:=1. So it will stay in state0 for one cycle only. Then in state1, tAmarillo(IN:=TRUE) edge, Q true; luzA true; IF Q true estado:=2. So state1 one cycle. So lights sequence is just a few cycles. Falla duraciones. There's also "tVerde(IN:=TRUE)" every cycle in state0 but it only stays one cycle due to immediate transition. If state0 was called one cycle, okay.
+
+Could be classed as TEMPORIZACION: "tipo de temporizador equivocado". But "SECUENCIA: transiciones ... erróneas ... acción ejecutada en un momento equivocado." The immediate transition due to checking Q before delay is a sequence transition error. However, first failed step specifically "Verde 20 s y paso a amarillo": due to TP, light not duration. I think TEMPORIZACION is more apt because root cause is wrong timer type (TP). But we can justify "El TP mantiene Q activo durante el pulso y la transición se dispara con Q, saltando inmediatamente" - combines. Categoría TEMPORIZACION.
+
+Wait: "TEMPORIZACION: retardos, pulsos, intermitencias o plazos que no cumplen el tiempo especificado: tipo de temporizador equivocado, retardo a la desconexión mal emulado, temporizador no invocado en cada ciclo, reiniciado en cada ciclo o sin rearme entre operaciones." Yes.
+
+V05: SECUENCIA because "pérdida de la autorretención o de la retención" exactly.
+
+V06: TEMPORIZACION temporizador no invocado en cada ciclo.
+
+V07: SECUENCIA.
+
+V08: TEMPORIZACION.
+
+V09: INICIALIZACION.
+
+V10: TEMPORIZACION.
+
+V11: TEMPORIZACION.
+
+Need ensure output only JSON list, no extra text. We must produce a list of objects in same order.
+
+Let's craft justifications in Spanish, one or two frases.
+
+Need maybe include "V01" etc.
+
+Let's double-check V01: "temporizador(IN := estado_parpadeo, PT := T#1S); IF alarma THEN temporizador(IN := NOT temporizador.Q); ..." The first call before IF uses `estado_parpadeo` and PT. Then inside alarma calls temporizador with IN NOT temporizador.Q but does not set PT? In ST standard, if you call TON without PT, it uses previous PT? In CODESYS, PT might be retained from previous call? It probably uses last set PT? If PT not passed in each call, maybe retains? The first call sets PT, subsequent calls don't include PT? In codesys, if omitted, PT remains last used? I think yes? But not relevant. The issue is interval not 1s.
+
+V01: If alarm active, `temporizador(IN := NOT temporizador.Q); IF temporizador.Q THEN estado_parpadeo := NOT estado_parpadeo;` If TON Q is only true for one scan when timer expires, then estado toggles at timer expiry, and IN becomes false. However, with TON, output Q is true when IN true and elapsed >= PT. Then IN := NOT Q becomes false in same call? In CODESYS, TON logic: Q reflects current state after call. Suppose Q is false, IN true, elapsed increases; when elapsed reaches PT, Q becomes true. Then IF Q toggles estado. Next cycle, calling `temporizador(IN := NOT temporizador.Q)` = IN false, so Q becomes false. So Q true one cycle. This creates a square wave? Let's simulate: init estado false, Q false. Cycle1 IN true, elapsed cycle time, Q false. After many, when elapsed >=1s, Q true, estado toggles true. Next cycle IN false, Q false, elapsed reset. Timer then off for 1s? Actually when IN false, TON resets elapsed to 0 and Q false. Then next cycle IN true and counts. So yes it toggles state every 1s? But the `estado_parpadeo` toggles only when Q true. Lamp follows estado_parpadeo. So lamp toggles every 1s: 1s off, 1s on? Initially estado false, so first 1s off, then on. Enunciado: "Mientras alarma activa, lámpara debe parpadear con ciclo de 1 segundo encendida y 1 segundo apagada." Could be acceptable? But the banco failed intervals ON/OFF. That suggests actual timing might be off, maybe due to extra initial call `temporizador(IN := estado_parpadeo, PT := T#1S);` which resets timer with IN=estado_parpadeo (false) every cycle before the real call. Wait that's important: The first call occurs every cycle with IN:=estado_parpadeo (which is output state). After estado_parpadeo true, first call IN := true, causing timer to run (and set Q maybe) before second call. In code:
+temporizador(IN := estado_parpadeo, PT := T#1S);
+IF alarma THEN
+    temporizador(IN := NOT temporizador.Q);
+    IF temporizador.Q THEN estado_parpadeo := NOT estado_parpadeo;
+...
+End.
+If estado_parpadeo true and Q false, first call runs timer with IN true for elapsed increment; second call with IN := NOT Q = true again. Thus the timer is called twice per cycle with IN true, accelerating. When Q true, first call with IN estado_parpadeo true may keep Q true, second call with IN false resets Q. The two invocations per scan can distort timing. So categoría TEMPORIZACION. Justification "doble invocación del TON por ciclo con IN=estado_parpadeo y luego IN=NOT Q perturba el tiempo." Good.
+
+V02: "tRetraso(IN := NOT quemadorOn, PT := T#30S); ventilador := quemadorOn OR tRetraso.Q;" If quemadorOn true, IN false, Q false; ventilador true. When quemadorOn false, IN true, Q false until 30s; ventilador false. So transition: at apagarse, ventilador goes off immediately, then after 30s goes on briefly? Wait ventilador := quemadorOn OR tRetraso.Q. When quemadorOn false, tRetraso.Q false until timer expires, so ventilador false for 30s. At 30s, Q true, ventilador true. Enunciado expects ventilador true for 30s after quemador off. Completely opposite. Fallos say at 29s still encendido expected, but code will be apagado. Yes.
+
+V04: Let's test TP more: In CODESYS TP: IN false->true starts pulse, Q true for PT, even if IN stays true, Q true for PT then false. If IN stays true, Q false, no retrigger until IN false->true. In state0, as soon as start, TP Q true. The IF Q true sets estado=1 at same cycle. Next cycle state1, tAmarillo edge, Q true, sets estado=2. So each light may be Q true for one cycle (the duration of a scan), not specified times. Actually because state advances immediately, the light output assigned in that state for only one scan; next state turns off previous and light next. So no light lasts. Failure "verde 20s y paso a amarillo" because verde only one scan. Good.
+
+V05: There's a nuance: Paso 2 "ACK con la causa presente: la alarma no se borra (retencion)" fails. Código:
+IF NOT ack1 THEN retAlm1 := alm1; ELSE retAlm1 := FALSE; END_IF.
+If alm1 true and ack1 true, retAlm1 false. So ACK with cause present borra alarma. Falla. If cause withdrawn and no ack, alm1 false, retAlm1 false. Falla. Autorretención missing. Categoría SECUENCIA. Yes.
+
+V06: Another subtlety: `tEstrella` is called with IN:=TRUE in state 0 transition. But TON's Q not evaluated until later. In state 1, they don't call tEstrella(IN:=TRUE), so Q remains false. Actually TON block's internal state might be updated only when called. Since not called, Q stays as last output false. Thus fail. Categoría TEMPORIZACION.
+
+V07: Also in state0, outputs fwd/rev are not explicitly assigned false; if previously rev true and returns to state0 by paro, then next cycle state0 might have outputs still true? But fallos: "Paro" fail? Let's see: In state0, fwd/rev outputs retain previous values because CASE state 0 doesn't set them false. When btnParo in state1 sets estado:=0 on a cycle. But on that same cycle in state1 before checking btnParo, fwd:=TRUE; rev:=FALSE; so when next cycle state0, outputs remain fwd true because no assignment in state0. Thus paro does not turn off motor. The first failing step is 3, "Reversa sin pasar por paro: prohibida" maybe fails first? But also after paro fails. Categoría SECUENCIA because state transitions and outputs not handled. The major forbidden direct transition is SECUENCIA. Could also be SEGURIDAD? Enclavamientos entre salidas? Inversión sin paro is safety interlock. But "SECUENCIA: transiciones de la secuencia..." exact. Use SECUENCIA.
+
+V08: Need examine:
+```
+// Inicialización del timer
+IF NOT timer.Q THEN
+    timer(IN := FALSE, PT := T#30S);
+END_IF;
+
+// Lógica del ventilador
+IF quemadorOn THEN
+    ventilador := TRUE;
+    timer(IN := FALSE);
+ELSE
+    IF NOT timer.Q THEN
+        timer(IN := TRUE);
+    END_IF;
+    ventilador := timer.Q;
+END_IF;
+```
+There is no `timer` invocation in first branch when `timer.Q` is true (because IF NOT timer.Q). Maybe timer not called when Q true. But output ventilador false in post-enfriamiento. Categoría TEMPORIZACION. Let's phrase: "ELSE asigna ventilador := timer.Q durante el pos-enfriamiento; el temporizador de retardo a la conexión no mantiene la salida encendida." Good.
+
+V09: Initial values:
+VAR_OUTPUT buffer array; indice INT; nEventos INT. VAR ultimoEvento: INT := -1; eventosRegistrados: INT := 0; tiempoAcumulado := T#0s. But `indice` and `nEventos` are not assigned until IF nuevoEvento. If no events, outputs default maybe 0. The requirement indice -1 nEventos 0. Falla. Categoría INICIALIZACION.
+
+V10: Code resets timers every scan: `timerStar(IN := FALSE, PT := T#8S); timerDelta(IN := FALSE, PT := T#100MS); deadTime(IN := FALSE, PT := T#100MS);` Then in state 0, when btnMarcha true -> `timerStar(IN := TRUE);` only in that scan. In next scan, the initialization resets `timerStar(IN:=FALSE)` again before CASE. In state 1, they don't call timerStar. Thus no timing. Categoría TEMPORIZACION.
+
+V11: "TP used, Q true immediately during 5s. Thus valvula opens immediately, fails wait 5s." Categoría TEMPORIZACION.
+
+Need output JSON exactly. Could include justificacion one or two frases. Use double quotes.
+
+Let's decide if V04 categoría maybe SECUENCIA. Let's weigh: The problem is that the timer output Q is active during the pulse and the state transition condition `IF tVerde.Q THEN` is true immediately. That's both wrong timer type and wrong transition. If I choose TEMPORIZACION, justificación can mention the transition condition. But category definition "SECUENCIA: transiciones de la secuencia ... ausentes o erróneas, ... acción ejecutada en un momento equivocado." The first fail is because actions/sequence transitions happen at wrong moments. However, root cause is "tipo de temporizador equivocado" (uses TP, which produces a pulse output instead of a done after delay). In these tasks, they likely want categoría TEMPORIZACION for tasks involving "temporizador equivocado" (V04, V11). But V04 also has SECUENCIA.
+
+Let's read V04 failing steps: "Verde 20 s y paso a amarillo", "Amarillo 4 s y paso a rojo", "Rojo 15 s y paso a verde". These are timings. So TEMPORIZACION is more direct. Keep TEMPORIZACION.
+
+What about V03? Failing steps include "Start during recipe ignored", "Temperatura 60.0", "Mezcla aun no cumple 120s" maybe code okay. First failed step is abort in reposo. That is SEGURIDAD.
+
+Need ensure all keys: "codigo", "categoria", "justificacion".
+
+Let's craft final JSON list with 11 objects in order V01..V11.
+
+Potential issue: They might expect only JSON no code fences. We'll output raw JSON.
+
+Let's write justifications carefully:
+
+V01: "El TON se invoca dos veces por ciclo (primero con `IN:=estado_parpadeo` y luego con `IN:=NOT temporizador.Q`), distorsionando los intervalos de 1 s; además la lámpara depende de `estado_parpadeo` alternado solo cuando `Q` está activo." 
+Maybe too long, but okay. "Doble invocación del temporizador por ciclo con `IN := estado_parpadeo` antes y `IN := NOT temporizador.Q` después; esto altera el parpadeo de 1 s." Good.
+
+V02: "Usa un TON para el retardo y `ventilador := quemadorOn OR tRetraso.Q`, de modo que al apagar el quemador la salida cae y solo se activa al final, en vez de mantenerse 30 s."
+
+V03: "El flanco de `btnAbort` se evalúa siempre, incluso con `fase = 0`; en reposo, si `nivelVacio` es FALSE, fuerza `fase := 5`."
+
+V04: "Usa temporizadores TP cuyo `Q` está activo durante todo el pulso; la transición `IF tVerde.Q THEN estado := 1` se cumple de inmediato, sin esperar los 20 s."
+
+V05: "No hay autorretención: `retAlm1 := alm1` (y similares) pierde la alarma cuando la causa desaparece o cuando `ack` se activa con causa presente."
+
+V06: "Los temporizadores `tEstrella` y `tMuerto` solo se llaman en el flanco de marcha/caída, no en cada ciclo dentro de los estados 1 y 2, por lo que no acumulan tiempo." 
+Maybe mention `tEstrella` no se invoca en estado1. Good.
+
+V07: "En los estados de giro se permiten transiciones directas por `btnRev`/`btnFwd` (`ELSIF btnRev THEN estado := 2`), violando el paso obligatorio por paro."
+
+V08: "La lógica de post-enfriamiento usa TON y asigna `ventilador := timer.Q`, por lo que la salida no permanece activa durante los 30 s; el temporizador también se invoca condicionalmente."
+
+V09: "No se asignan `indice := -1` y `nEventos := 0` en el arranque; sin eventos, las salidas conservan valores por defecto y no cumplen el estado inicial."
+
+V10: "Los temporizadores se resetean cada ciclo con `IN := FALSE` antes del CASE y no se invocan con `IN := TRUE` en cada estado, por lo que `timerStar.Q`/`deadTime.Q` nunca completan."
+
+V11: "Usa TP en lugar de TON; `tNivelAlto.Q` se activa durante los 5 s desde el flanco, abriendo la válvula inmediatamente en vez de esperar el retardo."
+
+Now final JSON. Ensure no trailing commas. Use "T#1S" okay in text? Need escape? No.
+
+Let's output.

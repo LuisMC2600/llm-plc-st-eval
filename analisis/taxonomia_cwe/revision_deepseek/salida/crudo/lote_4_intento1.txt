@@ -1,0 +1,74 @@
+```json
+[
+  {
+    "codigo": "J08",
+    "categoria": "TEMPORIZACION",
+    "justificacion": "Usa temporizadores TP (tEstrella y tMuerto) como si fueran TON; TP.Q se activa en el flanco, por lo que las transiciones de estado ocurren casi inmediatamente y no se cumplen los 8 s ni los 100 ms."
+  },
+  {
+    "codigo": "J47",
+    "categoria": "TEMPORIZACION",
+    "justificacion": "Usa TP para tEstrella y tMuerto; tEstrella.Q ya está TRUE en el flanco de arranque, por lo que kY cae al ciclo siguiente en lugar de mantenerse 8 s."
+  },
+  {
+    "codigo": "J01",
+    "categoria": "SECUENCIA",
+    "justificacion": "El contador nAltas se incrementa al terminar timerDuracion.Q, no al detectar la pieza alta; por eso la pieza alta no se cuenta en el momento requerido."
+  },
+  {
+    "codigo": "J02",
+    "categoria": "SECUENCIA",
+    "justificacion": "El ELSE incrementa nBajas cada ciclo en reposo porque solo depende de tEspera.Q y sensorAltura, sin exigir piezaDetectada; el reposo no deja los contadores en cero."
+  },
+  {
+    "codigo": "J12",
+    "categoria": "SECUENCIA",
+    "justificacion": "nAltas se cuenta al final del pulso, dentro de IF tPiston.Q, en lugar de hacerlo en el flanco de detección de la pieza alta."
+  },
+  {
+    "codigo": "J13",
+    "categoria": "SECUENCIA",
+    "justificacion": "El conteo de piezas se realiza al expirar timerRetraso.Q, es decir 2 s después de la detección, en lugar de contar en el flanco de sensorPresencia."
+  },
+  {
+    "codigo": "J14",
+    "categoria": "SECUENCIA",
+    "justificacion": "Los contadores nAltas y nBajas se declaran como VAR local y no como VAR_OUTPUT del FB, y además el CASE los incrementa tras 2 s, no al detectar la pieza."
+  },
+  {
+    "codigo": "J16",
+    "categoria": "FLANCO",
+    "justificacion": "Falta detector de flanco: IF sensorPresencia THEN ... nBajas++/nAltas++ incrementa cada ciclo mientras el sensor está presente."
+  },
+  {
+    "codigo": "J18",
+    "categoria": "SECUENCIA",
+    "justificacion": "El ELSE nBajas++ se ejecuta cuando tEspera.Q es FALSE, incluso en reposo; el contador no se mantiene en cero antes de detectar una pieza."
+  },
+  {
+    "codigo": "J24",
+    "categoria": "FLANCO",
+    "justificacion": "Falta flanco: IF sensorPresencia THEN ... nAltas++/nBajas++ incrementa por nivel, por lo que una presencia sostenida cuenta múltiples veces."
+  },
+  {
+    "codigo": "J27",
+    "categoria": "FLANCO",
+    "justificacion": "El TP tPiston.Q reinicia piezaDetectada en el mismo ciclo de la detección, por lo que una presencia sostenida se vuelve a detectar cada ciclo y los contadores se incrementan repetidamente."
+  },
+  {
+    "codigo": "J28",
+    "categoria": "TEMPORIZACION",
+    "justificacion": "Los TON se invocan con IN:=FALSE al inicio de cada ciclo, reiniciándolos antes de que puedan completar T#2S/T#1S; así el pistón no temporiza y nAltas no se cuenta correctamente."
+  },
+  {
+    "codigo": "J46",
+    "categoria": "FLANCO",
+    "justificacion": "Falta flanco: IF sensorPresencia THEN ... nAltas/nBajas incrementan por nivel, por lo que la presencia sostenida incrementa varias veces."
+  },
+  {
+    "codigo": "J42",
+    "categoria": "SECUENCIA",
+    "justificacion": "El CASE de estados activa bomba1/bomba2 en estados 1 y 2 sin evaluar 'demanda', por lo que al desactivar la demanda las bombas pueden seguir activas; además la alternancia con MOD 3 no alterna correctamente."
+  }
+]
+```

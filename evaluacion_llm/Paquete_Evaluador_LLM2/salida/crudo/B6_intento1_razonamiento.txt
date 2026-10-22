@@ -1,0 +1,672 @@
+Necesito responder solo JSON. Debo puntuar 24 respuestas. Necesito verificar detalles. Debo usar rúbrica, reglas fijas. El JSON de entrada incluye 24 objetos? Voy a contar. Tarea B6 respuestas: B6-4934, 2374, 5301, 5850, 8282, 1513, 5704, 2528, 6083, 8430, 6488, 9731, 2737, 7900, 3083, 2545, 7904, 5267, 2365, 3667, 7194, 1976, 9476, 1094. Son 24. Debo puntuar.
+
+Necesito leer cada código y resultado_codesys. Reglas:
+- funcional_fijo, iec_fijo no null copy exact. Si programa no compila: funcional=0, iec=0 fijados. Otros puntúan.
+- Pasa todos: funcional=3 fijado.
+- Compila falla pasos: funcional 0,1,2 según rúbrica usando pasos fallan.
+- Compila pero no simular: 0-2.
+- Cumplimiento IEC compila: 1 extensiones; 2 declaraciones/tipos correctos; 3 idiomatic.
+
+Necesito puntuar cada item. Para fallos, hay casos que fallan paso 1. Protocolo: paso 1 es alarma activa ventana de 7s, exige duración ON/OFF 1s ±150ms en al menos dos intervalos ON y dos OFF completos. Primer intervalo descartado. Si falla paso 1, probablemente parpadea mal o no parpadea. Paso 0 reposo inicial, alarma false 200ms, lampara apagada. Paso 2 alarma retirada 2.5s, debe apagarse permanentemente. Si falla solo paso 1, funcional probablemente 1? Depende: no funciona nominal? Aquí nominal es alarma activa. Falla en caso nominal -> 0? Rúbrica: 0: no implementa lógica pedida o falla en caso nominal. 1: funciona en caso nominal pero falla límites evidentes. Si falla paso 1 (alarma activa, parpadeo), significa falla en el caso nominal. Entonces funcional 0 según rúbrica. Pero funcional_fijo null, debo elegir entre 0 y 2. El resultado dice "falla 1 de 3 pasos (pasos 1)" para muchos; pasó 0 y 2, no 1. Eso es falla caso nominal de parpadeo. Debo asignar funcional 0. ¿Siempre? Hay variantes que tal vez fallan paso 1 por patrón incorrecto, pero pasan reposo. Es fallo nominal, 0. Revisar si algunos que fallan paso 1 implementan parpadeo pero con frecuencia incorrecta, igual no cumple requisito básico. 0.
+
+Sin embargo, necesito ser cuidadoso. Si falla 1 paso con ventana 7s, podría ser que parpadea a 1s ON/1s OFF pero "primer intervalo descartado" y por timing no da dos ON y dos OFF completos? Ah, posible implementación que empieza apagada 1s luego enciende 1s y así; en 7s hay intervalos: si alarma se activa al inicio de paso, primer intervalo parcial descartado. Supongamos tonOn/tonOff correctos. Hay pulso. Los que pasan son tonOn/tonOff. Los que fallan paso 1 probablemente no alternan correctamente. Veamos.
+
+Voy a evaluar una por una.
+
+Antes de puntuar, necesito extraer códigos.
+
+Respuesta 1 B6-4934:
+FUNCTION_BLOCK FB_Baliza
+VAR_INPUT alarma : BOOL;
+VAR_OUTPUT lampara : BOOL;
+VAR
+ temporizador : TON;
+ estado_parpadeo : BOOL;
+END_VAR
+// Inicialización del temporizador
+temporizador(IN := estado_parpadeo, PT := T#1S);
+IF alarma THEN
+    // Si hay alarma, activar el temporizador
+    temporizador(IN := NOT temporizador.Q);
+    // Alternar el estado de parpadeo cuando el temporizador termina
+    IF temporizador.Q THEN
+        estado_parpadeo := NOT estado_parpadeo;
+    END_IF;
+    // La lámpara sigue el estado de parpadeo
+    lampara := estado_parpadeo;
+ELSE
+    // Si no hay alarma, apagar la lámpara y reiniciar el temporizador
+    lampara := FALSE;
+    estado_parpadeo := FALSE;
+    temporizador(IN := FALSE);
+END_IF;
+END_FUNCTION_BLOCK
+
+Falla paso 1. Lógica extraña: llama temporizador(IN:=estado_parpadeo, PT:=T#1S) al inicio; luego en IF alarma, temporizador(IN:=NOT temporizador.Q). Al inicio estado_parpadeo falsas. TON IN NOT Q: cuando Q false, IN true; PT? segunda llamada sin PT omite? En ST, invocar FB con parámetros opcionales? En CODESYS se puede llamar con menos args, los omitidos conservan valor. Primera llamada con PT T#1S. Segunda llamada cambia IN. Q no es actualizado inmediatamente porque FB se evalúa con IN y PT. Al primer scan Q false, temporizador IN true. Comienza. lampara := estado_parpadeo false. Después 1s, al inicio scan, temporizador(IN:=estado_parpadeo false, PT:=1s) reset? Sorry, cada scan la primera llamada se ejecuta con IN := estado_parpadeo false (porque asignación), lo que desactiva TON. Luego IF alarma: temporizador(IN := NOT temporizador.Q). Al scan en que Q? El TON fue desactivado en la primera llamada, Q false; segunda llama IN true de nuevo. Entonces Q nunca se actualiza a true? En CODESYS FB TON con IN false en primera llamada resetea ET=0, Q false. Luego en misma scan segunda llamada con IN true inicia ET. Al siguiente scan, primera llamada IN false resetea. No hay temporización. Por lo tanto lampara permanece false. No parpadea. Falla paso 1, nominal. funcional 0. IEC: compila. ¿Usos idiomáticos? No, lógica confusa. Declara TON, llama dos veces. Cumplimiento IEC 1? Estándar compila sin cambios. Extensiones no usadas. Declaraciones correctas. Construcciones idiomáticas? No realmente, lógica no idiomatica. Cumplimiento iec=2 tal vez. Porque compila sin cambios, declaraciones y tipos correctos. No es idiomático. Puntuar iec=2. Coherencia lógica: condiciones? variables sin inicializar: estado_parpadeo no inicializado, predeterminado FALSE en CODESYS estándar? VAR sin init -> 0. TON no estático? Llamada inicial con IN estado_parpadeo. No genera dead? La doble llamada crea reset cada scan, no funciona. Coherencia: problemas lógicos que impiden operar. 0? Según rúbrica 0: condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar. Aquí la doble llamada contradice e impide operar. Coherencia 0. Claridad estructural: hay estructura básica, nombres descriptivos, comentarios. Comentarios breves. Aunque repite. Nombres en español correctos. 2 o 3? No modularización, no separación. 2. Mantenibilidad: usa T#1S literal, no parametrizado. Para tarea básica. Hay estado_parpadeo. No duplicación. 2? Parámetro PT en literal, no variable. Mantenibilidad 1 o 2. Rúbrica: 1 modificable con esfuerzo; constantes parcialmente parametrizadas. 2 parámetros como variables o constantes declaradas; cambios localizados. Aquí T#1S está en dos llamadas. No constante declarada. 1. Podría ser 2 porque simple. Mantenibilidad 1. Debemos ser consistentes.
+
+Justificaciones una línea.
+
+Respuesta 2 B6-2374:
+Similar B6-4934:
+temporizador(IN := estado_parpadeo, PT := T#1S);
+IF alarma THEN
+    temporizador(IN := NOT temporizador.Q);
+    estado_parpadeo := temporizador.Q;
+    lampara := estado_parpadeo;
+ELSE
+    temporizador(IN := FALSE);
+    estado_parpadeo := FALSE;
+    lampara := FALSE;
+END_IF
+END_FUNCTION_BLOCK
+
+Misma doble llamada, reset cada scan. Falla paso 1. funcional 0. iec=2. coherencia=0. claridad=2. mantenibilidad=1 (pt literal en primera, segunda sin PT). just.
+
+Respuesta 3 B6-5301:
+Pasa 3 pasos. funcional_fijo=3, iec_fijo null. Código:
+FUNCTION_BLOCK FB_Baliza
+VAR_INPUT alarma BOOL;
+VAR_OUTPUT lampara BOOL;
+VAR tOn TON; tOff TON; parpadeo BOOL;
+END_VAR
+IF NOT alarma THEN
+ parpadeo := FALSE;
+ tOn(IN:=FALSE, PT:=T#1S);
+ tOff(IN:=FALSE, PT:=T#1S);
+ELSE
+ tOn(IN:=parpadeo, PT:=T#1S);
+ tOff(IN:=tOn.Q, PT:=T#1S);
+ IF tOff.Q THEN
+  tOn(IN:=FALSE, PT:=T#1S);
+  tOff(IN:=FALSE, PT:=T#1S);
+  parpadeo := TRUE;
+ END_IF;
+ IF NOT parpadeo AND NOT tOn.Q AND NOT tOff.Q THEN
+  parpadeo := TRUE;
+ END_IF;
+END_IF;
+lampara := alarma AND parpadeo AND NOT tOn.Q;
+END_FUNCTION_BLOCK
+
+Funciona? Pasa. IEC: compila sin cambios, declaraciones correctas. ¿Idiomático? Usa dos TON y lógica algo enredada. Comparable a implementaciones más elegantes con TON/TOF? Estándar correcto, no extensiones. ¿Idiomático? Quizás 2, no 3. Necesito consistencia. Para los que pasan, iec puede variar. Reglas: IEC cuando compila: 1 extensiones, 2 declaraciones y tipos correctos, 3 si además es idiomático. Muchos usan TON estándar. Algunos son idiomáticos. ¿Cuál es idiomatic? La implementación con dos TON cadena (tOn(IN:=alarma AND NOT tOff.Q), tOff(IN:=tOn.Q), lampara := alarma AND NOT tOn.Q) es elegante y idiomática (generador de pulsos). Las máquinas de estado con TON en dos fases también son idiomáticas. Esta B6-5301 tiene lógica de arranque extraña: "Fase encendida activa tOn mientras parpadeo", "cuando tOff.Q resetea y parpadeo TRUE", "arranca primer ciclo". Es más compleja, pero compila y usa TON. Idiiomático quizás no. IEC 2. Coherencia: La lógica pasa todos pasos. Es coherente? Tiene redundancias, parpadeo inicial. Posibles estados inalcanzables? Revisar: sin alarma resets. Con alarma primer scan parpadeo false, tOn.Q false, tOff.Q false. Else: tOn(IN:=parpadeo false), tOff(IN:=tOn.Q false). Then IF tOff.Q false. IF NOT parpadeo AND NOT tOn.Q AND NOT tOff.Q TRUE => parpadeo TRUE. lampara := alarma AND true AND NOT tOn.Q. tOn.Q? después primera llamada a tOn(IN:=false), Q false, lampara true. Siguiente scan parpadeo true, tOn IN true comienza. Después 1s, tOn.Q true, tOff IN true comienza, lampara false. tOff Q? al mismo scan? TON tOff con IN true inicio, Q false. Siguiente scans tOff ET increases. Después 1s tOff.Q true, resets and parpadeo true. Then after tOff reset? En same scan: tOn false, tOff false, parpadeo true. Luego IF NOT parpadeo false, lampara true? Wait tOn.Q after tOn(IN:=FALSE, PT:=1s) is false, lampara true. Good. Coherente aunque complejo. Puntuación coherencia 2, no 3 por redundante. Claridad 2: nombres descriptivos, secciones. Mantenibilidad: T#1S literal, no parametrizado, repite tres veces. 1. Podría ser 1. Ambos T#1S mágicos. 1.
+
+Respuesta 4 B6-5850:
+Pasa 3.
+FUNCTION_BLOCK FB_Baliza
+VAR_INPUT alarma BOOL;
+VAR_OUTPUT lampara BOOL;
+VAR tonOn TON; tonOff TON;
+END_VAR
+tonOn(IN := alarma AND NOT tonOff.Q, PT := T#1S);
+tonOff(IN := tonOn.Q, PT := T#1S);
+lampara := alarma AND NOT tonOn.Q;
+END_FUNCTION_BLOCK
+
+Idiomática? Es generador astable con dos TON. Funciona correctamente? Let's analyze: alarma true. Inicial tonOff.Q false, tonOn IN true, counts 1s. lampara true (NOT tonOn.Q). At 1s tonOn.Q true -> lampara false, tonOff IN true counts 1s. At next scan? tonOff.Q remains false until 1s after. When tonOff.Q true, tonOn IN false, resets tonOn Q. Simultaneously tonOff resets due IN false? If tonOn.Q may still be true until tonOn call? Need ST evaluation order: tonOn called first with IN = alarma AND NOT tonOff.Q. At scan where tonOff.Q true from previous? tonOff FB call at end previous scan set Q true. At current scan, tonOn(IN := alarma AND NOT tonOff.Q) = false, so tonOn resets Q false. Then tonOff(IN := tonOn.Q false) resets Q false. So cycle repeats 1s ON 1s OFF. Pasa. IEC: idiomático? Uso de dos TON estándar. 3. Coherencia: sin contradicciones, robusta: sin alarma resets. 3. Claridad: buenos comentarios, nombres, conciso. 3? Estructura con comentarios. No hay mucho. 2 o 3. Es clara y simple, no módulos. 2. Mantenibilidad: T#1S literal, sin constantes. 1. Pero se repite 2 veces. Podría 2? "Parámetros como variables o constantes declaradas". No. 1. ¡Sin embargo, para tareas simples, muchos obtienen mantenibilidad 2? Rúbrica 2 requiere parámetros como variables o constantes. Si no, 1. Usa T#1S literal mágico; 1. Pero quiero consistente: todas literales T#1S sin constantes puntuar mantenibilidad 1. Algunos tienen variables internas para estado. Se podrían considerar "cambios localizados", la duración está en PT en línea única. Aún así T#1S repetido. Pues 1.
+
+Respuesta 5 B6-8282:
+Pasa 3. Código máquina de estados con tonEncendida y tonApagada. Declaraciones correctas. Funciona. IEC idiomático? Usa TON correctamente en dos fases. Es más verboso. 2 o 3. "Usa construcciones idiomáticas del estándar". Sí, TON bien instanciado, TIME correcto. Aunque la máquina de estados es idiomática. 3? Podría dar 2 por no tan conciso. Necesito criterio. Para iec, "3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." Casi todos los que compilan y usan TON correctamente podrían ser 3. Pero si la lógica es dudosa, iec no debe ser 3. Debemos puntuar cumplimiento IEC no funcional. B6-8282 usa TON bien instanciado, POU FUNCTION_BLOCK correcto, tipos TIME T#1S. A mi juicio iec=3. Coherencia: robusta, situación sin alarma resets, fases claras, aunque redundante. Puede ser 3. Claridad: comentarios útiles, secciones, nombres descriptivos. 3. Mantenibilidad: PT T#1S literal, no constantes. 1 o 2? Está repetido en all phases. No hay constantes. 1. Aunque parámetros de entrada FB? No, solo alarma entrada, lampara salida. No hay constantes de tiempo. 1.
+
+Respuesta 6 B6-1513:
+Falla paso 1. Código:
+tParpadeo : TP; (* Temporizador para parpadeo *)
+estado : BOOL;
+IF alarma THEN
+    tParpadeo(IN := TRUE, PT := T#1S);
+    estado := NOT estado; (* Cambia estado *)
+ELSE
+    tParpadeo(IN := FALSE);
+    estado := FALSE;
+END_IF;
+lampara := estado AND alarma;
+END_FUNCTION_BLOCK
+
+Uso de TP (pulso) no estándar? IEC 61131-3 incluye TP? Sí, TP es bloque estándar (timer pulse). Pero en CODESYS TP existe. Sin embargo, el código asigna estado := NOT estado en cada scan mientras alarma, no espera Q. Entonces lampara oscila cada scan, no cada segundo. Falla paso 1. Además el temporizador no influye. Funcional 0. IEC: compila, usa TP. Declaraciones correctas. ¿Idiomático? Uso incorrecto de TP. Cumplimiento 1? La rúbrica iec 1: usa extensiones fuera estándar. No. 2: declaraciones y tipos correctos. Funciona compilación. Aunque TP es estándar. Un evaluador de IEC podría ver que usa TP mal, no idiomático. No penalizar funcional en iec. "Cumplimiento IEC 61131-3" se refiere a compilar/sintaxis. Compila, usa TP (estándar), tipos correctos. Podría ser 2. Coherencia: contradicción, temporizador irrelevante, estado cambia cada scan. 0. Claridad: nombres descriptivos, comentarios breves. 2. Mantenibilidad: T#1S literal, 1.
+
+Respuesta 7 B6-5704:
+tParpadeo : TP;
+estado : BOOL;
+IF alarma THEN
+    tParpadeo(IN := TRUE, PT := T#1S);
+    estado := tParpadeo.Q;
+    lampara := estado;
+ELSE
+    lampara := FALSE;
+END_IF
+END_FUNCTION_BLOCK
+
+Falla paso 1. Uso TP: TP con IN true da pulso Q true durante PT=1s después del flanco ascendente de IN. Aquí IN se llama TRUE cada scan; TP en CODESYS: Q es true for PT after rising edge. Since IN remains TRUE constant, Q goes true for 1s then false. lampara := tParpadeo.Q, so lampara on 1s, then off forever until IN edge again. Si alarma permanece activa, TP no retrigger. No parpadea continuamente; una vez apagada no vuelve. Falla. funcional 0. iec=2? uso TP estándar. Coherencia: la lógica impide operación continua. 0. Claridad 2. Mant 1.
+
+Respuesta 8 B6-2528:
+Pasa 3. Similar B6-5301 con comentarios. Fija funcional=3. Código:
+tOn(IN := parpadeo, PT := T#1S);
+tOff(IN := tOn.Q, PT := T#1S);
+IF tOff.Q THEN
+ tOn(IN := FALSE, PT := T#1S);
+ tOff(IN := FALSE, PT := T#1S);
+ parpadeo := TRUE;
+END_IF;
+IF NOT parpadeo AND NOT tOn.Q AND NOT tOff.Q THEN
+ parpadeo := TRUE;
+END_IF;
+lampara := alarma AND parpadeo AND NOT tOn.Q;
+
+Pasa. Similar a B6-5301. IEC: 2. Coherencia: 2. Claridad: 2. Mant: 1.
+
+Respuesta 9 B6-6083:
+Pasa 3.
+VAR timer : TON; estado : BOOL;
+END_VAR
+// Inicialización del timer
+IF timer.Q = FALSE THEN
+    timer(IN := TRUE, PT := T#1S);
+END_IF;
+IF alarma THEN
+    lampara := estado;
+    IF timer.Q THEN
+        estado := NOT estado;
+        timer(IN := FALSE); // Reinicia
+        timer(IN := TRUE); // Reinicia
+    END_IF;
+ELSE
+    lampara := FALSE;
+END_IF;
+END_FUNCTION_BLOCK
+
+Pasa harness? Dice Pasa los 3. Interesante: estado no inicializado (default FALSE). timer se activa siempre por IF timer.Q = FALSE (si Q false) cada scan? Let's see: en scan inicial, timer.Q false, timer(IN:=TRUE, PT:=1S). comienza. Next scans: timer.Q puede false hasta 1s, then IF timer.Q=false true y llama timer(IN:=TRUE) de nuevo, no lo resetea porque IN true mantiene. After 1s, at scan timer.Q true, no entrar a initialization IF timer.Q=false. Luego IF alarma: lampara := estado false. IF timer.Q true: estado := NOT estado true; timer(IN:=FALSE); timer(IN:=TRUE); resets. Siguiente scan timer.Q false (reset), initialization IF timer.Q=false true llama timer(IN:=TRUE). Lógica de parpadeo: timer counts 1s then toggles. lampara assigned estado before toggle, so on first cycle lampara remains false for 1s, then true for 1s? After first Q, estado toggles to true, but lampara assigned before toggle, so lampara stays false for first 1s. Then second cycle: scan start lampara := estado true. Timer Q false? after reset and restart, IF timer.Q false executes timer(IN:=TRUE) maybe; lampara true. After 1s Q true, toggles estado false. lampara assigned estado true at start, remains true for that scan. Then next cycle lampara false. Thus output is 1s OFF, then 1s ON, etc. Harness discards first interval and requires two ON and two OFF. In 7s, after initial discarded? La alarma se activa al inicio paso. Primer intervalo (off) descartado. Then ON 1s, OFF 1s, ON 1s, OFF 1s? Need at least two ON and two OFF complete: after discarding first OFF, we get ON1, OFF1, ON2, OFF2 in 4s, passes. OK. Sin alarma, lampara false, timer sigue corriendo? Si timer.Q true and alarma false, initialization? timer.Q maybe true, no reset. But state? lampara false, timer puede quedar Q true y no se reinicia. Al retirar alarma, si timer.Q true y no se resetea? Paso 2: alarma false, lampara false. timer if Q remains true? La salida lampara false, no parpadea, pasa. Si timer.Q era true, IF timer.Q=false no ejecuta, timer no reset. No afecta lampara. Paso 0: inicial timer.Q false, timer counts, alarma false, lampara false. OK.
+
+IEC: usa TON estándar. Lógica un poco confusa, con doble llamada timer(IN:=FALSE), timer(IN:=TRUE). ¿Idiomático? No, la doble llamada para reiniciar es técnica pero no elegante. 2. Coherencia: Tiene timer libre sin alarma. Posibles problema: estado no init, default false. No contradictions. Coherencia: 2? La lógica funciona, pero la inicialización del timer y control no es robusta. Podría 2. Claridad: nombres descriptivos, comentarios. 2. Mant: T#1S literal, 1.
+
+Respuesta 10 B6-8430:
+Similar B6-6083 pero sin reiniciar timer(IN:=TRUE) después? Code:
+IF timer.Q = FALSE THEN
+    timer(IN := TRUE, PT := T#1S);
+END_IF;
+IF alarma THEN
+    lampara := estado;
+    IF timer.Q THEN
+        estado := NOT estado;
+        timer(IN := FALSE);  // Reinicia
+        timer(IN := TRUE);   // Reinicia
+    END_IF;
+ELSE
+    lampara := FALSE;
+END_IF;
+
+Pasa 3. Idéntico a 6083. Puntuar igual. iec=2, coherencia 2, claridad2, mant1.
+
+Respuesta 11 B6-6488:
+Pasa 3.
+VAR tParpadeo : TON; estadoParpadeo : BOOL;
+tParpadeo(IN := alarma AND NOT tParpadeo.Q, PT := T#1S);
+IF tParpadeo.Q THEN
+    estadoParpadeo := NOT estadoParpadeo;
+    tParpadeo(IN := FALSE); // Reinicia
+END_IF
+lampara := alarma AND estadoParpadeo;
+END_FUNCTION_BLOCK
+
+Pasa? Dice Pasa 3. Analizar: tParpadeo astable. Inicial estadoParpadeo false. tParpadeo(IN := alarma AND NOT tParpadeo.Q): with alarma true, tParpadeo.Q false -> IN true. tParpadeo counts 1s, lampara false. At 1s tParpadeo.Q true; IF tParpadeo.Q TRUE: estadoParpadeo := NOT false = true; tParpadeo(IN := FALSE) resets Q false. Then lampara := alarma AND true => true. Next scan tParpadeo(IN := true AND NOT tParpadeo.Q false)= true, starts counting 1s, lampara true. At 1s Q true, IF toggles estadoParpadeo false, reset. Then lampara false. So cycle 1s OFF, 1s ON, discarding first yields still passes. Sin alarma: lampara false, tParpadeo IN false. estadoParpadeo no se resetea cuando no alarma? Al retirar alarma, estadoParpadeo queda en su valor, lampara false. Al reactivar, estadoParpadeo puede estar true, first interval maybe ON, descartado anyway. Funciona. IEC: uso TON estándar, idiomático con auto-reset? Técnica estándar, pero la combinación de toggle en Q y reset es común. 3? Podría dar 3 por idiomatic. Es similar a generador, pero con estado adicional y reset. Es idiomático. Coherencia: sin alarma no resetea estadoParpadeo; no afecta salida, pero al reactivar puede cambiar fase. No es grave, robusta. 2 o 3. 2. Claridad: buena. Mant: T#1S literal en dos lugares? tParpadeo PT y comentario. 1.
+
+Respuesta 12 B6-9731:
+Similar B6-5704: TP, estado := tParpadeo.Q, lampara estado. Falla paso 1. funcional 0. iec=2. coherencia=0. claridad=2. mant=1.
+
+Respuesta 13 B6-2737:
+Pasa 3.
+ton_Encendido(IN := alarma AND NOT ton_Apagado.Q, PT := T#1S);
+ton_Apagado(IN := ton_Encendido.Q, PT := T#1S);
+lampara := alarma AND NOT ton_Encendido.Q;
+Equal B6-5850. Pasa. IEC 3 (idiomatic). Coherencia 3. Claridad 2? Comentarios claros, nombres. 2. Mant 1? T#1S literal. 1. Podría de hecho mantenibilidad 1.
+
+Respuesta 14 B6-7900:
+Falla paso 1.
+VAR tOn, tOff, parpadeo.
+IF NOT alarma THEN
+ parpadeo := FALSE;
+ tOn(IN:=FALSE, PT:=T#1S);
+ tOff(IN:=FALSE, PT:=T#1S);
+ELSE
+ tOn(IN:=parpadeo, PT:=T#1S);
+ tOff(IN:=tOn.Q, PT:=T#1S);
+ IF tOff.Q THEN
+  parpadeo := FALSE;
+ END_IF;
+ IF NOT tOn.IN AND NOT tOff.IN THEN
+  parpadeo := TRUE;
+ END_IF;
+END_IF;
+lampara := parpadeo AND alarma;
+END_FUNCTION_BLOCK
+
+Falla paso 1. Analizar: Sin alarma resets. Con alarma, primer scan parpadeo false, tOn IN false, tOff IN false. IF tOff.Q false. IF NOT tOn.IN AND NOT tOff.IN? tOn.IN is false, tOff.IN false -> true => parpadeo true. lampara true same scan. Next scan parpadeo true -> tOn IN true. tOn Q false. lampara true. After 1s tOn.Q true. Then tOff IN true. lampara := parpadeo AND alarma = true? Wait lampara = parpadeo true, así que lampara remains true even during tOff? Let's trace: parpadeo is true during tOn, remains true after tOn.Q true because no change until tOff.Q. tOff counts 1s, lampara stays true. After tOff.Q true, IF tOff.Q THEN parpadeo := FALSE. Then IF NOT tOn.IN AND NOT tOff.IN? At that scan, tOn.IN? previous tOn call this scan: tOn(IN:=parpadeo) with parpadeo true before IF, so tOn.IN true; tOff.IN true. Condition false. lampara := false (parpadeo false). Next scan parpadeo false, tOn IN false resets tOn Q? tOn was maybe Q? It had tOn.Q true? Actually tOn.IN true from previous, Q was true; now tOn IN false resets Q false. tOff(IN := tOn.Q false) resets tOff.Q false. Then IF tOff.Q false. IF NOT tOn.IN AND NOT tOff.IN => true => parpadeo true. lampara true. Cycle: ON 2s (first immediate 1s during tOn + 1s during tOff), OFF? There is a brief? We need timings: ON from parpadeo true for tOn 1s and tOff 1s = 2s ON. Then parpadeo false for one scan? next scan parpadeo true immediately, so OFF only one scan (4-10ms), not 1s. So fails. funcional 0. iec=2 (usa TON correcto? aunque mal). coherencia: lógica tiene error de estado, tOn/tOff no generan OFF. 0. claridad: 2. mant 1.
+
+Respuesta 15 B6-3083:
+Pasa 3. Máquina de estados clara con estadoLampara initialized false. Similar B6-8282. Código:
+IF NOT alarma THEN
+ estadoLampara := FALSE;
+ tonEncendido(IN := FALSE, PT := T#1S);
+ tonApagado(IN := FALSE, PT := T#1S);
+ELSE
+ IF NOT estadoLampara THEN
+  tonEncendido(IN := FALSE, PT := T#1S);
+  tonApagado(IN := TRUE, PT := T#1S);
+  IF tonApagado.Q THEN
+   estadoLampara := TRUE;
+   tonApagado(IN := FALSE, PT := T#1S);
+  END_IF;
+ ELSE
+  tonApagado(IN := FALSE, PT := T#1S);
+  tonEncendido(IN := TRUE, PT := T#1S);
+  IF tonEncendido.Q THEN
+   estadoLampara := FALSE;
+   tonEncendido(IN := FALSE, PT := T#1S);
+  END_IF;
+ END_IF;
+END_IF;
+lampara := estadoLampara AND alarma;
+END_FUNCTION_BLOCK
+
+Pasa. Funciona ciclo. IEC: TON bien instanciado, idiomático. 3. Coherencia: robusta, sin alarma resets, fases correctas. 3. Claridad: 3 (secciones, comentarios). Mant: T#1S literal repetido, but ¿es extensible? No tiene constantes para tiempos. 1. Podría ser 2 si usan variables? No. Mant 1.
+
+Respuesta 16 B6-2545:
+Pasa 3.
+VAR estado : BOOL := FALSE; timer : TON;
+END_VAR
+// Configuración del timer
+timer(IN := TRUE, PT := T#1S);
+IF alarma THEN
+    lampara := estado;
+    IF timer.Q THEN
+        estado := NOT estado;
+        timer(IN := FALSE); // Reiniciar
+    END_IF
+ELSE
+    lampara := FALSE;
+END_IF
+END_FUNCTION_BLOCK
+
+Importante: timer(IN := TRUE, PT:=T#1S) called each scan, no reset after Q except timer(IN:=FALSE) inside IF. After toggling, timer IN false reset. Next scan timer(IN:=TRUE) again starts. Works. Similar a 6083 but without the second reinicio. Pasa. IEC: TON estándar. ¿Idiomático? La llamada inicial incondicional timer(IN:=TRUE) combinada con IF timer.Q toggle es idiomática (timer free-running). 2 o 3. Poca claridad? Timers. Iec=2? "construcciones idiomáticas" maybe 2. Coherencia: timer reset asimétrico. Sin alarma timer can stop? Let's analyze: timer(IN:=TRUE) se ejecuta incondicional cada scan. Sin alarma, si timer.Q true? At scan beginning timer(IN:=TRUE); if Q true? Actually if timer.Q true from previous scan, EN true keeps. IF timer.Q true inside alarma? but alarma false so no reset, timer keeps Q true. Thus timer remains Q true forever with no toggling. When alarma true, lampara := estado, IF timer.Q true immediately toggles and resets. This means on re-trigger can toggle immediately, affecting phase. But harness step 2 alarma false, lampara false. Pass. Coherence 2. Claridad: 2. Mant: 1.
+
+Respuesta 17 B6-7904:
+Pasa 3. Similar B6-5850 tonEncendido tonApagado. IEC 3. Coherencia 3. Claridad 2. Mant 1.
+
+Respuesta 18 B6-5267:
+Pasa 3. Similar. IEC 3. Coherencia 3. Claridad 2. Mant 1.
+
+Respuesta 19 B6-2365:
+Pasa 3. Similar B6-3083 máquina de estados. Código:
+IF NOT alarma THEN
+ estadoLampara := FALSE;
+ tonEncendido(IN := FALSE, PT := T#1S);
+ tonApagado(IN := FALSE, PT := T#1S);
+ELSE
+ IF NOT estadoLampara THEN
+ ...
+ ELSE
+ ...
+ END_IF;
+END_IF;
+lampara := estadoLampara; // Not AND alarma, but sin alarma estado false, so OK.
+END_FUNCTION_BLOCK
+
+Pasa. IEC 3. Coherencia 3. Claridad 3. Mant 1.
+
+Respuesta 20 B6-3667:
+Pasa 3. Similar B6-5850 con Timer_ON/Off. IEC 3? Timer_ON, Timer_OFF idiomatic. Coherencia 3. Claridad 2. Mant 1.
+
+Respuesta 21 B6-7194:
+Pasa 3. Similar tOn/tOff. IEC 3. Coherencia 3. Claridad 2. Mant 1.
+
+Respuesta 22 B6-1976:
+Pasa 3. Similar B6-6488. tParpadeo(IN:=alarma AND NOT tParpadeo.Q), IF tParpadeo.Q THEN estado toggle y reset. lampara. Pasa. IEC: idiomático? podríamos 3. Coherencia: 2 (no resetea estado sin alarma). Claridad 2. Mant 1.
+
+Respuesta 23 B6-9476:
+Falla paso 1.
+VAR timerBlink : TON; estadoParpadeo : BOOL;
+END_VAR
+// Inicialización del temporizador
+timerBlink(IN := estadoParpadeo, PT := T#1S);
+IF alarma THEN
+    IF timerBlink.Q THEN
+        estadoParpadeo := NOT estadoParpadeo;
+        timerBlink(IN := FALSE);
+    ELSE
+        timerBlink(IN := TRUE);
+    END_IF;
+    lampara := estadoParpadeo;
+ELSE
+    lampara := FALSE;
+    estadoParpadeo := FALSE;
+    timerBlink(IN := FALSE);
+END_IF;
+END_FUNCTION_BLOCK
+
+Similar a B6-4934 con doble llamada? Inicial timerBlink(IN:=estadoParpadeo) false. IF alarma: IF timerBlink.Q false, ELSE timerBlink(IN:=TRUE). Primer scan inicia timer. Next scan inicial timerBlink(IN:=estadoParpadeo) false -> resets timer, Q false. IF alarma else timerBlink(IN:=TRUE) starts again. So never reaches Q. No parpadea. Falla. funcional 0. iec=2. coherencia 0. claridad 2. mant 1.
+
+Respuesta 24 B6-1094:
+Pasa 3. Similar B6-6488 y B6-1976 with IF alarma ELSE resets estado. Código:
+tParpadeo(IN := alarma AND NOT tParpadeo.Q, PT := T#1S);
+IF alarma THEN
+    IF tParpadeo.Q THEN
+        estadoParpadeo := NOT estadoParpadeo;
+        tParpadeo(IN := FALSE);
+    END_IF;
+    lampara := estadoParpadeo;
+ELSE
+    lampara := FALSE;
+    estadoParpadeo := FALSE;
+END_IF;
+END_FUNCTION_BLOCK
+
+Pasa. Similar a B6-1976 but resets state when no alarm. IEC: 3. Coherencia: 3? It resets state, robust. Claridad 2. Mant 1.
+
+Ahora, debo asignar iec correctamente. Revisemos todos:
+B6-4934: iec=2.
+B6-2374: iec=2.
+B6-5301: iec=2.
+B6-5850: iec=3.
+B6-8282: iec=3.
+B6-1513: iec=2? Uso TP estándar. Lógica no idiomática. ¿Cumplimiento IEC 1? "uso extensiones fuera del estándar" no. Podría ser 1 si usa extensiones? No. No compila solo tras correcciones; compila. 2. Aunque TP es estándar, compila. 2.
+B6-5704: iec=2.
+B6-2528: iec=2.
+B6-6083: iec=2.
+B6-8430: iec=2.
+B6-6488: iec=3? Usa TON, auto reset, idiomático. Si le doy 3 a B6-5850, B6-6488 similar en estilo. Es idiomático. 3.
+B6-9731: iec=2.
+B6-2737: iec=3.
+B6-7900: iec=2.
+B6-3083: iec=3.
+B6-2545: iec=2.
+B6-7904: iec=3.
+B6-5267: iec=3.
+B6-2365: iec=3.
+B6-3667: iec=3.
+B6-7194: iec=3.
+B6-1976: iec=3.
+B6-9476: iec=2.
+B6-1094: iec=3.
+
+¿Es correcto dar 3 a muchos? La rúbrica dice "3: compila sin cambios y usa construcciones idiomáticas... bloques estándar como TON... bien instanciados". Todos los que pasan y usan TON bien instanciado podrían ser 3. En los que fallan, algunos usan TON mal o TP no correcto, iec=2. Los que fallan B6-4934, 2374, 7900, 9476 usan TON mal instanciado (doble llamada) pero compilan. No idiomático, iec=2. B6-1513/5704/9731 usan TP, compilan, no idomatic? 2. B6-5301/2528 usan TON en lógica compleja. Pasan. ¿Podría ser 3? "usa construcciones idiomáticas"; la forma es enredada, pero bloques estándar bien instanciados. Sin embargo, no tan idiomático como cadena de TON. Podría dar 2. B6-6083/8430/2545 usan TON en free-running, no es tan idiomático (doble resets), iec=2. Coherencia claridad mantenibilidad.
+
+Necesito puntuar con docentes. Debo ser consistente. Posible esquema:
+- Para funcional no fijado y falla paso 1: 0.
+- IEC: 2 para fallan? Algunos que pasan pero no elegante: 2. Que pasa y elegante: 3.
+- Coherencia: fallan por lógica no funcional: 0.
+- Claridad: generalmente 2, algunos 3.
+- Mantenibilidad: 1 para todos los T#1S sin constantes. Except maybe they use variables? Ninguno usa constantes de tiempo. Hay una entrada/salida, no parámetros. Por rúbrica, 1. Podría parecer duro. Revisa: B6-3083 usa T#1S en múltiples lineas, sin constantes. Mant 1. B6-8282 usa T#1S en varias. Mant 1. B6-5301 usa T#1S varias. Mant 1. B6-5850 usa T#1S dos veces. Mant 1. B6-6488 usa T#1S una vez PT y luego llamada sin PT. Mant 1. B6-7904 usa T#1S dos veces. Mant 1. Todo. La rúbrica "1: modificable con esfuerzo; constantes parcialmente parametrizadas." ¿T#1S se puede considerar parcialmente parametrizado? No. 0: valores mágicos por todas partes. No por todas partes, solo tiempo. 1. De acuerdo.
+
+Claridad: criterios:
+0: sin estructura, nombres crípticos, sin comentarios.
+1: estructura básica, nombres pobres o comentarios ausentes/incorrectos.
+2: nombres descriptivos, secciones ordenadas, comentarios útiles.
+3: además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican porqué.
+
+Todos son FUNCTION_BLOCK, reutilizable. No separación entre lógica y E/S, es un FB simple. Algunos con máquina de estados y comentarios "sin alarma: apagar y resetear". Podría 3 si comentarios explican porqué y modularización adecuada? La tarea pide FB, no hay mucho. B6-8282, B6-3083, B6-2365 tienen comentarios extensos que explican porqué. B6-5850 tiene comentarios concisos. Necesito no inflar. Claridad 3 requiere modularización adecuada, que no hay mucho. En CODESYS, el POU es FB, suficiente? "POU adecuado" se evalúa en IEC, no claridad. La tarea específica pide FB, no separación lógica/E/S. Dar 2 a la mayoría. Para B6-3083 y B6-2365, comentarios excelentes, estructura de fases, quizás 3. B6-8282 también. B6-5301/2528 tienen comentarios. 2.
+
+Coherencia para los que pasan: varía. 
+- B6-5850/2737/7904/5267/3667/7194 cadena de TON: coherencia 3 (sin contradicciones, inicialización, transiciones completas, robusta). ¿Comportamiento seguro ante entradas simultáneas? La alarma activa/desactiva arbitrada. Es robusta. 3.
+- B6-8282/3083/2365 máquina de estados sin redundancia: coherencia 3.
+- B6-6488/1976/1094 toggling con reset: coherencia 2 o 3? Tienen comportamiento de reinicio de fase. No son máquinas de estados completas; sin alarma no reseteo en B6-6488 y B6-1976; B6-1094 sí resets. Aun así, pasan. Puede ser 2. B6-1094 resets, aún lógica basada en flanco de Q, robusta. 2 o 3. 3 maybe. 
+- B6-5301/2528 lógica de arranque redundante; coherencia 2.
+- B6-6083/8430/2545 free-running TON, sin alarma no resetea temporizador. Coherencia 2.
+
+Necesito elegir justificaciones una línea para cada.
+
+Debo garantizar JSON válido, sin markdown. "Responde únicamente con una lista JSON válida de 24 objetos, en el mismo orden." Usaré bloques? No, final debe ser JSON. Necesito incluir los campos: codigo, funcional, iec, coherencia, claridad, mantenibilidad, just_func_iec, just_coherencia, just_claridad, just_mantenibilidad. Para funcional_fijo no null, just_func_iec puede ser "". Para funcional fijo=3 y iec no fijo, just_func_iec "". La instrucción: "just_func_iec": "una línea, o \"\" si las dos estaban fijadas". Si funcional fijado pero iec no, la just podría ser solo iec. Mejor para cada objeto: si funcional_fijo = 3, iec_fijo null, just_func_iec debe justificar iec. Pues no vacío. Si ambas fijadas, vacío. En nuestros casos funcional fijo=3, iec no fijado. "just_func_iec" debe una línea, puede decir "Funcional fijado; IEC compila y usa..." okay. 
+
+Necesito asegurar valores fijos:
+- Pasan 3: funcional_fijo=3. Debo copiar exactamente. En entradas: B6-5301 funcional_fijo=3, iec_fijo=null. B6-5850 3, B6-8282 3, B6-2528 3, B6-6083 3, B6-8430 3, B6-6488 3, B6-2737 3, B6-3083 3, B6-2545 3, B6-7904 3, B6-5267 3, B6-2365 3, B6-3667 3, B6-7194 3, B6-1976 3, B6-1094 3. Hay que contarlos. Respuestas que pasan 3: 5301, 5850, 8282, 2528, 6083, 8430, 6488, 2737, 3083, 2545, 7904, 5267, 2365, 3667, 7194, 1976, 1094. Son 17. Falla paso 1: 4934, 2374, 1513, 5704, 9731, 7900, 9476 = 7. Total 24. Expected.
+- Falla paso 1 y funcional_fijo null: debo funcional=0. Sí.
+- iec_fijo siempre null. Para no compila? Ninguno no compila. Así funcional_fijo no es 0. Puntúo iec 1-3. No hay iec=0.
+
+Vamos a re-evaluar los fallos: ¿funcional 0 o 1? Rúbrica dice 0 "no implementa la lógica pedida o falla en el caso nominal." Estos fallan paso 1, que es alarma activa=nominal. Por tanto 0. Incluso B6-1513 con parpadeo a frecuencia alta: falla caso nominal porque no ciclo 1s/1s. 0. B6-5704 con TP una vez: falla nominal. 0. B6-4934/2374 no parpadea. 0. B6-7900 parpadea con ON 2s/OFF casi 0. 0. B6-9476 no parpadea. 0. Correcto.
+
+IEC:
+¿Podría alguno usar TP no estándar? IEC 61131-3 incluye TP. No es extensión. So iec=2. ¿Los que usan TON mal compilados son "declaraciones y tipos correctos"; 2. No 1. Correcto.
+
+Ahora, para just_func_iec una línea para fallo: "Funcional no fijado: falla el paso 1 (nominal) al no generar parpadeo 1s/1s." y "IEC: compila con TON estándar, aunque no idiomático." ok.
+
+For pases: funcional fijado=3, justifica iec en one line.
+
+Voy a crear cada objeto.
+
+Lista en orden:
+
+1 B6-4934:
+funcional 0, iec 2, coherencia 0, claridad 2, mant 1.
+just_func_iec: "Falla paso 1 (alarma nominal) porque la doble llamada al TON impide temporizar; compila con TON estándar pero no idiomático."
+just_coherencia: "Doble llamada contradictoria al TON reinicia la temporización cada ciclo; estado muerto que impide operar."
+just_claridad: "Nombres descriptivos y comentarios básicos, aunque no separa secciones."
+just_mantenibilidad: "T#1S literal repetido sin constante; modificación de tiempos no localizada."
+
+2 B6-2374:
+Similar.
+funcional 0, iec 2, coherencia 0, claridad 2, mant 1.
+just_func_iec: "Falla paso 1 nominal: igual doble llamada a TON impide el parpadeo; compila con tipos correctos."
+just_coherencia: "Llamadas al TON en el mismo ciclo se contradicen y el temporizador nunca alcanza Q."
+just_claridad: "Nombres y comentarios básicos; estructura simple."
+just_mantenibilidad: "Tiempo T#1S fijo en código sin constante declarada."
+
+3 B6-5301:
+funcional 3 fijo. iec 2, coherencia 2, claridad 2, mant 1.
+just_func_iec: "IEC: compila con TON estándar, pero la lógica con arranque/reinicio no es idiomática."
+just_coherencia: "Pasa pruebas; hay redundancias y parpadeo interno con reinicio manual, pero sin contradicciones."
+just_claridad: "Comentarios útiles y nombres descriptivos; estructura por fases."
+just_mantenibilidad: "T#1S repetido como literal; sin constante de tiempo parametrizada."
+
+4 B6-5850:
+funcional 3 fijo. iec 3, coherencia 3, claridad 2, mant 1.
+just_func_iec: "IEC: TON encadenados correctamente, tipos TIME estándar; generador de pulsos idiomático."
+just_coherencia: "Transiciones completas y sin alarma apaga/resetea por lógica; comportamiento robusto."
+just_claridad: "Nombres descriptivos y comentarios concisos; sin comentarios de porqué."
+just_mantenibilidad: "Duración T#1S literal en dos PT; cambio futuros poco localizado."
+
+5 B6-8282:
+funcional 3 fijo. iec 3, coherencia 3, claridad 3, mant 1.
+just_func_iec: "IEC: máquina de estados con TON estándar, PT T#1S; idiomático."
+just_coherencia: "Máquina de estados completa: sin alarma resets, fases sin estados muertos."
+just_claridad: "Estructura clara por fases, comentarios explican porqué; nombres descriptivos."
+just_mantenibilidad: "Sin constantes de tiempo; T#1S repetido en varias llamadas."
+
+6 B6-1513:
+funcional 0, iec 2, coherencia 0, claridad 2, mant 1.
+just_func_iec: "Falla paso 1 nominal: no usa temporizador para conmutar, cambia cada scan; TP estándar compila."
+just_coherencia: "Temporizador TP sin efecto; estado cambia cada ciclo, contradice el tiempo pedido."
+just_claridad: "Nombres claros pero comentario incorrecto sobre temporizador."
+just_mantenibilidad: "T#1S literal sin parametrizar."
+
+7 B6-5704:
+funcional 0, iec 2, coherencia 0, claridad 2, mant 1.
+just_func_iec: "Falla paso 1 nominal: TP no retrigguea, parpadeo no continúa; compila con TP."
+just_coherencia: "Con alarma constante TP genera un único pulso; lámpara queda apagada, impide operar."
+just_claridad: "Código simple, nombres descriptivos."
+just_mantenibilidad: "T#1S literal sin constante."
+
+8 B6-2528:
+funcional 3 fijo. iec 2, coherencia 2, claridad 2, mant 1.
+just_func_iec: "IEC: compila con TON y PT T#1S; lógica de reinicio manual poco idiomática."
+just_coherencia: "Pasa pruebas; mecanismo de arranque redundante, sin contradicciones graves."
+just_claridad: "Comentarios y nombres adecuados; algo repetitivo."
+just_mantenibilidad: "T#1S literal y lógica de tiempo dispersa; sin constantes."
+
+9 B6-6083:
+funcional 3 fijo. iec 2, coherencia 2, claridad 2, mant 1.
+just_func_iec: "IEC: TON estándar, pero libre y con resets manuales poco idiomático."
+just_coherencia: "Lógica funcional; temporizador sin reinicio en reposo y fase inicial dependiente del scan."
+just_claridad: "Nombres claros y comentarios de sección; inicialización comentada."
+just_mantenibilidad: "T#1S fijo; lógica de reinicio repetida."
+
+10 B6-8430:
+funcional 3 fijo. iec 2, coherencia 2, claridad 2, mant 1.
+just_func_iec: "IEC: TON estándar, uso free-running con reinicio manual; no idiomático."
+just_coherencia: "Funcional; temporizador queda sin reset sin alarma, pero no afecta salida."
+just_claridad: "Nombres descriptivos y comentarios básicos."
+just_mantenibilidad: "T#1S literal; sin parametrizar."
+
+11 B6-6488:
+funcional 3 fijo. iec 3, coherencia 2, claridad 2, mant 1.
+just_func_iec: "IEC: TON auto-reset con alternancia, TIME correcto; idiomático."
+just_coherencia: "Pasa pruebas; sin alarma no resetea estadoParpadeo, lo que cambia fase al reactivar."
+just_claridad: "Comentarios y nombres descriptivos."
+just_mantenibilidad: "T#1S literal; no usa constante declarada."
+
+12 B6-9731:
+funcional 0, iec 2, coherencia 0, claridad 2, mant 1.
+just_func_iec: "Falla paso 1 nominal: TP solo da pulso único, no parpadeo continuo; compila."
+just_coherencia: "La salida depende de TP.Q y queda apagada tras el primer pulso."
+just_claridad: "Código simple y legible."
+just_mantenibilidad: "T#1S literal."
+
+13 B6-2737:
+funcional 3 fijo. iec 3, coherencia 3, claridad 2, mant 1.
+just_func_iec: "IEC: dos TON encadenados generan ciclo 1s/1s; idiomático y tipos correctos."
+just_coherencia: "Sin contradicciones, transiciones completas y robusta."
+just_claridad: "Nombres descriptivos y comentarios breves."
+just_mantenibilidad: "T#1S literal en dos PT, sin constante."
+
+14 B6-7900:
+funcional 0, iec 2, coherencia 0, claridad 2, mant 1.
+just_func_iec: "Falla paso 1 nominal: parpadeo incorrecto (ON largo/ OFF casi nulo); compila con TON."
+just_coherencia: "Transición apagada mal modelada; parpadeo se cumple solo un scan apagado."
+just_claridad: "Nombres adecuados y comentarios por fases."
+just_mantenibilidad: "T#1S literal sin constantes."
+
+15 B6-3083:
+funcional 3 fijo. iec 3, coherencia 3, claridad 3, mant 1.
+just_func_iec: "IEC: máquina de estados con TON estándar, PT T#1S; idiomático."
+just_coherencia: "Fases completas, inicialización explícita y resets sin alarma; robusta."
+just_claridad: "Comentarios de sección y por fase; nombres consistente."
+just_mantenibilidad: "Duración repetida T#1S; sin parámetro de tiempo declarado."
+
+16 B6-2545:
+funcional 3 fijo. iec 2, coherencia 2, claridad 2, mant 1.
+just_func_iec: "IEC: TON estándar, aunque free-running con control poco idiomático."
+just_coherencia: "Pasa pruebas; temporizador puede quedar en Q sin alarma y alterar fase al volver."
+just_claridad: "Nombres descriptivos y comentarios básicos."
+just_mantenibilidad: "T#1S literal; no parametrizado."
+
+17 B6-7904:
+funcional 3 fijo. iec 3, coherencia 3, claridad 2, mant 1.
+just_func_iec: "IEC: dos TON encadenados, T#1S estándar; patrón idiomático."
+just_coherencia: "Ciclo astable correcto y sin alarma apaga/resetea."
+just_claridad: "Nombres y comentarios claros."
+just_mantenibilidad: "T#1S literal repetido; sin constante."
+
+18 B6-5267:
+funcional 3 fijo. iec 3, coherencia 3, claridad 2, mant 1.
+just_func_iec: "IEC: TON encadenado idiomático, tipos TIME correctos."
+just_coherencia: "Transiciones completas, robusta ante alarma/desactivación."
+just_claridad: "Comentarios breves, nombres descriptivos."
+just_mantenibilidad: "T#1S literal; no constante declarada."
+
+19 B6-2365:
+funcional 3 fijo. iec 3, coherencia 3, claridad 3, mant 1.
+just_func_iec: "IEC: máquina de estados con TON estándar; idiomático."
+just_coherencia: "Fases claras, resets sin alarma, inicialización explícita."
+just_claridad: "Comentarios por bloque y por fase; estructura ordenada."
+just_mantenibilidad: "T#1S literal repetido; sin parámetro de tiempo."
+
+20 B6-3667:
+funcional 3 fijo. iec 3, coherencia 3, claridad 2, mant 1.
+just_func_iec: "IEC: dos TON encadenados correctamente, T#1S; idiomático."
+just_coherencia: "Lógica de ciclo completa; robusta."
+just_claridad: "Nombres descriptivos y comentarios breves."
+just_mantenibilidad: "T#1S literal; no constante."
+
+21 B6-7194:
+funcional 3 fijo. iec 3, coherencia 3, claridad 2, mant 1.
+just_func_iec: "IEC: TON encadenados estándar; idiomático."
+just_coherencia: "Transiciones completas, sin alarma apaga/resetea."
+just_claridad: "Código conciso, nombres claros."
+just_mantenibilidad: "T#1S fijo sin parametrizar."
+
+22 B6-1976:
+funcional 3 fijo. iec 3, coherencia 2, claridad 2, mant 1.
+just_func_iec: "IEC: TON auto-reset con alternancia; idiomático."
+just_coherencia: "Pasa pruebas; sin alarma no resetea estadoParpadeo, fase depende de reactivación."
+just_claridad: "Nombres y comentarios correctos."
+just_mantenibilidad: "T#1S literal; no constante."
+
+23 B6-9476:
+funcional 0, iec 2, coherencia 0, claridad 2, mant 1.
+just_func_iec: "Falla paso 1 nominal: doble llamada reset/start impide temporizar; compila con TON."
+just_coherencia: "La primera llamada con estadoParpadeo anula el arranque del temporizador cada scan."
+just_claridad: "Comentarios y nombres básicos."
+just_mantenibilidad: "T#1S literal sin constante."
+
+24 B6-1094:
+funcional 3 fijo. iec 3, coherencia 3, claridad 2, mant 1.
+just_func_iec: "IEC: TON estándar auto-reset con alternancia; idiomático."
+just_coherencia: "Resetea estado sin alarma y transiciones correctas; robusta."
+just_claridad: "Nombres claros y comentarios útiles."
+just_mantenibilidad: "T#1S literal; no parametrizado."
+
+Necesito verificar que funcional para fallos no fijados está 0-2. Todos 0. iec para compila 1-3: todos 2 o 3. OK.
+
+¿Alguna respuesta "Compila. Falla 1 de 3 pasos (pasos 1; numerados desde 0)" podría significar falla paso 1 pero los pasos 0 y 2 pasan. Si falla paso 1, no implementa nominal. 0. Correct.
+
+Ahora debo cuestionar si B6-1513 "estado := NOT estado" sin temporizador realmente falla harness: el protocolo mide intervalos de 1s. Aunque cambia cada scan, en CODESYS scan 4-10ms, lampara alterna a muy alta frecuencia, no tendrá intervalos de 1s. Falla. 0.
+
+IEC: B6-1513 usa TP, estándar. Podría ser 2. B6-5704 TP estándar. 2. B6-9731 same.
+
+Ahora, "Cuando iec no estaba fijado, que esté entre 1 y 3": OK. No usamos 1. ¿Hay casos de extensiones? No.
+
+Posible objecion: "compila solo tras correcciones menores, o usa extensiones fuera del estándar" podría "TP" no es extensión. No.
+
+Debería incluir "just_func_iec" una línea. En objetos con funcional_fijo 3, justificar iec. En fallos con funcional null y iec null, justificar ambos. En todos "funcional_fijo" null; iec null; no vacía. Para los que pasan, funcional fijo, just only IEC.
+
+Necesito mantener JSON válido: strings entre comillas, escape? No hay caracteres raros salvo acentos. JSON permite UTF-8. Usaré en español. Evito saltos en strings.
+
+Debo asegurar 24 objetos. Contaré final.
+
+Escribo final solo JSON.
+
+Posiblemente "just_func_iec" para pases no debe decir "Funcional fijado" because functional fixed. User says one line, or "" if both fijadas. Fine. I will mention IEC only. Por ejemplo B6-5301: "IEC: compila con TON estándar, pero lógica de arranque/reinicio poco idiomática." Good.
+
+Ahora, sobre si B6-5850 etc coherencia 3: "sin alarma apaga/resetea por lógica" en B6-5850, no hay explicit reset sin alarma; tonOn/off self-reset because IN false when alarma false. tonOn(IN := alarma AND NOT tonOff.Q) false; tonOff(IN := tonOn.Q); after tonOn call, Q false if IN false? tonOn resets. lampara false. Yes. Robust. 3.
+
+Claridad B6-5850 2: no "comentarios que explican porqué" maybe 2.
+
+Mantenibilidad 1: yes.
+
+Potential issue: "Cumplimiento IEC cuando compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." Some that fall may use "TP" which is standard. 2. Good.
+
+¿Puedo dar iec=3 a B6-6488 though tiene un issue: llama tParpadeo con PT en primera llamada y luego llama sin PT para reset; standard. Yes.
+
+¿B6-1976/1094: tParpadeo(IN := alarma AND NOT tParpadeo.Q, PT := T#1S); if tParpadeo.Q then reset; This is standard. 3.
+
+¿B6-6083/8430/2545: "Inicialización del timer" IF timer.Q FALSE call. It's not elegantly idiomatic, so 2. Good.
+
+Ahora, double-check B6-5301/2528: They pass. Could iec=2 or 3? Functionally correct? B6-5301 logic maybe there's a subtle issue? It passes harness. It uses two TONs with parpadeo internal. Is it idiomatic? Not fully. 2.
+
+I should not penalize coherencia for "redundancias" if passes. 2. Good.
+
+Now final JSON.
+
+Debo incluir exactamente el orden. Let's ensure ordering as in input:
+1 B6-4934
+2 B6-2374
+3 B6-5301
+4 B6-5850
+5 B6-8282
+6 B6-1513
+7 B6-5704
+8 B6-2528
+9 B6-6083
+10 B6-8430
+11 B6-6488
+12 B6-9731
+13 B6-2737
+14 B6-7900
+15 B6-3083
+16 B6-2545
+17 B6-7904
+18 B6-5267
+19 B6-2365
+20 B6-3667
+21 B6-7194
+22 B6-1976
+23 B6-9476
+24 B6-1094
+
+Let's produce.

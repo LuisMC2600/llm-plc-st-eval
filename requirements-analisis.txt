@@ -1,0 +1,10 @@
+# Análisis y validación (niveles 1 y 2 del README). No requiere claves de API.
+# Instalar: pip install -r requirements-analisis.txt
+numpy>=1.24
+pandas>=2.0
+scipy>=1.11          # binomtest, wilcoxon
+statsmodels>=0.14    # GEE del contraste de la hipótesis
+scikit-learn>=1.3    # kappa de Cohen en la taxonomía (c05)
+openpyxl>=3.1        # lectura de las fichas de evaluación (.xlsx)
+matplotlib>=3.8      # figuras
+blark==0.8.3         # analizador sintáctico del estudio piloto

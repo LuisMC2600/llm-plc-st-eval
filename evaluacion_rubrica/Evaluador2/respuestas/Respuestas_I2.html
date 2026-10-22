@@ -1,0 +1,321 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>I2 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>I2 — FSM de llenado multietapa (Intermedio)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja I2 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa un proceso de llenado por etapas. En reposo, al pulsar btnInicio se abre la válvula de llenado (vLlenado) hasta que se active nivelAlto; después funciona el motor de mezcla (motorMezcla) durante 60 segundos; después se abre la válvula de descarga (vDescarga) hasta que se active nivelBajo; finalmente el proceso vuelve a reposo. El botón btnParo detiene el proceso en cualquier etapa, lleva todas las salidas a estado seguro (desactivadas) y regresa el proceso a reposo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Llenado con variables de entrada nivelAlto, nivelBajo, btnInicio, btnParo (BOOL) y salidas vLlenado, motorMezcla, vDescarga (BOOL). Usa el tiempo T#60S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_I2.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea I2 (FSM de llenado multietapa)
+    ---------------------------------------------------------------------------
+    Reposo -&gt; llenado -&gt; mezcla 60 s -&gt; descarga -&gt; reposo. El paro debe llevar
+    a estado seguro (todas las salidas desactivadas) desde CUALQUIER etapa y
+    devolver el proceso a reposo.
+
+    USO: crear este PROGRAM junto al FUNCTION_BLOCK de la respuesta a evaluar y
+    ejecutar en modo Simulacion. Al terminar, leer &#x27;veredicto&#x27;: 1 = supera,
+    2 = falla.
+
+    ---------------------------------------------------------------------------
+    CORRECCION DEL 2026-09-09 (enmienda 10). Validado con validar_harness_I2.py.
+    La version anterior tenia dos fallos:
+
+    FALLO 1 — el paso de &quot;antes de los 60 s&quot; REPROBABA a la implementacion
+    correcta en los tres ciclos de tarea. Esperaba 59 800 ms contando desde el
+    inicio de ese paso, pero la mezcla no arranca ahi: arranca ~200 ms antes,
+    en el paso anterior, en cuanto el bloque ve nivelAlto. El margen resultante
+    era nulo y la evaluacion caia justo en el instante en que la mezcla
+    termina, de modo que se observaba ya la descarga. Es el mismo error que la
+    enmienda 5 corrigio en I4: una ventana calculada como si la fase empezara
+    en el limite del paso, cuando empieza antes.
+
+    FALLO 2 — el ultimo paso, etiquetado &quot;paro en mezcla&quot;, NUNCA llegaba a la
+    mezcla. Aplicaba nivelAlto y btnParo en el MISMO paso, asi que el paro
+    alcanzaba al bloque todavia en llenado: era un duplicado del paso anterior.
+    Verificado: una implementacion cuyo paro funciona en llenado pero no
+    durante la mezcla obtenia el mismo resultado que la correcta. El paro en
+    dos fases que este banco dice comprobar solo se comprobaba en una.
+
+    La correccion de tiempos de este documento ya lo insinuaba al estimar I2 en
+    ~90 s &quot;porque el paro se prueba en dos fases distintas, cada una exige
+    volver a entrar en la fase&quot;: la secuencia real duraba 61,9 s porque esa
+    segunda entrada nunca se hacia.
+
+    Correcciones: la ventana de la mezcla pasa a tener margen explicito y
+    simetrico de 0,5 s a cada lado de los 60 s; y entrar en la mezcla y aplicar
+    el paro pasan a ser dos pasos separados, de modo que el paro alcance al
+    bloque realmente mezclando. Se anade ademas un paso final que comprueba que
+    tras el paro el proceso permanece en reposo y no rearranca solo.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reposo *)
+            nivelAlto := FALSE; nivelBajo := FALSE;
+            btnInicio := FALSE; btnParo := FALSE;
+            tEspera := T#200MS; evL := FALSE; evM := FALSE; evD := FALSE;
+        1:  (* Arranque: abre la valvula de llenado *)
+            btnInicio := TRUE;
+            tEspera := T#200MS; evL := TRUE;  evM := FALSE; evD := FALSE;
+        2:  (* Nivel alto: entra en mezcla. La mezcla arranca AQUI, no en el
+               paso siguiente; de ahi el margen explicito del paso 3. *)
+            btnInicio := FALSE; nivelAlto := TRUE;
+            tEspera := T#1S;    evL := FALSE; evM := TRUE;  evD := FALSE;
+        3:  (* ~59,5 s de mezcla acumulados: aun NO debe haber terminado *)
+            tEspera := T#58500MS; evM := TRUE;
+        4:  (* ~60,5 s acumulados: ya debe estar descargando *)
+            tEspera := T#1S;    evL := FALSE; evM := FALSE; evD := TRUE;
+        5:  (* Nivel bajo: vuelve a reposo *)
+            nivelBajo := TRUE;
+            tEspera := T#200MS; evL := FALSE; evM := FALSE; evD := FALSE;
+
+        (* --- Paro en la fase de LLENADO --- *)
+        6:  (* Nuevo ciclo *)
+            nivelAlto := FALSE; nivelBajo := FALSE; btnInicio := TRUE;
+            tEspera := T#200MS; evL := TRUE;  evM := FALSE; evD := FALSE;
+        7:  (* Paro estando en llenado: estado seguro *)
+            btnInicio := FALSE; btnParo := TRUE;
+            tEspera := T#200MS; evL := FALSE; evM := FALSE; evD := FALSE;
+
+        (* --- Paro en la fase de MEZCLA (enmienda 10): entrar en la mezcla y
+               aplicar el paro son DOS pasos distintos, para que el paro
+               alcance al bloque realmente mezclando --- *)
+        8:  (* Rearranca tras el paro *)
+            btnParo := FALSE; btnInicio := TRUE;
+            tEspera := T#200MS; evL := TRUE;  evM := FALSE; evD := FALSE;
+        9:  (* Entra en mezcla y se deja mezclando *)
+            btnInicio := FALSE; nivelAlto := TRUE;
+            tEspera := T#500MS; evL := FALSE; evM := TRUE;  evD := FALSE;
+        10: (* Paro ESTANDO EN MEZCLA: estado seguro *)
+            btnParo := TRUE;
+            tEspera := T#200MS; evL := FALSE; evM := FALSE; evD := FALSE;
+        11: (* Tras el paro debe permanecer en reposo, sin rearrancar solo *)
+            btnParo := FALSE; nivelAlto := FALSE;
+            tEspera := T#200MS; evL := FALSE; evM := FALSE; evD := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#I2-4324">I2-4324</a><a href="#I2-3102">I2-3102</a><a href="#I2-5330">I2-5330</a></div>
+<div class="caja resp" id="I2-4324"><div class="cod"><h3>I2-4324</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 7 de 12 pasos del harness (pasos 2,3,4,5,6,9,11; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Llenado
+VAR_INPUT
+    nivelAlto : BOOL; (* Nivel alto detectado *)
+    nivelBajo : BOOL; (* Nivel bajo detectado *)
+    btnInicio : BOOL; (* Botón de inicio *)
+    btnParo : BOOL; (* Botón de paro *)
+END_VAR
+VAR_OUTPUT
+    vLlenado : BOOL; (* Válvula de llenado *)
+    motorMezcla : BOOL; (* Motor de mezcla *)
+    vDescarga : BOOL; (* Válvula de descarga *)
+END_VAR
+VAR
+    estado : INT := 0; (* Estado actual del proceso *)
+    tMezcla : TP; (* Temporizador para el motor de mezcla *)
+END_VAR
+
+(* Estado 0: Reposo *)
+IF btnInicio AND NOT btnParo AND estado = 0 THEN
+    estado := 1;
+    vLlenado := TRUE;
+END_IF
+
+(* Estado 1: Llenado *)
+IF nivelAlto THEN
+    estado := 2;
+    vLlenado := FALSE;
+    motorMezcla := TRUE;
+    tMezcla(IN := TRUE, PT := T#60S);
+END_IF
+
+(* Estado 2: Mezcla *)
+IF tMezcla.Q THEN
+    estado := 3;
+    motorMezcla := FALSE;
+    vDescarga := TRUE;
+END_IF
+
+(* Estado 3: Descarga *)
+IF nivelBajo THEN
+    estado := 0;
+    vDescarga := FALSE;
+END_IF
+
+(* Botón de paro *)
+IF btnParo THEN
+    estado := 0;
+    vLlenado := FALSE;
+    motorMezcla := FALSE;
+    vDescarga := FALSE;
+    tMezcla(IN := FALSE);
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I2-3102"><div class="cod"><h3>I2-3102</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (2 errores).<div class="err">Mensajes del compilador: L?nea 67, columna 1 (Impl) Encontrado token inesperado &#x27;:&#x27; || L?nea 68, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;eEtapa&#x27;</div></div><pre>FUNCTION_BLOCK FB_Llenado
+VAR_INPUT
+    nivelAlto  : BOOL; (* Sensor de nivel alto *)
+    nivelBajo  : BOOL; (* Sensor de nivel bajo *)
+    btnInicio  : BOOL; (* Botón de inicio (flanco) *)
+    btnParo    : BOOL; (* Botón de paro (nivel) *)
+END_VAR
+
+VAR_OUTPUT
+    vLlenado    : BOOL; (* Válvula de llenado *)
+    motorMezcla : BOOL; (* Motor de mezcla *)
+    vDescarga   : BOOL; (* Válvula de descarga *)
+END_VAR
+
+VAR
+    (* Etapas del proceso *)
+    eEtapa : INT := 0;
+    (*
+        0 = Reposo
+        1 = Llenado
+        2 = Mezcla
+        3 = Descarga
+    *)
+
+    (* Temporizador para la etapa de mezcla *)
+    tonMezcla : TON;
+
+    (* Detección de flanco ascendente en btnInicio *)
+    rTrigInicio : R_TRIG;
+END_VAR
+
+(* ─────────────────────────────────────────────
+   Detección de flanco ascendente en btnInicio
+   ───────────────────────────────────────────── *)
+rTrigInicio(CLK := btnInicio);
+
+(* ─────────────────────────────────────────────
+   Paro de emergencia: cualquier etapa
+   ───────────────────────────────────────────── *)
+IF btnParo THEN
+    eEtapa      := 0;
+    vLlenado    := FALSE;
+    motorMezcla := FALSE;
+    vDescarga   := FALSE;
+    tonMezcla(IN := FALSE, PT := T#60S); (* Resetea temporizador *)
+    RETURN; (* Sale del bloque sin ejecutar el resto *)
+END_IF;
+
+(* ─────────────────────────────────────────────
+   Máquina de estados
+   ───────────────────────────────────────────── *)
+CASE eEtapa OF
+
+    (* ── Etapa 0: Reposo ── *)
+    0:
+        vLlenado    := FALSE;
+        motorMezcla := FALSE;
+        vDescarga   := FALSE;
+        tonMezcla(IN := FALSE, PT := T#60S); (* Mantiene temporizador reseteado *)
+
+        IF rTrigInicio.Q THEN
+            eEtapa := 1; (* Ir a llenado *)
+        END_IF;
+
+    (* ── Etapa 1: Llenado ── *)
+    1:
+        vLlenado    := TRUE;
+        motorMezcla := FALSE;
+        vDescarga   := FALSE;
+
+        IF nivelAlto THEN
+            vLlenado := FALSE;
+            eEtapa   := 2; (* Ir a mezcla *)
+        END_IF;
+
+    (* ── Etapa 2: Mezcla (60 s) ── *)
+    2:
+        vLlenado    := FALSE;
+        motorMezcla := TRUE;
+        vDescarga   := FALSE;
+        tonMezcla(IN := TRUE, PT := T#60S); (* Arranca/mantiene temporizador *)
+
+        IF tonMezcla.Q THEN
+            motorMezcla := FALSE;
+            tonMezcla(IN := FALSE, PT := T#60S); (* Resetea para próximo ciclo *)
+            eEtapa := 3; (* Ir a descarga *)
+        END_IF;
+
+    (* ── Etapa 3: Descarga ── *)
+    3:
+        vLlenado    := FALSE;
+        motorMezcla := FALSE;
+        vDescarga   := TRUE;
+
+        IF nivelBajo THEN
+            vDescarga := FALSE;
+            eEtapa    := 0; (* Volver a reposo *)
+        END_IF;
+
+    (* ── Estado no definido: seguridad ── *)
+    ELSE:
+        eEtapa      := 0;
+        vLlenado    := FALSE;
+        motorMezcla := FALSE;
+        vDescarga   := FALSE;
+
+END_CASE;</pre></div>
+<div class="caja resp" id="I2-5330"><div class="cod"><h3>I2-5330</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 12 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Llenado
+VAR_INPUT
+    btnInicio : BOOL;   // Botón para iniciar el proceso
+    btnParo : BOOL;     // Botón para detener el proceso y llevar a estado seguro
+    nivelAlto : BOOL;   // Sensor de nivel alto
+    nivelBajo : BOOL;   // Sensor de nivel bajo
+END_VAR
+
+VAR_OUTPUT
+    vLlenado : BOOL;    // Válvula de llenado
+    motorMezcla : BOOL; // Motor del mezclador
+    vDescarga : BOOL;   // Válvula de descarga
+END_VAR
+
+VAR
+    estado : INT := 0;  // Máquina de estados (0:Reposo, 1:Llenado, 2:Mezcla, 3:Descarga)
+    timerMezcla : TON;  // Temporizador para la etapa de mezcla
+END_VAR
+
+// 1. Condición de paro prioritario
+IF btnParo THEN
+    estado := 0;
+END_IF;
+
+// 2. Máquina de estados secuencial
+CASE estado OF
+    0: // Etapa 0: Reposo
+        IF btnInicio AND NOT btnParo THEN
+            estado := 1;
+        END_IF;
+        
+    1: // Etapa 1: Llenado
+        IF nivelAlto THEN
+            estado := 2;
+        END_IF;
+        
+    2: // Etapa 2: Mezcla
+        IF timerMezcla.Q THEN
+            estado := 3;
+        END_IF;
+        
+    3: // Etapa 3: Descarga
+        IF nivelBajo THEN
+            estado := 0;
+        END_IF;
+ELSE
+    // Protección contra estados inválidos
+    estado := 0; 
+END_CASE;
+
+// 3. Control de salidas (Garantiza estado seguro si no es su etapa activa)
+vLlenado := (estado = 1);
+motorMezcla := (estado = 2);
+vDescarga := (estado = 3);
+
+// 4. Actualización del temporizador (Se activa únicamente en la etapa 2)
+timerMezcla(IN := (estado = 2), PT := T#60S);
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

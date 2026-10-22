@@ -1,0 +1,646 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>C3 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>C3 — Conversión Ladder a ST (Complementaria)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja C3 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: convierte a Structured Text el siguiente segmento de un programa en Ladder Diagram (IEC 61131-3), preservando exactamente su comportamiento. Descripción del segmento: Rama 1: el contacto normalmente abierto btnMarcha en paralelo con el contacto normalmente abierto motor, ambos en serie con el contacto normalmente cerrado btnParo, alimentan la bobina motor. Rama 2: el contacto normalmente abierto motor alimenta un temporizador TON llamado T1 con tiempo preestablecido de 10 segundos. Rama 3: el contacto normalmente abierto de T1.Q alimenta la bobina lampara. Programa en Structured Text (ST) conforme a IEC 61131-3, en un PROGRAM llamado PRG_Conversion con variables btnMarcha, btnParo (BOOL de entrada), motor, lampara (BOOL de salida) y T1 (TON). Usa el tiempo T#10S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_C3.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea C3 (conversion Ladder -&gt; ST, PRG_Conversion)
+    ---------------------------------------------------------------------------
+    Validado en codesys/validar_harness_C3.py: 7 implementaciones (1 correcta y
+    6 defectuosas), ciclos de 4, 10 y 20 ms. Tabla de pasos generada desde el
+    validador. Una respuesta con las E/S en VAR local no compila con este banco
+    (CODESYS no admite escribir desde fuera una VAR local de un PROGRAM): se
+    clasifica como INTERFAZ NO CONFORME, igual que los FB con E/S en VAR.
+    El POU bajo prueba es un PROGRAM: se escriben sus entradas y se leen sus
+    salidas por nombre, y se llama una vez por scan desde este banco.
+
+    Paso (btnMarcha, btnParo) duracion -&gt; (motor, lampara)
+  0 (F,F) 0.2 s -&gt; (F,F)
+  1 (T,F) 0.2 s -&gt; (T,F)   arranque; la lampara aun no
+  2 (F,F) 5.0 s -&gt; (T,F)   enclavamiento; lampara vigilada en FALSE todo el paso
+  3 (F,F) 5.5 s -&gt; (T,T)   ~10.7 s con motor: lampara encendida
+  4 (F,T) 0.2 s -&gt; (F,F)   paro: motor y lampara (T1 se reinicia)
+  5 (F,F) 0.2 s -&gt; (F,F)
+  6 (T,T) 0.2 s -&gt; (F,F)   marcha y paro a la vez: gana el NC en serie; vigilado
+  7 (T,F) 0.2 s -&gt; (T,F)
+  8 (F,F) 9.0 s -&gt; (T,F)   T1 empezo de cero en el paso 7: lampara vigilada en FALSE
+  9 (F,F) 1.5 s -&gt; (T,T)
+ 10 (F,T) 0.2 s -&gt; (F,F)
+VIGILANCIA CONTINUA (enmienda 4): en los pasos 0, 2, 5, 6 y 8 la lampara no puede
+valer TRUE ni un scan; en los pasos 0, 5 y 6 tampoco el motor.
+
+--- Pasos (CASE paso OF) ---
+
+        0: bM := FALSE; bP := FALSE; tEspera := T#200MS; eMotor := FALSE; eLampara := FALSE;
+        1: bM := TRUE; bP := FALSE; tEspera := T#200MS; eMotor := TRUE; eLampara := FALSE;
+        2: bM := FALSE; bP := FALSE; tEspera := T#5000MS; eMotor := TRUE; eLampara := FALSE;
+        3: bM := FALSE; bP := FALSE; tEspera := T#5500MS; eMotor := TRUE; eLampara := TRUE;
+        4: bM := FALSE; bP := TRUE; tEspera := T#200MS; eMotor := FALSE; eLampara := FALSE;
+        5: bM := FALSE; bP := FALSE; tEspera := T#200MS; eMotor := FALSE; eLampara := FALSE;
+        6: bM := TRUE; bP := TRUE; tEspera := T#200MS; eMotor := FALSE; eLampara := FALSE;
+        7: bM := TRUE; bP := FALSE; tEspera := T#200MS; eMotor := TRUE; eLampara := FALSE;
+        8: bM := FALSE; bP := FALSE; tEspera := T#9000MS; eMotor := TRUE; eLampara := FALSE;
+        9: bM := FALSE; bP := FALSE; tEspera := T#1500MS; eMotor := TRUE; eLampara := TRUE;
+        10: bM := FALSE; bP := TRUE; tEspera := T#200MS; eMotor := FALSE; eLampara := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#C3-2896">C3-2896</a><a href="#C3-6882">C3-6882</a><a href="#C3-5764">C3-5764</a><a href="#C3-5896">C3-5896</a><a href="#C3-2206">C3-2206</a><a href="#C3-8154">C3-8154</a><a href="#C3-6261">C3-6261</a><a href="#C3-3977">C3-3977</a><a href="#C3-3323">C3-3323</a><a href="#C3-8076">C3-8076</a><a href="#C3-1695">C3-1695</a><a href="#C3-2623">C3-2623</a><a href="#C3-8055">C3-8055</a><a href="#C3-2360">C3-2360</a><a href="#C3-9536">C3-9536</a><a href="#C3-2155">C3-2155</a><a href="#C3-1446">C3-1446</a><a href="#C3-8015">C3-8015</a><a href="#C3-9667">C3-9667</a><a href="#C3-1285">C3-1285</a><a href="#C3-2752">C3-2752</a><a href="#C3-4158">C3-4158</a><a href="#C3-1088">C3-1088</a><a href="#C3-5466">C3-5466</a></div>
+<div class="caja resp" id="C3-2896"><div class="cod"><h3>C3-2896</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;btnMarcha&#x27; no es ninguna entrada de &#x27;PRG_Conversion&#x27;).</div><pre>PROGRAM PRG_Conversion
+VAR
+    btnMarcha : BOOL;   // Botón de marcha (entrada)
+    btnParo : BOOL;     // Botón de paro (entrada)
+    motor : BOOL;       // Estado del motor (salida)
+    lampara : BOOL;     // Estado de la lámpara (salida)
+    T1 : TON;           // Temporizador TON
+END_VAR
+
+// Lógica de control del motor
+IF (btnMarcha OR motor) AND NOT btnParo THEN
+    motor := TRUE;
+ELSE
+    motor := FALSE;
+END_IF;
+
+// Configuración y ejecución del temporizador TON
+T1(IN := motor, PT := T#10S);
+
+// Control de la lámpara basado en el temporizador
+lampara := T1.Q;</pre></div>
+<div class="caja resp" id="C3-6882"><div class="cod"><h3>C3-6882</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;btnMarcha&#x27; no es ninguna entrada de &#x27;PRG_Conversion&#x27;).</div><pre>PROGRAM PRG_Conversion
+VAR
+    btnMarcha : BOOL; (* Contacto NA en paralelo *)
+    btnParo : BOOL; (* Contacto NC en serie *)
+    motor : BOOL; (* Bobina motor *)
+    lampara : BOOL; (* Bobina lámpara *)
+    T1 : TON; (* Temporizador TON *)
+END_VAR
+
+(* Serie = AND, paralelo = OR, contacto NC = NOT *)
+motor := ((btnMarcha OR motor) AND NOT btnParo);
+
+(* Configuración del temporizador TON *)
+T1(IN := motor, PT := T#10S);
+
+(* La lámpara se enciende cuando el temporizador alcanza el tiempo preestablecido *)
+lampara := T1.Q;
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-5764"><div class="cod"><h3>C3-5764</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+
+VAR_INPUT
+    btnMarcha : BOOL; (* Botón de marcha (NO) *)
+    btnParo   : BOOL; (* Botón de paro (NC - normalmente cerrado) *)
+END_VAR
+
+VAR_OUTPUT
+    motor   : BOOL; (* Bobina del motor *)
+    lampara : BOOL; (* Bobina de la lámpara *)
+END_VAR
+
+VAR
+    T1 : TON; (* Temporizador on-delay, 10 segundos *)
+END_VAR
+
+(* ---------------------------------------------------------------
+   Rama 1: (btnMarcha OR motor) AND NOT btnParo --&gt; motor
+   Equivale al circuito de enclavamiento (seal-in) con paro.
+   btnParo es normalmente cerrado, por lo que se niega en ST.
+--------------------------------------------------------------- *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* ---------------------------------------------------------------
+   Rama 2: motor activa el temporizador TON T1 (PT = 10 s)
+--------------------------------------------------------------- *)
+T1(IN := motor, PT := T#10S);
+
+(* ---------------------------------------------------------------
+   Rama 3: T1.Q (contacto NO del temporizador) --&gt; lampara
+--------------------------------------------------------------- *)
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-5896"><div class="cod"><h3>C3-5896</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; (* Contacto NA: arranque *)
+    btnParo   : BOOL; (* Contacto NC: paro *)
+END_VAR
+VAR_OUTPUT
+    motor   : BOOL; (* Bobina motor / contacto de enclavamiento *)
+    lampara : BOOL; (* Bobina lampara *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador, tiempo preestablecido 10 s *)
+END_VAR
+
+(* Rama 1: (btnMarcha OR motor) AND NOT btnParo -&gt; bobina motor *)
+(* Paralelo = OR, serie = AND, contacto NC = NOT *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* Rama 2: contacto NA motor habilita el temporizador TON T1 *)
+T1(IN := motor, PT := T#10S);
+
+(* Rama 3: contacto NA T1.Q alimenta la bobina lampara *)
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-2206"><div class="cod"><h3>C3-2206</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; // Contacto normalmente abierto para arranque
+    btnParo : BOOL;   // Contacto normalmente cerrado para detención
+END_VAR
+
+VAR_OUTPUT
+    motor : BOOL;     // Bobina del motor
+    lampara : BOOL;   // Bobina de la lámpara
+END_VAR
+
+VAR
+    T1 : TON;         // Temporizador de retardo a la conexión
+END_VAR
+
+// Rama 1: Circuito de auto-retención (enclavamiento) del motor
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+// Rama 2: El motor activa el temporizador TON con un preset de 10 segundos
+T1(IN := motor, PT := T#10S);
+
+// Rama 3: La salida del temporizador enciende la lámpara
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-8154"><div class="cod"><h3>C3-8154</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+
+VAR_INPUT
+    btnMarcha : BOOL; (* Botón de marcha (NO) *)
+    btnParo   : BOOL; (* Botón de paro (NC - normalmente cerrado) *)
+END_VAR
+
+VAR_OUTPUT
+    motor   : BOOL; (* Bobina del motor *)
+    lampara : BOOL; (* Bobina de la lámpara *)
+END_VAR
+
+VAR
+    T1 : TON; (* Temporizador on-delay, 10 segundos *)
+END_VAR
+
+(* ---------------------------------------------------------------
+   Rama 1: (btnMarcha OR motor) AND NOT(btnParo) -&gt; motor
+   Equivale al circuito de enclavamiento (seal-in) con paro NC.
+   --------------------------------------------------------------- *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* ---------------------------------------------------------------
+   Rama 2: motor habilita el temporizador TON T1 (PT = 10 s)
+   --------------------------------------------------------------- *)
+T1(IN := motor, PT := T#10S);
+
+(* ---------------------------------------------------------------
+   Rama 3: T1.Q (contacto NO del temporizador) -&gt; lampara
+   --------------------------------------------------------------- *)
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-6261"><div class="cod"><h3>C3-6261</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; (* Contacto NA en paralelo *)
+    btnParo : BOOL; (* Contacto NC en serie *)
+END_VAR
+VAR_OUTPUT
+    motor : BOOL; (* Bobina motor *)
+    lampara : BOOL; (* Bobina lámpara *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador TON *)
+END_VAR
+
+(* Serie = AND, paralelo = OR, contacto NC = NOT *)
+motor := ((btnMarcha OR motor) AND NOT btnParo);
+
+(* Temporizador TON activado por el motor *)
+T1(IN := motor, PT := T#10S);
+
+(* La lámpara se activa cuando el temporizador alcanza el tiempo preestablecido *)
+lampara := T1.Q;
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-3977"><div class="cod"><h3>C3-3977</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;btnMarcha&#x27; no es ninguna entrada de &#x27;PRG_Conversion&#x27;).</div><pre>PROGRAM PRG_Conversion
+VAR
+    btnMarcha, btnParo : BOOL;  // Entradas
+    motor, lampara : BOOL;      // Salidas
+    T1 : TON;                   // Temporizador de 10 segundos
+END_VAR
+
+// Rama 1: btnMarcha y motor en paralelo, en serie con btnParo, alimentan motor
+motor := (btnMarcha OR motor) AND btnParo;
+
+// Rama 2: motor alimenta el temporizador T1 con tiempo preestablecido de 10 segundos
+IF motor THEN
+    T1(IN := TRUE, PT := T#10S);
+ELSE
+    T1(IN := FALSE);
+END_IF;
+
+// Rama 3: T1.Q alimenta la bobina lampara
+lampara := T1.Q;</pre></div>
+<div class="caja resp" id="C3-3323"><div class="cod"><h3>C3-3323</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; (* Contacto NA en paralelo *)
+    btnParo : BOOL; (* Contacto NC en serie *)
+END_VAR
+VAR_OUTPUT
+    motor : BOOL; (* Bobina y contacto NA de realimentacion *)
+    lampara : BOOL; (* Bobina indicadora *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador a la conexion *)
+END_VAR
+
+(* Rama 1: Arranque y paro del motor con auto-retencion *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* Rama 2: Temporizador de 10 segundos activado por el motor *)
+T1(IN := motor, PT := T#10S);
+
+(* Rama 3: Activacion de la lampara con la salida del temporizador *)
+lampara := T1.Q;
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-8076"><div class="cod"><h3>C3-8076</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; // Contacto normalmente abierto para iniciar
+    btnParo : BOOL;   // Contacto normalmente cerrado para detener
+END_VAR
+
+VAR_OUTPUT
+    motor : BOOL;     // Bobina del motor
+    lampara : BOOL;   // Bobina de la lámpara indicadora
+END_VAR
+
+VAR
+    T1 : TON;         // Temporizador a la conexión (Timer On Delay)
+END_VAR
+
+// Rama 1: Lógica de enclavamiento (arranque y paro) para el motor
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+// Rama 2: Llamada al temporizador T1, se activa cuando el motor está encendido
+T1(IN := motor, PT := T#10S);
+
+// Rama 3: La lámpara se enciende cuando el temporizador T1 termina su conteo
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-1695"><div class="cod"><h3>C3-1695</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; (* Contacto NA: arranque *)
+    btnParo   : BOOL; (* Contacto NC: paro *)
+END_VAR
+VAR_OUTPUT
+    motor   : BOOL; (* Bobina motor / contacto de enclavamiento *)
+    lampara : BOOL; (* Bobina lámpara *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador retardo a la conexión *)
+END_VAR
+
+(* Rama 1: (btnMarcha OR motor) AND NOT btnParo -&gt; bobina motor *)
+(* El contacto NA motor actúa como enclavamiento (auto-retención)  *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* Rama 2: contacto NA motor habilita el temporizador T1 (PT = 10 s) *)
+T1(IN := motor, PT := T#10S);
+
+(* Rama 3: contacto NA T1.Q -&gt; bobina lámpara *)
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-2623"><div class="cod"><h3>C3-2623</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;btnMarcha&#x27; no es ninguna entrada de &#x27;PRG_Conversion&#x27;).</div><pre>PROGRAM PRG_Conversion
+VAR
+    // Declaración de variables de entrada
+    btnMarcha : BOOL; // Botón de marcha
+    btnParo : BOOL;   // Botón de paro
+
+    // Declaración de variables de salida
+    motor : BOOL;     // Estado del motor
+    lampara : BOOL;   // Estado de la lámpara
+
+    // Declaración del temporizador TON
+    T1 : TON;         // Temporizador TON
+END_VAR
+
+// Lógica de control
+// Rama 1: Control del motor
+IF (btnMarcha OR motor) AND NOT btnParo THEN
+    motor := TRUE;
+ELSE
+    motor := FALSE;
+END_IF;
+
+// Rama 2: Activación del temporizador TON
+T1(IN := motor, PT := T#10S);
+
+// Rama 3: Control de la lámpara
+lampara := T1.Q;</pre></div>
+<div class="caja resp" id="C3-8055"><div class="cod"><h3>C3-8055</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; (* Contacto NA en paralelo con motor *)
+    btnParo : BOOL; (* Contacto NC en serie *)
+END_VAR
+VAR_OUTPUT
+    motor : BOOL; (* Bobina y contacto de retencion *)
+    lampara : BOOL; (* Bobina activada por el temporizador *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador a la conexion *)
+END_VAR
+
+(* Rama 1: Circuito de marcha/paro con auto-retencion *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* Rama 2: Temporizador alimentado por el estado del motor *)
+T1(IN := motor, PT := T#10S);
+
+(* Rama 3: Activacion de la lampara con la salida del temporizador *)
+lampara := T1.Q;
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-2360"><div class="cod"><h3>C3-2360</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; (* Contacto NA: arranque *)
+    btnParo   : BOOL; (* Contacto NC: paro *)
+END_VAR
+VAR_OUTPUT
+    motor   : BOOL; (* Bobina motor / contacto de enclavamiento *)
+    lampara : BOOL; (* Bobina lampara *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador on-delay, PT = 10 s *)
+END_VAR
+
+(* Rama 1: (btnMarcha OR motor) AND NOT btnParo -&gt; bobina motor *)
+(* El contacto NA motor actua como enclavamiento (seal-in) *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* Rama 2: contacto NA motor habilita el temporizador T1 *)
+(* Cuando motor se desactiva, T1 se resetea automaticamente *)
+T1(IN := motor, PT := T#10S);
+
+(* Rama 3: contacto NA T1.Q -&gt; bobina lampara *)
+(* La lampara se enciende cuando el motor lleva 10 s activo *)
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-9536"><div class="cod"><h3>C3-9536</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+
+VAR_INPUT
+    btnMarcha : BOOL; (* Botón de marcha (NO) *)
+    btnParo   : BOOL; (* Botón de paro (NC - normalmente cerrado) *)
+END_VAR
+
+VAR_OUTPUT
+    motor   : BOOL; (* Bobina del motor *)
+    lampara : BOOL; (* Bobina de la lámpara *)
+END_VAR
+
+VAR
+    T1 : TON; (* Temporizador on-delay, 10 segundos *)
+END_VAR
+
+(* ---------------------------------------------------------------
+   Rama 1: (btnMarcha OR motor) AND NOT btnParo --&gt; motor
+   Equivale al circuito de enclavamiento (seal-in) con paro.
+   btnParo es normalmente cerrado en Ladder, por lo que su
+   condición activa en ST es NOT btnParo.
+--------------------------------------------------------------- *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* ---------------------------------------------------------------
+   Rama 2: motor habilita el temporizador TON T1 (PT = 10 s)
+--------------------------------------------------------------- *)
+T1(IN := motor, PT := T#10S);
+
+(* ---------------------------------------------------------------
+   Rama 3: T1.Q (contacto NO del temporizador) --&gt; lampara
+--------------------------------------------------------------- *)
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-2155"><div class="cod"><h3>C3-2155</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;btnMarcha&#x27; no es ninguna entrada de &#x27;PRG_Conversion&#x27;).</div><pre>PROGRAM PRG_Conversion
+VAR
+    // Entradas
+    btnMarcha : BOOL; // Botón de marcha
+    btnParo : BOOL;   // Botón de paro
+
+    // Salidas
+    motor : BOOL;     // Bobina del motor
+    lampara : BOOL;   // Bobina de la lámpara
+
+    // Temporizador
+    T1 : TON;         // Temporizador TON
+END_VAR
+
+// Lógica de control
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+// Configuración y ejecución del temporizador
+T1(IN := motor, PT := T#10S);
+
+// Control de la lámpara
+lampara := T1.Q;</pre></div>
+<div class="caja resp" id="C3-1446"><div class="cod"><h3>C3-1446</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; // Botón de inicio (contacto normalmente abierto)
+    btnParo : BOOL;   // Botón de detención (contacto normalmente cerrado en la lógica)
+END_VAR
+
+VAR_OUTPUT
+    motor : BOOL;     // Salida para el motor
+    lampara : BOOL;   // Salida para la lámpara indicadora
+END_VAR
+
+VAR
+    T1 : TON;         // Temporizador de retardo a la conexión
+END_VAR
+
+// Rama 1: Lógica de arranque y enclavamiento del motor
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+// Rama 2: Llamada al temporizador TON (10 segundos) activado por el motor
+T1(IN := motor, PT := T#10S);
+
+// Rama 3: Activación de la lámpara cuando el temporizador finaliza
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-8015"><div class="cod"><h3>C3-8015</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; (* Contacto NA *)
+    btnParo : BOOL; (* Contacto NC *)
+END_VAR
+VAR_OUTPUT
+    motor : BOOL; (* Bobina *)
+    lampara : BOOL; (* Bobina *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador *)
+END_VAR
+
+(* Rama 1: btnMarcha en paralelo con motor, ambos en serie con btnParo *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* Rama 2: motor alimenta el temporizador T1 con tiempo de 10 segundos *)
+IF motor THEN
+    T1(IN := TRUE, PT := T#10S);
+ELSE
+    T1(IN := FALSE);
+END_IF;
+
+(* Rama 3: contacto NA de T1.Q alimenta la bobina lampara *)
+lampara := T1.Q;
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-9667"><div class="cod"><h3>C3-9667</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;btnMarcha&#x27; no es ninguna entrada de &#x27;PRG_Conversion&#x27;).</div><pre>PROGRAM PRG_Conversion
+VAR
+    btnMarcha, btnParo : BOOL;  // Entradas
+    motor, lampara : BOOL;      // Salidas
+    T1 : TON;                   // Temporizador
+END_VAR
+
+// Rama 1: btnMarcha OR motor AND btnParo -&gt; motor
+motor := (btnMarcha OR motor) AND btnParo;
+
+// Rama 2: motor -&gt; T1 (10 segundos)
+IF motor THEN
+    T1(IN := TRUE, PT := T#10S);
+ELSE
+    T1(IN := FALSE);
+END_IF;
+
+// Rama 3: T1.Q -&gt; lampara
+lampara := T1.Q;</pre></div>
+<div class="caja resp" id="C3-1285"><div class="cod"><h3>C3-1285</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 11 pasos del harness (pasos 3,9; numerados desde 0).</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; (* Contacto NA *)
+    btnParo : BOOL; (* Contacto NC *)
+END_VAR
+VAR_OUTPUT
+    motor : BOOL; (* Bobina *)
+    lampara : BOOL; (* Bobina *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador *)
+END_VAR
+
+(* Inicialización del temporizador *)
+IF NOT T1.Q THEN
+    T1(IN := FALSE, PT := T#10S);
+END_IF
+
+(* Rama 1: btnMarcha en paralelo con motor, ambos en serie con btnParo *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* Rama 2: motor alimenta el temporizador T1 *)
+IF motor THEN
+    T1(IN := TRUE);
+ELSE
+    T1(IN := FALSE);
+END_IF
+
+(* Rama 3: contacto NA de T1.Q alimenta la bobina lampara *)
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-2752"><div class="cod"><h3>C3-2752</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 11 pasos del harness (pasos 3,9; numerados desde 0).</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; (* Contacto NA *)
+    btnParo : BOOL; (* Contacto NC en la rama *)
+END_VAR
+VAR_OUTPUT
+    motor : BOOL; (* Bobina *)
+    lampara : BOOL; (* Bobina *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador *)
+END_VAR
+
+(* Inicialización del temporizador *)
+IF NOT T1.Q THEN
+    T1(IN := FALSE, PT := T#10S);
+END_IF
+
+(* Rama 1: btnMarcha en paralelo con motor, ambos en serie con btnParo *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* Rama 2: motor alimenta el temporizador T1 *)
+IF motor THEN
+    T1(IN := TRUE);
+ELSE
+    T1(IN := FALSE);
+END_IF
+
+(* Rama 3: contacto NA de T1.Q alimenta la bobina lampara *)
+lampara := T1.Q;
+
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-4158"><div class="cod"><h3>C3-4158</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>PROGRAM PRG_Conversion
+VAR_INPUT
+    btnMarcha : BOOL; (* Contacto NA, inicio de marcha *)
+    btnParo : BOOL; (* Contacto NC, detiene el motor *)
+END_VAR
+VAR_OUTPUT
+    motor : BOOL; (* Bobina del motor y contacto de retencion *)
+    lampara : BOOL; (* Bobina indicadora *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador a la conexion *)
+END_VAR
+
+(* Rama 1: Circuito de retencion (arranque/paro) para el motor *)
+motor := (btnMarcha OR motor) AND NOT btnParo;
+
+(* Rama 2: El temporizador se activa cuando el motor esta encendido *)
+T1(IN := motor, PT := T#10S);
+
+(* Rama 3: La lampara se enciende cuando el temporizador alcanza los 10s *)
+lampara := T1.Q;
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-1088"><div class="cod"><h3>C3-1088</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;btnMarcha&#x27; no es ninguna entrada de &#x27;PRG_Conversion&#x27;).</div><pre>PROGRAM PRG_Conversion
+VAR
+    btnMarcha : BOOL; (* Contacto NA en paralelo *)
+    btnParo : BOOL; (* Contacto NC en serie *)
+    motor : BOOL; (* Bobina motor *)
+    lampara : BOOL; (* Bobina lámpara *)
+    T1 : TON; (* Temporizador TON *)
+END_VAR
+
+(* Serie = AND, paralelo = OR, contacto NC = NOT *)
+motor := ((btnMarcha OR motor) AND NOT btnParo);
+
+(* Configuración y ejecución del temporizador TON *)
+T1(IN := motor, PT := T#10S);
+
+(* Activación de la lámpara cuando T1.Q es TRUE *)
+lampara := T1.Q;
+END_PROGRAM</pre></div>
+<div class="caja resp" id="C3-5466"><div class="cod"><h3>C3-5466</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;btnMarcha&#x27; no es ninguna entrada de &#x27;PRG_Conversion&#x27;).</div><pre>PROGRAM PRG_Conversion
+VAR
+    btnMarcha, btnParo : BOOL;  // Entradas
+    motor, lampara : BOOL;      // Salidas
+    T1 : TON;                   // Temporizador
+END_VAR
+
+// Rama 1: btnMarcha OR motor AND btnParo -&gt; motor
+motor := (btnMarcha OR motor) AND btnParo;
+
+// Rama 2: motor -&gt; T1 (10 segundos)
+IF motor THEN
+    T1(IN := TRUE, PT := T#10S);
+ELSE
+    T1(IN := FALSE);
+END_IF;
+
+// Rama 3: T1.Q -&gt; lampara
+lampara := T1.Q;</pre></div>
+</main></body></html>

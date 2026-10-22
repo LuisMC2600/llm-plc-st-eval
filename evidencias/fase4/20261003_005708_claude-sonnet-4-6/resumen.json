@@ -1,0 +1,16 @@
+{
+  "log": "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\definitivo\\log.jsonl",
+  "duracion_min": 34.870010825,
+  "registros_totales": 540,
+  "por_modelo": {
+    "qwen2.5-coder:14b": 180,
+    "gpt-4o-2024-08-06": 180,
+    "claude-sonnet-4-6": 180
+  },
+  "latencia_media_s": {
+    "qwen2.5-coder:14b": 13.36,
+    "gpt-4o-2024-08-06": 2.73,
+    "claude-sonnet-4-6": 11.61
+  },
+  "sha256_log": "7a05e30db1d03b573a1e2fc1793acadc16f5b5d20a725fe4b4127dedcbb61bf9"
+}

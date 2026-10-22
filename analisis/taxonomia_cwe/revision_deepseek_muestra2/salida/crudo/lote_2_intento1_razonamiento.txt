@@ -1,0 +1,98 @@
+Necesito responder con JSON exacto. Debo clasificar cada caso V12..V22 según categoría. Necesito analizar cada código y primer paso fallido para categoría y justificación. Debo ser cuidadoso con causa raíz del primer fallo.
+
+V12: Tarea I7 duplex. Falló paso 9 "Ambas con falla: ninguna funciona y almFalla". Código: estado inicia 0. En flanco demanda, estado := (estado + 1) MOD 3; si 0 => 1. Primera transición: estado 0+1 mod3 =1, ok bomba1 principal. Segunda flanco: 1+1=2, ok. Tercera: 2+1 mod3=0, entonces estado:=1, so alterna de nuevo a bomba1? Debería alternar? Enunciado: cada nueva demanda alterna; con 3 demandas: bomba1, bomba2, bomba1. El código cumple? estado values: 1,2,1. Para "ambas con falla": si estado=1 y falla1 TRUE, ELSE? IF falla1 THEN bomba1:=FALSE; bomba2:=NOT falla2; almFalla:=NOT falla2. Si falla2 TRUE, NOT falla2 FALSE, bomba2 false almFalla false. Pero requisito: ambas con falla ninguna funciona y almFalla se activa. Aquí almFalla := NOT falla2 = FALSE, incorrecto. En estado 2, si falla2 true y falla1 true, almFalla := NOT falla1 false. Por tanto fallo en rama falla principal cuando respaldo también falla: almFalla debe activarse aunque respaldo no arranque. Categoría? ¿SECUENCIA? La lógica de alarma incorrecta para ambas con falla. Posible SEGURIDAD? Es respuesta ante fallas de equipo. Categorías: SEGURIDAD incluye "fallas de equipo". El fallo es alarma no se activa cuando ambas fallan. Es lógica de fallos. Podría ser SEGURIDAD. Primera falla: almFalla en ambas con falla. El código en rama de falla asigna almFalla := NOT falla2, lo que apaga alarma si respaldo tiene falla. La causa raíz: alarma de falla con ambos fallos. SEGURIDAD.
+
+V13: I7. Falló paso 1 "Primera demanda tras arranque: principal bomba1"; paso 5 alterna de nuevo bomba1, etc. Código: inicialización "IF NOT demanda AND NOT lastDemanda THEN principal := TRUE;" alternancia en flanco demanda principal := NOT principal. Problema en primera demanda: al arrancar principal está FALSE? VAR principal : BOOL; no inicializado, por defecto FALSE en CODESYS? En ST variables BOOL no inicializadas son FALSE. Luego IF NOT demanda AND NOT lastDemanda THEN principal := TRUE. Si inicialmente demanda está FALSE y lastDemanda FALSE, este IF se ejecuta cada ciclo mientras no demanda, pone principal TRUE. Luego al primer flanco demanda true and not lastDemanda (lastDemanda false), principal := NOT principal => FALSE. Entonces primera demanda la principal es bomba2, no bomba1. La inicialización se ejecuta cada ciclo en reposo, luego alterna en flanco, causando inversión. Categoría INICIALIZACION? Es estado de arranque incorrecto en primer ciclo? El primer fallo es primera demanda. La causa raíz: inicialización en reposo se aplica y luego se alterna, así estado inicial incorrecto. Categoría INICIALIZACION. Justificación: inicializa principal:=TRUE en cada ciclo sin demanda y luego flanco alterna a FALSE antes de primer arranque. Confirmo.
+
+V14: B6 motor arranque/paro emergencia. Falló paso 6 "Liberada emergencia con marcha pulsada motor no rearranca solo". Código: IF btnEmerg THEN motorLatch FALSE; ELSIF btnParo FALSE; ELSIF btnMarcha THEN motorLatch TRUE; END_IF. Si btnEmerg activo apaga. Si luego se libera emergencia pero btnMarcha sigue pulsado, al ciclo siguiente ELSIF btnMarcha TRUE, motorLatch TRUE. Por tanto rearranca solo. Categoría SEGURIDAD. Justificación: falta memoria de enclavamiento de emergencia; al liberar, marcha pulsada vuelve a activar. Clave SEGURIDAD.
+
+V15: I8 compresor permisivos. Falló pasos 1 (aceite correcto aun sin 3 s: causa 1 y sin arranque), 13, 18. Enunciado pOilOk activa durante 3 segundos continuos: Si pOilOk TRUE pero aún no 3s, la causaBloqueo debe ser 1? Veamos: requisito paso 1 "Aceite correcto aun sin 3 s continuos: causa 1 y sin arranque". Interpretación: la presión de aceite correcta aún no temporizada produce causa bloqueo 1. Código: pOilOkTimer TON(IN := pOilOk, PT := T#3S). Determinación causa: IF NOT pOilOk THEN causa:=1; ELSIF NOT tempOk THEN... ELSE causa:=0. No considera temporizador para causaBloqueo. Si pOilOk TRUE y tempOk y sinAlm, causaBloqueo := 0 aunque el temporizador no haya cumplido. Por eso falla paso 1. Es lógica de temporización/causa bloqueo. Categoría TEMPORIZACION? El fallo: causaBloqueo no informa 1 mientras temporiza pOilOk; el temporizador no se usa en la causa. También sin arranque? El arranque usa pOilOkTimer.Q, así no arranca. Fallo principal: causaBloqueo incorrecta. Categoría TEMPORIZACION. Justificación línea causaBloqueo solo evalúa NOT pOilOk, no pOilOkTimer.Q, por lo que durante los primeros 3s reporta 0 en lugar de 1. Categoría TEMPORIZACION.
+
+V16: I2 llenado por etapas. Falló paso 4 "~60.5 s: ya descarga", paso 5 "Nivel bajo: vuelve a reposo", paso 6 "Nuevo ciclo". Código:
+IF btnParo THEN estado:=0; salidas false; timerMezcla(IN:=FALSE);
+ELSIF btnInicio AND estado=0 THEN estado:=1; vLlenado:=TRUE;
+END_IF
+IF estado=1 THEN IF nivelAlto THEN estado:=2; vLlenado:=FALSE; motorMezcla:=TRUE; timerMezcla(IN:=TRUE, PT:=T#60S); END_IF END_IF
+IF estado=2 THEN IF timerMezcla.Q THEN estado:=3; motorMezcla:=FALSE; vDescarga:=TRUE; END_IF END_IF
+IF estado=3 THEN IF nivelBajo THEN estado:=0; vDescarga:=FALSE; END_IF END_IF
+
+Problema: temporizador TON no se invoca en cada ciclo con IN:=TRUE una vez en entrada a mezcla. En IEC, TON requiere llamada en cada ciclo con IN y PT; aquí solo se llama una vez en transición a estado 2. En CODESYS, un TON no invocado en ciclos posteriores no incrementa? Depende: El FB temporizador debe ser llamado para actualizar. Si no se invoca en estado=2, timerMezcla.Q queda falso para siempre, no pasa a descarga. Por ello falló ~60.5s: no descarga. También nivel bajo etc. Categoría TEMPORIZACION. Justificación: timerMezcla TON se invoca solo en el flanco de entrada a mezcla, no en cada ciclo; no alcanza Q. Clave TEMPORIZACION. Aunque primer fallo paso 4. 
+
+V17: I7 duplex. Falló paso 1 primera demanda bomba1, etc. Código: VAR principal1 : BOOL := TRUE; flancoSubida := demanda AND NOT demandaAntes; IF flancoSubida THEN principal1 := NOT principal1; END_IF. En primera demanda tras arranque, flanco cambia a TRUE, principal1 TRUE -> FALSE, bomba2 principal. Similar V13. Categoría INICIALIZACION. Primer fallo paso 1. Justificación: inicializa principal1 TRUE y alterna en el primer flanco, invirtiendo antes de usarse; debería alternarse después o inicializarse según primera demanda sin alternar.
+
+V18: A6 modos. Falló paso 6 "Entrada a mantenimiento: todos los actuadores apagados"; paso 7 forzado por flanco; etc. Código:
+IF estadoSeguro THEN
+ IF selector>=0... 
+   IF modoInterno=2 AND selector<>2 THEN apagar...
+   modoInterno := selector;
+ END_IF
+END_IF
+CASE modoInterno OF
+ 0: for actuador cmdAuto
+ 1: for actuador cmdManual
+ 2:
+   IF NOT estadoSeguro AND estadoSeguro_ant THEN apagar all
+   IF flanco confirmar...
+END_CASE
+
+Al inicializar, modoInterno=1. Si selector=2, estadoSeguro true, se cambia modoInterno:=2. CASE en el mismo ciclo? Sí, en CODESYS el CASE se evalúa después del IF (orden secuencial), por lo que en el mismo ciclo entra en modo 2. En modo 2 no hay una inicialización de actuadores apagados al entrar desde manual o auto. El requisito: en modo mantenimiento todos los actuadores parten apagados. El código no apaga actuadores al entrar en mantenimiento (excepto si provenía de mantenimiento y sale). Entonces en modo 2 los actuadores conservan valores previos de cmdManual quizás. Fallo paso 6. Categoría SEGURIDAD o SECUENCIA? Es estado de modo y salidas seguras al entrar a mantenimiento. Podría ser SEGURIDAD (estado seguro, salidas forzadas) o SECUENCIA. El fallo primer: no apaga actuadores al entrar en mantenimiento. En categorías: SEGURIDAD incluye "estado seguro", "enclavamientos", "permisivos". Mantenimiento requiere actuadores apagados (seguridad). "SEGURIDAD" puede ser. También SECUENCIA transiciones de máquina de estados. El modo es una máquina de estados con transición a mantenimiento; al entrar en modo mantenimiento debe apagar actuadores. Es acción de transición ausente. Categoría SECUENCIA? El primer fallo se debe a falta de acción de entrada al modo mantenimiento. Enunciado: "En modo mantenimiento todos los actuadores parten apagados". El código no hace apagado al entrar. Categoría SECUENCIA podría ser. Pero "SEGURIDAD" también. Necesito elegir una. La categoría SEGURIDAD incluye "respuesta incorrecta ante ... enclavamientos entre salidas, permisivos, fallas de equipo, aborto de receta o respuestas erróneas de un dispositivo." No menciona modos seguro, pero "estado seguro" en enunciado. SECUENCIA: "transiciones de la secuencia o de la máquina de estados ausentes o erróneas, pérdida de la autorretención o de la retención, alternancia incorrecta o acción ejecutada en un momento equivocado." Aquí transición a mantenimiento no apaga salidas: acción de transición ausente. Creo SECUENCIA encaja. Pero primer fallo "Entrada a mantenimiento: todos los actuadores apagados" es una acción en transición. La categoría correcta probablemente SECUENCIA. Sin embargo también puede ser SEGURIDAD por estado seguro. Revisemos casos posteriores fallos: paso 7 forzado no funciona? Código: en CASE 2, al entrar, flanco confirmarForzado_ant actualizado al final. Si confirmarForzado flanco inicial, aplica. Pero paso 7 falla? Si actuador[3] no se enciende? Porque en modo 2, antes de forzar, actuadores no apagados. En paso 6 quizás ya falló. En el banco, pasos fallidos incluyen muchos; la categoría según primer fallido es "Entrada a mantenimiento: todos los actuadores apagados". Eso es SECUENCIA. Justificación: al pasar a modoInterno:=2 no se apagan previamente los actuadores; vienen de modo manual y solo se apagan al salir de mantenimiento. Categoría SECUENCIA.
+
+V19: C3 conversión ladder. Falló paso 3 y 9 lámpara encendida tras TON. Código:
+IF NOT T1.Q THEN
+    T1(IN := FALSE, PT := T#10S);
+END_IF
+motor := (btnMarcha OR motor) AND NOT btnParo;
+IF motor THEN T1(IN := TRUE); ELSE T1(IN := FALSE); END_IF;
+lampara := T1.Q;
+
+Problema: Al inicio T1.Q FALSE, entonces T1(IN:=FALSE, PT:=T#10S) se ejecuta. Luego motor... Luego IF motor T1(IN:=TRUE). En CODESYS, TON con IN TRUE inicia temporización. Sin embargo, la condición `IF NOT T1.Q THEN T1(IN := FALSE, PT := T#10S); END_IF` se ejecuta cada ciclo mientras T1.Q FALSE, llamando con IN FALSE después? Orden: cada ciclo: if not Q -> T1(IN:=FALSE) (resetea). Luego IF motor T1(IN:=TRUE); Esto sí actualiza TON con IN TRUE. La llamada con IN FALSE puede resetear si IN está false, pero luego con IN TRUE. En CODESYS, TON es FB que en cada llamada evalúa IN y PT. La primera llamada con IN FALSE y luego segunda con IN TRUE en el mismo ciclo: la primera podría resetear, la segunda arranca. Al siguiente ciclo se repite: if not Q -> T1(IN:=FALSE) y luego T1(IN:=TRUE). Entonces cada ciclo se resetea el temporizador, nunca cuenta. Por eso lámpara nunca tras 10s. Causa: llamada con IN FALSE en cada ciclo mientras Q no está. Categoría TEMPORIZACION. Justificación: reinicia T1 con IN FALSE cada ciclo si Q no se ha alcanzado, impidiendo la acumulación del TON.
+
+V20: B6 baliza. Falló paso 1 "Alarma activa: intervalos ON y OFF de 1 s +/- 150 ms". Código usa TP. IF alarma THEN tParpadeo(IN:=TRUE, PT:=T#1S); estado := NOT estado; ELSE ... estado:=FALSE. Problema: estado cambia cada ciclo mientras alarma, no cada 1s; TP no se usa para condicionar toggle. lampara := estado AND alarma. Esto parpadea a frecuencia ciclo, no 1 s. Categoría FLANCO? No, intermitencia/tiempo incumplido -> TEMPORIZACION. Justificación: cambia `estado` cada ciclo en lugar de usar tParpadeo.Q; el TP no condiciona el toggle. Categoría TEMPORIZACION.
+
+V21: I8 compresor permisivos. Falló paso 1 y 3 etc. Código usa tPresion: TP (pulso) en lugar de TON. TP con IN:=pOilOk, PT:=3s: Q se pone TRUE cuando IN sube y permanece TRUE hasta 3s después de la subida? TP es pulso: Q TRUE durante 3s si IN TRUE, independiente de si IN se mantiene? En IEC, TP: si IN TRUE, ET aumenta, Q TRUE si ET<PT; si IN FALSE, Q FALSE. En Codesys TP se dispara en flanco de subida? Hay variantes. Un TP no sirve para verificar presencia continua de 3s: si pOilOk cae y sube, TP inicia pulso de 3s? Podría. Paso 1 falla: "Aceite correcto aun sin 3 s continuos: causa 1 y sin arranque". En código causaBloqueo usa IF NOT pOilOk, no tPresion.Q, así con pOilOk TRUE, tempOk, sinAlm, causaBloqueo = 0, no 1. Igual V15. También `permisivoCumplido := tPresion.Q AND tempOk AND sinAlm`. TP Q está TRUE durante el pulso de 3 s desde el flanco de pOilOk, no después de 3 s continuos. Entonces arranque incorrecto: con flanco de marcha durante los primeros 3s, permisivoCumplido TRUE, arranca, pero debería no arrancar y causa 1. Fallo paso 1. Categoría TEMPORIZACION: usa TP en lugar de TON y causaBloqueo no evalúa temporizador. Similar V15.
+
+V22: I2 llenado. Falló paso 4 ~60.5s ya descarga, etc. Código CASE, en estado 2: `motorMezcla := TRUE; IF tMezcla.Q THEN ...`. El temporizador tMezcla(IN := TRUE, PT := T#60S) se invoca solo en transición de estado 1 a 2, no en cada ciclo, mismo problema V16. Además en estado 2 no llaman a tMezcla(IN:=TRUE), por lo que Q nunca se actualiza. Categoría TEMPORIZACION. Justificación: tMezcla solo se llama una vez al entrar a mezcla, no cada ciclo; TON no acumula y no transiciona a descarga.
+
+Ahora debo generar JSON sin análisis. Necesito incluir código, categoria, justificacion. Orden V12-V22. Repasemos categorías elegidas:
+
+V12: SEGURIDAD o SECUENCIA? Primer fallo "Ambas con falla: ninguna funciona y almFalla". Código en ambas fallas no activa alarma. Categoría SEGURIDAD. Justificación: en rama de falla principal, `almFalla := NOT falla2` apaga la alarma si el respaldo también falla. ¿Podría ser SECUENCIA? No, es falla de equipo. SEGURIDAD.
+
+V13: INICIALIZACION.
+
+V14: SEGURIDAD.
+
+V15: TEMPORIZACION.
+
+V16: TEMPORIZACION.
+
+V17: INICIALIZACION.
+
+V18: SECUENCIA (o SEGURIDAD). Necesito decidir. Analicemos más: El código en entrada a mantenimiento: en CASE 2, no apaga todos al inicio. Si modoInterno venía de 1 manual, actuadores = cmdManual. Al entrar en mantenimiento, permanecen cmdManual. El banco espera "todos los actuadores apagados" por seguridad. La tarea: "En modo mantenimiento todos los actuadores parten apagados y solo pueden forzarse uno a uno". Esto es una transición de modo. La categoría SECUENCIA incluye "acción ejecutada en un momento equivocado" y transiciones de máquina de estados ausentes. Es una acción de transición ausente. Elegiré SECUENCIA.
+
+V19: TEMPORIZACION.
+
+V20: TEMPORIZACION.
+
+V21: TEMPORIZACION.
+
+V22: TEMPORIZACION.
+
+Pero confirmemos V21: primer fallo paso 1 "Aceite correcto aun sin 3 s continuos: causa 1 y sin arranque". Código asigna causaBloqueo basado en pOilOk no tPresion.Q, y `permisivoCumplido := tPresion.Q...` con TP. El primer fallo es causa 1. TEMPORIZACION sí.
+
+V15: primer fallo paso 1 similar. Código con TON pero causaBloqueo no considera pOilOkTimer.Q; el temporizador está correcto para arranque, pero causaBloqueo incorrecta. Categoría TEMPORIZACION. Justificación puede ser: `causaBloqueo` solo evalúa `NOT pOilOk`, no `pOilOkTimer.Q`, por lo que durante la temporización de 3s reporta 0 en lugar de 1.
+
+V16: primer fallo paso 4. TEMPORIZACION. Justificación: `timerMezcla(IN:=TRUE, PT:=T#60S)` solo se invoca en la transición a estado 2, no en cada ciclo, con lo que Q no alcanza. En V22 similar.
+
+Asegurar formato: JSON exacto, un objeto por caso. Debo usar comillas dobles. No incluir explicaciones adicionales.
+
+Posibles dudas: V14 SEGURIDAD: "tras un paro de emergencia no debe rearrancar aunque marcha pulsada". Código no cumple. SEGURIDAD.
+
+V17: El código declara `principal1 : BOOL := TRUE;` y `demandaAntes : BOOL := FALSE`. En CODESYS, los valores iniciales toman en primera llamada. Primer flanco de demanda cambia principal1 FALSE, por lo que primera demanda bomba2. Fallo paso 1. Categoría INICIALIZACION. Justificación: aunque `principal1` inicial TRUE, el primer flanco lo invierte antes de evaluar, por lo que la primera demanda arranca bomba2. Observación: En V13, `principal` no inicializado FALSE, luego inicialización en reposo y flanco invierte. También INICIALIZACION.
+
+V18: Revisar si al entrar a mantenimiento, actuadores no apagados. En `IF modoInterno = 2 AND selector <> 2 THEN` se apagan saliendo. No apagan entrando. El CASE 2 no apaga inicialmente. Por tanto paso 6 falla. Categoría SECUENCIA. Justificación: falta acción de apagado al entrar a mantenimiento; `modoInterno := selector` se aplica y luego CASE 2 conserva los actuadores.
+
+La salida JSON list.
+
+¿Debo incluir acentos? Sí puedo.
+
+Final JSON.

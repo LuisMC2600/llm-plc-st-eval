@@ -1,0 +1,11 @@
+1. **Condición principal invertida (`IF NOT habilitado THEN`):** La lógica de semáforo cíclico se ejecuta cuando `habilitado` está **inactivo**, y el apagado de luces ocurre cuando está **activo**, que es exactamente lo contrario a la especificación. Corrección: cambiar a `IF habilitado THEN`.
+
+2. **El temporizador `t1` nunca se resetea entre estados (estados 0, 1 y 2):** Cuando se detecta `t1.Q` y se cambia de estado, `t1` sigue llamándose con `IN := TRUE` en el nuevo estado y su salida `Q` permanece activa desde el ciclo anterior, lo que provoca que la transición al estado siguiente ocurra de forma inmediata sin esperar el tiempo configurado. Corrección: al detectar la transición (`IF t1.Q THEN`), añadir una llamada `t1(IN := FALSE);` antes o justo después de cambiar de estado, para forzar el reset del temporizador antes de que el nuevo estado lo vuelva a arrancar.
+
+3. **En el estado 1 no se apaga `luzR` (`luzV := FALSE; luzA := TRUE;`):** Al entrar en el estado amarillo, `luzR` no se pone explícitamente a `FALSE`, por lo que puede quedar encendida si venía del estado 2. Corrección: añadir `luzR := FALSE;` en el estado 1.
+
+4. **El estado 3 (amarillo intermitente) nunca es alcanzable:** Ningún estado del `CASE` ni ninguna otra lógica asigna el valor `3` a `estado`, por lo que el modo intermitente es inalcanzable. Corrección: añadir una entrada o condición (por ejemplo, una variable de modo) que permita transitar a `estado := 3`, o bien gestionar el acceso al estado 3 desde la lógica principal.
+
+5. **La variable `parp` nunca se conmuta (estado 3, `luzA := parp;`):** `parp` se declara como `BOOL` pero nunca se actualiza, por lo que `luzA` quedará fija en su valor inicial (`FALSE`) en lugar de parpadear. Corrección: añadir un temporizador o un detector de flanco que conmute `parp` periódicamente (por ejemplo, con un `TON` que alterne `parp := NOT parp;` al expirar) antes de asignarlo a `luzA`.
+
+6. **En el estado 3 no se apagan `luzV` ni `luzR`:** Al entrar en el modo intermitente, `luzV` y `luzR` no se fuerzan a `FALSE`, pudiendo quedar encendidas según el estado previo. Corrección: añadir `luzV := FALSE; luzR := FALSE;` en el estado 3.

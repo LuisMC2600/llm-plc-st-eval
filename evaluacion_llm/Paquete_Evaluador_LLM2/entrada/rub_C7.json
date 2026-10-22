@@ -1,0 +1,201 @@
+{
+ "tarea": "C7",
+ "titulo": "Conversión Ladder a ST — contador con preset",
+ "nivel": "Complementaria",
+ "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: convierte a Structured Text el siguiente segmento de un programa en Ladder Diagram (IEC 61131-3), preservando exactamente su comportamiento. Descripción del segmento: Rama 1: el contacto normalmente abierto sensorPieza alimenta la entrada de conteo CU de un contador ascendente CTU llamado C1, cuyo valor preestablecido PV es 12; el contacto normalmente abierto btnReset alimenta la entrada RESET de ese mismo contador. Rama 2: el contacto normalmente abierto de C1.Q alimenta la bobina loteListo. Rama 3: el valor actual C1.CV se transfiere a la variable cuenta. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Contador con variables de entrada sensorPieza, btnReset (BOOL) y salidas loteListo (BOOL) y cuenta (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+ "protocolo_prueba": "Harness: PRG_Test_B3.st\n\nBANCO DE PRUEBA AUTOVERIFICABLE — Tarea B3 (contador de piezas por flanco)\n    ---------------------------------------------------------------------------\n    CORRIGE la version anterior, que tenia dos defectos fatales:\n\n    1. El CASE asignaba sensorPieza := TRUE y una linea posterior lo invertia\n       antes de llamar al bloque, de modo que el FB recibia siempre FALSE.\n       No se generaba ningun flanco y el paso 4 reprobaba SIEMPRE, incluso a\n       implementaciones correctas (falso negativo del 100%).\n\n    2. La alternancia ocurria una vez por scan, por lo que el numero de flancos\n       dependia del ciclo de la MainTask (2 flancos con 20 ms, 12 con 4 ms).\n       El resultado era un accidente del entorno, no una medicion.\n\n    SOLUCION: generador determinista de flancos con temporizador propio y\n    contador explicito. Genera exactamente FLANCOS_EXTRA flancos ascendentes\n    con independencia del ciclo de tarea. El temporizador de asentamiento del\n    paso queda retenido mientras la generacion esta en curso, de modo que la\n    evaluacion solo ocurre cuando ya se emitieron todos los flancos.\n\n    3. (detectado por la validacion) Comprobar solo el estado final (cuenta=12,\n       loteListo=TRUE) NO distingue un preset incorrecto: una implementacion que\n       active el lote a las 10 piezas tambien llega a 12 con el lote activo. El\n       umbral se verifica ahora en DOS LOTES: primero 10 flancos (cuenta=11, el\n       lote debe seguir APAGADO) y despues 1 flanco mas (cuenta=12, lote ENCENDIDO).\n\n    Cuentas esperadas: 1 (paso 1) + 10 (paso 4) + 1 (paso 5) = 12.\n\n--- Pasos (CASE paso OF) ---\n\n        0:  (* Reset inicial *)\n            btnReset := TRUE;  sensorPieza := FALSE;\n            tEspera := T#200MS; esperadoCuenta := 0; esperadoLote := FALSE;\n        1:  (* Primer flanco ascendente *)\n            btnReset := FALSE; sensorPieza := TRUE;\n            tEspera := T#200MS; esperadoCuenta := 1; esperadoLote := FALSE;\n        2:  (* Sensor sostenido en alto: NO debe seguir contando *)\n            sensorPieza := TRUE;\n            tEspera := T#500MS; esperadoCuenta := 1; esperadoLote := FALSE;\n        3:  (* Vuelta a bajo para preparar la generacion *)\n            sensorPieza := FALSE;\n            tEspera := T#200MS; esperadoCuenta := 1; esperadoLote := FALSE;\n        4:  (* 10 flancos -> 11 cuentas: el lote AUN NO debe activarse.\n               Este paso es el que detecta un preset menor que 12. *)\n            tEspera := T#200MS; esperadoCuenta := 11; esperadoLote := FALSE;\n        5:  (* 1 flanco mas -> 12 cuentas: el lote SI debe activarse.\n               Este paso detecta un preset mayor que 12. *)\n            tEspera := T#200MS; esperadoCuenta := 12; esperadoLote := TRUE;\n        6:  (* Reset final *)\n            btnReset := TRUE;  sensorPieza := FALSE;\n            tEspera := T#200MS; esperadoCuenta := 0; esperadoLote := FALSE;",
+ "respuestas": [
+  {
+   "codigo": "C7-2387",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Contacto normalmente abierto sensor de pieza\n    btnReset : BOOL;    // Contacto normalmente abierto botón de reset\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; // Bobina que indica que el lote está listo\n    cuenta : INT;      // Variable que almacena el valor actual del contador\nEND_VAR\n\nVAR\n    C1 : CTU;          // Contador ascendente\nEND_VAR\n\n// Configuración del contador C1\nC1.PV := 12;          // Valor preestablecido del contador\n\n// Rama 1: Conteo de piezas\nC1(CU := sensorPieza, RESET := btnReset);\n\n// Rama 2: Indicación de lote listo\nloteListo := C1.Q;\n\n// Rama 3: Transferencia del valor actual del contador a la variable cuenta\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-3786",
+   "resultado_codesys": "No compila (6 errores).",
+   "mensajes_compilador": "L?nea 3, columna 1 (Impl) Se esperaba ';' en lugar de ',' || L?nea 3, columna 1 (Impl) Se esperaba expresi?n en vez de 'R' || L?nea 3, columna 1 (Impl) Encontrado token inesperado ',' || L?nea 4, columna 1 (Impl) Se esperaba ';' en lugar de 'PV' || L?nea 5, columna 1 (Impl) Se esperaba ';' en lugar de ')' || L?nea 5, columna 1 (Impl) Encontrado token inesperado ')'",
+   "funcional_fijo": 0,
+   "iec_fijo": 0,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor de detección de pieza *)\n    btnReset    : BOOL; (* Botón de reset del contador *)\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; (* Indica que el lote de 12 piezas está completo *)\n    cuenta    : INT;  (* Valor actual del contador *)\nEND_VAR\n\nVAR\n    C1 : CTU; (* Contador ascendente IEC 61131-3 *)\nEND_VAR\n\n(* -------------------------------------------------------\n   Rama 1: Contador ascendente C1\n   CU  <- sensorPieza (flanco ascendente cuenta una pieza)\n   R   <- btnReset    (reset del contador)\n   PV  = 12          (valor preestablecido del lote)\n   ------------------------------------------------------- *)\nC1(\n    CU := sensorPieza,\n    R  := btnReset,\n    PV := 12\n);\n\n(* -------------------------------------------------------\n   Rama 2: Bobina loteListo\n   Se activa cuando C1.Q = TRUE (CV >= PV)\n   ------------------------------------------------------- *)\nloteListo := C1.Q;\n\n(* -------------------------------------------------------\n   Rama 3: Transferencia del valor actual a cuenta\n   ------------------------------------------------------- *)\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-5127",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL;   // Contacto normalmente abierto del sensor de pieza\n    btnReset : BOOL;      // Contacto normalmente abierto para resetear el contador\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;     // Bobina que indica si el lote está listo\n    cuenta : INT;         // Valor actual del contador\nEND_VAR\n\nVAR\n    C1 : CTU;             // Contador ascendente\nEND_VAR\n\n// Inicialización del contador ascendente\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n// Asignación de la salida del contador a la bobina loteListo\nloteListo := C1.Q;\n\n// Transferencia del valor actual del contador a la variable de salida cuenta\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-4283",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Contacto normalmente abierto del sensor de pieza\n    btnReset : BOOL;    // Contacto normalmente abierto del botón de reset\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;  // Bobina que indica que el lote está listo\n    cuenta : INT;      // Variable que almacena el valor actual del contador\nEND_VAR\n\nVAR\n    C1 : CTU;          // Contador ascendente\nEND_VAR\n\n// Configuración del contador ascendente\nC1.PV := 12;          // Valor preestablecido del contador\n\n// Rama 1: Conteo de piezas\nC1(CU := sensorPieza, RESET := btnReset);\n\n// Rama 2: Indicación de lote listo\nloteListo := C1.Q;\n\n// Rama 3: Transferencia del valor actual del contador a la variable cuenta\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-5811",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA para conteo *)\n    btnReset : BOOL; (* Contacto NA para reset *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina activada cuando el conteo alcanza PV *)\n    cuenta : INT; (* Valor actual del contador *)\nEND_VAR\nVAR\n    C1 : CTU; (* Contador ascendente *)\nEND_VAR\n\n(* Configuración del contador ascendente *)\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n(* Rama 2: activar loteListo cuando C1.Q es TRUE *)\nloteListo := C1.Q;\n\n(* Rama 3: transferir el valor actual del contador a cuenta *)\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-2960",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA para conteo *)\n    btnReset : BOOL; (* Contacto NA para reset *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina activada por C1.Q *)\n    cuenta : INT; (* Valor actual del contador *)\nEND_VAR\nVAR\n    C1 : CTU; (* Contador ascendente *)\nEND_VAR\n\n(* Configuración del contador *)\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n(* Rama 2: Activación de la bobina loteListo cuando C1.Q es TRUE *)\nloteListo := C1.Q;\n\n(* Rama 3: Transferencia del valor actual del contador a la salida cuenta *)\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-2343",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA para conteo *)\n    btnReset : BOOL; (* Contacto NA para reset *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina de lote completado *)\n    cuenta : INT; (* Valor actual del contador *)\nEND_VAR\nVAR\n    C1 : CTU; (* Instancia del contador ascendente *)\nEND_VAR\n\n(* Rama 1: Actualizacion del contador con PV = 12 *)\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n(* Rama 2: La salida Q del contador alimenta la bobina loteListo *)\nloteListo := C1.Q;\n\n(* Rama 3: Transferencia del valor actual a la variable cuenta *)\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-1855",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA: entrada de conteo *)\n    btnReset    : BOOL; (* Contacto NA: reset del contador *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina activada cuando C1.Q = TRUE *)\n    cuenta    : INT;  (* Valor actual del contador C1.CV *)\nEND_VAR\nVAR\n    C1 : CTU; (* Contador ascendente *)\nEND_VAR\n\n(* Rama 1: sensorPieza -> CU, btnReset -> RESET, PV = 12 *)\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n(* Rama 2: C1.Q alimenta la bobina loteListo *)\nloteListo := C1.Q;\n\n(* Rama 3: transferencia del valor actual a cuenta *)\ncuenta := C1.CV;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-6731",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Contacto normalmente abierto para el sensor de pieza\n    btnReset : BOOL;    // Contacto normalmente abierto para el botón de reset\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;   // Bobina que indica si el lote está listo\n    cuenta : INT;       // Valor actual del contador\nEND_VAR\n\nVAR\n    C1 : CTU;           // Contador ascendente\nEND_VAR\n\n// Configuración del contador ascendente\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n// Asignación de la salida del contador a la bobina loteListo\nloteListo := C1.Q;\n\n// Transferencia del valor actual del contador a la variable cuenta\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-3114",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor de detección de pieza (contacto NA) *)\n    btnReset    : BOOL; (* Botón de reset del contador (contacto NA) *)\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; (* Activa cuando se completa el lote (C1.Q) *)\n    cuenta    : INT;  (* Valor actual del contador (C1.CV) *)\nEND_VAR\n\nVAR\n    C1 : CTU; (* Contador ascendente IEC 61131-3 *)\nEND_VAR\n\n(* ---------------------------------------------------------------\n   Rama 1: sensorPieza -> CU de C1 | btnReset -> RESET de C1\n   Rama 2: C1.Q -> loteListo\n   Rama 3: C1.CV -> cuenta\n--------------------------------------------------------------- *)\n\n(* Rama 1: llamada al contador CTU *)\nC1(\n    CU    := sensorPieza, (* Flanco ascendente de sensorPieza incrementa el contador *)\n    RESET := btnReset,    (* btnReset pone CV a 0 y Q a FALSE *)\n    PV    := 12           (* Valor preestablecido del lote *)\n);\n\n(* Rama 2: la salida Q del contador activa loteListo *)\nloteListo := C1.Q;\n\n(* Rama 3: transferencia del valor actual a la variable cuenta *)\ncuenta := C1.CV;"
+  },
+  {
+   "codigo": "C7-6201",
+   "resultado_codesys": "Compila. Falla 5 de 7 pasos del harness (pasos 1,2,3,4,5; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Contacto normalmente abierto sensor de pieza\n    btnReset : BOOL; // Contacto normalmente abierto botón de reset\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; // Bobina que indica que el lote está listo\n    cuenta : INT; // Variable que almacena el valor actual del contador\nEND_VAR\n\nVAR\n    C1 : CTU; // Contador ascendente\nEND_VAR\n\n// Configuración del contador ascendente\nC1.PV := 12; // Valor preestablecido del contador\n\n// Rama 1: Conteo de piezas\nIF sensorPieza THEN\n    C1.CU := TRUE; // Alimenta la entrada de conteo\nELSE\n    C1.CU := FALSE;\nEND_IF;\n\n// Rama 2: Reset del contador\nIF btnReset THEN\n    C1.RESET := TRUE; // Alimenta la entrada de reset\nELSE\n    C1.RESET := FALSE;\nEND_IF;\n\n// Rama 3: Transferencia del valor del contador a la variable cuenta\ncuenta := C1.CV; // Transfiere el valor actual del contador a la variable cuenta\n\n// Rama 4: Control de la bobina loteListo\nIF C1.Q THEN\n    loteListo := TRUE; // Activa la bobina si el contador alcanza el valor preestablecido\nELSE\n    loteListo := FALSE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-2101",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA para entrada de conteo *)\n    btnReset : BOOL; (* Contacto NA para reset del contador *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina indicadora de lote completo *)\n    cuenta : INT; (* Valor actual del conteo *)\nEND_VAR\nVAR\n    C1 : CTU; (* Instancia del contador ascendente *)\nEND_VAR\n\n(* Rama 1: Llamada al bloque contador con sus respectivas entradas y valor preestablecido *)\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n(* Rama 2: El contacto de la salida Q del contador alimenta la bobina *)\nloteListo := C1.Q;\n\n(* Rama 3: Se transfiere el valor actual del contador a la salida *)\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-9652",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Señal para incrementar el contador\n    btnReset : BOOL;    // Señal para reiniciar el contador\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;   // Se activa al alcanzar el valor preestablecido\n    cuenta : INT;       // Valor actual del conteo\nEND_VAR\n\nVAR\n    C1 : CTU;           // Instancia del contador ascendente\nEND_VAR\n\n// Rama 1: Actualización del contador ascendente con PV = 12\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n// Rama 2: La salida Q del contador activa la bobina loteListo\nloteListo := C1.Q;\n\n// Rama 3: Se transfiere el valor actual del contador a la salida cuenta\ncuenta := C1.CV;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-6391",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Contacto normalmente abierto para conteo\n    btnReset    : BOOL; // Contacto normalmente abierto para reinicio\nEND_VAR\n\nVAR_OUTPUT\n    loteListo   : BOOL; // Bobina que indica si el lote está completo\n    cuenta      : INT;  // Valor actual del conteo\nEND_VAR\n\nVAR\n    C1          : CTU;  // Instancia del contador ascendente\nEND_VAR\n\n// Rama 1: Actualización del contador ascendente con PV = 12\nC1(\n    CU := sensorPieza, \n    RESET := btnReset, \n    PV := 12\n);\n\n// Rama 2: La salida Q del contador activa la bobina loteListo\nloteListo := C1.Q;\n\n// Rama 3: Se transfiere el valor actual del contador a la variable cuenta\ncuenta := C1.CV;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-2041",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA: entrada de conteo *)\n    btnReset    : BOOL; (* Contacto NA: reset del contador *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina: activada cuando C1.Q = TRUE *)\n    cuenta    : INT;  (* Valor actual del contador C1.CV *)\nEND_VAR\nVAR\n    C1 : CTU; (* Contador ascendente *)\nEND_VAR\n\n(* Rama 1: sensorPieza -> CU, btnReset -> RESET, PV = 12 *)\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n(* Rama 2: C1.Q alimenta la bobina loteListo *)\nloteListo := C1.Q;\n\n(* Rama 3: transferencia del valor actual a cuenta *)\ncuenta := C1.CV;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-9033",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA para conteo *)\n    btnReset : BOOL; (* Contacto NA para reset *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina activada por C1.Q *)\n    cuenta : INT; (* Valor actual del contador *)\nEND_VAR\nVAR\n    C1 : CTU; (* Contador ascendente *)\nEND_VAR\n\n(* Configuración del contador *)\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n(* Rama 2: Activación de la bobina loteListo por C1.Q *)\nloteListo := C1.Q;\n\n(* Rama 3: Transferencia del valor actual del contador a cuenta *)\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-2277",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA que alimenta CU *)\n    btnReset : BOOL; (* Contacto NA que alimenta RESET *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina que se activa cuando C1.Q es TRUE *)\n    cuenta : INT; (* Valor actual del contador *)\nEND_VAR\nVAR\n    C1 : CTU; (* Contador ascendente *)\nEND_VAR\n\n(* Configuración del contador *)\nC1.PV := 12; (* Valor preestablecido a 12 *)\n\n(* Rama 1: alimentar CU y RESET *)\nIF sensorPieza THEN\n    C1.CU := TRUE;\nELSE\n    C1.CU := FALSE;\nEND_IF\n\nIF btnReset THEN\n    C1.RESET := TRUE;\nELSE\n    C1.RESET := FALSE;\nEND_IF\n\n(* Rama 2: alimentar loteListo *)\nloteListo := C1.Q;\n\n(* Rama 3: transferir C1.CV a cuenta *)\ncuenta := C1.CV;\n\n(* Actualizar el contador *)\nC1();\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-6780",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA para conteo *)\n    btnReset : BOOL; (* Contacto NA para reset *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina indicadora de lote *)\n    cuenta : INT; (* Valor actual del contador *)\nEND_VAR\nVAR\n    C1 : CTU; (* Instancia del contador ascendente *)\nEND_VAR\n\n(* Rama 1: Llamada al bloque contador con sus parametros *)\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n(* Rama 2: La salida Q del contador alimenta la bobina *)\nloteListo := C1.Q;\n\n(* Rama 3: Se transfiere el valor actual CV a la salida *)\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-1135",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA que alimenta CU *)\n    btnReset : BOOL; (* Contacto NA que alimenta RESET *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina que se activa cuando C1.Q es TRUE *)\n    cuenta : INT; (* Valor actual del contador *)\nEND_VAR\nVAR\n    C1 : CTU; (* Contador ascendente *)\nEND_VAR\n\n(* Configuración del contador *)\nC1.PV := 12; (* Valor preestablecido del contador *)\n\n(* Rama 1: alimentar CU y RESET *)\nIF sensorPieza THEN\n    C1.CU := TRUE;\nELSE\n    C1.CU := FALSE;\nEND_IF\n\nIF btnReset THEN\n    C1.RESET := TRUE;\nELSE\n    C1.RESET := FALSE;\nEND_IF\n\n(* Rama 2: alimentar loteListo *)\nloteListo := C1.Q;\n\n(* Rama 3: transferir C1.CV a cuenta *)\ncuenta := C1.CV;\n\n(* Ejecutar el contador *)\nC1();\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-1952",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Contacto NA que alimenta la entrada de conteo\n    btnReset : BOOL;    // Contacto NA que alimenta el reset del contador\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;   // Bobina que indica si se alcanzó el valor preestablecido\n    cuenta : INT;       // Valor actual del contador\nEND_VAR\n\nVAR\n    C1 : CTU;           // Instancia del contador ascendente estándar\nEND_VAR\n\n// Rama 1: Llamada al contador ascendente con límite de 12\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n// Rama 2: Activación de la bobina loteListo con la salida Q del contador\nloteListo := C1.Q;\n\n// Rama 3: Transferencia del valor actual del contador a la salida cuenta\ncuenta := C1.CV;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-8580",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL;  // Contacto normalmente abierto para el sensor de pieza\n    btnReset : BOOL;     // Contacto normalmente abierto para el botón de reset\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;    // Bobina que indica si el lote está listo\n    cuenta : INT;        // Valor actual del contador\nEND_VAR\n\nVAR\n    C1 : CTU;            // Contador ascendente\nEND_VAR\n\n// Inicialización del contador ascendente\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n// Asignación de la salida del contador a la bobina loteListo\nloteListo := C1.Q;\n\n// Transferencia del valor actual del contador a la variable cuenta\ncuenta := C1.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-8598",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA para contar *)\n    btnReset : BOOL; (* Contacto NA para resetear el contador *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina que se activa cuando se alcanza el lote *)\n    cuenta : INT; (* Valor actual del contador *)\nEND_VAR\nVAR\n    C1 : CTU; (* Contador ascendente *)\nEND_VAR\n\n(* Configuración del contador *)\nC1.PV := 12; (* Valor preestablecido del contador *)\n\n(* Rama 1: Conteo *)\nIF sensorPieza THEN\n    C1.CU := TRUE; (* Incrementa el contador *)\nELSE\n    C1.CU := FALSE;\nEND_IF\n\n(* Rama 2: Reset *)\nIF btnReset THEN\n    C1.RESET := TRUE; (* Resetea el contador *)\nELSE\n    C1.RESET := FALSE;\nEND_IF\n\n(* Rama 3: Actualización del contador *)\nC1(); (* Ejecuta el contador *)\ncuenta := C1.CV; (* Transfiere el valor actual del contador a la variable cuenta *)\n\n(* Rama 4: Lote listo *)\nloteListo := C1.Q; (* La bobina se activa cuando se alcanza el valor preestablecido *)\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-9091",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Contacto NA: entrada de conteo *)\n    btnReset    : BOOL; (* Contacto NA: reset del contador *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Bobina activada cuando C1.Q = TRUE *)\n    cuenta    : INT;  (* Valor actual del contador C1.CV *)\nEND_VAR\nVAR\n    C1 : CTU; (* Contador ascendente IEC 61131-3 *)\nEND_VAR\n\n(* Rama 1: sensorPieza -> CU, btnReset -> RESET, PV = 12 *)\nC1(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n(* Rama 2: C1.Q activa la bobina loteListo *)\nloteListo := C1.Q;\n\n(* Rama 3: transferencia del valor actual a la variable cuenta *)\ncuenta := C1.CV;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "C7-7646",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor de detección de pieza *)\n    btnReset    : BOOL; (* Botón de reset del contador *)\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; (* Indica que el lote de 12 piezas está completo *)\n    cuenta    : INT;  (* Valor actual del contador *)\nEND_VAR\n\nVAR\n    C1 : CTU; (* Contador ascendente IEC 61131-3 *)\nEND_VAR\n\n(* -------------------------------------------------------\n   Rama 1: Contador ascendente C1\n   CU  <- sensorPieza (flanco ascendente cuenta una pieza)\n   RESET <- btnReset  (reinicia el contador)\n   PV  = 12           (tamaño del lote)\n------------------------------------------------------- *)\nC1(\n    CU    := sensorPieza,\n    RESET := btnReset,\n    PV    := 12\n);\n\n(* -------------------------------------------------------\n   Rama 2: Activar loteListo cuando el contador alcanza PV\n   Equivale al contacto normalmente abierto de C1.Q\n   alimentando la bobina loteListo\n------------------------------------------------------- *)\nloteListo := C1.Q;\n\n(* -------------------------------------------------------\n   Rama 3: Transferir el valor actual del contador\n   a la variable de salida cuenta\n------------------------------------------------------- *)\ncuenta := C1.CV;\n\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}

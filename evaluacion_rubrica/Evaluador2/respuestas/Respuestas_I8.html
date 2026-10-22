@@ -1,0 +1,256 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>I8 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>I8 — Permisivos de arranque de compresor (Intermedio)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja I8 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa los permisivos de arranque de un compresor. El compresor (salida comp) arranca con una pulsación de btnMarcha (transición de FALSE a TRUE) y queda en marcha al soltarla, únicamente si en ese instante se cumplen todos los permisivos: presión de aceite correcta (pOilOk activa durante 3 segundos continuos), temperatura correcta (tempOk activa) y ausencia de alarmas (sinAlm activa). El compresor se detiene al pulsar btnParo o ante la pérdida de cualquier permisivo; una vez detenido, solo vuelve a arrancar con una nueva pulsación de btnMarcha, nunca por sí solo al recuperarse los permisivos. btnParo tiene prioridad sobre btnMarcha. La salida causaBloqueo indica en todo momento el permisivo que falta: 1 presión de aceite, 2 temperatura, 3 alarma activa, 0 ninguno; si faltan varios, reporta el de número menor. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Compresor con variables de entrada pOilOk, tempOk, sinAlm, btnMarcha, btnParo (BOOL) y salidas comp (BOOL) y causaBloqueo (INT). Usa el tiempo T#3S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_I8.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea I8 (FB_Compresor: permisivos de arranque)
+    ---------------------------------------------------------------------------
+    Validado en codesys/validar_harness_I8.py: 8 implementaciones (1 correcta y
+    7 defectuosas), ciclos de 4, 10 y 20 ms. La tabla de pasos se genera desde
+    el validador para que ambos coincidan.
+
+    Paso: entradas (pOil,temp,sinAlm,marcha,paro), duracion -&gt; (comp, causa)
+  0 (F,F,F,F,F) 0.2 s -&gt; (F,1)   reposo, faltan todos: reporta el menor
+  1 (T,T,T,F,F) 1.0 s -&gt; (F,1)   aceite aun sin 3 s continuos
+  2 (T,T,T,F,F) 2.5 s -&gt; (F,0)   permisivos completos: NO arranca solo
+  3 (T,T,T,T,F) 0.2 s -&gt; (T,0)   flanco de marcha
+  4 (T,T,T,F,F) 0.2 s -&gt; (T,0)   enclavado
+  5 (T,F,T,F,F) 0.2 s -&gt; (F,2)   pierde temperatura
+  6 (T,T,T,F,F) 0.5 s -&gt; (F,0)   se recupera: sin rearranque automatico
+  7 (T,T,T,T,T) 0.2 s -&gt; (F,0)   marcha y paro a la vez: prioridad del paro
+  8 (T,T,T,T,F) 0.2 s -&gt; (F,0)   se suelta el paro con marcha sostenida: sin flanco no arranca
+  9 (T,T,T,F,F) 0.2 s -&gt; (F,0)
+ 10 (T,T,T,T,F) 0.2 s -&gt; (T,0)
+ 11 (T,T,F,F,F) 0.2 s -&gt; (F,3)   alarma
+ 12 (F,F,F,F,F) 0.2 s -&gt; (F,1)   faltan todos
+ 13 (T,T,T,T,F) 0.5 s -&gt; (F,1)   pulsa con el aceite aun temporizando (reiniciado)
+ 14 (T,T,T,T,F) 3.0 s -&gt; (F,0)   llegan los permisivos con marcha sostenida: no arranca
+ 15 (T,T,T,F,F) 0.2 s -&gt; (F,0)
+ 16 (T,T,T,T,F) 0.2 s -&gt; (T,0)
+ 17 (F,T,T,T,F) 0.2 s -&gt; (F,1)   perdida momentanea de aceite: se detiene
+ 18 (T,T,T,F,F) 0.2 s -&gt; (F,1)   el aceite vuelve pero no lleva 3 s
+
+VIGILANCIA CONTINUA (patron de la enmienda 4, banderas enclavadas): en los pasos
+en que comp llega en FALSE y debe seguir en FALSE todo el paso (0,1,2,6,7,8,9,
+12,13,14,15,18), un solo scan con comp=TRUE reprueba el paso. Sin ella, la
+validacion mostro que &quot;marcha gana al paro&quot; pasaba inadvertido: el compresor
+arrancaba UN scan en el paso 7 y se apagaba antes del muestreo.
+
+--- Pasos (CASE paso OF) ---
+
+        0: pOilOk := FALSE; tempOk := FALSE; sinAlm := FALSE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := FALSE; eCausa := 1;
+        1: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#1000MS; eComp := FALSE; eCausa := 1;
+        2: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#2500MS; eComp := FALSE; eCausa := 0;
+        3: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := TRUE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := TRUE; eCausa := 0;
+        4: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := TRUE; eCausa := 0;
+        5: pOilOk := TRUE; tempOk := FALSE; sinAlm := TRUE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := FALSE; eCausa := 2;
+        6: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#500MS; eComp := FALSE; eCausa := 0;
+        7: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := TRUE; btnParo := TRUE;
+            tEspera := T#200MS; eComp := FALSE; eCausa := 0;
+        8: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := TRUE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := FALSE; eCausa := 0;
+        9: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := FALSE; eCausa := 0;
+        10: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := TRUE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := TRUE; eCausa := 0;
+        11: pOilOk := TRUE; tempOk := TRUE; sinAlm := FALSE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := FALSE; eCausa := 3;
+        12: pOilOk := FALSE; tempOk := FALSE; sinAlm := FALSE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := FALSE; eCausa := 1;
+        13: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := TRUE; btnParo := FALSE;
+            tEspera := T#500MS; eComp := FALSE; eCausa := 1;
+        14: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := TRUE; btnParo := FALSE;
+            tEspera := T#3000MS; eComp := FALSE; eCausa := 0;
+        15: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := FALSE; eCausa := 0;
+        16: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := TRUE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := TRUE; eCausa := 0;
+        17: pOilOk := FALSE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := TRUE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := FALSE; eCausa := 1;
+        18: pOilOk := TRUE; tempOk := TRUE; sinAlm := TRUE; btnMarcha := FALSE; btnParo := FALSE;
+            tEspera := T#200MS; eComp := FALSE; eCausa := 1;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#I8-7627">I8-7627</a><a href="#I8-5917">I8-5917</a><a href="#I8-5439">I8-5439</a></div>
+<div class="caja resp" id="I8-7627"><div class="cod"><h3>I8-7627</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 8 de 19 pasos del harness (pasos 1,7,8,9,13,14,15,18; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Compresor
+VAR_INPUT
+    pOilOk : BOOL; // Presión de aceite correcta
+    tempOk : BOOL; // Temperatura correcta
+    sinAlm : BOOL; // Ausencia de alarmas
+    btnMarcha : BOOL; // Botón de marcha
+    btnParo : BOOL; // Botón de paro
+END_VAR
+
+VAR_OUTPUT
+    comp : BOOL; // Salida del compresor
+    causaBloqueo : INT; // Causa de bloqueo
+END_VAR
+
+VAR
+    timerOilOk : TON; // Temporizador para presión de aceite
+    estadoMarcha : BOOL; // Estado de marcha del compresor
+    lastBtnMarcha : BOOL; // Estado anterior del botón de marcha
+    lastBtnParo : BOOL; // Estado anterior del botón de paro
+END_VAR
+
+// Inicialización
+IF NOT estadoMarcha THEN
+    comp := FALSE;
+    causaBloqueo := 0;
+END_IF
+
+// Actualización de estados de botones
+IF btnMarcha &lt;&gt; lastBtnMarcha THEN
+    lastBtnMarcha := btnMarcha;
+END_IF
+
+IF btnParo &lt;&gt; lastBtnParo THEN
+    lastBtnParo := btnParo;
+END_IF
+
+// Paro del compresor por botón de paro o pérdida de permisivos
+IF btnParo OR (estadoMarcha AND (NOT pOilOk OR NOT tempOk OR NOT sinAlm)) THEN
+    comp := FALSE;
+    estadoMarcha := FALSE;
+END_IF
+
+// Inicio del compresor por botón de marcha
+IF NOT estadoMarcha AND btnMarcha AND pOilOk AND tempOk AND sinAlm THEN
+    comp := TRUE;
+    estadoMarcha := TRUE;
+END_IF
+
+// Control de la causa de bloqueo
+IF NOT pOilOk THEN
+    causaBloqueo := 1;
+ELSIF NOT tempOk THEN
+    causaBloqueo := 2;
+ELSIF NOT sinAlm THEN
+    causaBloqueo := 3;
+ELSE
+    causaBloqueo := 0;
+END_IF
+
+// Temporizador para presión de aceite
+timerOilOk(IN := pOilOk, PT := T#3S);
+IF timerOilOk.Q THEN
+    // Presión de aceite correcta durante 3 segundos
+    // (No se necesita acción adicional aquí)
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I8-5917"><div class="cod"><h3>I8-5917</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 19 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Compresor
+VAR_INPUT
+    pOilOk : BOOL; (* Presión de aceite correcta *)
+    tempOk : BOOL; (* Temperatura correcta *)
+    sinAlm : BOOL; (* Ausencia de alarmas *)
+    btnMarcha : BOOL; (* Botón de marcha *)
+    btnParo : BOOL; (* Botón de paro *)
+END_VAR
+VAR_OUTPUT
+    comp : BOOL; (* Compresor en marcha *)
+    causaBloqueo : INT; (* Causa de bloqueo *)
+END_VAR
+VAR
+    pOilOkTimer : TON; (* Temporizador para presión de aceite *)
+    btnMarchaMem : BOOL; (* Memoria del estado del botón de marcha *)
+    btnMarchaRising : BOOL; (* Detección de flanco ascendente del botón de marcha *)
+END_VAR
+
+(* Detección de flanco ascendente del botón de marcha *)
+btnMarchaRising := btnMarcha AND NOT btnMarchaMem;
+btnMarchaMem := btnMarcha;
+
+(* Temporizador para verificar presión de aceite durante 3 segundos continuos *)
+pOilOkTimer(IN := pOilOk, PT := T#3S);
+
+(* Determinación de la causa de bloqueo *)
+IF NOT pOilOkTimer.Q THEN
+    causaBloqueo := 1; (* Falta presión de aceite *)
+ELSIF NOT tempOk THEN
+    causaBloqueo := 2; (* Falta temperatura correcta *)
+ELSIF NOT sinAlm THEN
+    causaBloqueo := 3; (* Alarma activa *)
+ELSE
+    causaBloqueo := 0; (* Ningún bloqueo *)
+END_IF
+
+(* Lógica de control del compresor *)
+IF btnParo THEN
+    comp := FALSE; (* Parar compresor si se pulsa el botón de paro *)
+ELSIF comp THEN
+    IF causaBloqueo &lt;&gt; 0 THEN
+        comp := FALSE; (* Parar compresor si se pierde algún permisivo *)
+    END_IF
+ELSE
+    IF btnMarchaRising AND (causaBloqueo = 0) THEN
+        comp := TRUE; (* Arrancar compresor si se pulsa el botón de marcha y no hay bloqueos *)
+    END_IF
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I8-5439"><div class="cod"><h3>I8-5439</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 19 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Compresor
+VAR_INPUT
+    pOilOk    : BOOL; // Presión de aceite correcta
+    tempOk    : BOOL; // Temperatura correcta
+    sinAlm    : BOOL; // Ausencia de alarmas
+    btnMarcha : BOOL; // Botón de arranque
+    btnParo   : BOOL; // Botón de detención
+END_VAR
+
+VAR_OUTPUT
+    comp         : BOOL; // Comando de marcha del compresor
+    causaBloqueo : INT;  // Código del permisivo faltante (0=Ninguno, 1=Aceite, 2=Temp, 3=Alarma)
+END_VAR
+
+VAR
+    timerOil   : TON;    // Temporizador para validar la presión de aceite
+    edgeMarcha : R_TRIG; // Detector de flanco de subida para el botón de marcha
+    permisivos : BOOL;   // Bandera interna de todos los permisivos OK
+END_VAR
+
+// 1. Evaluación del tiempo de la presión de aceite (3 segundos continuos)
+timerOil(IN := pOilOk, PT := T#3S);
+
+// 2. Determinación de la causa de bloqueo (Prioridad al número menor)
+IF NOT timerOil.Q THEN
+    causaBloqueo := 1; // Falta presión de aceite o no ha transcurrido el tiempo
+ELSIF NOT tempOk THEN
+    causaBloqueo := 2; // Falta temperatura correcta
+ELSIF NOT sinAlm THEN
+    causaBloqueo := 3; // Presencia de alarma
+ELSE
+    causaBloqueo := 0; // Todos los permisivos se cumplen
+END_IF;
+
+// 3. Consolidación de permisivos
+permisivos := (causaBloqueo = 0);
+
+// 4. Detección de la pulsación de marcha (transición FALSE a TRUE)
+edgeMarcha(CLK := btnMarcha);
+
+// 5. Lógica de arranque y paro del compresor
+// El paro y la pérdida de permisivos tienen prioridad absoluta
+IF btnParo OR NOT permisivos THEN
+    comp := FALSE;
+// Solo arranca con un nuevo flanco de subida si los permisivos están listos
+ELSIF edgeMarcha.Q AND permisivos THEN
+    comp := TRUE;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

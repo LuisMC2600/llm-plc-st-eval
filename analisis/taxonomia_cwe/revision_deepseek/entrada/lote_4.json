@@ -1,0 +1,417 @@
+{
+ "lote": 4,
+ "casos": [
+  {
+   "codigo": "J08",
+   "tarea": "I4",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un arranque estrella-triángulo. Al pulsar btnMarcha se activan el contactor principal kM y el contactor de estrella kY. Después de 8 segundos se desactiva kY, se espera un tiempo muerto de 100 milisegundos y se activa el contactor de triángulo kD. Las salidas kY y kD jamás deben estar activas simultáneamente. El botón btnParo desactiva todos los contactores en cualquier momento. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_EstrellaTriangulo con variables de entrada btnMarcha, btnParo (BOOL) y salidas kM, kY, kD (BOOL). Usa los tiempos T#8S y T#100MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Fase estrella antes de 8 s: kM y kY activos y kD apagado (funcion nominal)"
+    },
+    {
+     "paso": 3,
+     "requisito": "Tiempo muerto medido entre la caida de kY y la subida de kD"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_EstrellaTriangulo\nVAR_INPUT\n    btnMarcha : BOOL; (* Botón de marcha *)\n    btnParo : BOOL; (* Botón de paro *)\nEND_VAR\nVAR_OUTPUT\n    kM : BOOL; (* Contactor principal *)\n    kY : BOOL; (* Contactor de estrella *)\n    kD : BOOL; (* Contactor de triángulo *)\nEND_VAR\nVAR\n    tEstrella : TP; (* Temporizador para el contacto de estrella *)\n    tMuerto : TP; (* Temporizador para el tiempo muerto *)\n    estado : INT; (* Variable de estado para el arranque estrella-triángulo *)\nEND_VAR\n\n(* Estado 0: Esperando inicio *)\n(* Estado 1: Contacto de estrella activo *)\n(* Estado 2: Tiempo muerto *)\n(* Estado 3: Contacto de triángulo activo *)\n\n(* Botón de paro desactiva todos los contactores *)\nIF btnParo THEN\n    kM := FALSE;\n    kY := FALSE;\n    kD := FALSE;\n    estado := 0;\nELSIF btnMarcha THEN\n    CASE estado OF\n        0:\n            (* Inicia el arranque estrella-triángulo *)\n            kM := TRUE;\n            kY := TRUE;\n            kD := FALSE;\n            tEstrella(IN := TRUE, PT := T#8S);\n            estado := 1;\n        1:\n            (* Espera el fin del temporizador de estrella *)\n            IF tEstrella.Q THEN\n                kY := FALSE;\n                tMuerto(IN := TRUE, PT := T#100MS);\n                estado := 2;\n            END_IF;\n        2:\n            (* Espera el fin del tiempo muerto *)\n            IF tMuerto.Q THEN\n                kD := TRUE;\n                estado := 3;\n            END_IF;\n        3:\n            (* Mantén el contacto de triángulo activo *)\n            kY := FALSE;\n    END_CASE;\nEND_IF;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J47",
+   "tarea": "I4",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un arranque estrella-triángulo. Al pulsar btnMarcha se activan el contactor principal kM y el contactor de estrella kY. Después de 8 segundos se desactiva kY, se espera un tiempo muerto de 100 milisegundos y se activa el contactor de triángulo kD. Las salidas kY y kD jamás deben estar activas simultáneamente. El botón btnParo desactiva todos los contactores en cualquier momento. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_EstrellaTriangulo con variables de entrada btnMarcha, btnParo (BOOL) y salidas kM, kY, kD (BOOL). Usa los tiempos T#8S y T#100MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Fase estrella antes de 8 s: kM y kY activos y kD apagado (funcion nominal)"
+    },
+    {
+     "paso": 3,
+     "requisito": "Tiempo muerto medido entre la caida de kY y la subida de kD"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_EstrellaTriangulo\nVAR_INPUT\n    btnMarcha : BOOL; (* Boton de marcha *)\n    btnParo : BOOL; (* Boton de paro *)\nEND_VAR\nVAR_OUTPUT\n    kM : BOOL; (* Contactor principal *)\n    kY : BOOL; (* Contactor de estrella *)\n    kD : BOOL; (* Contactor de triangulo *)\nEND_VAR\nVAR\n    tEstrella : TP; (* Temporizador para el contacto de estrella *)\n    tMuerto : TP; (* Temporizador para el tiempo muerto *)\n    estado : INT := 0; (* Estado actual del arranque *)\nEND_VAR\n\n(* Estado 0: Esperando el botón de marcha *)\nIF btnMarcha AND estado = 0 THEN\n    estado := 1;\n    kM := TRUE;\n    kY := TRUE;\n    kD := FALSE;\n    tEstrella(IN := TRUE, PT := T#8S);\nELSIF btnParo THEN\n    estado := 0;\n    kM := FALSE;\n    kY := FALSE;\n    kD := FALSE;\nEND_IF\n\n(* Estado 1: Esperando el temporizador de estrella *)\nIF estado = 1 AND tEstrella.Q THEN\n    estado := 2;\n    kY := FALSE;\n    tMuerto(IN := TRUE, PT := T#100MS);\nEND_IF\n\n(* Estado 2: Esperando el tiempo muerto *)\nIF estado = 2 AND tMuerto.Q THEN\n    estado := 3;\n    kD := TRUE;\nEND_IF\n\n(* Mantener kY y kD inactivos simultáneamente *)\nIF kY AND kD THEN\n    kY := FALSE;\n    kD := FALSE;\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J01",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    },
+    {
+     "paso": 6,
+     "requisito": "0.3 s despues del fin del pulso: piston apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL;  // Sensor que detecta la presencia de una pieza\n    sensorAltura : BOOL;     // Sensor que detecta si la pieza es alta\nEND_VAR\n\nVAR_OUTPUT\n    banda : BOOL;            // Salida para activar la banda transportadora\n    piston : BOOL;           // Salida para activar el pistón desviador\n    nAltas : INT;            // Contador de piezas altas\n    nBajas : INT;            // Contador de piezas bajas\nEND_VAR\n\nVAR\n    timerRetraso : TON;      // Temporizador para retrasar la activación del pistón\n    timerDuracion : TON;     // Temporizador para la duración del pistón activado\n    presenciaDetectada : BOOL; // Indica si se ha detectado una pieza\n    piezaAlta : BOOL;        // Indica si la pieza detectada es alta\nEND_VAR\n\n// Inicialización de la banda transportadora\nbanda := TRUE;\n\n// Detección de una pieza\nIF sensorPresencia AND NOT presenciaDetectada THEN\n    presenciaDetectada := TRUE;\n    piezaAlta := sensorAltura;\n    \n    // Iniciar temporizador de retraso si la pieza es alta\n    IF piezaAlta THEN\n        timerRetraso(IN := TRUE, PT := T#2S);\n    ELSE\n        nBajas := nBajas + 1; // Incrementar contador de piezas bajas\n    END_IF\nEND_IF\n\n// Manejo del temporizador de retraso\nIF timerRetraso.Q THEN\n    timerRetraso(IN := FALSE);\n    timerDuracion(IN := TRUE, PT := T#1S);\n    piston := TRUE;\nEND_IF\n\n// Manejo del temporizador de duración del pistón\nIF timerDuracion.Q THEN\n    timerDuracion(IN := FALSE);\n    piston := FALSE;\n    nAltas := nAltas + 1; // Incrementar contador de piezas altas\nEND_IF\n\n// Reiniciar detección de presencia\nIF NOT sensorPresencia THEN\n    presenciaDetectada := FALSE;\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J02",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo: banda en marcha y piston y contadores en cero: verifica todas las salidas en reposo [v2]"
+    },
+    {
+     "paso": 1,
+     "requisito": "Primera pieza baja con presencia sostenida: cuenta una vez (funcion nominal y flanco)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Se retira la pieza baja: la cuenta no cambia"
+    },
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    },
+    {
+     "paso": 6,
+     "requisito": "0.3 s despues del fin del pulso: piston apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL; (* Sensor de presencia de pieza *)\n    sensorAltura : BOOL; (* Sensor de altura de pieza *)\nEND_VAR\nVAR_OUTPUT\n    banda : BOOL; (* Banda transportadora activa *)\n    piston : BOOL; (* Pistón para desviar piezas altas *)\n    nAltas : INT; (* Contador de piezas altas *)\n    nBajas : INT; (* Contador de piezas bajas *)\nEND_VAR\nVAR\n    tEspera : TP; (* Temporizador para esperar 2 segundos *)\n    tPiston : TP; (* Temporizador para activar el pistón durante 1 segundo *)\n    piezaDetectada : BOOL; (* Bandera para indicar si una pieza ha sido detectada *)\nEND_VAR\n\n(* La banda funciona continuamente *)\nbanda := TRUE;\n\n(* Detectar pieza y iniciar temporizador de espera *)\nIF sensorPresencia AND NOT piezaDetectada THEN\n    tEspera(IN := TRUE, PT := T#2S);\n    piezaDetectada := TRUE;\nEND_IF;\n\n(* Si la pieza es alta, activar el pistón después de 2 segundos *)\nIF tEspera.Q AND sensorAltura THEN\n    tPiston(IN := TRUE, PT := T#1S);\n    nAltas := nAltas + 1;\nELSE\n    nBajas := nBajas + 1;\nEND_IF;\n\n(* Activar el pistón durante 1 segundo *)\npiston := tPiston.Q;\n\n(* Reiniciar la bandera de detección cuando el temporizador de espera termine *)\nIF tEspera.Q THEN\n    piezaDetectada := FALSE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J12",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL; (* Sensor de paso de pieza *)\n    sensorAltura    : BOOL; (* TRUE = pieza alta *)\nEND_VAR\n\nVAR_OUTPUT\n    banda   : BOOL; (* Banda transportadora activa *)\n    piston  : BOOL; (* Pistón desviador *)\n    nAltas  : INT;  (* Contador de piezas altas *)\n    nBajas  : INT;  (* Contador de piezas bajas *)\nEND_VAR\n\nVAR\n    tRetardo    : TON; (* Temporizador retardo 2 s hasta el desviador *)\n    tPiston     : TON; (* Temporizador duración del pistón 1 s *)\n    rPresencia  : R_TRIG; (* Flanco ascendente del sensor de presencia *)\n    bPiezaAlta  : BOOL;  (* Indica que la pieza detectada es alta *)\n    bContado    : BOOL;  (* Evita contar la misma pieza más de una vez *)\nEND_VAR\n\n(* ------------------------------------------------------------------ *)\n(* 1. La banda funciona siempre                                        *)\n(* ------------------------------------------------------------------ *)\nbanda := TRUE;\n\n(* ------------------------------------------------------------------ *)\n(* 2. Detectar flanco ascendente del sensor de presencia              *)\n(* ------------------------------------------------------------------ *)\nrPresencia(CLK := sensorPresencia);\n\nIF rPresencia.Q THEN\n    (* Capturar si la pieza es alta en el momento de la detección *)\n    bPiezaAlta := sensorAltura;\n    bContado   := FALSE; (* Reiniciar bandera de conteo *)\n\n    IF bPiezaAlta THEN\n        (* Arrancar el temporizador de retardo (2 s) *)\n        tRetardo.IN := FALSE; (* Reset previo para reiniciar *)\n    END_IF;\nEND_IF;\n\n(* ------------------------------------------------------------------ *)\n(* 3. Temporizador de retardo: 2 s desde la detección                 *)\n(* ------------------------------------------------------------------ *)\ntRetardo(IN := bPiezaAlta AND NOT tPiston.Q,\n         PT := T#2S);\n\n(* ------------------------------------------------------------------ *)\n(* 4. Temporizador de pistón: 1 s de activación                       *)\n(* ------------------------------------------------------------------ *)\ntPiston(IN := tRetardo.Q,\n        PT := T#1S);\n\n(* ------------------------------------------------------------------ *)\n(* 5. Activar pistón durante el tiempo definido                       *)\n(* ------------------------------------------------------------------ *)\npiston := tPiston.IN AND NOT tPiston.Q;\n(* tPiston.IN=TRUE y Q=FALSE => dentro del período de 1 s            *)\n\n(* ------------------------------------------------------------------ *)\n(* 6. Cuando el pistón termina, limpiar estado y contar               *)\n(* ------------------------------------------------------------------ *)\nIF tPiston.Q AND NOT bContado THEN\n    nAltas   := nAltas + 1;\n    bContado   := TRUE;\n    bPiezaAlta := FALSE; (* Liberar para la siguiente pieza *)\n    tRetardo.IN := FALSE; (* Reiniciar temporizadores *)\n    tPiston.IN  := FALSE;\nEND_IF;\n\n(* ------------------------------------------------------------------ *)\n(* 7. Contar piezas bajas (flanco de presencia + altura inactiva)     *)\n(* ------------------------------------------------------------------ *)\nIF rPresencia.Q AND NOT sensorAltura THEN\n    nBajas := nBajas + 1;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J13",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primera pieza baja con presencia sostenida: cuenta una vez (funcion nominal y flanco)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Se retira la pieza baja: la cuenta no cambia"
+    },
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    },
+    {
+     "paso": 6,
+     "requisito": "0.3 s despues del fin del pulso: piston apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL; // Sensor que detecta la presencia de una pieza\n    sensorAltura : BOOL;    // Sensor que detecta si la pieza es alta\nEND_VAR\n\nVAR_OUTPUT\n    banda : BOOL;   // Salida para activar la banda transportadora\n    piston : BOOL;  // Salida para activar el pistón desviador\n    nAltas : INT;   // Contador de piezas altas\n    nBajas : INT;   // Contador de piezas bajas\nEND_VAR\n\nVAR\n    timerRetraso : TON; // Temporizador para el retraso de 2 segundos\n    timerPiston : TON;  // Temporizador para la activación del pistón durante 1 segundo\n    piezaDetectada : BOOL; // Indica si una pieza ha sido detectada\n    piezaAlta : BOOL; // Indica si la pieza detectada es alta\nEND_VAR\n\n// Inicialización de la banda transportadora\nbanda := TRUE;\n\n// Detección de una pieza\nIF sensorPresencia AND NOT piezaDetectada THEN\n    piezaDetectada := TRUE;\n    piezaAlta := sensorAltura;\n    timerRetraso(IN := TRUE, PT := T#2S); // Inicia el temporizador de retraso\nEND_IF\n\n// Manejo del temporizador de retraso\nIF timerRetraso.Q THEN\n    timerRetraso(IN := FALSE); // Detiene el temporizador de retraso\n\n    IF piezaAlta THEN\n        timerPiston(IN := TRUE, PT := T#1S); // Inicia el temporizador del pistón\n        nAltas := nAltas + 1; // Incrementa el contador de piezas altas\n    ELSE\n        nBajas := nBajas + 1; // Incrementa el contador de piezas bajas\n    END_IF\n\n    piezaDetectada := FALSE; // Reinicia la detección de pieza\nEND_IF\n\n// Manejo del temporizador del pistón\nIF timerPiston.Q THEN\n    piston := FALSE; // Desactiva el pistón\n    timerPiston(IN := FALSE); // Detiene el temporizador del pistón\nELSE\n    piston := timerPiston.Q; // Activa el pistón mientras el temporizador está activo\nEND_IF\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J14",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primera pieza baja con presencia sostenida: cuenta una vez (funcion nominal y flanco)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Se retira la pieza baja: la cuenta no cambia"
+    },
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    },
+    {
+     "paso": 6,
+     "requisito": "0.3 s despues del fin del pulso: piston apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL; // Sensor de presencia de pieza\n    sensorAltura : BOOL;    // Sensor de altura de pieza\nEND_VAR\n\nVAR_OUTPUT\n    banda : BOOL;          // Salida para activar la banda\n    piston : BOOL;         // Salida para activar el pistón\nEND_VAR\n\nVAR\n    nAltas : INT := 0;      // Contador de piezas altas\n    nBajas : INT := 0;      // Contador de piezas bajas\n    timer1 : TON;           // Timer para el tiempo de espera (2s)\n    timer2 : TON;           // Timer para el tiempo de activación del pistón (1s)\n    estado : INT := 0;      // Estado de la máquina de estados\nEND_VAR\n\n// Máquina de estados\nCASE estado OF\n    0: // Estado inicial\n        banda := TRUE; // La banda funciona continuamente\n        IF sensorPresencia THEN\n            estado := 1; // Detectada pieza, iniciar temporizador\n            timer1(IN := TRUE, PT := T#2S); // Iniciar temporizador de 2s\n        END_IF\n\n    1: // Esperando que la pieza llegue al desviador\n        IF timer1.Q THEN\n            IF sensorAltura THEN\n                estado := 2; // Pieza alta, activar pistón\n                timer2(IN := TRUE, PT := T#1S); // Iniciar temporizador de 1s\n                nAltas := nAltas + 1; // Incrementar contador de piezas altas\n            ELSE\n                estado := 0; // Pieza baja, continuar\n                nBajas := nBajas + 1; // Incrementar contador de piezas bajas\n            END_IF\n        END_IF\n\n    2: // Activando el pistón\n        piston := TRUE;\n        IF timer2.Q THEN\n            piston := FALSE; // Desactivar pistón\n            estado := 0; // Volver al estado inicial\n        END_IF\n\n    ELSE\n        estado := 0; // Estado desconocido, volver al inicial\nEND_CASE"
+  },
+  {
+   "codigo": "J16",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primera pieza baja con presencia sostenida: cuenta una vez (funcion nominal y flanco)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Se retira la pieza baja: la cuenta no cambia"
+    },
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    },
+    {
+     "paso": 6,
+     "requisito": "0.3 s despues del fin del pulso: piston apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL; (* Sensor de presencia de piezas *)\n    sensorAltura : BOOL;    (* Sensor de altura de piezas *)\nEND_VAR\nVAR_OUTPUT\n    banda : BOOL;           (* Banda transportadora activa *)\n    piston : BOOL;          (* Pistón para desviar piezas altas *)\n    nAltas : INT;           (* Contador de piezas altas *)\n    nBajas : INT;           (* Contador de piezas bajas *)\nEND_VAR\nVAR\n    tRetraso : TON;         (* Temporizador de retraso de 2 segundos *)\n    tPulso : TON;           (* Temporizador de pulso de 1 segundo *)\n    piezaAltaDetectada : BOOL; (* Indica si una pieza alta fue detectada *)\nEND_VAR\n\n(* La banda transportadora siempre está activa *)\nbanda := TRUE;\n\n(* Detectar y contar piezas *)\nIF sensorPresencia THEN\n    IF sensorAltura THEN\n        nAltas := nAltas + 1;\n        piezaAltaDetectada := TRUE;\n        tRetraso(IN := TRUE, PT := T#2S);\n    ELSE\n        nBajas := nBajas + 1;\n    END_IF;\nEND_IF;\n\n(* Control del pistón para desviar piezas altas *)\nIF piezaAltaDetectada AND tRetraso.Q THEN\n    tPulso(IN := TRUE, PT := T#1S);\n    piezaAltaDetectada := FALSE; (* Resetear la detección de pieza alta *)\nEND_IF;\n\npiston := tPulso.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J18",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "Reposo: banda en marcha y piston y contadores en cero: verifica todas las salidas en reposo [v2]"
+    },
+    {
+     "paso": 1,
+     "requisito": "Primera pieza baja con presencia sostenida: cuenta una vez (funcion nominal y flanco)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Se retira la pieza baja: la cuenta no cambia"
+    },
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    },
+    {
+     "paso": 6,
+     "requisito": "0.3 s despues del fin del pulso: piston apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL; (* Sensor de presencia de pieza *)\n    sensorAltura : BOOL; (* Sensor de altura de pieza *)\nEND_VAR\nVAR_OUTPUT\n    banda : BOOL; (* Banda transportadora activa *)\n    piston : BOOL; (* Pistón para desviar piezas altas *)\n    nAltas : INT; (* Contador de piezas altas *)\n    nBajas : INT; (* Contador de piezas bajas *)\nEND_VAR\nVAR\n    tEspera : TP; (* Temporizador para esperar 2 segundos *)\n    tPiston : TP; (* Temporizador para activar el pistón durante 1 segundo *)\n    piezaDetectada : BOOL; (* Bandera para detectar pieza *)\nEND_VAR\n\n(* La banda funciona continuamente *)\nbanda := TRUE;\n\n(* Detectar pieza y esperar 2 segundos *)\nIF sensorPresencia AND NOT piezaDetectada THEN\n    tEspera(IN := TRUE, PT := T#2S);\n    piezaDetectada := TRUE;\nEND_IF\n\n(* Si la pieza es alta, activar el pistón durante 1 segundo *)\nIF tEspera.Q AND sensorAltura THEN\n    tPiston(IN := TRUE, PT := T#1S);\n    nAltas := nAltas + 1;\nELSE\n    nBajas := nBajas + 1;\nEND_IF\n\n(* Activar el pistón *)\npiston := tPiston.Q;\n\n(* Reiniciar la bandera cuando la pieza ha sido procesada *)\nIF tPiston.Q THEN\n    piezaDetectada := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J24",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primera pieza baja con presencia sostenida: cuenta una vez (funcion nominal y flanco)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Se retira la pieza baja: la cuenta no cambia"
+    },
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    },
+    {
+     "paso": 6,
+     "requisito": "0.3 s despues del fin del pulso: piston apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL; (* Sensor de presencia de piezas *)\n    sensorAltura : BOOL;    (* Sensor de altura de piezas *)\nEND_VAR\nVAR_OUTPUT\n    banda : BOOL;   (* Banda transportadora activa *)\n    piston : BOOL;  (* Pistón para desviar piezas altas *)\n    nAltas : INT;   (* Contador de piezas altas *)\n    nBajas : INT;   (* Contador de piezas bajas *)\nEND_VAR\nVAR\n    tRetraso : TON; (* Temporizador para retraso de 2 segundos *)\n    tPiston : TON;  (* Temporizador para activación de pistón por 1 segundo *)\n    piezaAltaDetectada : BOOL; (* Indica si una pieza alta fue detectada *)\nEND_VAR\n\n(* La banda siempre está activa *)\nbanda := TRUE;\n\n(* Detectar y contar piezas *)\nIF sensorPresencia THEN\n    IF sensorAltura THEN\n        nAltas := nAltas + 1;\n        piezaAltaDetectada := TRUE;\n        tRetraso(IN := TRUE, PT := T#2S);\n    ELSE\n        nBajas := nBajas + 1;\n    END_IF;\nEND_IF;\n\n(* Control del pistón *)\nIF tRetraso.Q THEN\n    tPiston(IN := piezaAltaDetectada, PT := T#1S);\n    piezaAltaDetectada := FALSE; (* Resetear la detección de pieza alta después del retraso *)\nEND_IF;\n\npiston := tPiston.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J27",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primera pieza baja con presencia sostenida: cuenta una vez (funcion nominal y flanco)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Se retira la pieza baja: la cuenta no cambia"
+    },
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    },
+    {
+     "paso": 6,
+     "requisito": "0.3 s despues del fin del pulso: piston apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL; (* Sensor de presencia de pieza *)\n    sensorAltura : BOOL; (* Sensor de altura de pieza *)\nEND_VAR\nVAR_OUTPUT\n    banda : BOOL; (* Salida de la banda transportadora *)\n    piston : BOOL; (* Salida del pistón para desviar piezas altas *)\n    nAltas : INT; (* Contador de piezas altas *)\n    nBajas : INT; (* Contador de piezas bajas *)\nEND_VAR\nVAR\n    tEspera : TP; (* Temporizador para esperar 2 segundos *)\n    tPiston : TP; (* Temporizador para activar el pistón durante 1 segundo *)\n    piezaDetectada : BOOL; (* Bandera para indicar que una pieza ha sido detectada *)\nEND_VAR\n\n(* La banda funciona continuamente *)\nbanda := TRUE;\n\n(* Contador de piezas altas y bajas *)\nIF sensorPresencia AND NOT piezaDetectada THEN\n    piezaDetectada := TRUE;\n    IF sensorAltura THEN\n        nAltas := nAltas + 1;\n    ELSE\n        nBajas := nBajas + 1;\n    END_IF;\nEND_IF;\n\n(* Temporizador para esperar 2 segundos después de detectar una pieza *)\ntEspera(IN := piezaDetectada, PT := T#2S);\n\n(* Temporizador para activar el pistón durante 1 segundo *)\nIF tEspera.Q THEN\n    piston := TRUE;\n    tPiston(IN := TRUE, PT := T#1S);\nELSE\n    piston := FALSE;\nEND_IF;\n\n(* Reiniciar la bandera de pieza detectada cuando el temporizador del pistón termina *)\nIF tPiston.Q THEN\n    piezaDetectada := FALSE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J28",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    },
+    {
+     "paso": 6,
+     "requisito": "0.3 s despues del fin del pulso: piston apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL; // Sensor que detecta la presencia de una pieza\n    sensorAltura : BOOL;    // Sensor que detecta si la pieza es alta\nEND_VAR\n\nVAR_OUTPUT\n    banda : BOOL := TRUE;   // Salida que activa la banda transportadora\n    piston : BOOL := FALSE; // Salida que activa el pistón desviador\n    nAltas : INT := 0;      // Contador de piezas altas\n    nBajas : INT := 0;      // Contador de piezas bajas\nEND_VAR\n\nVAR\n    estadoAnteriorPresencia : BOOL := FALSE; // Estado anterior del sensor de presencia\n    temporizadorRetraso : TON;              // Temporizador para el retraso de 2 segundos\n    temporizadorPiston : TON;               // Temporizador para la duración de 1 segundo del pistón\n    activarPiston : BOOL := FALSE;          // Bandera para activar el pistón\nEND_VAR\n\n// Inicialización de los temporizadores\ntemporizadorRetraso(IN := FALSE, PT := T#2S);\ntemporizadorPiston(IN := FALSE, PT := T#1S);\n\n// Detectar flanco de subida del sensor de presencia\nIF (sensorPresencia AND NOT estadoAnteriorPresencia) THEN\n    IF sensorAltura THEN\n        // Iniciar temporizador de retraso para piezas altas\n        temporizadorRetraso(IN := TRUE);\n        activarPiston := TRUE;\n    ELSE\n        // Incrementar contador de piezas bajas\n        nBajas := nBajas + 1;\n    END_IF;\nEND_IF;\n\n// Actualizar estado anterior del sensor de presencia\nestadoAnteriorPresencia := sensorPresencia;\n\n// Control del pistón\nIF activarPiston THEN\n    // Si el temporizador de retraso ha terminado, iniciar temporizador del pistón\n    IF temporizadorRetraso.Q THEN\n        temporizadorPiston(IN := TRUE);\n        temporizadorRetraso(IN := FALSE);\n    END_IF;\n\n    // Activar el pistón durante 1 segundo\n    IF temporizadorPiston.Q THEN\n        piston := FALSE;\n        temporizadorPiston(IN := FALSE);\n        activarPiston := FALSE;\n        nAltas := nAltas + 1; // Incrementar contador de piezas altas\n    ELSE\n        piston := TRUE;\n    END_IF;\nELSE\n    piston := FALSE;\nEND_IF;\n\nbanda := TRUE; // La banda siempre está activa\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J46",
+   "tarea": "I5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Primera pieza baja con presencia sostenida: cuenta una vez (funcion nominal y flanco)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Se retira la pieza baja: la cuenta no cambia"
+    },
+    {
+     "paso": 3,
+     "requisito": "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "0.3 s antes del inicio del pulso: piston aun apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo"
+    },
+    {
+     "paso": 6,
+     "requisito": "0.3 s despues del fin del pulso: piston apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Clasificadora\nVAR_INPUT\n    sensorPresencia : BOOL; (* Sensor de presencia de piezas *)\n    sensorAltura : BOOL;    (* Sensor de altura de piezas *)\nEND_VAR\nVAR_OUTPUT\n    banda : BOOL;           (* Banda transportadora activa *)\n    piston : BOOL;          (* Pistón para desviar piezas altas *)\n    nAltas : INT;           (* Contador de piezas altas *)\n    nBajas : INT;           (* Contador de piezas bajas *)\nEND_VAR\nVAR\n    tRetraso : TON;         (* Temporizador para retraso de 2 segundos *)\n    tPulso : TP;            (* Temporizador para pulso de 1 segundo *)\n    piezaAltaDetectada : BOOL; (* Indica si una pieza alta fue detectada *)\nEND_VAR\n\n(* La banda transportadora siempre está activa *)\nbanda := TRUE;\n\n(* Detectar y contar piezas altas y bajas *)\nIF sensorPresencia THEN\n    IF sensorAltura THEN\n        (* Si la pieza es alta, incrementar el contador de piezas altas *)\n        nAltas := nAltas + 1;\n        piezaAltaDetectada := TRUE;\n        tRetraso(IN := TRUE, PT := T#2S);\n    ELSE\n        (* Si la pieza es baja, incrementar el contador de piezas bajas *)\n        nBajas := nBajas + 1;\n    END_IF;\nEND_IF;\n\n(* Activar el pistón después de 2 segundos si una pieza alta fue detectada *)\nIF tRetraso.Q THEN\n    tPulso(IN := piezaAltaDetectada, PT := T#1S);\n    piezaAltaDetectada := FALSE; (* Resetear la detección de pieza alta *)\nEND_IF;\n\n(* Salida del pistón activada por el pulso de 1 segundo *)\npiston := tPulso.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "J42",
+   "tarea": "I7",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un grupo de dos bombas en configuración dúplex. Cuando la entrada demanda se activa, debe arrancar una sola bomba, la principal de ese ciclo; al desactivarse la demanda, ambas se detienen. En cada nueva demanda (transición de FALSE a TRUE de demanda) el rol de principal se alterna entre bomba1 y bomba2 para igualar el desgaste; en la primera demanda tras el arranque del bloque, la principal es bomba1. Si la bomba principal tiene su falla activa (falla1 o falla2, respectivamente), debe funcionar en su lugar la otra bomba, siempre que esta no tenga falla, y debe activarse almFalla; si la falla desaparece con la demanda aún presente, vuelve a funcionar la principal y se detiene la de respaldo. almFalla solo indica falla de la bomba principal con demanda presente: la falla de la bomba de respaldo, por sí sola, no la activa. Si ambas bombas tienen falla, ninguna funciona y almFalla se activa. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Duplex con variables de entrada demanda, falla1, falla2 (BOOL) y salidas bomba1, bomba2, almFalla (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Sin demanda: ambas paradas (funcion nominal)"
+    },
+    {
+     "paso": 4,
+     "requisito": "Sin demanda (funcion nominal)"
+    },
+    {
+     "paso": 5,
+     "requisito": "Nueva demanda: alterna de nuevo a bomba1"
+    },
+    {
+     "paso": 6,
+     "requisito": "Falla de la principal: arranca el respaldo y almFalla"
+    },
+    {
+     "paso": 7,
+     "requisito": "Desaparece la falla: vuelve la principal"
+    },
+    {
+     "paso": 8,
+     "requisito": "Falla solo del respaldo: sin alarma"
+    },
+    {
+     "paso": 9,
+     "requisito": "Ambas con falla: ninguna funciona y almFalla"
+    },
+    {
+     "paso": 11,
+     "requisito": "Cuarta demanda: alterna a bomba2"
+    },
+    {
+     "paso": 12,
+     "requisito": "Falla de la principal bomba2: respaldo bomba1 y almFalla"
+    },
+    {
+     "paso": 13,
+     "requisito": "Sin demanda (funcion nominal)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Duplex\nVAR_INPUT\n    demanda : BOOL; (* Demanda de arranque *)\n    falla1 : BOOL; (* Falla de la bomba 1 *)\n    falla2 : BOOL; (* Falla de la bomba 2 *)\nEND_VAR\nVAR_OUTPUT\n    bomba1 : BOOL; (* Bomba principal *)\n    bomba2 : BOOL; (* Bomba de respaldo *)\n    almFalla : BOOL; (* Alarma de falla de la bomba principal *)\nEND_VAR\nVAR\n    estado : INT := 0; (* Estado del sistema: 0 - detenido, 1 - bomba1 principal, 2 - bomba2 principal *)\n    demandaAnterior : BOOL := FALSE; (* Estado anterior de la demanda *)\nEND_VAR\n\n(* Cambio de estado en la transición de FALSE a TRUE de demanda *)\nIF demanda AND NOT demandaAnterior THEN\n    estado := (estado + 1) MOD 3;\nEND_IF\n\n(* Asignación de bombas según el estado *)\nCASE estado OF\n    0: (* Detenido *)\n        bomba1 := FALSE;\n        bomba2 := FALSE;\n    1: (* Bomba1 principal *)\n        bomba1 := NOT falla1;\n        bomba2 := falla1 AND NOT falla2;\n    2: (* Bomba2 principal *)\n        bomba1 := falla2 AND NOT falla1;\n        bomba2 := NOT falla2;\nEND_CASE\n\n(* Alarma de falla de la bomba principal *)\nalmFalla := (estado = 1 AND falla1) OR (estado = 2 AND falla2);\n\n(* Actualización del estado anterior de la demanda *)\ndemandaAnterior := demanda;\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}

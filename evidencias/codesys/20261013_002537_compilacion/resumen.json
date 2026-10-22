@@ -1,0 +1,14 @@
+﻿{
+    "salida":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\results_codesys\\sens_dialecto_compilacion.csv",
+    "fecha":  "20261013_002537",
+    "duracion_min":  0.8,
+    "sha256_plantilla_antes":  "119B6A663B32E0ABEC287A55E8E9F5523B48AC8E4DB47AE449F0F5511690D8DF",
+    "respuestas":  2,
+    "sha256_script":  "F1D2571355AE20EC0925867190F6700E9DE1F55B645A15E66A42DBFBA5A8E95A",
+    "codigo_salida":  0,
+    "sha256_plantilla_despues":  "119B6A663B32E0ABEC287A55E8E9F5523B48AC8E4DB47AE449F0F5511690D8DF",
+    "compila_NA":  0,
+    "compila_1":  2,
+    "compila_0":  0,
+    "sha256_csv":  "B511205CAAA7A8C86996518EB646212E98C1F065FAF23E97AB25238C3A2F81FE"
+}

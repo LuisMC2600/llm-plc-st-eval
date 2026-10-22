@@ -1,0 +1,15 @@
+{
+    "modo":  "respuestas",
+    "ciclos_ms":  [
+                      10
+                  ],
+    "salida_csv":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\results_codesys\\harness_I6_extraccion_v2.csv",
+    "carpeta_dobles":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\dobles",
+    "tareas":  [
+                   "I6"
+               ],
+    "carpeta_harness":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys",
+    "limite":  0,
+    "plantilla":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\Plantilla_Simulacion.project",
+    "carpeta_codigo":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\processed_v2"
+}

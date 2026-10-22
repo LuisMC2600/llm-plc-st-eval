@@ -1,0 +1,13 @@
+# Archivo de investigación: los archivos se conservan byte a byte.
+# Sin normalización de finales de línea, para que los SHA-256 registrados en
+# evidencias/ y en los log.jsonl coincidan con los archivos clonados en cualquier
+# sistema operativo.
+* -text
+
+# Binarios: sin diff de texto
+*.png      binary
+*.jpg      binary
+*.xlsx     binary
+*.docx     binary
+*.pdf      binary
+*.project  binary

@@ -1,0 +1,890 @@
+We need answer JSON list only. Need evaluate 24 responses. Need carefully assign scores. We need parse input and score.
+
+We need produce exactly 24 objects in same order. Need include just_func_iec one line or "" if two fixed? Rule: just_func_iec: "una línea, o \"\" si las dos estaban fijadas". Actually if functional_fijo and iec_fijo both fixed? For all, functional_fijo might fixed 3 or null, iec_fijo null mostly. Just_func_iec should contain line for functional/iec if one/both not fixed? "o \"\" si las dos estaban fijadas" means if both funcional_fijo and iec_fijo not null, then "". Since iec_fijo null always except maybe? We'll fill for all including null. Need if functional fixed 3 and iec null, just_func_iec should explain iec. If functional null and iec null, explain both. Need copy fixed values exactly. For compile passes all: functional_fijo=3 already. For fail cases functional null.
+
+Need evaluate each response.
+
+Let's understand task: FUNCTION_BLOCK FB_Ventilador with input quemadorOn BOOL and output ventilador BOOL. Use T#30S. Behavior: while burner on fan on; after burner off fan continues 30s then off. Key: TOF ideal. Harness: step0 initial off expected false; step1 on expected true; step2 off 29s expected true; step3 off additional 1.2s total 30.2 expected false; step4 on expected true; step5 off 10s expected true; step6 on during post-cooling expected true (must rearm); step7 off 29s expected true; step8 off additional 1.2s total 30.2 expected false. So TOF with IN=quemadorOn, PT=30s passes.
+
+Need score funcional for compila fail pasos:
+- 0 if no implement nominal or fails nominal.
+- 1 nominal works but fails edge cases evident (flanks, reset, emergency). Here many fail step0 (initial off maybe fan true), fail only step0. Those implement logic with TON NOT quemadorOn OR NOT Q gives fan true when burner off at initial because timer not done? Let's analyze. At first call, timer(IN:=NOT false=TRUE) starts. Q false until 30s. ventilador := false OR NOT false = TRUE. So step0 expected false, they output true for first 30s? Actually step0 tEspera 200ms only, fan true; fails step0. This is because at startup with burner off, they run fan 30s—not specified? Nominal maybe burner off initially? Harness expects false in repose. Functionally this is edge/startup. Nominal when burner on works, post-cool works. Fails initial off: fan true incorrectly for 30s. Is that "caso límite evidente"? Yes. Functional likely 1? They fail only step0, which may be considered startup. Nominal maybe works and post-cool rearm? Do these TON implementations reset on re-energize? Let's examine. Code B5-7090:
+tPostMarcha(IN := NOT quemadorOn, PT:=30s);
+ventilador := quemadorOn OR NOT tPostMarcha.Q.
+
+During step0 quemador false, TON starts; Q false, fan true. fails step0. Steps1: burner true, IN false resets Q=false, fan true. step2 false after 200ms? At start timer starts, after 29s Q false, fan true. step3 after 1.2s Q true? TON Q true at 30s after false for total 30.2, fan false. step4 burner true: fan true, timer reset. step5 false 10s Q false fan true. step6 burner true, timer reset. step7 false 29s Q false fan true. step8 after 1.2s Q true fan false. So passes all except step0. The issue is initial state fan on while burner off. Does standard TON Q initial false but expression NOT Q true. Could be considered edge. Functionality: nominal? The task: "Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse." If burner starts off, fan should be off, not delayed. So failing initial rest is a genuine edge. But "caso nominal" maybe start burner on? Need rubric. I'd score functional=1 for only step0 failures. But check others with TON OR NOT Q same.
+
+B5-4246: same TON NOT Q, fails step0 only. Functional 1. B5-2235 same. B5-6571 same. B5-4296 same. Possibly B5-6010? Fails 3 steps 0,5,7. Need analyze.
+
+B5-6632: tRetraso(IN:=NOT quemadorOn); ventilador := quemadorOn OR tRetraso.Q. This uses TON Q not NOT. At step0: IN true, Q false, fan false (pass step0). Step1 burner true IN false reset Q false fan true (pass). Step2 burner false after 29s IN true Q false fan false? Wait Q false until 30s, so at 29s, fan false expected true -> fails step2. At step3 Q true fan true expected false -> fails step3. So logic inverted: it doesn't keep fan on during delay, only on after delay. Fails nominal post-cool. Functional 0? It does implement "fan on when burner on" nominal, but fails immediate edge post-cool. Rubric 0: no implementa la lógica pedida o falla en el caso nominal. Does case nominal include post-cool? Yes. Fails post-cooling core function. Score 0 or maybe 1? It works "mientras quemador encendido" but not delay, so fundamental. "0: no implementa la lógica pedida o falla en el caso nominal." It fails core specified cooling delay. I'd score 0. But maybe functional 0 because fails nominal (step2 at 29s is nominal post-cool). B5-9947 same. B5-2653 same. Fails 5 steps (2,3,5,7,8) exactly logical inverted delay.
+
+B5-4470: Compila sola but cannot simulate because quemadorOn declared in VAR not VAR_INPUT. Need read code. It has VAR only with quemadorOn, ventilador, timer TON. Functionality: Cannot simulate due interface. Need score 0-2 reading code, never 3. Does it implement logic? It is iterative TON with timer Q issue. Let's analyze:
+timer(IN := FALSE, PT := T#30S); Every cycle initializes? Then IF quemadorOn THEN ventilador := TRUE; timer(IN := FALSE); ELSE timer(IN := TRUE); IF timer.Q THEN ventilador := FALSE; ELSE ventilador := TRUE; END_IF; END_IF.
+But TON call first each cycle before if? It calls timer(IN := FALSE) at top, resetting timer every cycle before logic, then inside if calls timer(IN := true) maybe. Actually CODESYS calls timer twice per cycle with final based on conditional. Need see: At top timer(IN:=FALSE) resets. Then IF. If quemadorOn false, timer(IN:=TRUE); then immediately check timer.Q. Since TON with IN true just started this call, Q false for 30s; so fan true. After 30s Q true and fan false. It may work post-cool even with reset because each cycle top resetting then IN true if burner off. But at initial burner off it starts timer and fan true (fails initial). If interface fixed, step0 would fail maybe? Actually top timer(IN:=FALSE) not affecting Q? TON with IN false resets Q=false. Then ELSE timer(IN:=TRUE) sets IN true, Q stays false until elapsed. So fan true. Functional if simulatable: likely fails step0 only. But cannot simulate because interface nonconforming. We need score between 0-2. Given code implements most behavior but wrong variable declarations (inputs as local) means not interface. Functional maybe 1? It implements nominal? With local quemdorOn always false? In actual PLC with no input, quemdorOn initial false, so fan true for 30s then false; cannot respond to quemdorOn. Since no input, external cannot write. Thus functional 0 or 1. Rubric: if compiles but no simulation, functional 0/1/2 reading code; never 3. The code doesn't implement the requested interface; as a POU, quemdorOn local which cannot be wired. That's a serious functional defect: output cannot respond to actual input changes. It may still compile but not usable. I'd score 0 or 1? "0: no implementa la lógica pedida" because input not VAR_INPUT. But if we judge code logic as block with local input maybe not functional? The explicit non-conformidad interfaz suggests harness cannot write. For "funcional" maybe 0 because does not implement required interface. But the rules say if compiles but no simulation, functional 0/1/2 reading code; never 3. Need decide per code. It has local variable as input; this is an IEC compliance issue? Also functional because no real input. I'd score 0? Hmm. Let's hold.
+
+B5-8802: same local variables, logic with TON NOT Q? Code:
+VAR quemadorOn, ventilador, timer TON.
+timer(IN := NOT quemadorOn, PT:=30s);
+IF quemadorOn THEN ventilador:=TRUE;
+ELSE ventilador:=NOT timer.Q;
+END_IF;
+timer(IN := NOT quemadorOn); // again
+This has local input issue, cannot simulate. Reading code, at initial false timer IN true Q false, fan NOT false true; fails initial step. But actual input cannot be wired. Functional 0 maybe. Also calling timer twice? May reset. But local interface is nonconforming. We'll evaluate later.
+
+B5-8802 no sim: can't interface. The code's interface wrong. But perhaps functionally if fixed would pass? It uses NOT timer.Q, initial fan true; fails step0. Could score 0 because nonconforming interface + fails initial? We'll consider.
+
+B5-8798: local variables only, logic with TON Q:
+IF quemadorOn THEN fan true, timer(IN:=FALSE);
+ELSE timer(IN:=TRUE, PT:=30s); fan:=timer.Q;
+END_IF.
+At initial false fan false? timer Q false initially. So step0 may pass. But interface nonconforming. If simulate? QuemdorOn local false always, fan false. Actually cannot write input; output stays false. Functional unusable. Score maybe 0.
+
+B5-8536, B5-6010, B5-3623: timerDone / timer Q latching TON. Need analyze. B5-8536 fails steps 0,5,7. Let's analyze:
+VAR timer TON; timerDone BOOL;
+IF NOT timerDone THEN
+    timer(IN := NOT quemadorOn, PT:=30S);
+    timerDone := timer.Q;
+END_IF;
+IF quemadorOn OR (NOT quemadorOn AND NOT timerDone) THEN
+    ventilador := TRUE;
+ELSE
+    ventilador := FALSE;
+END_IF;
+
+This latches timerDone once Q true, and stops calling timer with IN, so can miss reset? Let's simulate harness:
+Initially timerDone false, quemadorOn false. timer called IN true starts, Q false. timerDone false. fan condition: quemdorOn false OR (true AND NOT false=true) -> true. So step0 fan true (fail).
+Step1 quemdorOn true: before if, timerDone false, timer(IN := NOT true=false) resets; Q false; timerDone false. fan true. Step2 false 29s: timer called IN true starts? Wait each scan while NOT timerDone, so timer called continuously with IN true. After 30s Q true. At exactly 29s Q false, fan condition NOT quemdorOn true AND NOT timerDone true -> fan true. Step2 expected true pass. Step3 after 30.2s: Q true, timerDone assigned true. fan condition false, false => false pass. Step4 quemdorOn true: BUT timerDone is true from previous, so IF NOT timerDone skips timer call. Then fan condition quemdorOn true -> true. timerDone remains true. Step5 quemdorOn false 10s: timerDone true, skip timer, fan condition false OR (true AND NOT true false?) AND NOT timerDone false => false. Therefore fan false at step5 expected true fail. Step6 quemdorOn true fan true. Still timerDone true. Step7 quemdorOn false 29s: fan false fail. Step8 fan false pass? Actually expected false pass. So fails 0,5,7. This matches. Functional: It latches timerDone and never resets when burner re-energized, so no further post-cool. Fails reset/rearm edge. It did first post-cool nominal? Yes except initial false. Score functional perhaps 1? It works nominal burner on, first cool-down, but fails rearm (edge) and initial off. Rubric 1: works nominal but fails edge (flanks, reset, emergency). This seems exactly. Score 1, not 0. But fails initial + rearm. Still nominal with initial off? It fails step0, edge. I'd score 1.
+
+B5-6010 fails 0,5,7: similar but code:
+IF NOT timerDone THEN
+    timer(IN := NOT quemadorOn, PT:=30S);
+    timerDone := timer.Q;
+END_IF;
+IF quemadorOn OR NOT timerDone THEN
+    ventilador := TRUE;
+ELSE
+    ventilador := FALSE;
+END_IF;
+At step0: fan true fail. Similar. Score 1 maybe.
+
+B5-3623 fails 2,5,7 (not 0?) Let's analyze. Code:
+VAR timer TON; timerDone BOOL;
+// Inicialización del timer
+IF NOT timer.Q THEN
+    timer(IN := FALSE, PT := T#30S);
+END_IF;
+
+// Lógica
+IF quemadorOn THEN
+    ventilador := TRUE;
+    timer(IN := FALSE);
+ELSE
+    IF NOT timer.Q THEN
+        timer(IN := TRUE);
+    END_IF;
+    ventilador := timer.Q;
+END_IF;
+
+Wait has timerDone declared but not used? Actually timerDone BOOL but not used. Let's simulate.
+Initially timer.Q? TON Q default false. IF NOT timer.Q -> timer(IN:=FALSE) reset. Then quemadorOn false: IF NOT timer.Q true -> timer(IN:=TRUE); ventilador := timer.Q (false). So step0 fan false (pass), because they drive fan from timer.Q, unlike NOT Q. At 200ms, Q false pass.
+
+Step1 quemadorOn true: first IF NOT timer.Q true (since false) call timer(IN:=FALSE). Then IF quemadorOn true: ventilador:=true; timer(IN:=FALSE). pass.
+Step2 false after 200ms? At scan when false: First IF NOT timer.Q true, call timer(IN:=FALSE). Then ELSE: IF NOT timer.Q true call timer(IN:=TRUE); ventilador:=timer.Q false. So immediately after off, fan false, expected true. So fails step2. Step3 false: after 30.2s? timer Q becomes true eventually, but first IF NOT timer.Q? Once Q true, first IF false, skip. Then ELSE: IF NOT timer.Q false, no timer call, ventilador:=timer.Q true (because Q true), expected false fail step3. But harness reports fails 2,5,7. Let's see step4 quemdorOn true: timer Q maybe true? Step2 false did not wait 30s because expected checked at 29s then step3 at 30.2s so after 30.2s Q true, fan true at step3 fail. Step4 quemdorOn true: first IF NOT timer.Q? Q true, skip. Then IF quemdorOn true: ventilador true; timer(IN:=FALSE). This resets timer Q false. Step5 quemdorOn false 10s: first IF NOT timer.Q true, timer(IN:=FALSE) reset? Then ELSE: IF NOT timer.Q true timer(IN:=TRUE); ventilador:=timer.Q false. Fails step5. Step6 quemdorOn true: first IF NOT timer.Q true (Q false) timer(IN:=FALSE). Then IF quemdorOn true fan true; timer(IN:=FALSE). Step7 false 29s: same as step5 fan false; fail. Step8 false (30.2s? timer Q true) fan true fail? Wait harness says fails 2,5,7 only. At step8 after 29+1.2, timer Q true, first IF false, ELSE IF NOT timer.Q false, ventilador := timer.Q true -> expected false, so should fail step8 too? But listed fails 2,5,7 (not 8). Maybe step8 expects false and fan true, why not report? Let's recalc harness: Step7 is "quemadorOn := FALSE; tEspera := T#29S; esperado := TRUE;" After step7 false for 29s, if code failed step7 (fan false due Q false), then step8 "quemadorOn := FALSE; tEspera := T#1200MS; esperado := FALSE;" Accumulates from start of step7? In harness, step7 waited 29s; step8 waits 1.2s additional. If our code at step7 had fan false because Q false. But after 29s Q maybe false because timer started at step5? Wait timeline:
+After step6, quemdorOn true with timer Q false (reset). Step7 when quemdorOn goes false, our code? At scan at start of step7, first IF NOT timer.Q true -> timer(IN:=FALSE), then ELSE IF NOT timer.Q true -> timer(IN:=TRUE), fan Q false. The timer starts at beginning of step7. After 29s, Q still false. So step7 fan false. Step8 additional 1.2s: now total 30.2s, timer Q true after? The timer started at beginning of step7, so at step8 after 1.2s more, total 30.2s, Q true; fan true. Expected false. So should fail step8 too. Why harness reported only 2,5,7? Let's inspect code maybe if timer.Q true at step8 then first IF NOT timer.Q false skip; ELSE IF NOT timer.Q false; ventilador := timer.Q true. Yes fail. But maybe "Falla 3 de 9 pasos (pasos 2,5,7)" means step8 passed? That contradicts. Let's examine possible because in step2, first post-cool timer started too; but step2 check at 29s; step3 after 30.2s Q true fan true fail. Step4 resets Q. Step5 starts new timer? step5 check at 10s fan false fail. Step6 resets Q. Step7 starts timer? at 29s fan false fail. Step8 after 30.2s Q true fan true? Hmm should fail. Could harness maybe consider only one fail per phase? No it reports individual. Maybe code's first IF NOT timer.Q at start of step8 after fan true? Let's run more exact: At step7, timer starts at beginning. At end of step7 (29s), Q still false (TON PT 30s), fan false. Step7 fails. Then step8: At first scan of step8, quemdorOn remains false. But maybe the timer continues, now elapsed 29s + maybe 200ms? Wait harness between steps: Does it call FB every cycle and check expected only at end of tEspera? "tEspera := T#29S; esperado := TRUE" In step 2 waits 29s with quemdorOn false; at end check fan. Then step3 waits 1.2s more; at end check fan. The timer was not reset at transition between steps. Thus step7 similarly before step8. At beginning of step7 elapsed=0. At end of step7 29s Q false. At beginning of step8 elapsed still 29s, not 0. It continues to 30.2s; at 30s Q becomes true. But our code at each scan when Q false calls timer(IN:=TRUE) (except first IF when NOT timer.Q calls timer(IN:=FALSE) then else timer(IN:=TRUE)); this might reset timer every scan? TON behavior: Calling TON with IN true repeatedly doesn't reset elapsed; it accumulates. But calling TON with IN false then true in same scan? In our code, at top if NOT timer.Q (Q false) call timer(IN:=FALSE) resets/elapsed=0; then later call timer(IN:=TRUE). So every scan while Q false, we reset timer to zero then start it. This would mean timer never reaches 30s! Let's examine B5-3623 top:
+IF NOT timer.Q THEN
+    timer(IN := FALSE, PT := T#30S);
+END_IF;
+Then in ELSE:
+IF NOT timer.Q THEN
+    timer(IN := TRUE);
+END_IF;
+ventilador := timer.Q;
+Indeed each scan while Q false, it first calls timer(IN:=FALSE) resetting elapsed to 0, then calls timer(IN:=TRUE). So timer never progresses; Q stays false forever. Then fan during off remains false forever. That would fail step2,5,7, and at step3,8 fan false, expected false => step3 and step8 pass. Ah that matches fails 2,5,7. So the code essentially never runs post-cool because timer reset each scan. It only fan true when burner on. Functional: fails core post-cool (fan not delayed); works burner on. Score 0? It doesn't implement post-cool at all. "0 no implementa lógica pedida" yes. We'll score functional=0 for B5-3623 maybe. Need compare with B5-6632 inverted TON: fan off during delay and on after 30s, also fails post-cool. But does "burner off fan should continue" fail. So 0.
+
+B5-7882 and B5-2367 use TP. Need analyze.
+
+B5-7882 fails 0,7. Code:
+VAR tApagado : TP; estadoVentilador : BOOL;
+IF quemadorOn THEN
+    estadoVentilador := TRUE;
+    tApagado(IN := FALSE); (* Reiniciar *)
+ELSE
+    tApagado(IN := TRUE, PT := T#30S);
+    estadoVentilador := tApagado.Q;
+END_IF;
+ventilador := estadoVentilador;
+TD? TP is pulse timer: IN true starts pulse with PT; Q true for PT duration, then false. If IN false, Q false? TP timing: If IN=TRUE, Q=TRUE for PT regardless of IN state after? Actually TP: Q true for PT after rising edge; IN false while Q maybe continues output until PT elapses. But with IN false, if Q false. Here initial quemdorOn false: tApagado(IN:=TRUE) called every scan with IN true? Wait in ELSE they call IN:=TRUE every scan, so if initial false, TP sees IN true continuously from first call? But TP specifies for rising edge, Q true for PT. At first call IN rises, Q true for 30s. estadoVentilador := tApagado.Q -> true. So step0 fan true (fail). At step1 burner true: call IN false resets Q? estado true. step2 false after 29s: TP IN true starts, Q true for 30s, fan true. step3 after additional 1.2s (total 30.2 from step2) Q false? TP Q false after 30s, fan false. step4 true fan true, IN false. step5 false 10s: TP Q true fan true. step6 true? From step5 to step6: after 10s TP still Q true; burner true IN false resets? Then step6 fan true. step7 false 29s: now question if TP re-triggers? At step6 burner true calls tApagado(IN := FALSE). Then step7 false calls IN true, so TP? Need behavior of TP: if Q is active and IN goes false, Q state? It is not retentive? Actually TP (pulse timer): If IN has rising edge, Q true for PT. If IN remains true after PT, Q false. If IN goes false before PT, Q? The output stays true until PT expires independent of IN? Let's recall IEC 61131-3 TP: "If IN is FALSE, Q is FALSE. When IN becomes TRUE, Q becomes TRUE for PT. If IN changes to FALSE before PT elapsed, Q remains TRUE until PT elapsed? Actually TP output is TRUE from rising edge of IN for period PT; input pulses longer? It is non-retriggerable? It ignores IN until Q false? Hmm. Standard TP timing diagram: Q is TRUE for PT after input rising edge, regardless of input. At the end of PT, Q goes FALSE. If new rising edge while Q is TRUE? It does not retrigger? I think TP is non-retriggerable; while Q true, input transitions are ignored? Actually TP "pulse timer" generates a pulse of fixed width on rising edge of input. It is not retriggerable? It does not retrigger until input goes false and true after Q false. Here after step6 burner true calls tApagado(IN:=FALSE), could reset TP? Many implementations reset if IN false. Step7 false calls IN true; but if previous Q? Let's map failure: B5-7882 fails step0 and 7. Step7 expected at 29s true but code gives false? The reason: after step6 (burner true) it sets IN false; perhaps TP resets, then step7 false IN true should start pulse and Q true at 29s. Why fail? Maybe TP behavior: when IN false while pulse active, Q immediately false? Wait "If IN is FALSE, Q is FALSE" may be true for TP? Need check: TP pulse timer: if IN is TRUE? Actually Q starts on rising edge and stays TRUE for PT. If IN goes FALSE before PT, Q goes FALSE immediately? No, that's TON. Let's recall:
+- TP: pulse timer: output Q becomes TRUE at rising edge of IN and remains TRUE for PT. The output then becomes FALSE. Input changes before PT do not affect Q (nonretriggerable). It is used to generate pulse. If IN remains TRUE, after PT Q false. If IN goes FALSE before PT, Q remains TRUE until PT maybe yes. 
+If initial false step0: tApagado(IN:=TRUE) always sees IN true since it was false? On first scan IN rising edge. Q true. At step0 after 200ms Q true, fail.
+Step1 IN false, Q likely immediately false or after? If input false while pulse active, TP maybe continues? But state true. Steps2-6 pass? apparently only fail 0,7. Step7 fails maybe because at step6 burner on lasted only 200ms. The previous step5 had tApagado IN true for 10s and Q true. At step6, burner true for 200ms, code calls tApagado(IN := FALSE). If TP does not reset on IN false until pulse done, then Q still true from step5. At step7, false calls IN true. If TP is non-retriggerable while Q active, it may ignore rising edge because Q is still true (from step5 pulse). The pulse from step5 had PT 30s; step5 waited 10s, step6 only 0.2s, step7 29s. At step7 start elapsed since step5 pulse = 10.2s; still Q true (pulse active), but then at step7 +19.8s, Q expires. At 29s check, Q false, fan false, fail. Meanwhile expected on because it should have restarted at step7. That explains fail 7. Step8 expected false, Q false, pass. So TP fails rearm if reactivated before pulse end and immediate off. Functional: fails initial off (0) and reset/rearm (7). It does first post-cool? probably yes. Score functional 1 maybe (works nominal first cycle, fails edge). B5-2367 same fails 0,7. Functional=1.
+
+B5-8869: similar TP but no internal estado. Fails 0,7. It has:
+IF quemadorOn THEN
+    ventilador := TRUE;
+    tApagado(IN := FALSE);
+ELSE
+    tApagado(IN := TRUE, PT:=30S);
+    ventilador := tApagado.Q;
+END_IF
+At step0 false: TP Q true, fan true fail. Same. Score 1.
+
+Now the local variable non-sim cases: B5-4470, B5-8802, B5-8798. Need assign functional, iec, coherencia, claridad, mantenibilidad.
+
+We need ensure final JSON with 24 objects. Need compute each.
+
+Let's list all 24:
+
+1 B5-9290: TOF correct. fixed functional=3, iec null. IEC: compiles, standard TOF idiomatic. Should be iec=3? It is simple, correct declarations. per rubric "3 si además es idiomático (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)". TOF well instanced. Yes IEC 3. Coherencia: no contradictions; TOF exactly. Could be 3? "además robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas." For simple block, TOF inherently robust. maybe coherencia 3? It doesn't need interlocks. Could score 3 because no contradictions. But careful: TOF is standard robust. Claridad: clear comments, names descriptive. Maybe 3? It has brief comments; no modularization but single block. Rubric: 2 descriptive names, ordered, useful comments. 3 además modularización adecuada. This has no separate FB beyond required? The task asks FUNCTION_BLOCK. It is adequately modular for task. Could be 3 for clarity? But maybe no comments explaining why? It has brief. Maintainability: 2 parameters? T#30S literal in code, not constant. But time is specified; could be 2 because localizes changes. Extensible? Not really. We need consistent. For simple code, maintainability maybe 2. We'll decide scores.
+
+We need score all criteria integer 0-3.
+
+Need not be overly generous. Let's define rubric interpretations.
+
+We'll score each:
+- Functional: copied or as above.
+- IEC: if compiles and standard, lots will get 2 or 3.
+- Coherencia: for correct TOF simple maybe 3. For TON NOT Q maybe logic clear but fails initial. Is there contradiction? Not contradiction; initial state issue. Coherencia maybe 2 (sin contradicciones; inicialización correcta? Actually not correct initial behavior due NOT Q). Need score per code, not functional. For code with not initialized issue, coherencia maybe 1 or 2.
+- Claridad.
+- Mantenibilidad.
+
+Need produce single line justifications.
+
+Let's analyze code-by-code.
+
+Important: JSON order.
+
+I'll create table with fields.
+
+We need maybe if funcional_fijo is 3 and iec_fijo null, just_func_iec should mention IEC score. If functional null and iec null, mention both.
+
+Let's decide score strategy.
+
+Potential guidelines:
+- "El JSON de abajo contiene ... y dos puntuaciones ya fijadas por regla, 'funcional_fijo' e 'iec_fijo' (null significa que la pones tú)."
+- we must copy fixed exactly. If functional_fijo=3, set funcional=3. iec set our value.
+- If program NO compila: funcional=0 e iec=0 (but none no compila? All "Compila" or no sim. So no no compila. All compiles.)
+- If pasa all: funcional=3 fixed.
+- If compila but falla pasos: funcional 0/1/2.
+- If compila but no sim: funcional 0-2.
+- IEC when compila: 1 if extensiones; 2 correct; 3 idiomático. For standard TOF/TON/TP all are IEC 61131-3. But "TON OR NOT Q" uses standard TON; types correct. Is it idiomatic? Maybe using TON to implement TOF is not as idiomatic as TOF, but still standard. The rubric says 3 "usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)". So using TON with NOT Q to implement off delay is standard but not the most appropriate block (TOF) and has issues. I might give IEC=2 for TON/TP, because declarations/types correct and compiles, but not idiomatic? However "TON ... bien instanciados" may still count. But for a TOF task, using TON/TP to emulate is less idiomatic. Could be 2, maybe 1 if it uses extension features? no extension. So IEC 2 for any compiles with standard TON/TP; IEC 3 for TOF? We'll see.
+
+Need evaluate no-sim local declarations: IEC? Declaring inputs as VAR local is valid syntax and compiles. Does it violate IEC 61131-3? The task requires VAR_INPUT but st code uses VAR. It compiles as FB with no inputs. That is syntactically valid but semantically not interface. IEC 61131-3 allows. But compliance? "2 compila sin cambios; declaraciones y tipos correctos." Types correct. "3 idiomático" no, because missing VAR_INPUT. I'd give IEC=1? Rule: "1 si compila solo tras correcciones menores, o usa extensiones fuera del estándar." It did compile without corrections? Actually it does not need corrections to compile. But to conform to requested interface, minor correction needed (move variables to VAR_INPUT/VAR_OUTPUT). Is that "compila solo tras correcciones menores"? Hmm. It compiles, but harness can't simulate due interface. IEC 61131-3 does not require inputs/outputs, but for a FB interface, putting I/O in VAR makes them internal. That is still standard but not compliant with "variable de entrada/salida" from task. Should IEC score maybe 2 because declarations are valid; or 1 because not conforming to the requested POU interface? The rubric "Cumplimiento IEC 61131-3. 0: no compila; sintaxis o declaraciones inválidas. 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." This code compiles without changes and declarations types correct standard. But semantically interface not as required by task; maybe rubrica doesn't penalize interface? It says POU adecuado. For no-sim, "interfaz no conforme" is functional result, not necessarily IEC. I'd set IEC=2 for local VAR because syntax valid, but maybe 1 if declarations not correct for requested POU. Need think.
+
+"Programa... en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL)." They didn't use VAR_INPUT/VAR_OUTPUT. This is not just minor? It's a required interface. For IEC compliance, declarations "VAR" instead of "VAR_INPUT/OUTPUT" are semantically wrong interface but syntactically valid. Rubric 2 "declaraciones y tipos correctos" maybe no because classification of variable is wrong. It could be "compila solo tras correcciones menores" if you move variables. So IEC=1 for no-sim due interface declarations needing corrections. Hmm. But rule says when compila but no sim, functional not necessarily 3; IEC can be 1 if needs minor corrections. I think no-sim cases have wrong declarations, so IEC=1. But they compile without changes. Wait wording: "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." If a code compiles sin cambios but has non-standard extensions? no. "compila solo tras correcciones menores" implies originally didn't compile? Not necessarily, maybe compiles but requires minor corrections to meet standard. I'd give IEC=1 to local VAR cases because they do not implement requested interface. But "declaraciones y tipos correctos" maybe 2. Hmm.
+
+Let's reserve.
+
+Need maybe include just_func_iec one line: if iec assigned 2 or etc. We'll write concise.
+
+Let's compute each.
+
+I'll go through in order.
+
+### 1. B5-9290
+Code:
+TOF. correct interface.
+functional: 3 fixed.
+iec: 3 (TOF idiomatic).
+coherencia: likely 3. Inicialization correct, no issues. Simple. Could be 3 "robust" because TOF handles rearm. Yes.
+claridad: 3? Names descriptive, comments. No modular beyond required. Comments brief. I'd give 2 or 3. Rubric 3 requires "modularización adecuada (FB reutilizable, separación entre lógica y E/S)" This is a FB reusable. It does separate I/O and logic. Comments explain why? There is only one comment. Could be 3. But this may be too generous. "Claridad estructural" maybe 2: names descriptive, sections ordered, comments useful. 3 if además modularización adecuada. It is a function block with clear interface; that's adequate. I'd give 3 for this among best.
+mantenibilidad: 2? Could be 3 because T#30S could be input/constant, no duplicated logic. But no parameterization as VAR constant. Rubric 3 "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)." Time is hardcoded; not parameterized. So maintainability=2. Could score 2. For simple task, maybe 2. We'll use 2.
+
+Need decide consistency? Some perfect TOF all same. We'll assign similar.
+
+Just:
+just_func_iec: "Funcional fijado; IEC idiomático con TOF para retardo a la desconexión." But if functional fixed and iec assigned, it's okay.
+just_coherencia: "Sin contradicciones; TOF rearma de forma nativa." 
+just_claridad: "Nombres descriptivos y comentario breve; interfaz separada."
+just_mantenibilidad: "Tiempo fijo como literal T#30S; sin parámetros ni duplicación."
+
+### 2. B5-7090
+TON NOT Q. Fails step0 only.
+functional: 1? Need assign.
+IEC: compiles, TON standard but not idiomatic for TOF? I'd give 2.
+Coherencia: The logic is coherent for all cases except initial (vent on without burner). It initializes variables default. Is it "inicialización correcta" no, because fan on initial. But no contradictions exactly. Maybe coherencia 2? Let's think: The condition `ventilador := quemadorOn OR NOT tPostMarcha.Q` with tPostMarcha TON. With Not Q true while timer not done. At initial burner off, timer not done, fan true. Is this contradiction? It effectively means "fan on any time burner off until timer expires" including from boot. That is coherent but misinterprets idle. It also rearm? It resets when burner on due TON IN false. So coherent temporal logic but initial state. I'd score coherencia=2 (sin contradicciones; initialización correct? not exactly). Maybe 1 if initial issue. But B5-7090 fails step0 because initial output on. Does "inicialización correcta" in rubric includes this? Yes. 1: "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." Initial fan on is more than redundancy? But not contradictory. Could still be 2? Hmm.
+
+Let's align coherencia with code quality, not functional. The TON NOT Q logic is minimal, no contradictions, no dead conditions. But initial state not explicitly managed; output depends on timer not done. This is a behavior but not a logic contradiction. It may be considered "inicialización incorrecta". The rubric for coherencia 2: "sin contradicciones; inicialización correcta; transiciones completas." Since initialization effect is wrong (fan on), I'd score 1. Could be 2 because variables default and TIMER Q default false. But that combination causes unintended start. Is that "inicialización correcta"? I'd say no; output should be explicit. Raquel? I think score 2? Let's be careful.
+
+For B5-7090, no manual init of output; but output computed combination. In CODESYS, output computed each scan from expression. At first cycle, Q false, output true. It's logically deterministic. It is not "variable sin inicializar"; no contradiction. The device would start fan with burner off, a safety issue. So "condiciones contradictorias"? No. "variables sin inicializar con efecto" no. I'd not over-penalize coherencia; maybe 2. But "inicialización correcta" includes no unintended start. If score 2 we say "Sin contradicciones, temporizador reinicializable; arranque no bloqueado." But there is unintended startup. Hmm.
+
+Maybe I'd score:
+funcional 1 (fails initial edge)
+iec 2
+coherencia 2 (clear expression, reset works)
+claridad 2 or 1? It has comments, good names. Claridad 2.
+mantenibilidad 2 (time literal but simple; no duplication)
+Not too harsh.
+
+But compare with B5-6632 inverted TON, coherencia maybe 1 due contradictory? Ventilador := quemadorOn OR tRetraso.Q yields fan off during delay and on after delay; logic is coherent but doesn't implement requested behavior. It is not contradictory, but wrong temporal profile. Coherencia maybe 2 because no contradictions. Hmm.
+
+Need set consistent. For our scoring, coherencia evaluates internal consistency, not necessarily requirements? But rubric: "0: condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar. 1: lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave. 2: sin contradicciones; inicialización correcta; transiciones completas. 3: además robusta..." So if logic is coherent but wrong idea, coherencia can be 2. We'll evaluate internal consistency.
+
+I think for TON NOT Q, internal consistency is okay, except default output. I'll give coherencia 2 for most simple TON/TP aside from latching.
+
+Let's decide all.
+
+### 3. B5-4470
+No sim local VAR. Functionality: due local input cannot receive command. That is functional 0? Maybe. IEC 1? Coherencia: Code:
+timer(IN:=FALSE, PT:=30s); every scan initial, then if quemdorOn (always false for local? In code logic however local may be set internally? Not externally. Within code, if quemdorOn true could be set? no input, but variable retains, not written elsewhere except not. It's an FB local, external cannot write. Functionally as an FB, quemadorOn is not visible. But if somehow called with VAR_IN_OUT? No. So impossible to set. Output always false? Let's simulate if quemadorOn remains default false: top timer(IN:=FALSE) resets; ELSE timer(IN:=TRUE); IF timer.Q THEN... Q false for 30s, so fan true for 30s then false. But because top resets each cycle? Wait timer call top with IN FALSE at each scan resets Q to false; then timer(IN:=TRUE) starts. Since every scan resets then starts, Q never reaches true? Actually as with B5-3623, because top timer(IN:=FALSE) then later timer(IN:=TRUE) every scan while Q false. If at each scan first call IN FALSE resets elapsed to 0, then second call IN TRUE starts; thus Q never becomes true. So vent stays TRUE indefinitely (since timer.Q false, ELSE branch: if timer.Q false, else not? Code:
+timer(IN:=FALSE); 
+IF quemadorOn THEN ...
+ELSE
+    timer(IN:=TRUE);
+    IF timer.Q THEN ventilador:=FALSE;
+    ELSE ventilador:=TRUE;
+    END_IF;
+END_IF.
+Q never true, ventilador always TRUE if quemadorOn false. If quemadorOn true (impossible externally but maybe if initial value changed by some other means) then fan true. So not functional as requested. Functional 0.
+IEC: uses VAR not VAR_INPUT/OUTPUT; syntax valid but wrong interface. I'll give 1.
+Coherencia: There is a dead issue: top timer(IN:=FALSE) every scan then timer(IN:=TRUE) in ELSE, Q never completes. This is a contradiction/dead behavior. Also local input. Score 1? It says "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." Here timer never times out, so coherencia maybe 1. Could be 0 because states dead? "variables sin inicializar con efecto, o estados muertos que impiden operar." It still operates but not timer. Maybe 1.
+Claridad: Comments, but structure with local sections? Names clear. Maybe 2? But interface labels as input/salida in comments. Could be 1 due incorrect interface? Clarity maybe 2. 
+Mantenibilidad: Time hardcoded; no constants. 1 or 2. Variable definitions local hinder modification. I'd give 1.
+
+We'll decide final.
+
+### 4. B5-6632
+TON Q (inverted fuel), fails 5. Functional 0. IEC 2 (standard TON). Coherencia: expression `quemadorOn OR tRetraso.Q` will be off during delay and on after delay; no contradiction, but semantically matches "on-delay not off-delay." Internals: timer IN NOT quemdorOn. It resets when on. Coherent. Score 2.
+Clarity: clear names? tRetraso maybe generic; comment says what it should do but doesn't match code. Comment is incorrect. Rubric 1 "comentarios ausentes o incorrectos." Score 1? Names okay but comment incorrect. Maybe clarity=1.
+Mantenibilidad: 2? Hardcoded time; simple. But logic wrong. Maybe 1.
+
+### 5. B5-4246
+TON NOT Q, fails step0 only. Functional 1. IEC 2. Coherencia 2? Has detailed comments; no issues. Claridad 3? It has detailed comment, descriptive names, separated I/O. Could be 3. Maintain 2.
+
+Need not overdo for simple. Let's decide rules:
+- For codes with correct TOF and clean: functional 3, iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+- For TON NOT Q (fails step0 only) with detailed comments: functional 1, iec 2, coherencia 2, claridad 2 or 3 (some have detailed explanatory comments), mantenibilidad 2.
+- For TON Q inverted (fails 5): functional 0, iec 2, coherencia 2, claridad 1/2, mantenibilidad 2.
+- For TP: functional 1 (fails 0,7), iec 2, coherencia 2, claridad 2, mantenibilidad 2 maybe.
+- For latched timerDone: functional 1, iec 2, coherencia 1, claridad 1/2, mantenibilidad 1.
+- For no-sim local: functional 0, iec 1, coherencia 0/1, claridad 1/2, mantenibilidad 1.
+
+Need ensure justifications one line.
+
+Let's analyze all thoroughly.
+
+#### B5-9290 (1)
+Already.
+
+#### B5-7090 (2)
+Functional 1.
+IEC 2? Could be 2 or 3? Uses TON with NOT Q to implement off delay. It is standard but less idiomatic than TOF. I'd give 2. Just: "Compila y usa TON estándar, aunque TOF sería más idiomático."
+Coherencia: 2. "Lógica determinista y rearma al encender; arranque inicial no explícito." Or "Sin contradicciones; la salida en reposo queda TRUE por estado inicial del temp." I'll say 1? Let's settle. I think coherencia=2 maybe too high because initial state wrong. But we don't evaluate "inicialización correcta" maybe. The rubric says 2 requires initialización correcta. This isn't correct. 1? It says 1: logic mostly coherent, with redundancies or dead conditions without serious effect. The initial fan on is a serious effect (unexpected start). But there is no dead condition. It's a temporal definition issue. Could score 1. Hmm, I'd lean coherencia=2? Need consistent: B5-553? Hmm.
+
+Maybe use the following for all TON NOT Q: coherencia=2 because the logic expression is internally consistent; no uninitialized variables. The initial on is undesirable but not an internal contradiction. But rubric wording "inicialización correcta" could lower. In an academic scoring, I may note "Arranque incorrecto" so coherencia 1. The score should reflect quality: fan on in idle is not a logic contradiction but a misimplemented initial condition. I'd assign 2 for simple coherent logic but maybe mention "salida en reposo no forzada". Hmm.
+
+Let's examine "Variables sin inicializar con efecto" not present. "Estados muertos que impiden operar" no. It operates. So score 2 seems okay.
+
+#### B5-4470 (3)
+No sim. Let's analyze interface. Functional 0. IEC 1. Coherencia maybe 0? Because due local variable and reset every scan timer never completes. The logic as written in FB with quemdorOn local could not be influenced; this is dead state. We'll decide coherencia=0 or 1. Let's see code has top timer(IN:=FALSE) every scan, and then ELSE timer(IN:=TRUE) always while quemdorOn false. It will never see timer.Q true because TON reset each scan? But does TON in CODESYS with IN false then true each scan reset? Yes. So the timer state is effectively dead; output remains true in false for quemdorOn false. That is "estados muertos" partly. But maybe quemdorOn could be somehow true? Since no input, not. So coherencia=0? It says 0: "condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar." This code has local input never assigned; outputs not controllable. That's severe. I'd score coherencia=0 or 1. If coherencia=0, maybe harsh but justified. However if a local variable can be used for testing? Not in interface. The code not usable. Let's score 1? Hmm.
+
+Given B5-4470 has comments "Variable de entrada/salida" but actual not. The timer logic is contradictory (reset then start every cycle). I'll score coherencia=0.
+
+But if we give too many 0s, okay.
+
+IEC for no-sim: The code compiles but not requested interface. I'd set IEC=1. It doesn't use standard correctly? It uses TON standard but calls twice; still valid. But "declaraciones y tipos correctos" maybe no due VAR not VAR_INPUT. I'll choose 1 because minor corrections required for interface. Just: "Faltan VAR_INPUT/VAR_OUTPUT; requiere mover declaraciones."
+
+Functional: 0.
+Clarity: 1? It has comments, but doesn't use correct interface and timer initial call confusing. I'd give clarity=1.
+Mantenibilidad: 1: hardcoded time, logic not parameterized.
+
+#### B5-6632 (4)
+Functional 0.
+IEC 2 (TON). 
+Coherencia 1? It's coherent but the relation is inverted relative to comments. It doesn't have contradictions. But use `OR tRetraso.Q` will keep fan off during post-cool. There is no dead state. Coherencia 2? I'd maybe 1 because comments contradict logic? That's clarity. Coherencia maybe 2. 
+Clarity 1 (comment incorrect).
+Mantenibilidad 1? Maybe 2? The expression simple; but comments misleading. We'll assign maintain 1? No, maintainability about constants, not comments. Hardcoded time is one literal, change localized. I'd give 2. Hmm.
+
+Let's define:
+- maintainability 2 for simple code with clear input/output and only time literal. 1 if variables not declared as constants and no structure.
+Actually for B5-6632, no parameter but time literal appears once. changing time is localized. So 2.
+
+#### B5-4246
+Functional 1.
+IEC 2.
+Coherencia 2.
+Claridad 3? It has detailed comment says logic correct. Names descriptive. It is a FB with input/output. No modularization beyond required. Rubric 3 requires comments explain why. It has comment. I'd give 3? Let's not overly inflate. For TON NOT Q with detailed comments, clarity=2? It includes header and comments. Maybe 3 if "modularización adecuada". The code is in FUNCTION_BLOCK with separated I/O, which is adequate. I'd give 3. But maybe clarity=2 because there is no separate internal logic? Hmm. The task is so simple, the FB itself is the modularization. I'll score clarity=3 for those with good comments and structure.
+Mantenibilidad 2.
+
+#### B5-2235
+Similar B5-4246 but fewer comments. Fails step0 only.
+Functional 1.
+IEC 2.
+Coherencia 2.
+Clarity 2? It has section header comments and names. Could be 3? It says "Lógica: ..." and comments. I'd give 2 to differentiate from B5-4246? B5-4246 has more detailed comments. B5-2235 also comments. Let's be consistent: both 2? Maybe B5-4246 2 too. Claridad rubric: 2 names descriptive, sections ordered, comments useful. 3 modularization. Since they are simple, maybe 2. Perfect TOF could get 3? Need maybe not.
+
+Let's step back: Evaluator careful but not too generous. For clarity 3 only for those with particularly good comments or modularization. Since all code simple, 3 maybe rare. But functional fixed 3 for some. I can assign clarity=2 for most, 3 for very clean maybe.
+
+We need avoid arbitrary. Could adopt:
+- clarity 2 for any with clear names/comments.
+- clarity 3 only if comments additionally explain why or more detailed structure. Since these are simple, maybe some have why (B5-9290 only one line? no; B5-4246 has why; B5-2235 has why). Hmm.
+
+We'll make a rubric mapping:
+1: poor names/comments
+2: descriptive names and useful comments (most)
+3: excellent comments/explains why or modularization (rare)
+
+Maybe no need to assign many 3s.
+
+Let's decide per code.
+
+For correct TOF B5-9290, clarity perhaps 2 because comments are short. But the code is clean. Could be 3 because it's a neat FB with separated interface; comments brief. I'd give 2? The task "comentarios breves" so brief okay. Modularization adequate? A single FB is exactly the requested POU. I'll give 3 for best? Hmm.
+
+We need deliver scores, not too high. I think perfect simplicity can get 3 in clarity, but maintainability 2.
+
+We'll create final:
+- For correct TOF answers: functional 3, iec 3, coherencia 3, claridad 2 or 3, mantenibilidad 2.
+Maybe assign claridad 2 to all except if comments particularly detailed? Let's see B5-6715 comments "Configuración..." with why. B5-3077 similar. B5-6054 similar. B5-8170 minimal. All are clean. I'd set clarity=2 for minimal comments, 3 for those with explanatory comments? Hmm.
+
+Let's not overthink. Evaluation dimensions independent; simple code can get 3 clarity if structure is excellent. But not all.
+
+Given the instructions: "Claridad estructural. 0 sin estructura reconocible... 1 estructura básica, pero nombres pobres o comentarios ausentes o incorrectos. 2 nombres descriptivos, secciones ordenadas, comentarios útiles. 3 además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué."
+
+Every solution is a FUNCTION_BLOCK (or at least task requires). So separation entre lógica y E/S is present for those with VAR_INPUT/OUTPUT. Some have comments explaining why. Therefore 3 could be justified. But if same pattern, maybe 3.
+I'll assign clarity=3 for most with VAR_INPUT/OUTPUT and good comments (very simple). For those with comments incorrect or no clear interface, lower.
+
+Need also score maintenance. Could assign 2 for most correct due time literal. 3 if time parameter could be VAR or constant? None. So 2. Maintainability 1 for no-sim/latching.
+
+Now let's process each in order thoroughly.
+
+### 1 B5-9290
+functional 3 fixed.
+iec 3.
+coherencia 3.
+claridad 2? Let's choose 2? Hmm. For simple TOF one-liner, "separación entre lógica y E/S" yes; "comentarios que explican el porqué" maybe one comment. It says "* El ventilador continua funcionando 30 s despues..." not exactly why but okay. I'll give clarity 3? Hmm. Maybe 2 to not overrate. But final just line will match. I think 3 for idiomatic simple modular? Let's settle on 3 for all correct TOF? Wait they all are essentially identical. If I score clarity 3 for one, should score 3 for all identical. Simplicity is excellent. I'll set 3 for TOF answers with clear interface and comments. That means several 3s. Fine.
+
+Maintain 2.
+
+### 2 B5-7090
+functional 1.
+iec 2.
+coherencia 2.
+clarity 2? It has comments but maybe no detailed why. Names tPostMarcha clear. Comment says starts when quemador off. I'd give 2.
+Maintenance 2.
+
+### 3 B5-4470
+functional 0.
+iec 1.
+coherencia 0.
+clarity 1? It has comments indicating input/salida but structure incorrect. I'd give 1.
+Maintenance 1.
+
+### 4 B5-6632
+functional 0.
+iec 2.
+coherencia 2? Maybe 2.
+clarity 1 (comment incorrect).
+Maintenance 2.
+
+### 5 B5-4246
+functional 1.
+iec 2.
+coherencia 2.
+clarity 3 (detailed comments explaining why).
+Maintenance 2.
+
+### 6 B5-2235
+functional 1.
+iec 2.
+coherencia 2.
+clarity 3? It has detailed comments. Yes maybe 3.
+Maintenance 2.
+
+### 7 B5-6715
+correct TOF. functional 3 fixed. iec 3. coherencia 3. clarity 3 (comments also explain). maintenance 2.
+
+### 8 B5-8536
+Latched timerDone, fails 0,5,7. functional 1. IEC 2. Coherencia 1 (latch dead for rearm). Clarity 2? It has comments but logic confusing. Maybe 1 or 2. I'd give 1 because variable timerDone used to latch, but comments not explain rearm? The code includes bandera. It is structured with comments. I'd give 2? "Nombres descriptivos" yes, comments useful? Partially. It doesn't mention latching issue. But clarity can be 2. Maintenance 1 (due latching). Let's set clar 2, mant 1.
+
+### 9 B5-8802
+No sim local. functional 0. IEC 1. Coherencia? Code:
+timer(IN := NOT quemadorOn, PT:=30S);
+IF quemadorOn THEN ventilador TRUE;
+ELSE ventilador := NOT timer.Q;
+END_IF;
+timer(IN := NOT quemadorOn); // again
+This has local variables; external cannot write. The duplicate timer call maybe unnecessary. Logic with NOT timer.Q: initial true. Coherencia maybe 1 (no dead states but duplicate call). I'd score coherencia=1.
+Clarity 1/2: Comments say input/output but wrong. I'd give 2? It has comments and structure. But interface wrong. Clarity maybe 1.
+Maintenance 1.
+
+### 10 B5-2103
+correct TOF. functional 3 fixed. iec 3. coherencia 3. clarity 3? Minimal comment. I'll give 3? Maybe yes.
+Maintenance 2.
+
+### 11 B5-3077
+correct TOF. functional 3 fixed. iec 3. coherencia 3. clarity 3? Has detailed comments about TOF. yes.
+Maintenance 2.
+
+### 12 B5-6054
+correct TOF. functional 3 fixed. iec 3. coherencia 3. clarity 3? yes.
+Maintenance 2.
+
+### 13 B5-6571
+TON NOT Q, fails step0 only. functional 1. iec 2. coherencia 2. clarity 3? Has detailed header comment. yes maybe 3.
+Maintenance 2.
+
+### 14 B5-9947
+TON Q inverted, fails 5 steps. functional 0. iec 2. coherencia 2. clarity 1? Comment incorrect. I'd give 1.
+Maintenance 2.
+
+### 15 B5-4296
+TON NOT Q fails step0 only. functional 1. iec 2. coherencia 2. clarity 2? Comments okay. Maybe 2.
+Maintenance 2.
+
+### 16 B5-7882
+TP, fails 0,7. functional 1. iec 2. coherencia 2? It uses TP not appropriate; maintains internal state. Initial issue but logic consistent. I'd give coherencia 2. clarity 2 (comments).
+Maintenance 2.
+
+### 17 B5-6010
+Latched timerDone, fails 0,5,7. functional 1. iec 2. coherencia 1. clarity 1? Comments moderate. I'd give 2? Maybe 1 because no comments about reset. We'll set clarity 2? Let's be consistent with B5-8536. B5-6010 similar but simpler. Clarity 2? It names timerDone. Comments: "Inicialización", "Control". I'd give 2.
+Maintenance 1.
+
+### 18 B5-8869
+TP, fails 0,7. functional 1. iec 2. coherencia 2. clarity 2. Maintenance 2.
+
+### 19 B5-8798
+No sim local VAR. functional 0. IEC 1. Coherencia? Code:
+VAR quemdorOn/ventilador/timer.
+IF quemdorOn THEN fan true; timer(IN:=FALSE);
+ELSE timer(IN:=TRUE, PT:=30s); ventilador:=timer.Q;
+END_IF.
+Local input issue. The timer only called conditionally when off; ON resets. If external couldn't write, output false? Actually with quemdorOn default false, timer IN true starts, Q false, fan false. Unlike B5-8802, initial fan false. But because input not visible, always false/fan false. Timer may reach Q after 30s but since no reset when ON (impossible), fan true after 30s? Wait if quemdorOn stays false, timer(IN:=TRUE) every scan (not reset top), Q becomes true after 30s; then fan true! Actually code in ELSE: timer(IN:=TRUE, PT:=30s); ventilador:=timer.Q; When Q true after 30s, fan turns on. That's the opposite: from initial off, fan off for 30s then on. Because local quemdorOn cannot change. So not functional. Coherencia maybe 1.
+Clarity 1? Comments say input/salida but wrong. I'd give 1.
+Maintenance 1.
+
+### 20 B5-2379
+correct TOF. functional 3. iec 3. coherencia 3. clarity 2? It has same as B5-9290. We need consistency. If B5-9290 clarity 3, this too. But maybe fewer comments. It has one comment. Still. I'll set 3 for all correct TOF? Okay. But there are 8 correct TOF responses; if all clarity 3 maybe fine.
+
+### 21 B5-8170
+correct TOF. functional 3, iec 3, coh 3, clar 3, maint 2.
+
+### 22 B5-2653
+TON Q inverted, functional 0. iec 2. coherencia 2. clar 1 (comment incorrect). maint 2.
+
+### 23 B5-2367
+TP, fails 0,7. functional 1. iec 2. coherencia 2. clar 2. maint 2.
+(It has estadoVentilador internal; okay)
+
+### 24 B5-3623
+This is special. Functional 0 due fails post-cool. IEC 2 (TON standard). Coherencia: It has timer reset each scan due IF NOT timer.Q top. That is dead timer. It has unused timerDone variable, and comment "timerDone" but not used; also calls timer inconsistent. Score coherencia=0 or 1. It has unused variable but with no effect; top reset ensures timer never completes. That's dead condition. I'd score coherencia=0. But does it "impide operar"? It prevents post-cool entirely. Yes 0.
+Clarity 1 (unused timerDone, comments misleading).
+Maintenance 1.
+
+Let's ensure functional scores according to rules:
+- For compiles falla pasos: B5-7090 fails step0 only. Is functional 1? yes unless initial idle is nominal? Step0 is nominal? Protocol includes it. If we are strict, step0 initial off is part of nominal. Fails 1/9. The rubric 1: "funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)". Here functional nominal maybe "quemador encendido" and "post-enfriamiento". Step0 is initial off not nominal? Hmm. In harness, step0 "Reposo" expected false. That's a nominal resting state. But the task: "Mientras el quemador esté encendido..." If burner off initially, fan should be off. This implementation starts fan while burner off, so it's a core correctness issue, but it's edge at startup. The rule says if compiles but fails pasos: functional 0,1,2 según rúbrica, usando qué pasos fallan. The failing step0 only is an evident edge, not failure in main sequence. I'd give 1, not 0.
+
+- B5-8536 fails 0,5,7. It works first post-cool and step6 rearm? Actually fails rearm. Functional 1 because fails reset/rearm edge and initial. But maybe since step5 is rearm second post, it's core sequence. Rubric "2 correcto en caso nominal y mayoría de casos límite; fallas menores sin riesgo. 1: funciona en caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." It works nominal first cycle (post-cool first) but fails rearm edge; yes 1.
+
+- B5-6632 inverted TON fails 2,3,5,7,8: fails first post-cool at 29s and final, which is core. Functional 0. 
+- B5-9947 same 0. 
+- B5-2653 same 0.
+- B5-7882 fails 0,7: first post-cool ok? It fails initial and second rearm. Core first post-cool ok. Functional 1.
+- B5-8869 same.
+- B5-2367 same.
+- B5-3623 fails 2,5,7: first post-cool at step2 fails because fan off during delay. Core. Functional 0.
+
+Now no-sim functional:
+- B5-4470 cannot simulate due interface. Reading code: top reset and else start causing fan always true (if local false). It doesn't meet interface. Functional 0.
+- B5-8802 cannot simulate; if local false initial fan true due NOT Q, but local input not writable. Functional 0.
+- B5-8798 cannot simulate; if local false fan false for 30s then on? Actually local cannot be set true, so core control impossible. Functional 0.
+
+IEC scores:
+- We need set iec for all compiled.
+For code compiles with correct VAR_INPUT/OUTPUT and standard timers TOF/TON/TP:
+  * TOF: IEC 3 (idiomatic).
+  * TON NOT Q/Q: IEC 2 (standard type and declarations, but not most appropriate? Some might argue 2).
+  * TP: IEC 2? TP is standard but not appropriate; maybe IEC 2.
+  * TimerDone latch with TON: IEC 2.
+  * No-sim local VAR: IEC 1 (requires moving declarations). Let's ensure "compila sin cambios" might point to 2. Hmm. Could one argue declarations valid? "VAR" variables are internal, not input/output. That is semantically not conforming to a required interface but is not IEC syntax invalid. The compliance dimension maybe should still give 2 because compiles and standard. However the rule "declaraciones y tipos correctos" maybe yes; they are standard but wrong classification. "iec_fijo" null. There are exactly three no-sim cases. If I give IEC=1, just_func_iec should say "Requiere mover quemadorOn/ventilador a VAR_INPUT/VAR_OUTPUT". That is a correction. I think this fits 1. Let's use IEC=1.
+
+Need decide if code uses extensiones? no. So all compile no extensions. None get 1 except no-sim interface? Is "declara las entradas donde el harness no puede escribirlas" an interface nonconformance; it is not a compiler error. The rubric says "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." This code didn't need corrections to compile, but to meet task interface. I think okay.
+
+But there's also code B5-8802 local VAR but no VAR_INPUT; same. We'll give 1.
+
+Now coherencia scores:
+Let's adjust to avoid too many high? We have:
+- Correct TOF: 3.
+- TON NOT Q: B5-7090 2; B5-4246 2; B5-2235 2; B5-6571 2; B5-4296 2.
+- TON Q inverted: B5-6632 2; B5-9947 2; B5-2653 2.
+- TP: B5-7882 2; B5-8869 2; B5-2367 2.
+- TimerDone latch: B5-8536 1; B5-6010 1.
+- B5-3623 0.
+- No-sim: B5-4470 0; B5-8802 1; B5-8798 1.
+
+Let's verify coherencia for B5-6632 "OR tRetraso.Q" maybe no contradiction. Score 2.
+
+Clarity scores:
+Let's define values.
+
+I need ensure one-line justifications match.
+
+Let's maybe simplify:
+Clarity: 
+- Correct TOF all 3? Let's verify there are 8 correct TOF: B5-9290, B5-6715, B5-2103, B5-3077, B5-6054, B5-2379, B5-8170. That's 7? Wait also maybe B5-6571? No TON. Correct TOF list:
+1 B5-9290
+7 B5-6715
+10 B5-2103
+11 B5-3077
+12 B5-6054
+20 B5-2379
+21 B5-8170
+Also perhaps? That's 7. B5-2379/8170 yes.
+All simple. We can set clarity 3 for these if they have comments explaining why. B5-9290 comment "#"; B5-2379 comment. Could be 2 if comment isn't "why". But they are self-explanatory.
+
+Maybe to be more discriminative: Set clarity=2 for minimal correct TOF? But then nearly all are 2. Rubric 3 requires modularization. They are already in FB. For a task specifically asking for FB, I'd not reward modularization beyond complying. Hmm. Let's consider "Claridad estructural" at level Basic: 2 is competent; 3 excellent. A one-liner with correct interface and short comment is competent, not necessarily excellent. But "3 además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué." They do separate I/O and comment what. I'd give 3 because it's exactly what was requested. But if I give all correct 3, the zero/one code get lower.
+
+Maybe assign clarity=3 for correct TOF all. It's okay.
+
+For TON NOT Q:
+- B5-4246: 3 (detailed comments explaining why).
+- B5-2235: 3 maybe detailed comments.
+- B5-6571: 3 (detailed header).
+- B5-4296: 2 (less comments)
+- B5-7090: 2 (brief comments)
+Maybe.
+
+For TON Q inverted:
+- B5-6632: 1 (comment incorrect)
+- B5-9947: 1
+- B5-2653: 1
+Actually their names are okay, structure simple. Comment says correct behavior but code does opposite. Rubric 1: "nombres pobres o comentarios ausentes o incorrectos." Comment is incorrect. So 1.
+
+For TP:
+- B5-7882: 2 (comments)
+- B5-8869: 2
+- B5-2367: 2
+For timerDone latch:
+- B5-8536: 2? Comments okay.
+- B5-6010: 2 (simpler)
+For B5-3623: 1 (unused timerDone, misleading comments)
+For no-sim:
+- B5-4470: 1 (comments incorrect: "Variable de entrada/salida" but not)
+- B5-8802: 1 (same)
+- B5-8798: 1 (same)
+
+Maintainability:
+- Correct TOF: 2 all.
+- TON NOT Q: 2 all.
+- TON Q inverted: 2? The code uses tRetraso time literal once. Yes 2.
+- TP: 2.
+- Latch: 1 (logic not extensible; timerDone locked).
+- B5-3623: 1.
+- No-sim: 1.
+
+Let's decide if B5-7090 maintain 2 despite incorrect initial? It's simple. Yes.
+Maybe for B5-6632 maintain 2 though comment incorrect. Fine.
+
+Now justifications.
+
+Need answer with 24 objects, same order. We'll include codigo, funcional, iec, coherencia, claridad, mantenibilidad, just_func_iec, just_coherencia, just_claridad, just_mantenibilidad.
+
+Need if functional_fijo and iec_fijo both fixed? None both fixed? Actually for all pass, functional_fijo 3, iec_fijo null. If no sim, funcional null, iec null. So just_func_iec not empty. It should mention one line.
+
+Let's craft final carefully in JSON only.
+
+Double check "cuando funcional no estaba fijado, que esté entre 0 y 2" For our no sim functional 0; fails functional 0/1. Good. "cuando iec no estaba fijado, que esté entre 1 y 3" We assign 1/2/3. Good.
+
+Need maybe for compilation pass all fixed functional=3. We set.
+
+Let's iterate final list.
+
+I'll create table with exact codes in order:
+
+1 B5-9290
+2 B5-7090
+3 B5-4470
+4 B5-6632
+5 B5-4246
+6 B5-2235
+7 B5-6715
+8 B5-8536
+9 B5-8802
+10 B5-2103
+11 B5-3077
+12 B5-6054
+13 B5-6571
+14 B5-9947
+15 B5-4296
+16 B5-7882
+17 B5-6010
+18 B5-8869
+19 B5-8798
+20 B5-2379
+21 B5-8170
+22 B5-2653
+23 B5-2367
+24 B5-3623
+
+Now final scoring:
+
+1. B5-9290:
+funcional=3, iec=3, coherencia=3, claridad=3, mantenibilidad=2.
+just_func_iec: "Funcional fijado. IEC: TOF idiomático para retardo a la desconexión."
+just_coherencia: "Sin contradicciones; el TOF rearma y sigue el estado solicitado."
+just_claridad: "Interfaz clara, nombres descriptivos y comentario breve."
+just_mantenibilidad: "Tiempo fijo literal; cambio simple, aunque sin constante declarada."
+
+2. B5-7090:
+funcional=1, iec=2, coherencia=2, claridad=2, mantenibilidad=2.
+just_func_iec: "Funcional: falla solo reposo inicial (ventilador en TRUE). IEC: TON estándar, pero TOF sería más directo."
+just_coherencia: "Sin contradicciones internas; arranque inicial no delimitado."
+just_claridad: "Nombres claros y comentario breve; estructura básica."
+just_mantenibilidad: "T#30S aparece una vez; cambios localizados."
+
+3. B5-4470:
+funcional=0, iec=1, coherencia=0, claridad=1, mantenibilidad=1.
+just_func_iec: "No se puede escribir la entrada; falta VAR_INPUT/VAR_OUTPUT y ello rompe la interfaz."
+just_coherencia: "Temporizador se resetea y rearranca en cada ciclo; la lógica no puede operar."
+just_claridad: "Comentarios, pero la interfaz incorrecta induce a error."
+just_mantenibilidad: "Sin parámetros; corregir requiere rehacer interfaz."
+
+Need check coherencia=0: "variables sin inicializar con efecto, estados muertos que impiden operar." Yes timer never completes. Good.
+
+4. B5-6632:
+funcional=0, iec=2, coherencia=2, claridad=1, mantenibilidad=2.
+just_func_iec: "No cumple el post-enfriamiento: mantiene el ventilador apagado durante los 30 s y lo enciende después."
+just_coherencia: "Lógica coherente, pero expresa un retardo a la conexión en lugar de desconexión."
+just_claridad: "El comentario dice lo correcto, pero es inconsistente con la fórmula implementada."
+just_mantenibilidad: "Tiempo literal único y estructura mínima."
+
+5. B5-4246:
+funcional=1, iec=2, coherencia=2, claridad=3, mantenibilidad=2.
+just_func_iec: "Falla solo reposo inicial; IEC estándar con TON para emular TOF."
+just_coherencia: "Expresión clara sin contradicciones; solo la condición inicial en reposo queda invertida."
+just_claridad: "Comentarios bien estructurados que explican la intención."
+just_mantenibilidad: "Sin duplicación; tiempo fijo localizable."
+
+6. B5-2235:
+funcional=1, iec=2, coherencia=2, claridad=3, mantenibilidad=2.
+just_func_iec: "Falla solo el reposo inicial; IEC: TON estándar aunque TOF sería idiomático."
+just_coherencia: "Sin contradicciones; el temporizador rearma al encender."
+just_claridad: "Nombres descriptivos y comentario lógico ordenado."
+just_mantenibilidad: "Tiempo fijo y lógica concentrada."
+
+7. B5-6715:
+funcional=3, iec=3, coherencia=3, claridad=3, mantenibilidad=2.
+just_func_iec: "Funcional fijado. IEC: TOF idiomático."
+just_coherencia: "El TOF concentra correctamente rearme y temporización."
+just_claridad: "Declaración limpia y comentarios que explican el bloque."
+just_mantenibilidad: "Tiempo fijo T#30S sin constante; sin duplicación."
+
+8. B5-8536:
+funcional=1, iec=2, coherencia=1, claridad=2, mantenibilidad=1.
+just_func_iec: "Falla reposo y rearmes por bloqueo de timerDone; IEC compilable con TON."
+just_coherencia: "El enclavamiento de timerDone impide reiniciar el temporizador tras reencendido."
+just_claridad: "Nombres claros, pero la bandera no comunica su estrategia de enclavamiento."
+just_mantenibilidad: "Bandera acoplada; corregir comportamiento obliga a tocar lógica."
+
+9. B5-8802:
+funcional=0, iec=1, coherencia=1, claridad=1, mantenibilidad=1.
+just_func_iec: "Interfaz no conforme: quemadorOn local; no se puede simular ni controlar."
+just_coherencia: "Doble llamada al temporizador y salida en reposo no prevista."
+just_claridad: "Comentarios presentan variables como E/S, pero no lo son."
+just_mantenibilidad: "Requiere reestructurar interfaz y lógica para ser reutilizable."
+
+10. B5-2103:
+funcional=3, iec=3, coherencia=3, claridad=3, mantenibilidad=2.
+just_func_iec: "Funcional fijado. IEC: TOF idiomático."
+just_coherencia: "Comportamiento completamente alineado con el temporizador TOF."
+just_claridad: "Comentarios y separación de E/S claros."
+just_mantenibilidad: "Tiempo fijo literal; simple de ajustar."
+
+11. B5-3077:
+funcional=3, iec=3, coherencia=3, claridad=3, mantenibilidad=2.
+just_func_iec: "Funcional fijado. IEC: TOF idiomático."
+just_coherencia: "Sin contradicciones; TOF rearma de forma nativa."
+just_claridad: "Comentario explica el porqué del TOF; interfaz clara."
+just_mantenibilidad: "Tiempo fijo T#30S; sin parámetro pero localizado."
+
+12. B5-6054:
+funcional=3, iec=3, coherencia=3, claridad=3, mantenibilidad=2.
+just_func_iec: "Funcional fijado. IEC: TOF idiomático."
+just_coherencia: "Lógica robusta y simple basada en TOF."
+just_claridad: "Comentarios útiles y separación limpia de E/S."
+just_mantenibilidad: "Tiempo fijo; cambio localizado."
+
+13. B5-6571:
+funcional=1, iec=2, coherencia=2, claridad=3, mantenibilidad=2.
+just_func_iec: "Falla solo reposo inicial. IEC: TON estándar, no TOF."
+just_coherencia: "Sin contradicciones; arranque inicial sin forzar deja ventilador activo."
+just_claridad: "Comentario de lógica bien detallado."
+just_mantenibilidad: "Sin duplicación; tiempo fijo localizable."
+
+14. B5-9947:
+funcional=0, iec=2, coherencia=2, claridad=1, mantenibilidad=2.
+just_func_iec: "No cumple post-enfriamiento: retardo invertido (ON tras 30 s)."
+just_coherencia: "Fórmula coherente, pero modela retardo a la conexión."
+just_claridad: "El comentario y la fórmula no coinciden."
+just_mantenibilidad: "Estructura mínima; tiempo fijo fácil de localizar."
+
+15. B5-4296:
+funcional=1, iec=2, coherencia=2, claridad=2, mantenibilidad=2.
+just_func_iec: "Falla solo el reposo inicial; IEC estándar con TON."
+just_coherencia: "Sin contradicciones; temporizador rearmable al reencender."
+just_claridad: "Nombres y comentario correctos, estructura básica."
+just_mantenibilidad: "T#30S único en la llamada al temporizador."
+
+16. B5-7882:
+funcional=1, iec=2, coherencia=2, claridad=2, mantenibilidad=2.
+just_func_iec: "Falla reposo y rearme durante pulso; TP estándar pero no apropiado."
+just_coherencia: "Sin contradicciones; TP no garantiza post-enfriamiento rearmable."
+just_claridad: "Comentarios útiles y nombres descriptivos."
+just_mantenibilidad: "Tiempo fijo una vez; lógica simple."
+
+17. B5-6010:
+funcional=1, iec=2, coherencia=1, claridad=2, mantenibilidad=1.
+just_func_iec: "Falla reposo y rearme por enclavamiento; IEC con TON compila."
+just_coherencia: "timerDone queda enclavado e impide nuevos ciclos de apagado."
+just_claridad: "Nombres descriptivos, pero la bandera no muestra su efecto de enclavamiento."
+just_mantenibilidad: "Acoplamiento con bandera dificulta modificar el comportamiento."
+
+18. B5-8869:
+funcional=1, iec=2, coherencia=2, claridad=2, mantenibilidad=2.
+just_func_iec: "Falla reposo y rearme durante pulso; TP no es el bloque adecuado."
+just_coherencia: "No hay contradicciones, pero el TP condiciona mal el rearme."
+just_claridad: "Comentarios claros y estructura simple."
+just_mantenibilidad: "Tiempo fijo y una sola llamada al temporizador."
+
+19. B5-8798:
+funcional=0, iec=1, coherencia=1, claridad=1, mantenibilidad=1.
+just_func_iec: "Variables locales en lugar de VAR_INPUT/OUTPUT; no se puede simular ni usar la interfaz."
+just_coherencia: "Sin entrada real; el código solo opera sobre un valor local no modificable."
+just_claridad: "Comentarios describen E/S, pero la declaración es engañosa."
+just_mantenibilidad: "Requiere rehacer interfaz y temporización."
+
+20. B5-2379:
+funcional=3, iec=3, coherencia=3, claridad=3, mantenibilidad=2.
+just_func_iec: "Funcional fijado. IEC: TOF idiomático."
+just_coherencia: "TOF maneja ciclo y rearme sin contradicciones."
+just_claridad: "Interfaz clara y comentario breve suficiente."
+just_mantenibilidad: "Tiempo fijo literal sin constante; sin duplicación."
+
+21. B5-8170:
+funcional=3, iec=3, coherencia=3, claridad=3, mantenibilidad=2.
+just_func_iec: "Funcional fijado. IEC: TOF idiomático."
+just_coherencia: "Lógica directa y robusta por TOF."
+just_claridad: "Nombres descriptivos y comentario útil."
+just_mantenibilidad: "Tiempo fijo localizado; sin duplicación."
+
+22. B5-2653:
+funcional=0, iec=2, coherencia=2, claridad=1, mantenibilidad=2.
+just_func_iec: "Post-enfriamiento invertido; el ventilador no queda encendido durante los 30 s."
+just_coherencia: "Fórmula consistente, pero implementa retardo a la conexión."
+just_claridad: "El comentario contradice la lógica implementada."
+just_mantenibilidad: "Estructura simple; tiempo fijo localizado."
+
+23. B5-2367:
+funcional=1, iec=2, coherencia=2, claridad=2, mantenibilidad=2.
+just_func_iec: "Falla reposo y rearme con TP; IEC estándar."
+just_coherencia: "Sin contradicciones fuertes, pero TP no se rearma como pide el protocolo."
+just_claridad: "Nombres descriptivos y comentarios correctos."
+just_mantenibilidad: "Tiempo fijo único; lógica simple."
+
+24. B5-3623:
+funcional=0, iec=2, coherencia=0, claridad=1, mantenibilidad=1.
+just_func_iec: "No implementa post-enfriamiento: el temporizador se resetea cada ciclo y el ventilador queda apagado."
+just_coherencia: "El reinicio condicionado por NOT timer.Q impide que el temporizador avance."
+just_claridad: "Variable timerDone sin uso y comentarios inconsistentes."
+just_mantenibilidad: "Lógica acoplada y estado confuso; difícil de ajustar."
+
+Need verify B5-3623 functional 0. It fails 2,5,7. Just says fan off during delay. Good.
+
+Need maybe B5-4470 coherencia 0 maybe too harsh? It says "temporizador se resetea y rearranca en cada ciclo" correct due top call. Good.
+
+Let's verify IEC for B5-3623: Does it use timerDone declared but not used; but timer TON standard. Compiles. IEC 2. It uses IF NOT timer.Q to call timer; standard. Fine.
+
+Potential issue: In final JSON, if functional_fijo was 3 and iec_fijo null, just_func_iec includes "Funcional fijado..." That's one line. Good.
+
+Need ensure "just_func_iec: una línea, o \"\" si las dos estaban fijadas". If both fixed none. For functional fixed and iec null, just line includes both. Good.
+
+Need ensure there are no trailing comments. JSON valid.
+
+Let's double-check each code against assignment.
+
+Maybe for B5-8802, coherencia=1 but code has duplicate call timer after IF. Actually duplicate call not harmful, but local input. We said coherencia=1. Good.
+
+Maybe B5-8798 coherencia=1: It uses local input; if local remains false, timer IN true, turns on after 30s. That's a "state dead" maybe no external control. Score 1 maybe. Not 0? It doesn't have contradiction. But maybe "variables sin inicializar con efecto" not. It has no input; operational? Not. We set 1. Good.
+
+Maybe B5-4470 coherencia=0 because timer never times out. Fine.
+
+Now check if any code uses `T#200MS`? Not relevant.
+
+Let's revisit functional for B5-6632/TON Q inverted: In harness, step0 initial off: tRetraso(IN:=TRUE) starts, Q false; fan false. pass. step1 burner true resets. step2 false 29s Q false fan false fail. step3 after 30.2 Q true fan true fail. step4 burner true fan true pass. step5 false 10s Q false fan false fail. step6 burner true pass. step7 false 29s Q false fan false fail. step8 after 30.2 Q true fan true fail. Fails 5. So functional 0.
+
+B5-9947 and B5-2653 identical. Good.
+
+Now functional B5-7882 TP fails 0,7. Let's ensure it didn't also fail step5? Harness says fails 2? It says "Falla 2 de 9 pasos (pasos 0,7)". So okay. Score 1.
+
+B5-3623 fails 2,5,7 only. We score 0.
+
+Potential nuance: B5-3623 uses `IF NOT timer.Q THEN timer(IN:=FALSE, PT:=T#30S); END_IF;` At initial Q false, timer IN false, Q false. Then in ELSE `IF NOT timer.Q THEN timer(IN:=TRUE); END_IF; ventilador:=timer.Q;` So fan false. Good. The timer repeated reset leads fan off. Functional 0.
+
+Now maybe B5-8536/6010 functional 1 but they fail step0 and step5/7. Step0 fail at initial. Step5 and step7 second post-cool. They do pass step2/3 first post-cool? Wait at step2, timer called in IF NOT timerDone; Q false; fan expression `quemadorOn OR (NOT quemadorOn AND NOT timerDone)` true. Step2 pass. Step3 after Q true; timerDone set true; fan false. Pass. Step4 quemdorOn true fan true; but timerDone remains true. Step5 quemdorOn false fan false. Fails. So first cycle works. Functional 1. Good.
+
+Now maybe B5-3623 uses timerDone declared but not used. Clarity 1. Good.
+
+Now ensure we respond only JSON; no markdown. Need include exactly list. Let's format compactly.
+
+Before final, maybe check if there are 24 objects in our final. Let's count:
+1 B5-9290
+2 B5-7090
+3 B5-4470
+4 B5-6632
+5 B5-4246
+6 B5-2235
+7 B5-6715
+8 B5-8536
+9 B5-8802
+10 B5-2103
+11 B5-3077
+12 B5-6054
+13 B5-6571
+14 B5-9947
+15 B5-4296
+16 B5-7882
+17 B5-6010
+18 B5-8869
+19 B5-8798
+20 B5-2379
+21 B5-8170
+22 B5-2653
+23 B5-2367
+24 B5-3623.
+Yes.
+
+Let's maybe adjust clarity for B5-4246/B5-2235/B5-6571 from 3 to 2? Our final all three 3. Is it okay? They have detailed comments, yes.
+
+I want ensure "si no compila funcional=0 iec=0" none. No problem.
+
+Potential issue: "just_func_iec: una línea, o \"\" si las dos estaban fijadas" If functional fixed and iec not, we explain both. That's okay. We shouldn't include "Funcional fijado" maybe still ok. They asked one line. It can say "Funcional fijado; IEC idiomático..." Good.
+
+Maybe for B5-9290 just_func_iec "Funcional fijado. IEC: TOF idiomático..." includes functional fixed; fine.
+
+Need ensure no text before and after JSON. Good.
+
+Let's maybe produce JSON with indentation. Avoid line breaks inside strings? We can have line breaks in strings? JSON standard no unescaped newline. Use plain string one line per just. Good.
+
+Let's craft final carefully.
+
+Double-check if any "just_coherencia" uses Spanish accents okay.
+
+Potential issue: "T#30S" inside JSON string okay. "VAR_INPUT" okay.
+
+Let's maybe fine-tune a few scores for consistency:
+
+In final we have many correct TOF clarity=3. If someone argues simple code doesn't need modularization? But it's okay.
+
+Maybe maintainability for correct TOF should be 3? Rubric: "3 además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)." Time is not parameter, so no. 2.
+
+Maintainability for B5-6632 2: time literal once; yes. If comment wrong, maintainability unaffected.
+
+Now, I need consider if B5-4470 no-sim local VAR and B5-8802/B5-8798 functional 0 but IEC 1: In just_func_iec, we combine. Good.
+
+Let's ensure no contradictions between just and score:
+- B5-4470 coherencia 0 but just_coherencia says "temporizador se resetea y rearranca en cada ciclo; lógica no puede operar." Good.
+- B5-3623 coherencia 0 but just says "temporizador no avanza." Good.
+
+Maybe for B5-8802 coherencia 1 "doble llamada al temporizador y salida en reposo no prevista." Actually there is double call: one before IF with PT, one after IF. The latter without PT but same IN; yes. Could be not contradiction but ok.
+
+Now the final JSON. Ensure all strings escaped if needed. No double quotes inside strings except maybe "no se pudo simular"? In justifications, avoid quotes. Use semicolons.
+
+Let's produce final.

@@ -1,0 +1,174 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A5 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>A5 — Registro de eventos en buffer circular (Avanzado)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja A5 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa un registro de eventos en buffer circular. Define una estructura ST_Evento con los campos codigo (INT) y marca (TIME). El bloque lleva un tiempo acumulado desde su arranque, sumando en cada ejecución el valor de la entrada ciclo (TIME), que es el período de ejecución del bloque. Al activarse nuevoEvento (transición de FALSE a TRUE), registra el valor de la entrada evento junto con ese tiempo acumulado como marca, en el arreglo buffer, de tipo ARRAY[0..19] OF ST_Evento. El primer evento se guarda en la posición 0 y los siguientes en posiciones consecutivas; cuando el arreglo se llena, se sobrescribe el registro más antiguo. La salida indice apunta a la posición del último evento registrado y vale -1 mientras no se haya registrado ninguno. La salida nEventos indica cuántas posiciones del arreglo contienen eventos válidos (0 a 20). Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Registro con variables de entrada evento (INT), nuevoEvento (BOOL) y ciclo (TIME), y salidas buffer (ARRAY[0..19] OF ST_Evento), indice (INT) y nEventos (INT). Incluye la declaración TYPE de ST_Evento. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_A5.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea A5 (FB_Registro: buffer circular de eventos)
+    ---------------------------------------------------------------------------
+    Validado en codesys/validar_harness_A5.py: 9 implementaciones (2 correctas,
+    que acumulan el tiempo antes y despues de registrar, y 7 defectuosas).
+    Tabla generada desde el validador.
+    TIEMPO VIRTUAL: ciclo := T#10MS fijo; pasos por numero de llamadas (una por
+    scan). Para el ultimo evento se acepta marca = g*10 ms o (g-1)*10 ms.
+    pM/p2 = -1: no se comprueba contenido en ese paso.
+
+    Paso: llamadas/eventos -&gt; (indice, nEventos, comprobacion de contenido)
+  0 5 llamadas sin evento ..................... (-1, 0)
+  1 evento 11 con nuevoEvento sostenido 3 llamadas (0, 1)  buffer[0]=11 + marca
+  2 2 llamadas sin flanco ..................... (0, 1)
+  3 19 eventos (12..30) ....................... (19, 20) buffer[19]=30 + marca; buffer[0]=11
+  4 1 evento (31): sobrescribe el mas antiguo . (0, 20)  buffer[0]=31 + marca; buffer[1]=12
+  5 2 eventos (32, 33) ........................ (2, 20)  buffer[2]=33 + marca; buffer[3]=14
+
+--- Pasos (CASE paso OF) ---
+
+        0: nEv := 0; libres := 5; sost := 0; cod0 := 0; eIdx := -1; eN := 0; pM := -1; cM := 0; p2 := -1; c2 := 0;
+        1: nEv := 1; libres := 0; sost := 3; cod0 := 11; eIdx := 0; eN := 1; pM := 0; cM := 11; p2 := -1; c2 := 0;
+        2: nEv := 0; libres := 2; sost := 0; cod0 := 0; eIdx := 0; eN := 1; pM := -1; cM := 0; p2 := -1; c2 := 0;
+        3: nEv := 19; libres := 0; sost := 0; cod0 := 12; eIdx := 19; eN := 20; pM := 19; cM := 30; p2 := 0; c2 := 11;
+        4: nEv := 1; libres := 0; sost := 0; cod0 := 31; eIdx := 0; eN := 20; pM := 0; cM := 31; p2 := 1; c2 := 12;
+        5: nEv := 2; libres := 0; sost := 0; cod0 := 32; eIdx := 2; eN := 20; pM := 2; cM := 33; p2 := 3; c2 := 14;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#A5-9329">A5-9329</a><a href="#A5-4425">A5-4425</a><a href="#A5-1206">A5-1206</a></div>
+<div class="caja resp" id="A5-9329"><div class="cod"><h3>A5-9329</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (1 errores).<div class="err">Mensajes del compilador: L?nea 1 Se esperaba END_TYPE&#x27; en lugar de &#x27;;&#x27;</div></div><pre>TYPE
+    ST_Evento : STRUCT
+        codigo : INT;  (* Código del evento *)
+        marca : TIME;  (* Marca de tiempo del evento *)
+    END_STRUCT;
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT;      (* Código del evento actual *)
+    nuevoEvento : BOOL; (* Señal de nuevo evento *)
+    ciclo : TIME;      (* Período de ejecución del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer circular de eventos *)
+    indice : INT := -1;  (* Índice del último evento registrado *)
+    nEventos : INT := 0; (* Número de eventos registrados *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0S; (* Tiempo acumulado desde el arranque *)
+    nuevoEventoPrev : BOOL := FALSE; (* Estado anterior de nuevoEvento *)
+END_VAR
+
+(* Acumula el tiempo de ejecución *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detecta transición de FALSE a TRUE en nuevoEvento *)
+IF (nuevoEvento AND NOT nuevoEventoPrev) THEN
+    (* Incrementa el índice circular *)
+    indice := (indice + 1) MOD 20;
+    
+    (* Registra el evento en el buffer *)
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+    
+    (* Actualiza el número de eventos registrados *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF
+END_IF
+
+(* Actualiza el estado anterior de nuevoEvento *)
+nuevoEventoPrev := nuevoEvento;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-4425"><div class="cod"><h3>A5-4425</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT; (* Código del evento *)
+    nuevoEvento : BOOL; (* Indica si se ha producido un nuevo evento *)
+    ciclo : TIME; (* Tiempo de ciclo de ejecución *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer de eventos *)
+    indice : INT; (* Índice del último evento registrado *)
+    nEventos : INT; (* Número de eventos válidos en el buffer *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0s; (* Tiempo acumulado desde el arranque *)
+    eventoAnterior : BOOL := FALSE; (* Estado anterior de nuevoEvento *)
+END_VAR
+
+(* Definición de la estructura ST_Evento *)
+TYPE ST_Evento :
+    STRUCT
+        codigo : INT; (* Código del evento *)
+        marca : TIME; (* Marca de tiempo del evento *)
+    END_STRUCT
+END_TYPE
+
+(* Acumulación del tiempo *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Registro de eventos *)
+IF nuevoEvento AND NOT eventoAnterior THEN
+    IF indice = -1 THEN
+        indice := 0;
+    ELSE
+        indice := (indice + 1) MOD 20;
+    END_IF
+
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF
+END_IF
+
+(* Actualización del estado anterior de nuevoEvento *)
+eventoAnterior := nuevoEvento;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A5-1206"><div class="cod"><h3>A5-1206</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>TYPE ST_Evento :
+STRUCT
+    codigo : INT; (* Codigo del evento *)
+    marca : TIME; (* Marca de tiempo *)
+END_STRUCT
+END_TYPE
+
+FUNCTION_BLOCK FB_Registro
+VAR_INPUT
+    evento : INT; (* Codigo del evento a registrar *)
+    nuevoEvento : BOOL; (* Transicion para registrar evento *)
+    ciclo : TIME; (* Periodo de ejecucion del bloque *)
+END_VAR
+VAR_OUTPUT
+    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer circular *)
+    indice : INT := -1; (* Posicion del ultimo evento *)
+    nEventos : INT := 0; (* Cantidad de eventos validos *)
+END_VAR
+VAR
+    tiempoAcumulado : TIME := T#0S; (* Tiempo desde el arranque *)
+    trigEvento : R_TRIG; (* Detector de flanco ascendente *)
+END_VAR
+
+(* Acumular el tiempo de ciclo *)
+tiempoAcumulado := tiempoAcumulado + ciclo;
+
+(* Detectar flanco ascendente de nuevoEvento *)
+trigEvento(CLK := nuevoEvento);
+
+IF trigEvento.Q THEN
+    (* Calcular nuevo indice circular *)
+    indice := (indice + 1) MOD 20;
+    
+    (* Guardar evento y marca de tiempo *)
+    buffer[indice].codigo := evento;
+    buffer[indice].marca := tiempoAcumulado;
+    
+    (* Incrementar contador de eventos validos hasta 20 *)
+    IF nEventos &lt; 20 THEN
+        nEventos := nEventos + 1;
+    END_IF;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

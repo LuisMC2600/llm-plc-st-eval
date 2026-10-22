@@ -1,0 +1,22 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20261006002640
+Nombre de usuario: DESKTOP-2K8TKD6\LUIS C
+Usuario RunAs: DESKTOP-2K8TKD6\LUIS C
+Nombre de la configuración: 
+Máquina: DESKTOP-2K8TKD6 (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\codesys\ejecutar_compilar_lote.ps1 -Carpeta data\processed_definitivo -Salida data\results_codesys\compilacion_definitivo.csv
+Id. de proceso: 34984
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20261006002640
+**********************

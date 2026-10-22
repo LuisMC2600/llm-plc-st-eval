@@ -1,0 +1,8 @@
+# Pipeline experimental — tesis LLMs + PLC (FIE-UTP)
+# Instalar: pip install -r requirements.txt
+openai>=1.40          # GPT-4o y también Ollama (endpoint compatible OpenAI)
+anthropic>=0.34       # Claude
+google-genai>=1.0     # Gemini
+pyyaml>=6.0           # config.yaml
+pandas>=2.0           # análisis (Fase 6)
+matplotlib>=3.8       # gráficos comparativos (Fase 6)

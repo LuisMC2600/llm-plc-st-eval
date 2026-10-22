@@ -1,0 +1,601 @@
+﻿codigo,tarea,nivel,modelo,estrategia,ejec,resultado_codesys,funcional,iec,coherencia,claridad,mantenibilidad,total,seg_funcional,seg_iec,seg_coherencia,seg_claridad,seg_mantenibilidad,evaluador_oficial
+A1-8493,A1,A,claude-sonnet-4-6,few_shot,ejec_1,No compila (24 errores).,0,0,3,2,2,7,0,0,2,2,2,deepseek-v4-pro
+A1-5313,A1,A,claude-sonnet-4-6,few_shot,ejec_2,No compila (24 errores).,0,0,3,2,2,7,0,0,1,2,2,deepseek-v4-pro
+A1-8114,A1,A,claude-sonnet-4-6,few_shot,ejec_3,No compila (24 errores).,0,0,3,3,2,8,0,0,2,2,2,deepseek-v4-pro
+A1-2241,A1,A,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,2,3,2,deepseek-v4-pro
+A1-7444,A1,A,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 11 pasos del harness.,3,3,3,3,3,15,3,3,2,3,2,deepseek-v4-pro
+A1-6805,A1,A,claude-sonnet-4-6,zero_shot,ejec_3,No compila (24 errores).,0,0,3,3,2,8,0,0,2,3,2,deepseek-v4-pro
+A1-9962,A1,A,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 11 pasos del harness.,3,2,3,3,2,13,3,3,2,2,2,deepseek-v4-pro
+A1-7927,A1,A,gemini-3.1-pro-preview,few_shot,ejec_2,No compila (30 errores).,0,0,3,2,2,7,0,0,2,2,2,deepseek-v4-pro
+A1-9421,A1,A,gemini-3.1-pro-preview,few_shot,ejec_3,No compila (29 errores).,0,0,3,2,2,7,0,0,2,2,2,deepseek-v4-pro
+A1-7933,A1,A,gemini-3.1-pro-preview,zero_shot,ejec_1,No compila (27 errores).,0,0,3,2,2,7,0,0,2,2,2,deepseek-v4-pro
+A1-1725,A1,A,gemini-3.1-pro-preview,zero_shot,ejec_2,No compila (32 errores).,0,0,3,2,2,7,0,0,2,2,1,deepseek-v4-pro
+A1-6125,A1,A,gemini-3.1-pro-preview,zero_shot,ejec_3,No compila (23 errores).,0,0,3,2,2,7,0,0,2,2,2,deepseek-v4-pro
+A1-6380,A1,A,gpt-4o-2024-08-06,few_shot,ejec_1,No compila (2 errores).,0,0,3,2,2,7,0,0,1,2,1,deepseek-v4-pro
+A1-6243,A1,A,gpt-4o-2024-08-06,few_shot,ejec_2,No compila (2 errores).,0,0,2,2,2,6,0,0,1,2,1,deepseek-v4-pro
+A1-3038,A1,A,gpt-4o-2024-08-06,few_shot,ejec_3,No compila (2 errores).,0,0,2,2,2,6,0,0,0,2,1,deepseek-v4-pro
+A1-9190,A1,A,gpt-4o-2024-08-06,zero_shot,ejec_1,No compila (25 errores).,0,0,1,2,2,5,0,0,1,2,2,deepseek-v4-pro
+A1-7633,A1,A,gpt-4o-2024-08-06,zero_shot,ejec_2,No compila (28 errores).,0,0,1,2,2,5,0,0,0,2,2,deepseek-v4-pro
+A1-9704,A1,A,gpt-4o-2024-08-06,zero_shot,ejec_3,No compila (25 errores).,0,0,1,2,2,5,0,0,0,1,2,deepseek-v4-pro
+A1-5398,A1,A,qwen2.5-coder_14b,few_shot,ejec_1,No compila (17 errores).,0,0,3,2,1,6,0,0,1,2,1,deepseek-v4-pro
+A1-5864,A1,A,qwen2.5-coder_14b,few_shot,ejec_2,No compila (11 errores).,0,0,3,2,1,6,0,0,1,2,1,deepseek-v4-pro
+A1-7874,A1,A,qwen2.5-coder_14b,few_shot,ejec_3,No compila (17 errores).,0,0,3,2,1,6,0,0,1,2,1,deepseek-v4-pro
+A1-9749,A1,A,qwen2.5-coder_14b,zero_shot,ejec_1,No compila (16 errores).,0,0,3,2,1,6,0,0,2,2,1,deepseek-v4-pro
+A1-6233,A1,A,qwen2.5-coder_14b,zero_shot,ejec_2,No compila (18 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+A1-6268,A1,A,qwen2.5-coder_14b,zero_shot,ejec_3,No compila (18 errores).,0,0,1,2,1,4,0,0,1,1,1,deepseek-v4-pro
+A2-8208,A2,A,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 25 pasos del harness.,3,2,2,3,2,12,3,3,2,2,1,deepseek-v4-pro
+A2-3859,A2,A,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 25 pasos del harness.,3,3,3,3,2,14,3,3,2,2,1,deepseek-v4-pro
+A2-2820,A2,A,claude-sonnet-4-6,few_shot,ejec_3,No compila (2 errores).,0,0,2,2,1,5,0,0,2,2,1,deepseek-v4-pro
+A2-7745,A2,A,claude-sonnet-4-6,zero_shot,ejec_1,No compila (2 errores).,0,0,2,2,1,5,0,0,3,2,1,deepseek-v4-pro
+A2-1185,A2,A,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 25 pasos del harness.,3,3,3,3,1,13,3,3,3,2,1,deepseek-v4-pro
+A2-8499,A2,A,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 25 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+A2-2424,A2,A,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 25 pasos del harness.,3,3,3,2,2,13,3,3,2,3,2,deepseek-v4-pro
+A2-5337,A2,A,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 25 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+A2-8363,A2,A,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 25 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+A2-2376,A2,A,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 25 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+A2-4087,A2,A,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 25 pasos del harness.,3,3,3,2,2,13,3,3,2,3,2,deepseek-v4-pro
+A2-8269,A2,A,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 25 pasos del harness.,3,3,3,2,2,13,3,3,2,3,2,deepseek-v4-pro
+A2-7833,A2,A,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 25 pasos del harness.,3,2,2,2,1,10,3,2,1,2,1,deepseek-v4-pro
+A2-2878,A2,A,gpt-4o-2024-08-06,few_shot,ejec_2,"Compila. Falla 5 de 25 pasos del harness (pasos 8,9,10,11,12; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,1,deepseek-v4-pro
+A2-4520,A2,A,gpt-4o-2024-08-06,few_shot,ejec_3,"Compila. Falla 10 de 25 pasos del harness (pasos 8,9,17,18,19,20,21,22,23,24; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,1,deepseek-v4-pro
+A2-3851,A2,A,gpt-4o-2024-08-06,zero_shot,ejec_1,Compila. Pasa los 25 pasos del harness.,3,2,2,2,1,10,3,2,1,2,1,deepseek-v4-pro
+A2-5655,A2,A,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila. Falla 9 de 25 pasos del harness (pasos 1,2,3,4,5,6,7,8,9; numerados desde 0).",0,2,0,2,1,5,1,2,1,2,1,deepseek-v4-pro
+A2-7551,A2,A,gpt-4o-2024-08-06,zero_shot,ejec_3,Compila. Pasa los 25 pasos del harness.,3,2,2,2,2,11,3,2,1,2,2,deepseek-v4-pro
+A2-5299,A2,A,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 2 de 25 pasos del harness (pasos 8,9; numerados desde 0).",0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+A2-4573,A2,A,qwen2.5-coder_14b,few_shot,ejec_2,No compila (1 errores).,0,0,0,2,1,3,0,0,0,2,1,deepseek-v4-pro
+A2-3687,A2,A,qwen2.5-coder_14b,few_shot,ejec_3,No compila (12 errores).,0,0,0,2,1,3,0,0,0,1,1,deepseek-v4-pro
+A2-5579,A2,A,qwen2.5-coder_14b,zero_shot,ejec_1,No compila (4 errores).,0,0,0,1,1,2,0,0,0,1,1,deepseek-v4-pro
+A2-5565,A2,A,qwen2.5-coder_14b,zero_shot,ejec_2,No compila (25 errores).,0,0,0,1,1,2,0,0,0,1,1,deepseek-v4-pro
+A2-7260,A2,A,qwen2.5-coder_14b,zero_shot,ejec_3,No compila (4 errores).,0,0,0,1,1,2,0,0,1,1,1,deepseek-v4-pro
+A3-4439,A3,A,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 15 pasos del harness.,3,3,3,3,3,15,3,3,3,2,2,deepseek-v4-pro
+A3-3230,A3,A,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 15 pasos del harness.,3,3,3,3,2,14,3,3,2,3,1,deepseek-v4-pro
+A3-6370,A3,A,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 15 pasos del harness.,3,3,3,3,2,14,3,3,2,3,1,deepseek-v4-pro
+A3-3622,A3,A,claude-sonnet-4-6,zero_shot,ejec_1,"Compila. Falla 4 de 15 pasos del harness (pasos 3,4,5,9; numerados desde 0).",1,3,1,2,2,9,1,3,0,2,2,deepseek-v4-pro
+A3-6022,A3,A,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 15 pasos del harness.,3,3,3,3,3,15,3,3,2,3,2,deepseek-v4-pro
+A3-1699,A3,A,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 15 pasos del harness.,3,3,3,3,2,14,3,3,2,2,1,deepseek-v4-pro
+A3-3184,A3,A,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 15 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+A3-6512,A3,A,gemini-3.1-pro-preview,few_shot,ejec_2,"Compila. Falla 4 de 15 pasos del harness (pasos 3,4,5,9; numerados desde 0).",1,3,1,2,1,8,1,3,0,2,1,deepseek-v4-pro
+A3-6493,A3,A,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 15 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+A3-4953,A3,A,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 15 pasos del harness.,3,3,3,3,2,14,3,3,2,3,1,deepseek-v4-pro
+A3-8606,A3,A,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 15 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+A3-7343,A3,A,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 15 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+A3-9003,A3,A,gpt-4o-2024-08-06,few_shot,ejec_1,"Compila. Falla 4 de 15 pasos del harness (pasos 7,8,9,10; numerados desde 0).",1,3,1,2,1,8,1,2,1,2,1,deepseek-v4-pro
+A3-3351,A3,A,gpt-4o-2024-08-06,few_shot,ejec_2,"Compila. Falla 12 de 15 pasos del harness (pasos 3,4,5,6,7,8,9,10,11,12,13,14; numerados desde 0).",0,3,0,2,1,6,0,2,0,2,1,deepseek-v4-pro
+A3-8583,A3,A,gpt-4o-2024-08-06,few_shot,ejec_3,"Compila. Falla 10 de 15 pasos del harness (pasos 3,4,5,6,7,8,9,12,13,14; numerados desde 0).",0,3,0,2,1,6,0,2,0,2,1,deepseek-v4-pro
+A3-7512,A3,A,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('txReq' no es ninguna entrada de 'FB_COM').",1,1,1,2,1,6,0,1,0,1,1,deepseek-v4-pro
+A3-5401,A3,A,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('txReq' no es ninguna entrada de 'FB_COM').",1,1,1,2,2,7,0,1,0,1,1,deepseek-v4-pro
+A3-5168,A3,A,gpt-4o-2024-08-06,zero_shot,ejec_3,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('txReq' no es ninguna entrada de 'FB_COM').",1,1,2,2,2,8,1,1,1,1,2,deepseek-v4-pro
+A3-8784,A3,A,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 14 de 15 pasos del harness (pasos 1,2,3,4,5,6,7,8,9,10,11,12,13,14; numerados desde 0).",0,3,0,2,1,6,0,2,0,1,1,deepseek-v4-pro
+A3-4983,A3,A,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 14 de 15 pasos del harness (pasos 1,2,3,4,5,6,7,8,9,10,11,12,13,14; numerados desde 0).",0,3,0,2,1,6,0,2,0,2,1,deepseek-v4-pro
+A3-1381,A3,A,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 14 de 15 pasos del harness (pasos 1,2,3,4,5,6,7,8,9,10,11,12,13,14; numerados desde 0).",0,3,0,2,1,6,0,2,0,1,1,deepseek-v4-pro
+A3-4115,A3,A,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 10 de 15 pasos del harness (pasos 3,4,5,6,7,8,10,12,13,14; numerados desde 0).",0,3,0,2,1,6,0,2,0,1,1,deepseek-v4-pro
+A3-8801,A3,A,qwen2.5-coder_14b,zero_shot,ejec_2,"Compila. Falla 9 de 15 pasos del harness (pasos 3,4,5,7,8,9,10,11,14; numerados desde 0).",0,3,0,2,1,6,0,2,0,1,1,deepseek-v4-pro
+A3-7866,A3,A,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila. Falla 9 de 15 pasos del harness (pasos 3,4,5,7,8,9,10,11,14; numerados desde 0).",0,3,0,2,1,6,0,2,0,1,1,deepseek-v4-pro
+A4-3284,A4,A,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 13 pasos del harness.,3,2,3,3,2,13,3,3,3,2,2,deepseek-v4-pro
+A4-3118,A4,A,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 13 pasos del harness.,3,2,3,3,2,13,3,3,3,2,2,deepseek-v4-pro
+A4-3246,A4,A,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 13 pasos del harness.,3,2,3,3,2,13,3,3,3,2,2,deepseek-v4-pro
+A4-2094,A4,A,claude-sonnet-4-6,zero_shot,ejec_1,No compila (17 errores).,0,0,3,3,2,8,0,0,3,3,2,deepseek-v4-pro
+A4-9812,A4,A,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 13 pasos del harness.,3,3,3,3,3,15,3,3,3,3,2,deepseek-v4-pro
+A4-5971,A4,A,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 13 pasos del harness.,3,3,3,3,3,15,3,3,3,3,2,deepseek-v4-pro
+A4-3981,A4,A,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 13 pasos del harness.,3,2,3,3,2,13,3,3,3,2,1,deepseek-v4-pro
+A4-4106,A4,A,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 13 pasos del harness.,3,2,3,3,2,13,3,3,3,2,1,deepseek-v4-pro
+A4-4221,A4,A,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 13 pasos del harness.,3,2,3,3,2,13,3,3,3,2,1,deepseek-v4-pro
+A4-4944,A4,A,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 13 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+A4-5499,A4,A,gemini-3.1-pro-preview,zero_shot,ejec_2,No compila (25 errores).,0,0,3,3,2,8,0,0,3,3,1,deepseek-v4-pro
+A4-5382,A4,A,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 13 pasos del harness.,3,2,3,3,2,13,3,3,3,3,1,deepseek-v4-pro
+A4-8630,A4,A,gpt-4o-2024-08-06,few_shot,ejec_1,No compila (4 errores).,0,0,2,2,2,6,0,0,3,2,1,deepseek-v4-pro
+A4-6890,A4,A,gpt-4o-2024-08-06,few_shot,ejec_2,No compila (4 errores).,0,0,2,2,2,6,0,0,3,2,1,deepseek-v4-pro
+A4-8399,A4,A,gpt-4o-2024-08-06,few_shot,ejec_3,No compila (4 errores).,0,0,2,2,2,6,0,0,3,2,1,deepseek-v4-pro
+A4-8514,A4,A,gpt-4o-2024-08-06,zero_shot,ejec_1,No compila (4 errores).,0,0,2,2,2,6,0,0,3,2,1,deepseek-v4-pro
+A4-1758,A4,A,gpt-4o-2024-08-06,zero_shot,ejec_2,No compila (4 errores).,0,0,2,2,2,6,0,0,3,2,1,deepseek-v4-pro
+A4-3900,A4,A,gpt-4o-2024-08-06,zero_shot,ejec_3,No compila (2 errores).,0,0,2,2,2,6,0,0,3,2,1,deepseek-v4-pro
+A4-5751,A4,A,qwen2.5-coder_14b,few_shot,ejec_1,No compila (16 errores).,0,0,2,2,2,6,0,0,1,2,2,deepseek-v4-pro
+A4-1899,A4,A,qwen2.5-coder_14b,few_shot,ejec_2,No compila (16 errores).,0,0,1,2,2,5,0,0,0,1,2,deepseek-v4-pro
+A4-8650,A4,A,qwen2.5-coder_14b,few_shot,ejec_3,No compila (3 errores).,0,0,0,1,1,2,0,0,0,1,2,deepseek-v4-pro
+A4-2107,A4,A,qwen2.5-coder_14b,zero_shot,ejec_1,No compila (6 errores).,0,0,3,2,2,7,0,0,1,2,2,deepseek-v4-pro
+A4-3724,A4,A,qwen2.5-coder_14b,zero_shot,ejec_2,No compila (9 errores).,0,0,2,2,2,6,0,0,1,2,2,deepseek-v4-pro
+A4-4874,A4,A,qwen2.5-coder_14b,zero_shot,ejec_3,No compila (12 errores).,0,0,2,2,2,6,0,0,3,2,2,deepseek-v4-pro
+A5-9447,A5,A,claude-sonnet-4-6,few_shot,ejec_1,No compila (1 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+A5-8849,A5,A,claude-sonnet-4-6,few_shot,ejec_2,No compila (1 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+A5-2632,A5,A,claude-sonnet-4-6,few_shot,ejec_3,No compila (1 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+A5-7727,A5,A,claude-sonnet-4-6,zero_shot,ejec_1,No compila (1 errores).,0,0,2,3,1,6,0,0,1,2,1,deepseek-v4-pro
+A5-4556,A5,A,claude-sonnet-4-6,zero_shot,ejec_2,No compila (1 errores).,0,0,1,1,1,3,0,0,0,1,1,deepseek-v4-pro
+A5-2051,A5,A,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,1,13,3,2,2,2,1,deepseek-v4-pro
+A5-6758,A5,A,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,2,1,12,3,3,3,2,1,deepseek-v4-pro
+A5-1206,A5,A,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,2,1,12,3,3,3,2,1,deepseek-v4-pro
+A5-5130,A5,A,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,2,1,12,3,3,3,2,1,deepseek-v4-pro
+A5-7063,A5,A,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,2,1,12,3,2,3,2,1,deepseek-v4-pro
+A5-1636,A5,A,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,2,3,2,1,11,3,2,3,2,1,deepseek-v4-pro
+A5-6029,A5,A,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,2,1,12,3,2,3,2,1,deepseek-v4-pro
+A5-9329,A5,A,gpt-4o-2024-08-06,few_shot,ejec_1,No compila (1 errores).,0,0,2,2,1,5,0,0,2,2,1,deepseek-v4-pro
+A5-3386,A5,A,gpt-4o-2024-08-06,few_shot,ejec_2,No compila (1 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+A5-2012,A5,A,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Falla 1 de 6 pasos del harness (pasos 0; numerados desde 0).,1,3,1,2,1,8,2,2,1,2,1,deepseek-v4-pro
+A5-3414,A5,A,gpt-4o-2024-08-06,zero_shot,ejec_1,No compila (3 errores).,0,0,2,2,1,5,0,0,2,2,1,deepseek-v4-pro
+A5-4442,A5,A,gpt-4o-2024-08-06,zero_shot,ejec_2,No compila (1 errores).,0,0,2,1,1,4,0,0,2,2,1,deepseek-v4-pro
+A5-3558,A5,A,gpt-4o-2024-08-06,zero_shot,ejec_3,No compila (3 errores).,0,0,2,2,1,5,0,0,2,2,1,deepseek-v4-pro
+A5-4425,A5,A,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).",0,1,1,2,1,5,0,2,0,2,1,deepseek-v4-pro
+A5-8294,A5,A,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).",0,2,1,2,1,6,0,2,0,2,1,deepseek-v4-pro
+A5-1851,A5,A,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).",0,1,1,2,1,5,0,2,0,2,1,deepseek-v4-pro
+A5-2042,A5,A,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).",0,1,1,1,1,4,0,2,0,1,1,deepseek-v4-pro
+A5-7771,A5,A,qwen2.5-coder_14b,zero_shot,ejec_2,"Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).",0,1,1,1,1,4,0,1,0,1,1,deepseek-v4-pro
+A5-7832,A5,A,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila. Falla 6 de 6 pasos del harness (pasos 0,1,2,3,4,5; numerados desde 0).",0,1,0,1,1,3,0,1,0,1,1,deepseek-v4-pro
+A6-1068,A6,A,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 17 pasos del harness.,3,2,3,3,2,13,3,2,3,2,1,deepseek-v4-pro
+A6-2982,A6,A,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 17 pasos del harness.,3,2,3,3,2,13,3,2,3,2,1,deepseek-v4-pro
+A6-5711,A6,A,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 17 pasos del harness.,3,2,3,3,2,13,3,2,3,2,1,deepseek-v4-pro
+A6-6945,A6,A,claude-sonnet-4-6,zero_shot,ejec_1,"Compila. Falla 6 de 17 pasos del harness (pasos 6,7,8,9,10,15; numerados desde 0).",1,2,2,3,2,10,1,2,1,2,1,deepseek-v4-pro
+A6-5385,A6,A,claude-sonnet-4-6,zero_shot,ejec_2,"Compila. Falla 6 de 17 pasos del harness (pasos 6,7,8,9,10,15; numerados desde 0).",1,2,2,3,2,10,1,2,1,2,1,deepseek-v4-pro
+A6-8649,A6,A,claude-sonnet-4-6,zero_shot,ejec_3,"Compila. Falla 6 de 17 pasos del harness (pasos 6,7,8,9,10,15; numerados desde 0).",1,2,2,3,2,10,1,2,1,2,1,deepseek-v4-pro
+A6-5300,A6,A,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 17 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+A6-2630,A6,A,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 17 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+A6-4813,A6,A,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 17 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+A6-1266,A6,A,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 17 pasos del harness.,3,2,3,2,2,12,3,2,3,1,1,deepseek-v4-pro
+A6-9389,A6,A,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 17 pasos del harness.,3,2,3,3,2,13,3,2,3,2,1,deepseek-v4-pro
+A6-8625,A6,A,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 17 pasos del harness.,3,2,3,3,2,13,3,2,3,1,1,deepseek-v4-pro
+A6-3215,A6,A,gpt-4o-2024-08-06,few_shot,ejec_1,No compila (22 errores).,0,0,0,2,1,3,0,0,0,2,1,deepseek-v4-pro
+A6-5020,A6,A,gpt-4o-2024-08-06,few_shot,ejec_2,No compila (32 errores).,0,0,0,2,1,3,0,0,0,2,1,deepseek-v4-pro
+A6-6019,A6,A,gpt-4o-2024-08-06,few_shot,ejec_3,No compila (32 errores).,0,0,2,2,1,5,0,0,1,2,1,deepseek-v4-pro
+A6-9717,A6,A,gpt-4o-2024-08-06,zero_shot,ejec_1,No compila (14 errores).,0,0,1,2,1,4,0,0,0,1,1,deepseek-v4-pro
+A6-1663,A6,A,gpt-4o-2024-08-06,zero_shot,ejec_2,No compila (16 errores).,0,0,1,2,1,4,0,0,0,1,1,deepseek-v4-pro
+A6-5870,A6,A,gpt-4o-2024-08-06,zero_shot,ejec_3,No compila (32 errores).,0,0,1,2,1,4,0,0,0,1,1,deepseek-v4-pro
+A6-4942,A6,A,qwen2.5-coder_14b,few_shot,ejec_1,No compila (36 errores).,0,0,1,2,1,4,0,0,0,1,1,deepseek-v4-pro
+A6-1659,A6,A,qwen2.5-coder_14b,few_shot,ejec_2,No compila (34 errores).,0,0,2,2,1,5,0,0,0,2,1,deepseek-v4-pro
+A6-6456,A6,A,qwen2.5-coder_14b,few_shot,ejec_3,No compila (36 errores).,0,0,1,2,1,4,0,0,0,1,1,deepseek-v4-pro
+A6-5359,A6,A,qwen2.5-coder_14b,zero_shot,ejec_1,No compila (1 errores).,0,0,0,1,1,2,0,0,0,1,1,deepseek-v4-pro
+A6-4100,A6,A,qwen2.5-coder_14b,zero_shot,ejec_2,No compila (1 errores).,0,0,0,1,1,2,0,0,0,1,1,deepseek-v4-pro
+A6-5636,A6,A,qwen2.5-coder_14b,zero_shot,ejec_3,No compila (38 errores).,0,0,1,2,1,4,0,0,0,2,1,deepseek-v4-pro
+B1-4667,B1,B,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,2,3,2,2,12,3,2,3,3,2,deepseek-v4-pro
+B1-2708,B1,B,claude-sonnet-4-6,few_shot,ejec_2,Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).,1,2,1,2,2,8,1,2,1,2,2,deepseek-v4-pro
+B1-2577,B1,B,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,2,2,2,2,11,3,2,3,2,2,deepseek-v4-pro
+B1-4316,B1,B,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,2,3,3,2,13,3,2,2,2,2,deepseek-v4-pro
+B1-3504,B1,B,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,2,2,2,2,11,3,2,1,2,2,deepseek-v4-pro
+B1-3006,B1,B,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,2,2,2,2,11,3,2,1,2,2,deepseek-v4-pro
+B1-2077,B1,B,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,3,3,3,deepseek-v4-pro
+B1-2078,B1,B,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,3,3,3,deepseek-v4-pro
+B1-7716,B1,B,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,3,3,3,deepseek-v4-pro
+B1-3916,B1,B,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,3,3,3,deepseek-v4-pro
+B1-3577,B1,B,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,3,3,15,3,3,3,3,3,deepseek-v4-pro
+B1-1729,B1,B,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,3,3,3,deepseek-v4-pro
+B1-7103,B1,B,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).,1,2,1,2,2,8,1,2,2,2,2,deepseek-v4-pro
+B1-3153,B1,B,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).,1,2,1,2,2,8,1,2,2,1,2,deepseek-v4-pro
+B1-1689,B1,B,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).,1,2,1,2,2,8,1,2,2,2,2,deepseek-v4-pro
+B1-4469,B1,B,gpt-4o-2024-08-06,zero_shot,ejec_1,Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).,1,2,1,2,2,8,1,2,1,1,1,deepseek-v4-pro
+B1-8468,B1,B,gpt-4o-2024-08-06,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,2,2,2,2,11,3,2,1,2,2,deepseek-v4-pro
+B1-7970,B1,B,gpt-4o-2024-08-06,zero_shot,ejec_3,Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).,1,2,1,2,2,8,1,2,1,1,1,deepseek-v4-pro
+B1-9711,B1,B,qwen2.5-coder_14b,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,2,2,2,2,11,3,2,1,2,2,deepseek-v4-pro
+B1-3776,B1,B,qwen2.5-coder_14b,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,2,2,2,2,11,3,2,1,2,2,deepseek-v4-pro
+B1-6475,B1,B,qwen2.5-coder_14b,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,2,2,2,2,11,3,2,1,2,2,deepseek-v4-pro
+B1-7637,B1,B,qwen2.5-coder_14b,zero_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,2,2,2,2,11,3,2,1,2,2,deepseek-v4-pro
+B1-8070,B1,B,qwen2.5-coder_14b,zero_shot,ejec_2,No compila (12 errores).,0,0,1,1,1,3,0,0,1,2,2,deepseek-v4-pro
+B1-4160,B1,B,qwen2.5-coder_14b,zero_shot,ejec_3,No compila (12 errores).,0,0,1,1,1,3,0,0,1,2,2,deepseek-v4-pro
+B2-6383,B2,B,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B2-6018,B2,B,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B2-6755,B2,B,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B2-2211,B2,B,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B2-5675,B2,B,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B2-5560,B2,B,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B2-6674,B2,B,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B2-3609,B2,B,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B2-8816,B2,B,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B2-4528,B2,B,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B2-6278,B2,B,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B2-9944,B2,B,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B2-3672,B2,B,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B2-7015,B2,B,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B2-8183,B2,B,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B2-4891,B2,B,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('nivelAlto' no es ninguna entrada de 'FB_VALVULA').",1,2,2,1,1,7,1,1,2,1,1,deepseek-v4-pro
+B2-7426,B2,B,gpt-4o-2024-08-06,zero_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,2,2,2,deepseek-v4-pro
+B2-4395,B2,B,gpt-4o-2024-08-06,zero_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,2,2,2,deepseek-v4-pro
+B2-3727,B2,B,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 3 de 6 pasos del harness (pasos 1,2,4; numerados desde 0).",0,2,1,2,1,6,0,2,1,1,2,deepseek-v4-pro
+B2-7829,B2,B,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 3 de 6 pasos del harness (pasos 1,2,4; numerados desde 0).",0,2,1,2,1,6,0,2,1,1,2,deepseek-v4-pro
+B2-2583,B2,B,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 3 de 6 pasos del harness (pasos 1,2,4; numerados desde 0).",0,2,1,2,1,6,0,2,1,1,2,deepseek-v4-pro
+B2-9847,B2,B,qwen2.5-coder_14b,zero_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,2,2,2,1,10,3,2,1,1,1,deepseek-v4-pro
+B2-1651,B2,B,qwen2.5-coder_14b,zero_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,2,2,2,1,10,3,2,1,1,1,deepseek-v4-pro
+B2-5243,B2,B,qwen2.5-coder_14b,zero_shot,ejec_3,Compila. Falla 1 de 6 pasos del harness (pasos 1; numerados desde 0).,0,2,1,2,1,6,0,2,0,1,1,deepseek-v4-pro
+B3-2730,B3,B,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,3,2,deepseek-v4-pro
+B3-2786,B3,B,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,3,2,deepseek-v4-pro
+B3-3078,B3,B,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+B3-8516,B3,B,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,3,3,2,deepseek-v4-pro
+B3-6547,B3,B,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,2,3,3,2,13,3,2,3,3,3,deepseek-v4-pro
+B3-6741,B3,B,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,2,3,3,2,13,3,2,3,3,3,deepseek-v4-pro
+B3-9202,B3,B,gemini-3.1-pro-preview,few_shot,ejec_1,No compila (6 errores).,0,0,2,2,1,5,0,0,3,2,2,deepseek-v4-pro
+B3-6721,B3,B,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,2,3,2,2,deepseek-v4-pro
+B3-3465,B3,B,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,2,3,2,2,deepseek-v4-pro
+B3-5228,B3,B,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,3,2,deepseek-v4-pro
+B3-5495,B3,B,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,3,2,deepseek-v4-pro
+B3-6597,B3,B,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+B3-6421,B3,B,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,3,2,2,deepseek-v4-pro
+B3-1730,B3,B,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,3,2,2,deepseek-v4-pro
+B3-4741,B3,B,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,3,2,2,deepseek-v4-pro
+B3-6937,B3,B,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila. Falla 3 de 7 pasos del harness (pasos 3,4,5; numerados desde 0).",0,2,0,1,1,4,0,2,0,1,1,deepseek-v4-pro
+B3-5689,B3,B,gpt-4o-2024-08-06,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,2,2,2,1,10,3,2,2,2,2,deepseek-v4-pro
+B3-8293,B3,B,gpt-4o-2024-08-06,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,2,2,2,1,10,3,2,2,2,2,deepseek-v4-pro
+B3-2446,B3,B,qwen2.5-coder_14b,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,3,2,2,deepseek-v4-pro
+B3-3133,B3,B,qwen2.5-coder_14b,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,2,2,2,1,10,3,2,2,2,2,deepseek-v4-pro
+B3-4736,B3,B,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 5 de 7 pasos del harness (pasos 1,2,3,4,5; numerados desde 0).",0,2,0,1,1,4,0,2,0,2,2,deepseek-v4-pro
+B3-4690,B3,B,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 5 de 7 pasos del harness (pasos 1,2,3,4,5; numerados desde 0).",0,2,0,1,1,4,0,2,0,1,1,deepseek-v4-pro
+B3-3429,B3,B,qwen2.5-coder_14b,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,2,2,2,deepseek-v4-pro
+B3-8845,B3,B,qwen2.5-coder_14b,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,2,2,2,deepseek-v4-pro
+B4-1794,B4,B,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,3,3,15,3,3,3,2,2,deepseek-v4-pro
+B4-1107,B4,B,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+B4-1620,B4,B,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+B4-9025,B4,B,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,3,3,15,3,3,3,3,2,deepseek-v4-pro
+B4-9599,B4,B,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,3,3,15,3,3,3,3,2,deepseek-v4-pro
+B4-9178,B4,B,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,3,2,deepseek-v4-pro
+B4-2461,B4,B,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+B4-9948,B4,B,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+B4-1844,B4,B,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+B4-7421,B4,B,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,1,3,2,2,11,3,3,3,3,2,deepseek-v4-pro
+B4-7211,B4,B,gemini-3.1-pro-preview,zero_shot,ejec_2,"Compila. Falla 2 de 10 pasos del harness (pasos 3,6; numerados desde 0).",1,1,2,2,2,8,1,3,1,2,2,deepseek-v4-pro
+B4-2916,B4,B,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,1,3,2,2,11,3,3,3,2,2,deepseek-v4-pro
+B4-1969,B4,B,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,2,1,12,3,2,3,2,2,deepseek-v4-pro
+B4-4978,B4,B,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,2,1,12,3,2,3,2,2,deepseek-v4-pro
+B4-6326,B4,B,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,2,1,12,3,2,3,2,2,deepseek-v4-pro
+B4-5930,B4,B,gpt-4o-2024-08-06,zero_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,1,3,2,1,10,3,2,3,2,2,deepseek-v4-pro
+B4-9939,B4,B,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila. Falla 3 de 10 pasos del harness (pasos 2,3,6; numerados desde 0).",0,1,0,1,1,3,0,2,0,2,2,deepseek-v4-pro
+B4-8880,B4,B,gpt-4o-2024-08-06,zero_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,1,3,2,1,10,3,2,3,2,2,deepseek-v4-pro
+B4-9793,B4,B,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 2 de 10 pasos del harness (pasos 3,6; numerados desde 0).",1,2,1,1,1,6,1,2,0,1,1,deepseek-v4-pro
+B4-5174,B4,B,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 4 de 10 pasos del harness (pasos 3,4,7,9; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,2,deepseek-v4-pro
+B4-8136,B4,B,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 4 de 10 pasos del harness (pasos 3,4,7,9; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,2,deepseek-v4-pro
+B4-3739,B4,B,qwen2.5-coder_14b,zero_shot,ejec_1,Compila. Falla 1 de 10 pasos del harness (pasos 3; numerados desde 0).,1,1,2,2,1,7,1,2,1,2,2,deepseek-v4-pro
+B4-2076,B4,B,qwen2.5-coder_14b,zero_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,1,3,2,1,10,3,2,2,2,2,deepseek-v4-pro
+B4-2313,B4,B,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila. Falla 2 de 10 pasos del harness (pasos 3,6; numerados desde 0).",1,1,2,2,1,7,1,2,1,2,2,deepseek-v4-pro
+B5-2103,B5,B,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B5-4296,B5,B,claude-sonnet-4-6,few_shot,ejec_2,Compila. Falla 1 de 9 pasos del harness (pasos 0; numerados desde 0).,1,2,2,2,2,9,2,2,1,2,2,deepseek-v4-pro
+B5-7090,B5,B,claude-sonnet-4-6,few_shot,ejec_3,Compila. Falla 1 de 9 pasos del harness (pasos 0; numerados desde 0).,1,2,2,2,2,9,2,2,1,2,2,deepseek-v4-pro
+B5-2235,B5,B,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Falla 1 de 9 pasos del harness (pasos 0; numerados desde 0).,1,2,2,3,2,10,2,2,1,2,2,deepseek-v4-pro
+B5-6571,B5,B,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Falla 1 de 9 pasos del harness (pasos 0; numerados desde 0).,1,2,2,3,2,10,2,2,1,2,2,deepseek-v4-pro
+B5-4246,B5,B,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Falla 1 de 9 pasos del harness (pasos 0; numerados desde 0).,1,2,2,3,2,10,2,2,1,2,2,deepseek-v4-pro
+B5-9290,B5,B,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B5-2379,B5,B,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B5-8170,B5,B,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B5-3077,B5,B,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B5-6715,B5,B,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B5-6054,B5,B,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+B5-6632,B5,B,gpt-4o-2024-08-06,few_shot,ejec_1,"Compila. Falla 5 de 9 pasos del harness (pasos 2,3,5,7,8; numerados desde 0).",0,2,2,1,2,7,0,2,0,2,2,deepseek-v4-pro
+B5-2653,B5,B,gpt-4o-2024-08-06,few_shot,ejec_2,"Compila. Falla 5 de 9 pasos del harness (pasos 2,3,5,7,8; numerados desde 0).",0,2,2,1,2,7,0,2,0,2,2,deepseek-v4-pro
+B5-9947,B5,B,gpt-4o-2024-08-06,few_shot,ejec_3,"Compila. Falla 5 de 9 pasos del harness (pasos 2,3,5,7,8; numerados desde 0).",0,2,2,1,2,7,0,2,0,2,2,deepseek-v4-pro
+B5-8798,B5,B,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('quemadorOn' no es ninguna entrada de 'FB_VENTILADOR').",0,1,1,1,1,4,0,1,0,1,1,deepseek-v4-pro
+B5-8802,B5,B,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('quemadorOn' no es ninguna entrada de 'FB_VENTILADOR').",0,1,1,1,1,4,1,1,1,1,1,deepseek-v4-pro
+B5-4470,B5,B,gpt-4o-2024-08-06,zero_shot,ejec_3,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('quemadorOn' no es ninguna entrada de 'FB_VENTILADOR').",0,1,0,1,1,3,0,1,0,1,1,deepseek-v4-pro
+B5-7882,B5,B,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 2 de 9 pasos del harness (pasos 0,7; numerados desde 0).",1,2,2,2,2,9,1,2,1,2,2,deepseek-v4-pro
+B5-2367,B5,B,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 2 de 9 pasos del harness (pasos 0,7; numerados desde 0).",1,2,2,2,2,9,1,2,1,2,2,deepseek-v4-pro
+B5-8869,B5,B,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 2 de 9 pasos del harness (pasos 0,7; numerados desde 0).",1,2,2,2,2,9,1,2,1,2,2,deepseek-v4-pro
+B5-6010,B5,B,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 3 de 9 pasos del harness (pasos 0,5,7; numerados desde 0).",1,2,1,2,1,7,0,2,0,1,1,deepseek-v4-pro
+B5-8536,B5,B,qwen2.5-coder_14b,zero_shot,ejec_2,"Compila. Falla 3 de 9 pasos del harness (pasos 0,5,7; numerados desde 0).",1,2,1,2,1,7,0,2,0,1,1,deepseek-v4-pro
+B5-3623,B5,B,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila. Falla 3 de 9 pasos del harness (pasos 2,5,7; numerados desde 0).",0,2,0,1,1,4,0,2,0,1,1,deepseek-v4-pro
+B6-2528,B6,B,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 3 pasos del harness.,3,2,2,2,1,10,3,2,2,2,1,deepseek-v4-pro
+B6-5301,B6,B,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 3 pasos del harness.,3,2,2,2,1,10,3,2,2,2,1,deepseek-v4-pro
+B6-7900,B6,B,claude-sonnet-4-6,few_shot,ejec_3,Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).,0,2,0,2,1,5,0,2,1,2,1,deepseek-v4-pro
+B6-8282,B6,B,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 3 pasos del harness.,3,3,3,3,1,13,3,2,3,3,1,deepseek-v4-pro
+B6-2365,B6,B,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 3 pasos del harness.,3,3,3,3,1,13,3,2,3,3,1,deepseek-v4-pro
+B6-3083,B6,B,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 3 pasos del harness.,3,3,3,3,1,13,3,2,3,3,1,deepseek-v4-pro
+B6-7194,B6,B,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 3 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+B6-5850,B6,B,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 3 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+B6-5267,B6,B,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 3 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+B6-3667,B6,B,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 3 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+B6-7904,B6,B,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 3 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+B6-2737,B6,B,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 3 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+B6-6488,B6,B,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 3 pasos del harness.,3,3,2,2,1,11,3,2,2,2,2,deepseek-v4-pro
+B6-1094,B6,B,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Pasa los 3 pasos del harness.,3,3,3,2,1,12,3,2,3,2,2,deepseek-v4-pro
+B6-1976,B6,B,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Pasa los 3 pasos del harness.,3,3,2,2,1,11,3,2,2,2,2,deepseek-v4-pro
+B6-2374,B6,B,gpt-4o-2024-08-06,zero_shot,ejec_1,Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).,0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+B6-4934,B6,B,gpt-4o-2024-08-06,zero_shot,ejec_2,Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).,0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+B6-9476,B6,B,gpt-4o-2024-08-06,zero_shot,ejec_3,Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).,0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+B6-5704,B6,B,qwen2.5-coder_14b,few_shot,ejec_1,Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).,0,2,0,2,1,5,0,2,0,1,2,deepseek-v4-pro
+B6-1513,B6,B,qwen2.5-coder_14b,few_shot,ejec_2,Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).,0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+B6-9731,B6,B,qwen2.5-coder_14b,few_shot,ejec_3,Compila. Falla 1 de 3 pasos del harness (pasos 1; numerados desde 0).,0,2,0,2,1,5,0,2,0,1,2,deepseek-v4-pro
+B6-8430,B6,B,qwen2.5-coder_14b,zero_shot,ejec_1,Compila. Pasa los 3 pasos del harness.,3,2,2,2,1,10,3,2,2,1,2,deepseek-v4-pro
+B6-6083,B6,B,qwen2.5-coder_14b,zero_shot,ejec_2,Compila. Pasa los 3 pasos del harness.,3,2,2,2,1,10,3,2,2,1,2,deepseek-v4-pro
+B6-2545,B6,B,qwen2.5-coder_14b,zero_shot,ejec_3,Compila. Pasa los 3 pasos del harness.,3,2,2,2,1,10,3,2,2,2,2,deepseek-v4-pro
+B7-2011,B7,B,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,3,3,deepseek-v4-pro
+B7-9820,B7,B,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,3,3,deepseek-v4-pro
+B7-5501,B7,B,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,3,3,deepseek-v4-pro
+B7-8494,B7,B,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,3,2,14,3,3,3,3,3,deepseek-v4-pro
+B7-3281,B7,B,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,3,3,deepseek-v4-pro
+B7-5108,B7,B,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,3,3,deepseek-v4-pro
+B7-7130,B7,B,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,3,deepseek-v4-pro
+B7-1392,B7,B,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,3,deepseek-v4-pro
+B7-9657,B7,B,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,3,deepseek-v4-pro
+B7-2454,B7,B,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,3,2,14,3,3,3,3,3,deepseek-v4-pro
+B7-9455,B7,B,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,3,2,14,3,3,3,3,3,deepseek-v4-pro
+B7-3058,B7,B,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,3,2,14,3,3,3,3,3,deepseek-v4-pro
+B7-3239,B7,B,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,3,deepseek-v4-pro
+B7-4833,B7,B,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,3,deepseek-v4-pro
+B7-9128,B7,B,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,3,2,3,deepseek-v4-pro
+B7-4620,B7,B,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('modoAuto' no es ninguna entrada de 'SELBOMBA').",1,2,2,2,1,8,2,2,2,2,2,deepseek-v4-pro
+B7-2790,B7,B,gpt-4o-2024-08-06,zero_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,2,3,2,2,12,3,2,3,2,3,deepseek-v4-pro
+B7-9815,B7,B,gpt-4o-2024-08-06,zero_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,2,3,2,2,12,3,2,3,2,3,deepseek-v4-pro
+B7-1125,B7,B,qwen2.5-coder_14b,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,2,3,2,2,12,3,2,3,2,3,deepseek-v4-pro
+B7-4683,B7,B,qwen2.5-coder_14b,few_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,2,3,2,2,12,3,2,3,2,3,deepseek-v4-pro
+B7-1829,B7,B,qwen2.5-coder_14b,few_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,2,3,2,2,12,3,2,3,2,3,deepseek-v4-pro
+B7-2340,B7,B,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('modoAuto' no es ninguna entrada de 'SELBOMBA').",1,2,2,2,1,8,2,2,2,2,2,deepseek-v4-pro
+B7-4839,B7,B,qwen2.5-coder_14b,zero_shot,ejec_2,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('modoAuto' no es ninguna entrada de 'SELBOMBA').",1,2,2,2,1,8,2,2,2,2,2,deepseek-v4-pro
+B7-6425,B7,B,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('modoAuto' no es ninguna entrada de 'SELBOMBA').",1,2,2,2,1,8,2,2,2,2,2,deepseek-v4-pro
+B8-2626,B8,B,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B8-4908,B8,B,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B8-9528,B8,B,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,3,3,2,2,13,3,3,3,3,2,deepseek-v4-pro
+B8-2238,B8,B,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,2,3,3,2,13,3,2,2,2,2,deepseek-v4-pro
+B8-4753,B8,B,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,2,3,3,2,13,3,2,2,2,2,deepseek-v4-pro
+B8-6800,B8,B,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,2,3,3,2,13,3,2,2,2,2,deepseek-v4-pro
+B8-6907,B8,B,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+B8-3959,B8,B,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+B8-3862,B8,B,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+B8-3064,B8,B,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+B8-6589,B8,B,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B8-5019,B8,B,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+B8-8512,B8,B,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,2,3,2,2,12,3,2,3,2,2,deepseek-v4-pro
+B8-1092,B8,B,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,2,3,2,2,12,3,2,3,2,2,deepseek-v4-pro
+B8-4457,B8,B,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,2,3,2,2,12,3,2,3,2,2,deepseek-v4-pro
+B8-7031,B8,B,gpt-4o-2024-08-06,zero_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,2,3,2,2,12,3,2,3,2,2,deepseek-v4-pro
+B8-3080,B8,B,gpt-4o-2024-08-06,zero_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,2,3,2,2,12,3,2,3,2,2,deepseek-v4-pro
+B8-6962,B8,B,gpt-4o-2024-08-06,zero_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,2,3,2,2,12,3,2,3,2,2,deepseek-v4-pro
+B8-9508,B8,B,qwen2.5-coder_14b,few_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,2,2,2,1,10,3,2,2,2,2,deepseek-v4-pro
+B8-3270,B8,B,qwen2.5-coder_14b,few_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,2,3,2,2,12,3,2,3,2,2,deepseek-v4-pro
+B8-1323,B8,B,qwen2.5-coder_14b,few_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,2,3,2,2,12,3,2,3,2,2,deepseek-v4-pro
+B8-3439,B8,B,qwen2.5-coder_14b,zero_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,2,2,2,1,10,3,2,1,2,2,deepseek-v4-pro
+B8-2057,B8,B,qwen2.5-coder_14b,zero_shot,ejec_2,"Compila. Falla 7 de 9 pasos del harness (pasos 1,2,3,4,5,6,8; numerados desde 0).",0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+B8-2855,B8,B,qwen2.5-coder_14b,zero_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,2,2,2,2,11,3,2,2,2,2,deepseek-v4-pro
+C3-1695,C3,C,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C3-2360,C3,C,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C3-5896,C3,C,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C3-8154,C3,C,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C3-9536,C3,C,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C3-5764,C3,C,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C3-8055,C3,C,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+C3-4158,C3,C,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+C3-3323,C3,C,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+C3-1446,C3,C,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+C3-8076,C3,C,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+C3-2206,C3,C,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+C3-6261,C3,C,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 11 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C3-1088,C3,C,gpt-4o-2024-08-06,few_shot,ejec_2,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'PRG_Conversion').",2,2,3,2,2,11,2,2,2,2,2,deepseek-v4-pro
+C3-6882,C3,C,gpt-4o-2024-08-06,few_shot,ejec_3,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'PRG_Conversion').",2,2,3,2,2,11,2,2,2,2,2,deepseek-v4-pro
+C3-2623,C3,C,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'PRG_Conversion').",2,2,3,2,2,11,2,2,2,2,2,deepseek-v4-pro
+C3-2896,C3,C,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'PRG_Conversion').",2,2,3,2,2,11,2,2,2,2,2,deepseek-v4-pro
+C3-2155,C3,C,gpt-4o-2024-08-06,zero_shot,ejec_3,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'PRG_Conversion').",2,2,3,2,2,11,2,2,2,2,2,deepseek-v4-pro
+C3-1285,C3,C,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 2 de 11 pasos del harness (pasos 3,9; numerados desde 0).",0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+C3-2752,C3,C,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 2 de 11 pasos del harness (pasos 3,9; numerados desde 0).",0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+C3-8015,C3,C,qwen2.5-coder_14b,few_shot,ejec_3,Compila. Pasa los 11 pasos del harness.,3,2,3,2,2,12,3,2,2,2,1,deepseek-v4-pro
+C3-5466,C3,C,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'PRG_Conversion').",0,2,1,2,1,6,0,2,1,1,1,deepseek-v4-pro
+C3-9667,C3,C,qwen2.5-coder_14b,zero_shot,ejec_2,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'PRG_Conversion').",0,2,1,2,1,6,0,2,1,1,1,deepseek-v4-pro
+C3-3977,C3,C,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'PRG_Conversion').",0,2,1,2,1,6,0,2,1,2,1,deepseek-v4-pro
+C7-2041,C7,C,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-1855,C7,C,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-9091,C7,C,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-7646,C7,C,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-3786,C7,C,claude-sonnet-4-6,zero_shot,ejec_2,No compila (6 errores).,0,0,2,2,1,5,0,0,3,2,2,deepseek-v4-pro
+C7-3114,C7,C,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-2343,C7,C,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-6780,C7,C,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-2101,C7,C,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-1952,C7,C,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-9652,C7,C,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-6391,C7,C,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-9033,C7,C,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-5811,C7,C,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-2960,C7,C,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-5127,C7,C,gpt-4o-2024-08-06,zero_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-8580,C7,C,gpt-4o-2024-08-06,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-6731,C7,C,gpt-4o-2024-08-06,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,1,12,3,3,3,2,2,deepseek-v4-pro
+C7-2277,C7,C,qwen2.5-coder_14b,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,1,2,1,deepseek-v4-pro
+C7-1135,C7,C,qwen2.5-coder_14b,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,1,2,1,deepseek-v4-pro
+C7-8598,C7,C,qwen2.5-coder_14b,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,2,2,1,deepseek-v4-pro
+C7-2387,C7,C,qwen2.5-coder_14b,zero_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,3,2,2,deepseek-v4-pro
+C7-4283,C7,C,qwen2.5-coder_14b,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,2,3,2,1,11,3,2,3,2,2,deepseek-v4-pro
+C7-6201,C7,C,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila. Falla 5 de 7 pasos del harness (pasos 1,2,3,4,5; numerados desde 0).",0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+C8-5787,C8,C,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C8-8654,C8,C,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C8-4581,C8,C,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C8-4519,C8,C,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C8-7711,C8,C,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C8-3511,C8,C,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,2,3,2,2,12,3,3,3,2,2,deepseek-v4-pro
+C8-5584,C8,C,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C8-1743,C8,C,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C8-8380,C8,C,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+C8-2420,C8,C,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,2,3,2,2,12,3,3,3,3,2,deepseek-v4-pro
+C8-4887,C8,C,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,2,3,2,2,12,3,3,3,3,2,deepseek-v4-pro
+C8-6084,C8,C,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,2,3,2,2,12,3,3,3,3,2,deepseek-v4-pro
+C8-7535,C8,C,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+C8-5754,C8,C,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+C8-4679,C8,C,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+C8-4933,C8,C,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('nivelAlto' no es ninguna entrada de 'FB_VALVULA').",0,2,1,2,1,6,1,1,1,1,1,deepseek-v4-pro
+C8-2995,C8,C,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('nivelAlto' no es ninguna entrada de 'FB_VALVULA').",0,2,1,2,1,6,1,1,1,1,1,deepseek-v4-pro
+C8-6973,C8,C,gpt-4o-2024-08-06,zero_shot,ejec_3,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('nivelAlto' no es ninguna entrada de 'FB_VALVULA').",0,2,1,2,1,6,1,1,1,1,1,deepseek-v4-pro
+C8-8185,C8,C,qwen2.5-coder_14b,few_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,2,2,1,1,deepseek-v4-pro
+C8-2534,C8,C,qwen2.5-coder_14b,few_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,2,2,1,1,deepseek-v4-pro
+C8-5696,C8,C,qwen2.5-coder_14b,few_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,2,2,1,1,deepseek-v4-pro
+C8-1455,C8,C,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 2 de 6 pasos del harness (pasos 3,5; numerados desde 0).",1,2,1,2,2,8,1,2,0,1,1,deepseek-v4-pro
+C8-1981,C8,C,qwen2.5-coder_14b,zero_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,2,3,2,2,12,3,2,2,2,1,deepseek-v4-pro
+C8-4156,C8,C,qwen2.5-coder_14b,zero_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,2,3,2,2,12,3,2,2,1,1,deepseek-v4-pro
+I1-4990,I1,I,claude-sonnet-4-6,few_shot,ejec_1,Compila. Falla 1 de 9 pasos del harness (pasos 7; numerados desde 0).,1,2,1,2,2,8,1,2,1,2,1,deepseek-v4-pro
+I1-3124,I1,I,claude-sonnet-4-6,few_shot,ejec_2,Compila. Falla 1 de 9 pasos del harness (pasos 7; numerados desde 0).,1,2,2,2,2,9,1,2,1,2,1,deepseek-v4-pro
+I1-5111,I1,I,claude-sonnet-4-6,few_shot,ejec_3,Compila. Falla 1 de 9 pasos del harness (pasos 7; numerados desde 0).,1,2,1,2,2,8,1,2,1,2,1,deepseek-v4-pro
+I1-4511,I1,I,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+I1-7322,I1,I,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+I1-8830,I1,I,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+I1-2135,I1,I,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,3,2,2,2,12,3,3,3,2,2,deepseek-v4-pro
+I1-3359,I1,I,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,2,2,2,2,11,3,3,3,2,2,deepseek-v4-pro
+I1-3250,I1,I,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,2,2,2,2,11,3,3,3,2,2,deepseek-v4-pro
+I1-5434,I1,I,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,3,3,2,2,13,3,3,3,2,1,deepseek-v4-pro
+I1-3464,I1,I,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 9 pasos del harness.,3,3,2,2,2,12,3,3,3,2,2,deepseek-v4-pro
+I1-7084,I1,I,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,3,2,2,2,12,3,3,3,2,2,deepseek-v4-pro
+I1-2168,I1,I,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 9 pasos del harness.,3,2,2,2,2,11,3,3,1,2,1,deepseek-v4-pro
+I1-5056,I1,I,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Falla 1 de 9 pasos del harness (pasos 7; numerados desde 0).,1,2,1,2,2,8,1,2,1,2,1,deepseek-v4-pro
+I1-8541,I1,I,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Pasa los 9 pasos del harness.,3,2,2,2,2,11,3,3,1,2,1,deepseek-v4-pro
+I1-4945,I1,I,gpt-4o-2024-08-06,zero_shot,ejec_1,No compila (20 errores).,0,0,0,1,1,2,0,0,1,1,1,deepseek-v4-pro
+I1-8741,I1,I,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('habilitado' no es ninguna entrada de 'FB_SEMAFORO').",0,1,1,1,1,4,0,1,0,1,1,deepseek-v4-pro
+I1-4916,I1,I,gpt-4o-2024-08-06,zero_shot,ejec_3,No compila (20 errores).,0,0,1,2,1,4,0,0,0,1,1,deepseek-v4-pro
+I1-7969,I1,I,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 7 de 9 pasos del harness (pasos 2,3,4,5,6,7,8; numerados desde 0).",0,2,1,2,1,6,0,2,0,2,1,deepseek-v4-pro
+I1-1955,I1,I,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 7 de 9 pasos del harness (pasos 2,3,4,5,6,7,8; numerados desde 0).",0,2,1,2,1,6,0,2,0,2,1,deepseek-v4-pro
+I1-5295,I1,I,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 7 de 9 pasos del harness (pasos 2,3,4,5,6,7,8; numerados desde 0).",0,2,1,2,1,6,0,2,0,2,1,deepseek-v4-pro
+I1-7364,I1,I,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 6 de 9 pasos del harness (pasos 0,2,3,6,7,8; numerados desde 0).",0,1,1,1,1,4,0,2,0,1,1,deepseek-v4-pro
+I1-8420,I1,I,qwen2.5-coder_14b,zero_shot,ejec_2,"Compila. Falla 8 de 9 pasos del harness (pasos 1,2,3,4,5,6,7,8; numerados desde 0).",0,1,1,1,1,4,0,2,0,1,1,deepseek-v4-pro
+I1-8761,I1,I,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila. Falla 6 de 9 pasos del harness (pasos 0,2,3,5,6,7; numerados desde 0).",0,1,1,2,2,6,0,2,0,1,2,deepseek-v4-pro
+I2-3499,I2,I,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 12 pasos del harness.,3,3,3,3,1,13,3,3,3,2,1,deepseek-v4-pro
+I2-4582,I2,I,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 12 pasos del harness.,3,3,3,3,1,13,3,3,3,2,1,deepseek-v4-pro
+I2-4041,I2,I,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 12 pasos del harness.,3,3,3,3,1,13,3,3,3,2,1,deepseek-v4-pro
+I2-3102,I2,I,claude-sonnet-4-6,zero_shot,ejec_1,No compila (2 errores).,0,0,3,3,1,7,0,0,3,2,1,deepseek-v4-pro
+I2-8131,I2,I,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 12 pasos del harness.,3,3,3,3,1,13,3,3,3,2,1,deepseek-v4-pro
+I2-8425,I2,I,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 12 pasos del harness.,3,3,3,3,1,13,3,3,3,2,1,deepseek-v4-pro
+I2-9998,I2,I,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 12 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+I2-5294,I2,I,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 12 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+I2-9360,I2,I,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 12 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+I2-9002,I2,I,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 12 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I2-5330,I2,I,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 12 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+I2-7023,I2,I,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 12 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+I2-1039,I2,I,gpt-4o-2024-08-06,few_shot,ejec_1,"Compila. Falla 5 de 12 pasos del harness (pasos 2,3,4,5,9; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,1,deepseek-v4-pro
+I2-2212,I2,I,gpt-4o-2024-08-06,few_shot,ejec_2,"Compila. Falla 4 de 12 pasos del harness (pasos 4,5,6,9; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,1,deepseek-v4-pro
+I2-6794,I2,I,gpt-4o-2024-08-06,few_shot,ejec_3,"Compila. Falla 3 de 12 pasos del harness (pasos 2,3,9; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,1,deepseek-v4-pro
+I2-3432,I2,I,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('nivelAlto' no es ninguna entrada de 'FB_LLENADO').",0,1,0,2,1,4,0,1,0,1,1,deepseek-v4-pro
+I2-3377,I2,I,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('nivelAlto' no es ninguna entrada de 'FB_LLENADO').",2,1,2,2,1,8,1,1,1,1,1,deepseek-v4-pro
+I2-4540,I2,I,gpt-4o-2024-08-06,zero_shot,ejec_3,"Compila. Falla 4 de 12 pasos del harness (pasos 2,3,4,9; numerados desde 0).",0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+I2-4337,I2,I,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 2 de 12 pasos del harness (pasos 2,3; numerados desde 0).",0,2,1,2,1,6,0,2,0,2,1,deepseek-v4-pro
+I2-4370,I2,I,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 2 de 12 pasos del harness (pasos 2,3; numerados desde 0).",0,2,1,2,1,6,0,2,0,2,1,deepseek-v4-pro
+I2-4324,I2,I,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 7 de 12 pasos del harness (pasos 2,3,4,5,6,9,11; numerados desde 0).",0,2,1,2,1,6,0,2,0,1,1,deepseek-v4-pro
+I2-2195,I2,I,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 3 de 12 pasos del harness (pasos 4,5,6; numerados desde 0).",0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+I2-9686,I2,I,qwen2.5-coder_14b,zero_shot,ejec_2,"Compila. Falla 3 de 12 pasos del harness (pasos 4,5,6; numerados desde 0).",0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+I2-7180,I2,I,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila. Falla 3 de 12 pasos del harness (pasos 4,5,6; numerados desde 0).",0,2,0,2,2,6,0,2,0,1,2,deepseek-v4-pro
+I3-6496,I3,I,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,3,2,14,3,3,2,2,2,deepseek-v4-pro
+I3-1249,I3,I,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I3-9721,I3,I,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,3,2,14,3,3,2,2,2,deepseek-v4-pro
+I3-7296,I3,I,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,3,2,14,3,3,2,2,2,deepseek-v4-pro
+I3-8823,I3,I,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,3,2,14,3,3,2,2,2,deepseek-v4-pro
+I3-4818,I3,I,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,3,2,14,3,3,2,2,2,deepseek-v4-pro
+I3-1393,I3,I,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I3-8129,I3,I,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I3-9934,I3,I,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I3-2584,I3,I,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,1,3,3,2,12,3,3,2,2,2,deepseek-v4-pro
+I3-2453,I3,I,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,1,3,2,2,11,3,3,2,2,2,deepseek-v4-pro
+I3-2759,I3,I,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,1,3,3,2,12,3,3,2,2,2,deepseek-v4-pro
+I3-3545,I3,I,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I3-9331,I3,I,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I3-8600,I3,I,gpt-4o-2024-08-06,few_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I3-2429,I3,I,gpt-4o-2024-08-06,zero_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,1,3,2,2,11,3,3,2,2,2,deepseek-v4-pro
+I3-1113,I3,I,gpt-4o-2024-08-06,zero_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,1,3,2,2,11,3,3,2,2,2,deepseek-v4-pro
+I3-3183,I3,I,gpt-4o-2024-08-06,zero_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,1,3,2,2,11,3,3,2,2,2,deepseek-v4-pro
+I3-1066,I3,I,qwen2.5-coder_14b,few_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I3-7173,I3,I,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 2 de 10 pasos del harness (pasos 2,3; numerados desde 0).",0,3,1,2,2,8,1,3,1,1,1,deepseek-v4-pro
+I3-6376,I3,I,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 2 de 10 pasos del harness (pasos 2,3; numerados desde 0).",0,3,1,2,2,8,1,3,1,1,1,deepseek-v4-pro
+I3-5104,I3,I,qwen2.5-coder_14b,zero_shot,ejec_1,Compila. Pasa los 10 pasos del harness.,3,1,3,2,2,11,3,3,2,2,2,deepseek-v4-pro
+I3-4645,I3,I,qwen2.5-coder_14b,zero_shot,ejec_2,Compila. Pasa los 10 pasos del harness.,3,1,3,2,2,11,3,3,2,2,2,deepseek-v4-pro
+I3-4378,I3,I,qwen2.5-coder_14b,zero_shot,ejec_3,Compila. Pasa los 10 pasos del harness.,3,1,3,2,2,11,3,3,2,2,2,deepseek-v4-pro
+I4-4147,I4,I,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+I4-2405,I4,I,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,2,3,2,deepseek-v4-pro
+I4-2644,I4,I,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,2,3,2,deepseek-v4-pro
+I4-2763,I4,I,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Falla 1 de 6 pasos del harness (pasos 5; numerados desde 0).,1,2,1,3,2,9,1,2,1,2,1,deepseek-v4-pro
+I4-2611,I4,I,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+I4-1792,I4,I,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,1,deepseek-v4-pro
+I4-8454,I4,I,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+I4-8365,I4,I,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+I4-6563,I4,I,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,2,2,deepseek-v4-pro
+I4-1208,I4,I,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 6 pasos del harness.,3,2,3,3,2,13,3,3,3,3,2,deepseek-v4-pro
+I4-2920,I4,I,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 6 pasos del harness.,3,3,3,3,2,14,3,3,3,3,2,deepseek-v4-pro
+I4-4531,I4,I,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 6 pasos del harness.,3,2,3,3,2,13,3,3,3,3,2,deepseek-v4-pro
+I4-6264,I4,I,gpt-4o-2024-08-06,few_shot,ejec_1,"Compila. Falla 3 de 6 pasos del harness (pasos 2,3,5; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,1,deepseek-v4-pro
+I4-6607,I4,I,gpt-4o-2024-08-06,few_shot,ejec_2,"Compila. Falla 3 de 6 pasos del harness (pasos 2,3,5; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,1,deepseek-v4-pro
+I4-3109,I4,I,gpt-4o-2024-08-06,few_shot,ejec_3,"Compila. Falla 3 de 6 pasos del harness (pasos 2,3,5; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,1,deepseek-v4-pro
+I4-7806,I4,I,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila. Falla 3 de 6 pasos del harness (pasos 2,3,5; numerados desde 0).",0,2,0,1,1,4,0,2,0,2,1,deepseek-v4-pro
+I4-7007,I4,I,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'FB_ESTRELLATRIANGULO').",0,1,0,1,1,3,0,1,0,1,1,deepseek-v4-pro
+I4-1547,I4,I,gpt-4o-2024-08-06,zero_shot,ejec_3,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('btnMarcha' no es ninguna entrada de 'FB_ESTRELLATRIANGULO').",0,1,0,1,1,3,0,1,0,1,1,deepseek-v4-pro
+I4-5661,I4,I,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 2 de 6 pasos del harness (pasos 1,3; numerados desde 0).",0,2,1,2,1,6,0,2,1,2,1,deepseek-v4-pro
+I4-3062,I4,I,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 2 de 6 pasos del harness (pasos 1,3; numerados desde 0).",0,2,1,2,1,6,0,2,0,1,1,deepseek-v4-pro
+I4-6164,I4,I,qwen2.5-coder_14b,few_shot,ejec_3,No compila (2 errores).,0,0,0,1,1,2,0,0,1,2,2,deepseek-v4-pro
+I4-7740,I4,I,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 3 de 6 pasos del harness (pasos 2,3,4; numerados desde 0).",0,2,0,1,1,4,0,2,0,1,1,deepseek-v4-pro
+I4-8729,I4,I,qwen2.5-coder_14b,zero_shot,ejec_2,"Compila. Falla 2 de 6 pasos del harness (pasos 2,3; numerados desde 0).",0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+I4-7176,I4,I,qwen2.5-coder_14b,zero_shot,ejec_3,No compila (2 errores).,0,0,0,1,1,2,0,0,0,2,2,deepseek-v4-pro
+I5-6315,I5,I,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,2,2,2,2,11,3,3,2,2,2,deepseek-v4-pro
+I5-6738,I5,I,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,1,2,2,deepseek-v4-pro
+I5-9795,I5,I,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,2,1,2,1,9,3,3,0,1,1,deepseek-v4-pro
+I5-8715,I5,I,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Falla 1 de 7 pasos del harness (pasos 5; numerados desde 0).,1,2,1,2,2,8,0,2,0,1,2,deepseek-v4-pro
+I5-7024,I5,I,claude-sonnet-4-6,zero_shot,ejec_2,"Compila. Falla 3 de 7 pasos del harness (pasos 3,4,5; numerados desde 0).",1,2,1,2,1,7,0,2,1,2,1,deepseek-v4-pro
+I5-5429,I5,I,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,2,3,3,2,13,3,2,2,2,2,deepseek-v4-pro
+I5-4776,I5,I,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,3,2,14,3,3,2,2,2,deepseek-v4-pro
+I5-6743,I5,I,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I5-3665,I5,I,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I5-5960,I5,I,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,2,3,2,deepseek-v4-pro
+I5-6031,I5,I,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,2,2,2,deepseek-v4-pro
+I5-8743,I5,I,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 7 pasos del harness.,3,3,3,2,2,13,3,3,2,3,2,deepseek-v4-pro
+I5-3769,I5,I,gpt-4o-2024-08-06,few_shot,ejec_1,"Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).",0,2,0,1,1,4,0,2,0,2,1,deepseek-v4-pro
+I5-2293,I5,I,gpt-4o-2024-08-06,few_shot,ejec_2,"Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).",0,2,0,1,1,4,0,2,0,2,1,deepseek-v4-pro
+I5-2602,I5,I,gpt-4o-2024-08-06,few_shot,ejec_3,"Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).",0,2,0,1,1,4,0,2,0,2,1,deepseek-v4-pro
+I5-3559,I5,I,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).",0,2,0,1,1,4,0,2,0,1,1,deepseek-v4-pro
+I5-4146,I5,I,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila. Falla 4 de 7 pasos del harness (pasos 3,4,5,6; numerados desde 0).",0,2,0,2,1,5,0,2,0,1,1,deepseek-v4-pro
+I5-9566,I5,I,gpt-4o-2024-08-06,zero_shot,ejec_3,"Compila. Falla 4 de 7 pasos del harness (pasos 3,4,5,6; numerados desde 0).",0,2,0,2,1,5,0,2,0,2,1,deepseek-v4-pro
+I5-3551,I5,I,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 7 de 7 pasos del harness (pasos 0,1,2,3,4,5,6; numerados desde 0).",0,2,0,1,1,4,0,2,0,1,1,deepseek-v4-pro
+I5-2807,I5,I,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).",0,2,0,1,1,4,0,2,0,2,1,deepseek-v4-pro
+I5-8675,I5,I,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 7 de 7 pasos del harness (pasos 0,1,2,3,4,5,6; numerados desde 0).",0,2,0,1,1,4,0,2,0,1,1,deepseek-v4-pro
+I5-9964,I5,I,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).",0,2,0,2,1,5,0,1,0,1,1,deepseek-v4-pro
+I5-3570,I5,I,qwen2.5-coder_14b,zero_shot,ejec_2,No compila (4 errores).,0,0,0,1,1,2,0,0,0,1,1,deepseek-v4-pro
+I5-2725,I5,I,qwen2.5-coder_14b,zero_shot,ejec_3,No compila (4 errores).,0,0,0,1,1,2,0,0,0,1,1,deepseek-v4-pro
+I6-9306,I6,I,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 8 pasos del harness.,3,3,3,3,3,15,3,3,3,3,2,deepseek-v4-pro
+I6-7940,I6,I,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 8 pasos del harness.,3,3,3,2,1,12,3,3,3,3,1,deepseek-v4-pro
+I6-4640,I6,I,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 8 pasos del harness.,3,3,3,2,1,12,3,3,3,3,1,deepseek-v4-pro
+I6-7606,I6,I,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 8 pasos del harness.,3,3,3,3,3,15,3,3,3,3,2,deepseek-v4-pro
+I6-4763,I6,I,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 8 pasos del harness.,3,3,3,3,3,15,3,3,3,3,2,deepseek-v4-pro
+I6-2466,I6,I,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 8 pasos del harness.,3,3,3,3,3,15,3,3,3,3,2,deepseek-v4-pro
+I6-3905,I6,I,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 8 pasos del harness.,3,3,3,2,1,12,3,3,3,2,1,deepseek-v4-pro
+I6-6450,I6,I,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 8 pasos del harness.,3,3,3,2,1,12,3,3,3,2,1,deepseek-v4-pro
+I6-7405,I6,I,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 8 pasos del harness.,3,3,3,2,1,12,3,3,3,2,1,deepseek-v4-pro
+I6-8502,I6,I,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 8 pasos del harness.,3,3,3,3,1,13,3,3,3,3,1,deepseek-v4-pro
+I6-4554,I6,I,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 8 pasos del harness.,3,3,3,3,1,13,3,3,3,3,1,deepseek-v4-pro
+I6-8944,I6,I,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 8 pasos del harness.,3,3,3,3,1,13,3,3,3,3,1,deepseek-v4-pro
+I6-4205,I6,I,gpt-4o-2024-08-06,few_shot,ejec_1,No compila (7 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+I6-9872,I6,I,gpt-4o-2024-08-06,few_shot,ejec_2,No compila (7 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+I6-1644,I6,I,gpt-4o-2024-08-06,few_shot,ejec_3,No compila (7 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+I6-1774,I6,I,gpt-4o-2024-08-06,zero_shot,ejec_1,No compila (12 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+I6-9365,I6,I,gpt-4o-2024-08-06,zero_shot,ejec_2,No compila (7 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+I6-2631,I6,I,gpt-4o-2024-08-06,zero_shot,ejec_3,No compila (7 errores).,0,0,1,2,1,4,0,0,1,2,1,deepseek-v4-pro
+I6-1860,I6,I,qwen2.5-coder_14b,few_shot,ejec_1,Compila. Falla 1 de 8 pasos del harness (pasos 3; numerados desde 0).,1,2,2,2,2,9,1,2,1,2,1,deepseek-v4-pro
+I6-5227,I6,I,qwen2.5-coder_14b,few_shot,ejec_2,Compila. Pasa los 8 pasos del harness.,3,2,3,2,2,12,3,2,3,2,2,deepseek-v4-pro
+I6-1990,I6,I,qwen2.5-coder_14b,few_shot,ejec_3,Compila. Pasa los 8 pasos del harness.,3,2,3,2,2,12,3,2,3,2,2,deepseek-v4-pro
+I6-5219,I6,I,qwen2.5-coder_14b,zero_shot,ejec_1,Compila. Pasa los 8 pasos del harness.,3,2,2,2,1,10,3,2,1,2,1,deepseek-v4-pro
+I6-9273,I6,I,qwen2.5-coder_14b,zero_shot,ejec_2,Compila. Pasa los 8 pasos del harness.,3,2,2,2,1,10,3,2,1,2,1,deepseek-v4-pro
+I6-1333,I6,I,qwen2.5-coder_14b,zero_shot,ejec_3,Compila. Pasa los 8 pasos del harness.,3,2,2,2,1,10,3,2,1,2,1,deepseek-v4-pro
+I7-5182,I7,I,claude-sonnet-4-6,few_shot,ejec_1,"Compila. Falla 8 de 14 pasos del harness (pasos 1,3,5,6,7,8,11,12; numerados desde 0).",0,2,1,2,2,7,1,2,1,2,2,deepseek-v4-pro
+I7-1859,I7,I,claude-sonnet-4-6,few_shot,ejec_2,"Compila. Falla 8 de 14 pasos del harness (pasos 1,3,5,6,7,8,11,12; numerados desde 0).",0,2,1,2,2,7,1,2,1,2,2,deepseek-v4-pro
+I7-8887,I7,I,claude-sonnet-4-6,few_shot,ejec_3,"Compila. Falla 8 de 14 pasos del harness (pasos 1,3,5,6,7,8,11,12; numerados desde 0).",0,2,1,2,2,7,1,2,1,2,2,deepseek-v4-pro
+I7-7783,I7,I,claude-sonnet-4-6,zero_shot,ejec_1,"Compila. Falla 8 de 14 pasos del harness (pasos 1,3,5,6,7,8,11,12; numerados desde 0).",0,2,1,1,2,6,1,2,1,1,2,deepseek-v4-pro
+I7-4023,I7,I,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 14 pasos del harness.,3,2,1,1,2,9,3,2,1,2,2,deepseek-v4-pro
+I7-1098,I7,I,claude-sonnet-4-6,zero_shot,ejec_3,"Compila. Falla 8 de 14 pasos del harness (pasos 1,3,5,6,7,8,11,12; numerados desde 0).",0,2,1,2,2,7,1,2,1,2,2,deepseek-v4-pro
+I7-8200,I7,I,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 14 pasos del harness.,3,3,3,3,3,15,3,3,3,2,2,deepseek-v4-pro
+I7-6860,I7,I,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 14 pasos del harness.,3,3,3,3,3,15,3,3,3,2,2,deepseek-v4-pro
+I7-3489,I7,I,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 14 pasos del harness.,3,3,3,3,3,15,3,3,3,2,2,deepseek-v4-pro
+I7-1736,I7,I,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 14 pasos del harness.,3,2,3,3,2,13,3,2,3,2,2,deepseek-v4-pro
+I7-6285,I7,I,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 14 pasos del harness.,3,3,3,3,3,15,3,3,3,2,2,deepseek-v4-pro
+I7-8111,I7,I,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 14 pasos del harness.,3,3,3,3,3,15,3,3,3,2,2,deepseek-v4-pro
+I7-2190,I7,I,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 14 pasos del harness.,3,2,2,2,2,11,3,2,3,2,2,deepseek-v4-pro
+I7-5823,I7,I,gpt-4o-2024-08-06,few_shot,ejec_2,Compila. Pasa los 14 pasos del harness.,3,2,2,2,2,11,3,2,3,2,2,deepseek-v4-pro
+I7-3883,I7,I,gpt-4o-2024-08-06,few_shot,ejec_3,"Compila. Falla 8 de 14 pasos del harness (pasos 1,3,5,6,7,8,11,12; numerados desde 0).",0,2,1,2,2,7,1,2,1,2,2,deepseek-v4-pro
+I7-5664,I7,I,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila. Falla 5 de 14 pasos del harness (pasos 1,5,6,7,8; numerados desde 0).",0,2,1,2,2,7,0,2,0,2,2,deepseek-v4-pro
+I7-2100,I7,I,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila. Falla 5 de 14 pasos del harness (pasos 1,5,6,7,8; numerados desde 0).",0,2,1,2,2,7,0,2,0,2,2,deepseek-v4-pro
+I7-7378,I7,I,gpt-4o-2024-08-06,zero_shot,ejec_3,"Compila. Falla 5 de 14 pasos del harness (pasos 1,5,6,7,8; numerados desde 0).",0,2,1,2,2,7,0,2,0,2,2,deepseek-v4-pro
+I7-7155,I7,I,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 4 de 14 pasos del harness (pasos 3,10,11,12; numerados desde 0).",0,2,1,2,1,6,1,2,0,1,1,deepseek-v4-pro
+I7-1170,I7,I,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 10 de 14 pasos del harness (pasos 2,4,5,6,7,8,9,11,12,13; numerados desde 0).",0,2,1,2,2,7,0,2,0,2,1,deepseek-v4-pro
+I7-2045,I7,I,qwen2.5-coder_14b,few_shot,ejec_3,Compila. Falla 1 de 14 pasos del harness (pasos 9; numerados desde 0).,2,2,2,2,2,10,2,2,1,2,2,deepseek-v4-pro
+I7-7598,I7,I,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 6 de 14 pasos del harness (pasos 1,5,6,7,8,9; numerados desde 0).",0,2,1,2,1,6,0,2,0,1,1,deepseek-v4-pro
+I7-3525,I7,I,qwen2.5-coder_14b,zero_shot,ejec_2,"Compila. Falla 5 de 14 pasos del harness (pasos 3,6,8,9,11; numerados desde 0).",0,2,1,2,1,6,1,2,0,2,1,deepseek-v4-pro
+I7-8285,I7,I,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila. Falla 6 de 14 pasos del harness (pasos 3,6,7,8,9,11; numerados desde 0).",0,2,1,2,1,6,1,2,0,2,1,deepseek-v4-pro
+I8-2865,I8,I,claude-sonnet-4-6,few_shot,ejec_1,Compila. Pasa los 19 pasos del harness.,3,3,3,2,2,13,3,2,3,2,2,deepseek-v4-pro
+I8-3596,I8,I,claude-sonnet-4-6,few_shot,ejec_2,Compila. Pasa los 19 pasos del harness.,3,3,3,2,2,13,3,2,3,2,2,deepseek-v4-pro
+I8-4361,I8,I,claude-sonnet-4-6,few_shot,ejec_3,Compila. Pasa los 19 pasos del harness.,3,3,3,2,2,13,3,2,3,2,2,deepseek-v4-pro
+I8-3472,I8,I,claude-sonnet-4-6,zero_shot,ejec_1,Compila. Pasa los 19 pasos del harness.,3,3,3,3,2,14,3,2,3,2,2,deepseek-v4-pro
+I8-2589,I8,I,claude-sonnet-4-6,zero_shot,ejec_2,Compila. Pasa los 19 pasos del harness.,3,3,3,3,2,14,3,2,3,2,2,deepseek-v4-pro
+I8-7161,I8,I,claude-sonnet-4-6,zero_shot,ejec_3,Compila. Pasa los 19 pasos del harness.,3,3,3,3,2,14,3,2,3,2,2,deepseek-v4-pro
+I8-4489,I8,I,gemini-3.1-pro-preview,few_shot,ejec_1,Compila. Pasa los 19 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+I8-9074,I8,I,gemini-3.1-pro-preview,few_shot,ejec_2,Compila. Pasa los 19 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+I8-1759,I8,I,gemini-3.1-pro-preview,few_shot,ejec_3,Compila. Pasa los 19 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+I8-5439,I8,I,gemini-3.1-pro-preview,zero_shot,ejec_1,Compila. Pasa los 19 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+I8-4402,I8,I,gemini-3.1-pro-preview,zero_shot,ejec_2,Compila. Pasa los 19 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+I8-1720,I8,I,gemini-3.1-pro-preview,zero_shot,ejec_3,Compila. Pasa los 19 pasos del harness.,3,3,3,2,2,13,3,3,3,2,2,deepseek-v4-pro
+I8-5917,I8,I,gpt-4o-2024-08-06,few_shot,ejec_1,Compila. Pasa los 19 pasos del harness.,3,3,3,2,2,13,3,2,3,2,2,deepseek-v4-pro
+I8-9515,I8,I,gpt-4o-2024-08-06,few_shot,ejec_2,"Compila. Falla 10 de 19 pasos del harness (pasos 1,5,6,11,12,13,14,15,17,18; numerados desde 0).",0,2,1,2,1,6,1,2,1,2,2,deepseek-v4-pro
+I8-4028,I8,I,gpt-4o-2024-08-06,few_shot,ejec_3,"Compila. Falla 3 de 19 pasos del harness (pasos 1,13,18; numerados desde 0).",1,3,2,2,2,10,2,3,1,2,1,deepseek-v4-pro
+I8-1307,I8,I,gpt-4o-2024-08-06,zero_shot,ejec_1,"Compila. Falla 9 de 19 pasos del harness (pasos 5,6,11,12,13,14,15,17,18; numerados desde 0).",0,2,1,2,1,6,1,2,1,2,2,deepseek-v4-pro
+I8-6340,I8,I,gpt-4o-2024-08-06,zero_shot,ejec_2,"Compila. Falla 3 de 19 pasos del harness (pasos 1,13,18; numerados desde 0).",1,2,2,2,2,9,2,2,1,2,1,deepseek-v4-pro
+I8-2766,I8,I,gpt-4o-2024-08-06,zero_shot,ejec_3,"Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('pOilOk' no es ninguna entrada de 'FB_COMPRESOR').",0,1,1,2,1,5,1,1,1,2,1,deepseek-v4-pro
+I8-5557,I8,I,qwen2.5-coder_14b,few_shot,ejec_1,"Compila. Falla 9 de 19 pasos del harness (pasos 1,3,4,10,13,14,15,17,18; numerados desde 0).",0,2,1,2,1,6,0,2,0,2,2,deepseek-v4-pro
+I8-3657,I8,I,qwen2.5-coder_14b,few_shot,ejec_2,"Compila. Falla 9 de 19 pasos del harness (pasos 1,3,4,10,13,14,15,17,18; numerados desde 0).",0,2,1,2,1,6,0,2,0,2,2,deepseek-v4-pro
+I8-6693,I8,I,qwen2.5-coder_14b,few_shot,ejec_3,"Compila. Falla 9 de 19 pasos del harness (pasos 1,3,4,10,13,14,15,17,18; numerados desde 0).",0,2,1,2,1,6,0,2,0,2,2,deepseek-v4-pro
+I8-8577,I8,I,qwen2.5-coder_14b,zero_shot,ejec_1,"Compila. Falla 7 de 19 pasos del harness (pasos 1,3,4,10,13,16,18; numerados desde 0).",0,2,0,1,1,4,0,2,0,1,1,deepseek-v4-pro
+I8-1205,I8,I,qwen2.5-coder_14b,zero_shot,ejec_2,No compila (5 errores).,0,0,1,1,1,3,0,0,0,2,1,deepseek-v4-pro
+I8-7627,I8,I,qwen2.5-coder_14b,zero_shot,ejec_3,"Compila. Falla 8 de 19 pasos del harness (pasos 1,7,8,9,13,14,15,18; numerados desde 0).",0,2,0,1,1,4,1,2,0,1,1,deepseek-v4-pro

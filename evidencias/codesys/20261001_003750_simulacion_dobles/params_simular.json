@@ -1,0 +1,16 @@
+{
+    "modo":  "dobles",
+    "ciclos_ms":  [
+                      4,
+                      10
+                  ],
+    "salida_csv":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\results_codesys\\harness_dobles_fase2_A1_v2.csv",
+    "carpeta_dobles":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\dobles",
+    "tareas":  [
+                   "A1"
+               ],
+    "carpeta_harness":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys",
+    "limite":  0,
+    "plantilla":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\Plantilla_Simulacion.project",
+    "carpeta_codigo":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\processed"
+}

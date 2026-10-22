@@ -1,0 +1,511 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>C8 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>C8 — Conversión Ladder a ST — válvula con retardo (Complementaria)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja C8 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: convierte a Structured Text el siguiente segmento de un programa en Ladder Diagram (IEC 61131-3), preservando exactamente su comportamiento. Descripción del segmento: Rama 1: el contacto normalmente abierto nivelAlto alimenta la entrada IN de un temporizador a la conexión TON llamado T1, cuyo tiempo preestablecido PT es de 5 segundos. Rama 2: el contacto normalmente abierto de T1.Q alimenta la bobina valvula. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Valvula con variable de entrada nivelAlto (BOOL) y salida valvula (BOOL). Usa el tiempo T#5S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_B2.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea B2 (valvula con retardo TON de 5 s)
+    ---------------------------------------------------------------------------
+    PLANTILLA PARA TAREAS CON TEMPORIZADORES.
+
+    Diferencia clave respecto a PRG_Test_B1: el tiempo de asentamiento es
+    DISTINTO EN CADA PASO. Un valor fijo corto (200 ms) haria fallar a bloques
+    correctos, porque evaluaria la salida antes de que venza el temporizador
+    interno del bloque bajo prueba. Con un TON de 5 s, el paso que espera la
+    apertura necesita mas de 5 s de asentamiento.
+
+    Usa esta plantilla (y no la de B1) en las tareas B2, B5, B6, I1, I2, I4,
+    I5 e I8, que incluyen temporizacion. La de B1 solo sirve para logica
+    puramente combinacional o de enclavamiento sin retardos.
+
+    ATENCION AL TIEMPO REAL: la simulacion corre en tiempo real, de modo que
+    un banco con esperas de 6 s por paso tarda unos 20 s por respuesta. Para
+    24 respuestas de una tarea son unos 8 minutos; asumible. En tareas con
+    retardos largos (B5 usa TOF de 30 s; I1 encadena 20+4+15 s) conviene
+    estimar el tiempo total antes de lanzar el lote.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reposo *)
+            nivelAlto := FALSE;
+            tEspera   := T#500MS;
+            esperado  := FALSE;
+        1:  (* Nivel alto durante 3 s: aun NO debe abrir (el TON pide 5 s) *)
+            nivelAlto := TRUE;
+            tEspera   := T#3S;
+            esperado  := FALSE;
+        2:  (* Se mantiene 3 s mas (6 s acumulados): ya debe abrir *)
+            nivelAlto := TRUE;
+            tEspera   := T#3S;
+            esperado  := TRUE;
+        3:  (* Cae el nivel: debe cerrar de inmediato, sin retardo *)
+            nivelAlto := FALSE;
+            tEspera   := T#200MS;
+            esperado  := FALSE;
+        4:  (* Nuevo ciclo completo: comprueba el rearme del temporizador *)
+            nivelAlto := TRUE;
+            tEspera   := T#6S;
+            esperado  := TRUE;
+        5:  (* Cierre final *)
+            nivelAlto := FALSE;
+            tEspera   := T#200MS;
+            esperado  := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#C8-5754">C8-5754</a><a href="#C8-2534">C8-2534</a><a href="#C8-4156">C8-4156</a><a href="#C8-1981">C8-1981</a><a href="#C8-8380">C8-8380</a><a href="#C8-5696">C8-5696</a><a href="#C8-4887">C8-4887</a><a href="#C8-4679">C8-4679</a><a href="#C8-6973">C8-6973</a><a href="#C8-7535">C8-7535</a><a href="#C8-1455">C8-1455</a><a href="#C8-8654">C8-8654</a><a href="#C8-2995">C8-2995</a><a href="#C8-7711">C8-7711</a><a href="#C8-4581">C8-4581</a><a href="#C8-6084">C8-6084</a><a href="#C8-4519">C8-4519</a><a href="#C8-2420">C8-2420</a><a href="#C8-5584">C8-5584</a><a href="#C8-3511">C8-3511</a><a href="#C8-4933">C8-4933</a><a href="#C8-8185">C8-8185</a><a href="#C8-1743">C8-1743</a><a href="#C8-5787">C8-5787</a></div>
+<div class="caja resp" id="C8-5754"><div class="cod"><h3>C8-5754</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA para activar el temporizador *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina controlada por la salida del temporizador *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador TON *)
+END_VAR
+
+(* Configuración del temporizador TON *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* La salida de la válvula se activa cuando el temporizador alcanza el tiempo preestablecido *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-2534"><div class="cod"><h3>C8-2534</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador *)
+END_VAR
+
+(* Inicialización del temporizador *)
+IF nivelAlto THEN
+    T1(IN := TRUE, PT := T#5S);
+ELSE
+    T1(IN := FALSE);
+END_IF;
+
+(* La salida del temporizador alimenta la bobina de la válvula *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-4156"><div class="cod"><h3>C8-4156</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; // Entrada que indica el nivel alto
+END_VAR
+
+VAR_OUTPUT
+    valvula : BOOL; // Salida que controla la válvula
+END_VAR
+
+VAR
+    T1 : TON; // Temporizador de retardo por encendido
+END_VAR
+
+// Inicialización del temporizador T1 con un tiempo preestablecido de 5 segundos
+IF nivelAlto THEN
+    T1(IN := TRUE, PT := T#5S);
+ELSE
+    T1(IN := FALSE);
+END_IF;
+
+// La válvula se abre cuando el temporizador T1 ha terminado su cuenta
+valvula := T1.Q;</pre></div>
+<div class="caja resp" id="C8-1981"><div class="cod"><h3>C8-1981</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; // Entrada que indica el nivel alto
+END_VAR
+
+VAR_OUTPUT
+    valvula : BOOL; // Salida que controla la válvula
+END_VAR
+
+VAR
+    T1 : TON; // Temporizador de tipo TON
+END_VAR
+
+// Inicialización del temporizador T1 con un tiempo preestablecido de 5 segundos
+T1.PT := T#5S;
+
+// Rama 1: Si nivelAlto es verdadero, arranca el temporizador T1
+IF nivelAlto THEN
+    T1(IN := TRUE);
+ELSE
+    T1(IN := FALSE);
+END_IF;
+
+// Rama 2: Si el temporizador T1 ha terminado, activa la válvula
+valvula := T1.Q;</pre></div>
+<div class="caja resp" id="C8-8380"><div class="cod"><h3>C8-8380</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA que activa el temporizador *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina de salida *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador a la conexion *)
+END_VAR
+
+(* Rama 1: El contacto alimenta la entrada IN del temporizador TON *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* Rama 2: El contacto de la salida del temporizador alimenta la bobina *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-5696"><div class="cod"><h3>C8-5696</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador *)
+END_VAR
+
+(* Inicialización del temporizador *)
+IF nivelAlto THEN
+    T1(IN := TRUE, PT := T#5S);
+ELSE
+    T1(IN := FALSE);
+END_IF;
+
+(* La salida del temporizador alimenta la bobina valvula *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-4887"><div class="cod"><h3>C8-4887</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; // Contacto normalmente abierto que activa el temporizador
+END_VAR
+
+VAR_OUTPUT
+    valvula : BOOL; // Bobina de salida
+END_VAR
+
+VAR
+    T1 : TON; // Temporizador a la conexión (Timer On Delay)
+END_VAR
+
+// Rama 1: El estado de nivelAlto alimenta la entrada IN del temporizador T1 con PT de 5 segundos
+T1(IN := nivelAlto, PT := T#5S);
+
+// Rama 2: El contacto normalmente abierto T1.Q alimenta la bobina valvula
+valvula := T1.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-4679"><div class="cod"><h3>C8-4679</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA que activa el temporizador *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina activada por la salida del temporizador *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador TON *)
+END_VAR
+
+(* Configuración del temporizador TON *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* La salida del temporizador activa la bobina *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-6973"><div class="cod"><h3>C8-6973</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;nivelAlto&#x27; no es ninguna entrada de &#x27;FB_VALVULA&#x27;).</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR
+    nivelAlto : BOOL; // Entrada: indica si el nivel es alto
+    valvula : BOOL;   // Salida: controla la válvula
+    T1 : TON;         // Temporizador TON
+END_VAR
+
+// Inicialización del temporizador
+T1(IN := nivelAlto, PT := T#5S);
+
+// Asignación de la salida de la válvula
+valvula := T1.Q;</pre></div>
+<div class="caja resp" id="C8-7535"><div class="cod"><h3>C8-7535</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA para activar el temporizador *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina controlada por el temporizador *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador TON *)
+END_VAR
+
+(* Configuración del temporizador *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* La salida del temporizador controla la bobina *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-1455"><div class="cod"><h3>C8-1455</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 6 pasos del harness (pasos 3,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; // Entrada que indica el nivel alto
+END_VAR
+
+VAR_OUTPUT
+    valvula : BOOL; // Salida que controla la válvula
+END_VAR
+
+VAR
+    T1 : TON; // Temporizador de retardo por encendido
+END_VAR
+
+// Inicialización del temporizador T1 con un tiempo preestablecido de 5 segundos
+IF nivelAlto THEN
+    T1(IN := nivelAlto, PT := T#5S);
+END_IF;
+
+// La válvula se activa cuando el temporizador T1 ha terminado
+valvula := T1.Q;</pre></div>
+<div class="caja resp" id="C8-8654"><div class="cod"><h3>C8-8654</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA que activa el temporizador *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina activada tras el retardo *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador a la conexión, retardo de 5 s *)
+END_VAR
+
+(* Rama 1: nivelAlto alimenta la entrada IN del TON T1 *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* Rama 2: T1.Q (contacto NA) alimenta la bobina valvula *)
+valvula := T1.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-2995"><div class="cod"><h3>C8-2995</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;nivelAlto&#x27; no es ninguna entrada de &#x27;FB_VALVULA&#x27;).</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR
+    nivelAlto : BOOL; // Entrada: indica si el nivel es alto
+    valvula : BOOL;   // Salida: controla la válvula
+    T1 : TON;         // Temporizador TON
+END_VAR
+
+// Asignación del tiempo preestablecido del temporizador
+T1(IN := nivelAlto, PT := T#5S);
+
+// La salida de la válvula se activa si el temporizador ha alcanzado el tiempo preestablecido
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-7711"><div class="cod"><h3>C8-7711</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Sensor de nivel alto *)
+END_VAR
+
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina de la válvula *)
+END_VAR
+
+VAR
+    T1 : TON; (* Temporizador a la conexión, retardo a la conexión *)
+END_VAR
+
+(* -------------------------------------------------------
+   Rama 1: nivelAlto activa el temporizador T1 (TON, PT = 5 s)
+   Rama 2: T1.Q activa la bobina valvula
+   ------------------------------------------------------- *)
+
+(* Rama 1 - Temporizador TON *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* Rama 2 - Bobina valvula *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-4581"><div class="cod"><h3>C8-4581</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA: activa el temporizador *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina: se activa cuando T1.Q es TRUE *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador a la conexión, tiempo preestablecido 5 s *)
+END_VAR
+
+(* Rama 1: nivelAlto alimenta la entrada IN del TON T1 *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* Rama 2: la salida Q de T1 alimenta la bobina valvula *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-6084"><div class="cod"><h3>C8-6084</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; // Contacto normalmente abierto que inicia el temporizador
+END_VAR
+
+VAR_OUTPUT
+    valvula : BOOL; // Bobina de la válvula
+END_VAR
+
+VAR
+    T1 : TON; // Temporizador a la conexión
+END_VAR
+
+// Rama 1: El contacto nivelAlto alimenta la entrada IN del temporizador T1 con PT de 5 segundos
+T1(IN := nivelAlto, PT := T#5S);
+
+// Rama 2: El contacto normalmente abierto de T1.Q alimenta la bobina valvula
+valvula := T1.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-4519"><div class="cod"><h3>C8-4519</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Señal de nivel alto *)
+END_VAR
+
+VAR_OUTPUT
+    valvula : BOOL; (* Salida hacia la válvula *)
+END_VAR
+
+VAR
+    T1 : TON; (* Temporizador a la conexión, retardo a la activación *)
+END_VAR
+
+(* -------------------------------------------------------
+   Rama 1: nivelAlto activa el temporizador T1 (TON, PT=5s)
+   Rama 2: cuando T1.Q=TRUE se activa la salida valvula
+   ------------------------------------------------------- *)
+
+(* Rama 1: equivalente al contacto NA nivelAlto -&gt; TON T1 *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* Rama 2: equivalente al contacto NA T1.Q -&gt; bobina valvula *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-2420"><div class="cod"><h3>C8-2420</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; // Contacto normalmente abierto que detecta el nivel alto
+END_VAR
+
+VAR_OUTPUT
+    valvula : BOOL; // Bobina que controla la válvula
+END_VAR
+
+VAR
+    T1 : TON; // Temporizador a la conexión (Timer On Delay)
+END_VAR
+
+// Rama 1: El contacto nivelAlto alimenta la entrada IN del temporizador T1
+T1(IN := nivelAlto, PT := T#5S);
+
+// Rama 2: El contacto normalmente abierto de T1.Q alimenta la bobina valvula
+valvula := T1.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-5584"><div class="cod"><h3>C8-5584</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA que inicia el temporizador *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina de salida *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador a la conexión *)
+END_VAR
+
+(* Rama 1: El contacto nivelAlto alimenta la entrada IN del temporizador T1 *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* Rama 2: El contacto NA de T1.Q alimenta la bobina valvula *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-3511"><div class="cod"><h3>C8-3511</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Señal de nivel alto *)
+END_VAR
+
+VAR_OUTPUT
+    valvula : BOOL; (* Salida hacia la válvula *)
+END_VAR
+
+VAR
+    T1 : TON; (* Temporizador a la conexión, 5 segundos *)
+END_VAR
+
+(* Rama 1: nivelAlto activa el temporizador T1 con PT = 5 s *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* Rama 2: cuando T1 expira (Q = TRUE), se activa la válvula *)
+valvula := T1.Q;</pre></div>
+<div class="caja resp" id="C8-4933"><div class="cod"><h3>C8-4933</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;nivelAlto&#x27; no es ninguna entrada de &#x27;FB_VALVULA&#x27;).</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR
+    nivelAlto : BOOL; // Entrada: indica si el nivel es alto
+    valvula : BOOL;   // Salida: controla la válvula
+    T1 : TON;         // Temporizador TON
+END_VAR
+
+// Inicialización del temporizador
+T1(IN := nivelAlto, PT := T#5S);
+
+// Control de la válvula basado en el temporizador
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-8185"><div class="cod"><h3>C8-8185</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador *)
+END_VAR
+
+(* Inicialización del temporizador *)
+IF nivelAlto THEN
+    T1(IN := TRUE, PT := T#5S);
+ELSE
+    T1(IN := FALSE);
+END_IF;
+
+(* La salida del temporizador alimenta la bobina valvula *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-1743"><div class="cod"><h3>C8-1743</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA que inicia el temporizador *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina activada por el temporizador *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador a la conexion *)
+END_VAR
+
+(* Rama 1: Llamada al temporizador TON con PT de 5 segundos *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* Rama 2: La bobina se activa con la salida Q del temporizador *)
+valvula := T1.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C8-5787"><div class="cod"><h3>C8-5787</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Valvula
+VAR_INPUT
+    nivelAlto : BOOL; (* Contacto NA: activa el temporizador *)
+END_VAR
+VAR_OUTPUT
+    valvula : BOOL; (* Bobina: activada tras retardo *)
+END_VAR
+VAR
+    T1 : TON; (* Temporizador a la conexión, PT = 5 s *)
+END_VAR
+
+(* Rama 1: nivelAlto alimenta la entrada IN del TON T1 *)
+T1(IN := nivelAlto, PT := T#5S);
+
+(* Rama 2: la salida Q de T1 alimenta la bobina valvula *)
+valvula := T1.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

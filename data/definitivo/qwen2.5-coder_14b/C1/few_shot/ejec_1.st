@@ -1,0 +1,5 @@
+1. Falta inicialización de la variable estado: La variable estado no está inicializada, lo que puede llevar a comportamientos impredecibles al iniciar el programa. Corrección: Inicializar estado := 0; en la sección de VAR.
+2. Falta manejo del estado 3 (amarillo intermitente): El estado 3 no está siendo utilizado en el código. Corrección: Añadir una transición al estado 3 desde el estado 2 y manejar el parpadeo en este estado.
+3. Falta manejo del parpadeo en el estado 3: La variable parp no está siendo actualizada para crear el efecto de parpadeo. Corrección: Añadir una lógica para cambiar el valor de parp cada cierto tiempo dentro del estado 3.
+4. Falta manejo de la transición al estado 3: No hay una transición definida al estado 3 en el código. Corrección: Añadir una condición para cambiar al estado 3 después de que la luz roja esté encendida durante un tiempo determinado.
+5. Falta manejo de la variable t1 en el estado 3: La variable t1 no está siendo utilizada en el estado 3. Corrección: Añadir una lógica para manejar el temporizador t1 en el estado 3 para controlar el parpadeo de la luz amarilla.

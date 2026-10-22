@@ -1,0 +1,434 @@
+[
+ {
+  "codigo": "C1-130",
+  "det": [
+   "S",
+   "S",
+   "N",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "N",
+   "",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta E1/E2/E4; no detecta E3; la corrección del TON no garantiza reinicio; init de estado y lógica ELSE son falsos."
+ },
+ {
+  "codigo": "C1-146",
+  "det": [
+   "S",
+   "S",
+   "N",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1/E2/E4; no concreta E3 inalcanzable; init de estado falso."
+ },
+ {
+  "codigo": "C1-110",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "N",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta los 4; corrección del TON poco concreta/no garantiza reinicio; init de estado falso."
+ },
+ {
+  "codigo": "C1-138",
+  "det": [
+   "S",
+   "S",
+   "N",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1/E2/E4; no concreta E3; falso sobre apagado de luces con habilitado FALSE."
+ },
+ {
+  "codigo": "C1-178",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta los 4; dos afirmaciones falsas sobre conducta al deshabilitar (apagado y detención del ciclo)."
+ },
+ {
+  "codigo": "C1-180",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta los 4; falsos: exige apagar luzR en estado1 y luzV en estado2 sin ser necesario."
+ },
+ {
+  "codigo": "C1-173",
+  "det": [
+   "N",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "",
+   "N",
+   "S",
+   "N"
+  ],
+  "adic": 0,
+  "inv": 4,
+  "obs": "No ve E1; detecta E2/E3/E4 pero con correcciones inadecuadas; varios falsos de inicialización y lógica del estado3."
+ },
+ {
+  "codigo": "C1-113",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta los 4; falsos: apagar luzR en estado1 y luzV en estado2."
+ },
+ {
+  "codigo": "C1-136",
+  "det": [
+   "N",
+   "N",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "",
+   "",
+   "N",
+   "N"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta estado3 y parp; pide parpadeo del amarillo normal y propone eliminar funcionalidad; no ve E1/E2."
+ },
+ {
+  "codigo": "C1-117",
+  "det": [
+   "S",
+   "S",
+   "N",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1/E2/E4; no concreta E3; falso sobre luces apagadas en ELSE."
+ },
+ {
+  "codigo": "C1-165",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta los 4; un falso: dice que la rama ELSE apaga las luces al deshabilitar."
+ },
+ {
+  "codigo": "C1-172",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta los 4; falsos: luzR en estado1 y luzV en estado2."
+ },
+ {
+  "codigo": "C1-114",
+  "det": [
+   "N",
+   "N",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "",
+   "",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta estado3 y parp; no ve E1/E2; init de estado falso."
+ },
+ {
+  "codigo": "C1-184",
+  "det": [
+   "N",
+   "N",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "",
+   "",
+   "N",
+   "N"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Detecta estado3 inalcanzable y parp sin actualizar; no ve E1/E2; correcciones eliminan estado3 o parpadean el amarillo normal."
+ },
+ {
+  "codigo": "C1-161",
+  "det": [
+   "N",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "",
+   "S",
+   "N",
+   "N"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "No ve E1; detecta E2/E3/E4; init de estado falso; correcciones de intermitencia incorrectas."
+ },
+ {
+  "codigo": "C1-101",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 1,
+  "inv": 1,
+  "obs": "Detecta los 4 y además luzV/luzR no apagadas en estado3; un falso: luzR en estado1."
+ },
+ {
+  "codigo": "C1-125",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta los 4; falsos: luzR en estado1 y luzV en estado2."
+ },
+ {
+  "codigo": "C1-116",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta los 4; un falso: dice que la rama ELSE apaga todo al deshabilitar."
+ },
+ {
+  "codigo": "C1-170",
+  "det": [
+   "N",
+   "N",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "",
+   "",
+   "N",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta estado3 y parp; no ve E1/E2; init de estado y t1 son falsos; corrección de estado3 vaga."
+ },
+ {
+  "codigo": "C1-122",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta los 4; init de estado falso y afirmación falsa de apagado en ELSE."
+ },
+ {
+  "codigo": "C1-123",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta los 4; un falso: afirma que estado2 no apaga luzA cuando sí lo hace."
+ },
+ {
+  "codigo": "C1-115",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta los 4; un falso: dice que la rama ELSE apaga todo al deshabilitar."
+ },
+ {
+  "codigo": "C1-141",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta los 4; dos falsos sobre conducta al deshabilitar (apagado y detención)."
+ },
+ {
+  "codigo": "C1-126",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta los 4; dos falsos sobre conducta al deshabilitar."
+ }
+]

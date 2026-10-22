@@ -1,0 +1,796 @@
+We need answer as JSON list of 24 objects. Need evaluate each response per rubric. Must adhere no markdown. We need produce exactly 24 objects in same order. Need analyze each code. Need be careful: input JSON includes 24? Let's count. We need ensure. Let's enumerate. Task includes "respuestas" array. I'll index 0..23.
+
+We need produce scores funcional, iec, coherencia, claridad, mantenibilidad, justification lines. If funcional_fijo or iec_fijo not null copy exactly. If no compila funcional=0 iec=0 fijados. If all pass funcional=3 fijado. If compila but fails steps: funcional 0/1/2. Need maybe consider if compila and fails some steps. For responses A6-8649, A6-5385, A6-6945 fail 6 steps 6,7,8,9,10,15. Need analyze why. They likely implement direct actuator array without separate forced state, but issue? Let's understand protocol.
+
+We need score all. Since many no compila due missing i variable declarations? Actually they declare no i in VAR, but compiler says i undefined. In ST, loop variable must be declared? In CODESYS, yes. So all no compila with misdeclared i. They get funcional=0 iec=0 fixed. Other criteria: coherencia, claridad, mantenibilidad scoring reading code. Need evaluate.
+
+But for compilations that pass all, funcional fixed=3, iec null; we set iec based on standard. Many are similar. Need assign iec 1-3. Also coherencia etc.
+
+Let's first parse all 24 codes and results.
+
+I'll list responses with indices:
+
+0 A6-5636: No compila (38 errors). Missing i. Code: has inputs outputs VAR with modeAnterior, forzado. Logic: initialization? There is IF NOT estadoSeguro THEN modoActivo:=1 ELSE ... This is flawed: no persistent modeAnterior init? Actually at arranque should manual. It attempts. But no compila. funcional=0 iec=0 fixed. Need coherencia/claridad/mantenibilidad. We'll assess later.
+
+1 A6-1663: No compila (16 errors). Missing i. Code similar, includes modoPendiente, confirmarForzadoAnt, forzados. No initial first cycle? It assigns modoActivo :=1 every scan (bad if change). But no compila. Need scores.
+
+2 A6-6019: No compila (32 errors). Missing i. Similar. modoSeleccionado init 1, no explicit modoActivo init? But modeActivo not initialized in VAR_OUTPUT, but assigned every scan from modoSeleccionado. No comp. Fixed 0,0. Need others.
+
+3 A6-5711: Compila. Pasa 17. Fixed funcional=3, iec null. Need evaluate IEC. Code uses R_TRIG? Actually implements manual flanco? It declares i, estadosForzados, confirmarForzado_prev, flanco_confirmar, primerCiclo, estadoSeguro_prev. Uses no standard blocks, but manual edge detection. IEC compliant. Types okay. No TON, R_TRIG? Could have used R_TRIG? But manual edge is standard. I'll need maybe score 2 or 3? It is idiomatic? Has comments, initialization, good structure. IEC 3 maybe because proper variable declarations, comments, no extensions. It compiles. likely 3. Need not penalize manual edge.
+
+4 A6-9717: No compila (14 errors). Missing i. Code similar. Fixed 0,0.
+
+5 A6-2982: Compila. Pasa 17. Fixed funcional=3, iec null. Code declares i, firstEdge, state array, manual confirm edge. IEC maybe 3.
+
+6 A6-6456: No compila (36 errors). Missing i. Fixed 0,0.
+
+7 A6-4813: Compila. Pasa 17. Fixed funcional=3, iec null. Uses R_TRIG. Declares rTrigConfirmar R_TRIG; no edge for estadoSeguro? Actually on losing safety, code in maintenance: IF NOT estadoSeguro THEN apagar all; It does not track state but always in mode 2 and NOT seguro apaga. It does that. It uses R_TRIG; compile. IEC 3 probably. Coherencia maybe less robust? It uses modoAnterior to init on entry but doesn't clear forced states on leaving? But no forced state array; uses actuador directly, when leaving maintenance to manual/auto, commands overwrite. Is this safe? At step 15 salir de mantenimiento and re-enter? It passes. But code has possible issue: on exit from maint to manual, doesn't explicitly clear forzados because none stored; next entry apaga all. Fine. But there is R_TRIG. Coherence maybe 3? It has no explicit forzado state, but direct actuador. It uses rTrigConfirmar. However if stateSeguro lost in maintenance, it clears outputs; if regained, outputs stay off. Good. But possible if confirmarForzado pulse same cycle as losing estadoSeguro? It handles if NOT stateSeguro first. Good. Coherence okay. But no explicit forced array. It cannot "conservar" forced values in array but output retains in mode 2 safe. Good. coherencia: 3? interlocks complete.
+
+8 A6-9389: Compila. Pasa 17. Fixed funcional=3, iec null. Manual edge detection. Code declares prevConfirmarForzado, flanco, modoAnterior, i. No forced array; direct actuador. Similar. It initializes outputs. It sets actuador on entry maintenance. On losing safety in maint, apaga. On exit to auto/manual commands overwrite. Passes. IEC 3? probably.
+
+9 A6-5300: Compila. Pasa 17. Uses R_TRIG. Similar. Fixed. IEC 3.
+
+10 A6-8649: Compila. Falla 6/17 (pasos 6,7,8,9,10,15). funcional null. Need analyze. Code has modoInterno:=1; mode change logic records pending if selector valid and estadoSeguro false. In protocol step 0: selector=0, estadoSeguro FALSE, expected mode=1. Code: selector is 0 valid; estadoSeguro false; IF selector <> modoInterno (0<>1) then modoPendiente TRUE, selectorPendiente=0. Later flanco stateSeguro? estadoSeguro_ant false, so no apply. Outputs CASE modoInterno 1 => manual cmdManual. So paso 0 passes. Step 1 same. Step 2: selector=0, estadoSeguro TRUE, modoInterno currently 1? Wait stateSeguro true; selector valid and same as? selector != modoInterno? 0<>1 yes. In estadoSeguro true block: IF selector <> modoInterno then if modoInterno=2 then clear; modoInterno := selector (0). Also pending false. Then later flanco ascendente stateSeguro: estadoSeguro AND NOT estadoSeguro_ant. But estadoSeguro_ant from previous cycle? Step 1 ended estadoSeguro false so estadoSeguro_ant=false. So true, hay? modoPendiente now false, so no. CASE 0 -> cmdAuto. passes. Step 3 selector 5 invalid; mode remains 0. Step 4 invalid -1 mode remains 0. Step 5 selector 0 mode 0 cmdAuto A2. Step 6 selector 2, estadoSeguro true. Code valid; if selector <> modoInterno (2<>0) then if modoInterno=2 false, modoInterno:=2, pending false. Later no flanco? Actually flanco estadoSeguro? prev true so no. CASE modoInterno 2: stateSeguro true; edge confirm? paso6 no pulse; no forced. Outputs? It does not explicitly apagar on entry to maintenance except only if stateSeguro false; and in mode change to maintenance it does not apagar unless leaving maintenance? It only clears when leaving mode 2. Wait code: when change to 2, no clear actuators. Then CASE 2 stateSeguro true, it leaves actuador previous values from automatic/manual unchanged, but expected all off on entering maintenance. So paso 6 expected mode 2, actuators 0, but code outputs previously automatic cmdAuto (mask 102)? Since previous step mode 0 output 102. Step 6 expected eMask 0, code gives 102. So fail step 6. Step 7: stateSeguro true, edge confirm; it then sets actuador[3] TRUE on top of existing 102, resulting 110? Actually 102 binary 01100110; setting bit 3 true gives 110? Let's compute 102 decimal binary 64+32+4+2=01100110 (bits 1,2,5,6). Setting bit3 adds 8 -> 110 (01101110). Expected 8. So fail. Step 8 idx out of range leave previous 110, expected 8. fail. Step 9 set bit5 true (already bit5 true from auto? Actually auto 102 has bits 1,2,5,6. So remains 110, expected 40 (00101000 bits 3,5? Wait 40 binary 32+8 bits3 and5). They expected 00010100 mask = 20? Wait protocol step 9: eMask := 40? Let's recalc. Step 7 eMask 8 (bit3). Step 9: idx 5 val T pulse -> expected eMask 40? Wait 00010100 binary is bits 2 and 4? Let's compute. In protocol it says paso 9 eMask 40? But "00010100" = 20 decimal, not 40. Wait harness table has eMask := 40? Actually in pasos text: "9: ... eMask := 40;" But then comment says 00010100? Let's inspect: In protocol step list: 
+9: selector := 2; estadoSeguro := TRUE; mAuto := 102; idxForzado := 5; valorForzado := TRUE; pulsoStep := TRUE; eModo := 2; eMask := 40;
+But description earlier: "9 (2,T,A2,5,T,P) -> (2, 00010100)" Wait 00010100 = 20 decimal? Bits: bit2 (4) + bit4 (16) =20. Hmm they wrote 00010100 but eMask :=40. Let's decode bits: mask WORD bit i = element[i]. 0x0014 = 20 decimal, bits 2 and 4. But eMask 40 decimal = 0x28 bits 3 and 5 (8+32). They expected after step7 actuador[3] forced true -> bit3 (8). Step9 idx 5 forced true -> bit5 (32) plus bit3 = 40. So the displayed "00010100" in prompt seems incorrect (bits maybe reversed? Actually 0x28 binary 00101000, bits 3 and 5). They wrote 00010100 = 0x14. So eMask 40 correct. Step 10: idx 3 val F pulse; should retain bit5, bit3 false => bit5 = 32 -> eMask 32. They wrote 00000100 = 4, but eMask 32. So inconsistency in comment bits irrelevant; use eMask number. Good.
+
+Why step 10 fails: code outputs previous auto bits 1,2,5,6 (102) + maybe bit3 changed false? Actually step 7 set bit3 true => 110. Step 8 no change. Step 9 set bit5 true already true => 110. Step 10 set bit3 false => 102. Expected 32. Fail. Step 15: after leaving maintenance to manual and reenter; code on leaving maintenance to manual: in mode change block if modoInterno=2 and selector<>2, it clears actuators. But it doesn't clear a forced state array (none). At step14 selector 1, modeInterno 2 -> clear actuators, set 1 -> manual outputs M. Step15 selector 2, stateSeguro true -> change to maintenance, no clear actuators, so outputs manual M remains. Expected 0. Fail. So functional score? It fails multiple steps including mandatory maintenance behavior: all off on entry, forced values not reset. The case nominal? It passes step 0-5? But fails mode transition to maintenance. According rubric if fails in case nominal? "No implementa lógica pedida o falla caso nominal" maybe step 6 is nominal? It fails core maintenance. So functional 0 or 1? It compiles but fails 6/17. It handles mode changes and pending, but maintenance is mostly wrong because doesn't clear outputs on entry and keep only forced values. I'd score functional 1? The rubric: 2 correct in nominal and most edge cases; 1 works in nominal but fails edge. Here fails important nominal maintenance; but initial mode changes and auto/manual work. However core "modo mantenimiento todos apagados y forzado" fails. That's not just edge. I'd give funcional 1? Or maybe 0 because fail in case nominal? They likely test step 6. I'd consider step 6 is fundamental, so functional=1 (some parts work) maybe not 0. Need decide. We'll later.
+
+Need for each compiles fails functional: A6-8649, A6-5385, A6-6945. They all same fail. Need assign functional.
+
+Let's analyze A6-5385: Similar to A6-8649 but simpler. It does not clear on entry to maintenance. Fails same. It compiles. It changes mode when stateSeguro true if selector valid. Does not set default when no stateSeguro: at arranque modoInterno init 1; ok. Step2 pending? Let's see first steps: step0 selector0, estadoSeguro false. IF stateSeguro false skip. CASE modoInterno 1 -> manual. pass. Step2 stateSeguro true selector0: change from 1 to 0; CASE 0 auto. pass. Step6 selector2: change from0 to2; but before change, it checks if salir de mantenimiento? no. It doesn't clear actuators on entry. CASE 2: if stateSeguro true, edge confirm no; actuador remains previous 102 (from step5). Expected 0. fail. It also doesn't maintain forced older values when stateSeguro false? Step11: stateSeguro false; modoInterno stays2? Wait no change? CASE2: IF NOT estadoSeguro AND estadoSeguro_ant THEN (because prev from step10 true) apagar all. So step11 outputs 0. Step12 stateSeguro true, stateSeguro_ant false, no trigger? in case 2 stateSeguro true; edge confirm no; actuador remains 0. pass. Step13 edge confirm set bit0 -> 1. Step14 selector1 stateSeguro true: mode changes to1; before change if modoInterno=2 and selector<>2 then clear actuators. So clear then manual M. pass. Step15 reenter maintenance selector2: mode changes to2; does not clear actuators on entry, so outputs manual M (51). Expected 0. fail. So fail exactly same. Functional 1? Same.
+
+A6-6945: Similar. It has pending logic, but when entering maintenance with stateSeguro true it doesn't clear all. It also has an explicit block IF modoActivo=2 AND NOT estadoSeguro THEN apaga (every scan while false), but not on entry. It clears when leaving maintenance. Fails same. Functional 1.
+
+Need maybe score 0? Let's think under rubric. "0: no implementa la lógica pedida o falla en el caso nominal." The case nominal likely includes step 6? "modo mantenimiento todos apagados". They fail maintenance case, core. But they implement mode changes and auto/manual. The required logic includes three modes. They fail one entire mode's initial behavior plus forzado because not isolated? Actually if entering maintenance from manual with all outputs maybe not zero. So they also force into previous commands. It's severely wrong for maintenance. But their code has some logic. I'd assign 1 "funciona en el caso nominal pero falla en casos límite evidentes"? Not exactly; fails nominal maintenance. Could assign 1 because auto/manual works but maintenance portion fails. Many rubrics might give 1 for partial but not 0 because compiles and significant parts operate. The instructions: "Si compila pero falla pasos: funcional 0, 1 o 2 según la rúbrica, usando qué pasos fallan y el protocolo." 0 no implementa la lógica pedida o falla en el caso nominal. It does fail case nominal (maintenance), so maybe 0. But case nominal could be overall? If all modes are in requirements, failing maintenance is a functional failure in a main path. I'd lean functional=1 maybe because mode selection and auto/manual are implemented; but step 6 is first maintenance step. Hmm.
+
+We need consistent among these three; same fail, same functional. Could give 1. Let's read rubric: "0: no implementa la lógica pedida o falla en el caso nominal." The implementation doesn't implement maintenance correctly; it's not just edge. So maybe 0. But "no implementa la lógica pedida" might be too harsh; they implemented partial. Yet functional criterion 0 for "falla en el caso nominal". The nominal case would include changing to maintenance and forcing; they fail that. So 0 can be justified. However they pass step0-step5 (manual/auto/mode safety) 11/17. I'd use 1 for partial. The rubric implies 0 for no functional, 1 for nominal works but edge failures. Here nominal includes maybe only basic mode selection? Hmm. We need decide.
+
+Let's evaluate "resultado_codesys": "Falla 6 de 17 pasos del harness (pasos 6,7,8,9,10,15; numerados desde 0)." This means they pass first 6? Actually fail passo 6 etc. Pass 11/17. That indicates many nominal cases pass; failing maintenance entry/force. I'd assign functional=1 as "Básico": operates in basic mode selection but fails in maintenance, which is a core mode. Maybe not 0. We'll assign 1 for these three.
+
+Now other compiles pass all have funcional=3 fixed. Need set iec maybe. Let's count all pass responses: A6-5711 (idx3), A6-2982 (5), A6-4813 (7), A6-9389 (8), A6-5300 (9), A6-1068 (10? wait A6-1068 idx10? Let's recount indices after no compile). Need list more accurately.
+
+Let's enumerate with full index and codigo:
+
+0 A6-5636 no comp
+1 A6-1663 no comp
+2 A6-6019 no comp
+3 A6-5711 compila pass
+4 A6-9717 no comp
+5 A6-2982 compila pass
+6 A6-6456 no comp
+7 A6-4813 compila pass
+8 A6-9389 compila pass
+9 A6-5300 compila pass
+10 A6-8649 compila fail 6
+11 A6-1068 compila pass
+12 A6-5359 no comp (method misplaced)
+13 A6-2630 compila pass
+14 A6-5020 no comp
+15 A6-1266 compila pass
+16 A6-3215 no comp
+17 A6-5385 compila fail
+18 A6-5870 no comp
+19 A6-8625 compila pass
+20 A6-4100 no comp method
+21 A6-4942 no comp
+22 A6-1659 no comp
+23 A6-6945 compila fail
+
+Let's ensure count 24. Yes.
+
+Now criteria for no compile: funcional_fijo=0 iec_fijo=0. Need score coherencia, claridad, mantenibilidad. We'll need assign each.
+
+IEC for passes: If compiles and all pass, iec null -> set 1/2/3. Most declarations and syntax correct. Some use R_TRIG standard block without instance? They instantiate "rTrigConfirmar : R_TRIG;" which is standard. If CODESYS compiles, definitions correct. Some use manual edge. Is manual edge "extensiones fuera del estándar"? No. Standard. Idiomatic? Some code uses arrays loops, good. Some have comments. Some use R_TRIG. I'd assign mostly 3 or 2. Need differentiate maybe those with Spanish comments still okay. Could assign 3 for those with good idiom. Might assign 2 if direct output array assignment "actuador := cmdAuto" maybe standard? CODESYS supports array assignment? It compiled in one no comp? Some no compile not due assignment, missing i. For passes, none use array assignment? A6-1068 uses loops, manual edge. A6-1266 loops. A6-8625 loops. A6-5711 loops. A6-2982 loops. A6-4813 R_TRIG loops. A6-9389 loops. A6-5300 R_TRIG loops. A6-2630 R_TRIG loops. All good.
+
+Could give IEC 3 to all passes. But need consider standard: R_TRIG is standard; manual edge using prev vars also standard. Types TIME? no TIME. All variables declared. Good.
+
+For A6-4813 etc, use `rTrigConfirmar(CLK := confirmarForzado);` standard. Good.
+
+A6-1266 uses // comments, standard? IEC 61131-3 comments can be (* *) or // maybe CODESYS supports // extension? Actually IEC 61131-3 ST supports (* comment *) only; // is not standard but accepted by CODESYS extension. Hmm. Many codes use // comments. We need evaluate "Cumplimiento IEC 61131-3. 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos correctos; 3 si además es idiomático." Use of // comments might be an extension out of standard. But the prompt says compile? CODESYS accepts. We should not over penalize? "Usa extensiones fuera del estándar" includes // comments and array assignments perhaps. But the rubric for IEC when compila: 1 if uses extensions outside standard; 2 if declarations and types correct; 3 if idiomatic. If code uses // comments, that's outside standard and some array assignments maybe extension. But many use (* *) comments. Some pass codes use // (A6-1266 uses //, A6-8625 uses //). Are // comments an extension? In CODESYS yes. Strictly IEC 61131-3 ST comments are (* *). Could assign 2 instead of 3 if using //? Yet many tasks use // accept. But the rubric says standard idiom; if uses non-standard comments, maybe iec=1? But not "syntax invalid", it's a dialect extension. Could be 1. But the instructions: "1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." This suggests if code compiles but uses extensions, iec=1. However some solutions use // comments; that's an extension out of standard. Do we assign 1? That seems harsh. They ask to score IEC compliance. Many CODESYS programs use //. But IEC 61131-3 standard does not allow //. I'd maybe not penalize comments heavily? Hmm.
+
+Need read rules: "Cumplimiento IEC cuando compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." So if any extension, 1. But if using R_TRIG and proper types but // comments, maybe extension in comments. Is comment syntax part of "construcciones"? Usually yes. But many evaluator may ignore comment style. We need careful. We can set iec=2 for those with // comments, not 1, because it compiles without changes and types correct; comments as // are minor but not standard. The rubric says "compila solo tras correcciones menores, o usa extensiones fuera del estándar" =1. It literally says uses extensions ->1. However it also says "2 si compila sin cambios; declaraciones y tipos correctos." If we consider // comments as extension, then 1. But maybe CODESYS extension comments don't affect code semantics, but still outside standard. I need choose consistent. We can assign iec=2 for most pass programs, and maybe 3 for those with idiomatic standard constructs and (*) comments. But if they use R_TRIG standard and comments (* *), 3. If use // comments, 2. If use no standard blocks but manual edge, still standard 2 or 3? "idiomático: POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados." Manual edge is okay but R_TRIG is more idiomatic. For those with R_TRIG and (*) comments, 3. For those with manual edge and (*) comments, maybe 2 or 3. Need not overthink.
+
+Let's identify pass codes comment style and constructs:
+
+- A6-5711 idx3: Uses (* *) comments. Manual edge detection; no standard block. Declares i, proper initial. IEC standard. I'd assign 3? It doesn't use R_TRIG but manual edge is standard. It uses primerCiclo. Idiomatic? Maybe 3 or 2. Comments explanatory. Code uses "ESTADO" etc. I'd assign 3.
+
+- A6-2982 idx5: (* *) comments, manual edge, first execution. No standard block. I'd assign 3? It follows similar. Maybe 2 because no R_TRIG? Rubric says 3 "usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." Manual edge detection is common but no block. But "como" examples, not required. Could be 3. Hmm.
+
+- A6-4813 idx7: (* *) comments, uses R_TRIG. Declarations correct. Idiomatic uses R_TRIG. IEC=3.
+
+- A6-9389 idx8: (* *) comments, manual edge, no R_TRIG. IEC maybe 2 or 3.
+- A6-5300 idx9: (* *) comments, R_TRIG. IEC=3.
+- A6-1068 idx11: (* *) comments, manual edge. IEC maybe 3 or 2.
+- A6-2630 idx13: (* *) comments, R_TRIG. IEC=3.
+- A6-1266 idx15: // comments, manual edge. Extension in comments. IEC maybe 2.
+- A6-8625 idx19: // comments, manual edge. IEC maybe 2.
+
+Need also A6-1266 uses array output not initialized? It compiles. It has comments //. Types correct. If strict, comments extension. I'd assign iec=2. For A6-8625 same.
+
+But maybe "iec_fijo": null for all pass, so we set.
+
+Now for fail compiles A6-8649, A6-5385, A6-6945: They compile, not pass, iec null. Need set iec. These use (* *) comments for A6-8649 and A6-5385 and A6-6945. Declarations correct. No extensions? A6-8649 uses Unicode separator comments with "─────" but still comments. Standard? It's okay. They compile. Need set iec perhaps 2 or 3? They use manual edge and no standard block. They are idiomatic? Might be 2 because no standard R_TRIG. But they also have full declarations. Maybe 2 or 3. Since they not pass, not penalize IEC beyond compile. I'd assign 2 for these due less idiom? Actually two have R_TRIG? No, manual edge. Could assign 2. If they use selectorPendiente etc. But not standard blocks. Still declarations correct. Maybe 2.
+
+Need examine "Cumplimiento IEC cuando compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." For fail compiles:
+- A6-8649: uses manual edge, proper comments. Declarations types correct. No extension. Is manual edge idiomatic? Yes. Could be 3. But code not robust, but IEC independent. I'd assign 2 or 3. Hmm.
+- A6-5385: similar. Uses CASE ELSE fallback? It has `ELSE modoInterno := 1;` inside CASE with no label? In ST CASE has ELSE. It compiles. Declarations correct. No extension. Could be 2 or 3.
+- A6-6945: similar. Could be 2 or 3.
+
+Need decide consistent. For these three with complex pending logic, maybe 2 due non-idiomatic manual edge? But manual edge is acceptable. I lean assign iec=2 for all three failing because their code, though compiles, has some structural complexity but standard. But maybe they should be 2 because "declaraciones y tipos correctos" but not necessarily idiomatic? They don't use R_TRIG. Yet many pass using manual edge get 3? Need distinguish maybe based on comments, structure, but not too much.
+
+The scoring should be careful consistent. Could adopt these IEC rules:
+- 3 if uses R_TRIG or clear first-cycle initialization and standard comments, no extensions.
+- 2 if manual edge but still correct; or // comments.
+- 1 if uses extensions outside standard like METHOD or //? But no compilers with method? A6-5359 no compile fixed iec=0. 
+We'll use maybe:
+  * A6-5711: 2 (manual edge)
+  * A6-2982: 2
+  * A6-4813: 3 (R_TRIG)
+  * A6-9389: 2
+  * A6-5300: 3 (R_TRIG)
+  * A6-1068: 2
+  * A6-2630: 3 (R_TRIG)
+  * A6-1266: 2 (// comments, manual edge)
+  * A6-8625: 2 (// comments)
+  * A6-8649: 2
+  * A6-5385: 2
+  * A6-6945: 2
+
+But rubric says 3 "compila sin cambios y usa construcciones idiomáticas del estándar". Manual edge detection in ST is idiomatic too. But no need to require R_TRIG. Some pass codes with manual edge are well-commented and robust, arguably 3. The difference minimal. We can assign 3 for all pass except // comments. The evaluator may not care. But we need give consistent justifications. Hmm.
+
+Could set IEC 3 for all compiles pass that use either manual or R_TRIG with proper comments. Only A6-1266 and A6-8625 use // comments, so 2. But A6-8625 also uses // and manual edge but otherwise good. A6-1266 uses //. The use of // is an extension, but if we assign iec=2 rather than 1, it's okay? The rubric says uses extension =1. Hmm. Might be too strict. But if we don't penalize //, assign 2. I think 2 is safe. No pass code should get IEC 1 because they all compile without changes; only // comments are extension. But the rubric explicitly 1 for "usa extensiones fuera del estándar." However comments maybe considered minor; we can still assign 2 if declarations and types correct. The phrases: "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos." If it compiles without changes, doesn't require corrections. It may still use extension. But if we treat // as extension, then could be 1. But many evaluator might not count comment syntax as extension. I will not penalize comment style as 1. I'll assign iec=2 for // and manual edge; iec=3 for R_TRIG and/or very idiomatic with (*) comments. But if manual edge standard, maybe 2. Let's proceed simple:
+- R_TRIG pass: A6-4813, A6-5300, A6-2630 -> iec 3
+- Manual edge pass with (*) comments: A6-5711, A6-2982, A6-9389, A6-1068 -> iec 3? Hmm.
+Let's decide based on "construcciones idiomáticas" includes "R_TRIG bien instanciado" not exclusive. Manual edge is standard but less modular. I'd still give 3 if code uses proper initialization and loops. It's idiomatic enough. Then all pass except // comments get 3. A6-1266, A6-8625 get 2.
+- Failing compiles:
+  * A6-8649 uses (*) comments, manual edge, complex but standard: iec 2 or 3? If same rule, 3. But they fail functionally; iec compliance is still good. Could be 3. However the code has "selectorPendiente" pending logic that is more complex; still standard. I could assign 3 too. But maybe there is a non-idiomatic use of mode change with no first cycle? It initializes modeInterno. Fine.
+  * A6-5385: (*) comments, manual edge, standard. Could be 3.
+  * A6-6945: (*) comments, manual edge, standard. Could be 3.
+ If all compiles with correct declarations get 3, then iec distribution has many 3. That's fine. But maybe over generous for fail code. The criterion only checks compile/standard, not functional correctness. So yes could be 3. But rubric for 2 says "compila sin cambios; declaraciones y tipos correctos." 3 says "además usa construcciones idiomáticas..." All these use idiomatic enough. We can give 3 to good ST. But A6-8649 uses manual array loops, edge flags. Yes.
+
+Need set for "cumplimiento IEC cuando compila: 1 if extensions; 2 if declarations and types correct; 3 if additionally idiomatic." For A6-1266 and A6-8625 using // comments maybe 2. They still use idiomatic manual edge, but // extension. I'd maybe assign 2. Others with (*) comments and nice structure get 3. So:
+- idx3 A6-5711 IEC 3
+- idx5 A6-2982 IEC 3
+- idx7 A6-4813 IEC 3
+- idx8 A6-9389 IEC 3
+- idx9 A6-5300 IEC 3
+- idx10 A6-8649 IEC 3? It uses non-ASCII comment line but okay. maybe 2? It has full structured comments. I'll assign 2? Hmm. 
+The fail code has pending mode logic but no forced state. IEC compliance not affected. I'll assign 2 for failing compiles because despite standard constructs, there is no idiomatic separation? But "idiomático" maybe yes. Let's not overcomplicate. For compiles:
+  * If uses R_TRIG and proper comments: 3
+  * If manual edge and proper comments: 2 or 3. I'll use 3 if code robust/clear, 2 if failing or //.
+Maybe for A6-8649 failing but clear, I'd assign 2 (declarations correct, but not R_TRIG and no functional correctness? but IEC doesn't depend). I'll assign 2 for all three fail compile to reflect adequate but less idiomatic to use manual pending edge. For manual pass with clear, assign 2 or 3? Hmm.
+Let's organize final IEC scores:
+- A6-5711: 2? It uses manual edge but very clear. Could be 3. But if not R_TRIG, maybe 2. I'll use a rule: R_TRIG pass ->3; manual edge pass ->2; // comments ->2. That is easier.
+Then:
+  A6-5711 manual edge -> iec 2
+  A6-2982 manual edge -> iec 2
+  A6-4813 R_TRIG -> 3
+  A6-9389 manual edge -> 2
+  A6-5300 R_TRIG -> 3
+  A6-1068 manual edge -> 2
+  A6-2630 R_TRIG -> 3
+  A6-1266 manual edge // -> 2 (or 1? no, 2)
+  A6-8625 manual edge // -> 2
+  A6-8649 manual edge fail -> 2
+  A6-5385 manual edge fail -> 2
+  A6-6945 manual edge fail -> 2
+
+This seems consistent. We can mention in just_func_iec? Only if functional or iec not fixed? We need provide just_func_iec one line, or "" if both fixed. For passes where funcional fixed but iec not fixed, we need write justification for iec (maybe mention not for funcional because fixed). The just_func_iec can contain brief iec justification, or empty if both fixed. In instruction: `just_func_iec: "una línea, o \"\" si las dos estaban fijadas"`. For pass codes: funcional_fijo=3, iec_fijo=null. So not both fixed. Need put a line justifying iec (and maybe functional fixed? "Funcional fijado; IEC: ..."). For no-comp: both fixed (funcional_fijo=0 iec_fijo=0), so `just_func_iec` should be `""`. For fail compiles: both null, need just_func_iec explaining both functional and IEC? One line could mention functional score and IEC. So we need produce appropriate.
+
+Now coherencia, claridad, mantenibilidad for all 24. Need evaluate.
+
+Let's first understand code categories to assign scores efficiently:
+
+No-compile codes:
+0 A6-5636: Code uses no loop variable declared. It has many redundant contradictory sections:
+```
+IF NOT estadoSeguro THEN
+    modoActivo := 1;
+ELSE
+    modoAnterior := modoActivo;
+    CASE selector OF
+        0..2: modoActivo := selector;
+        ELSE modoActivo := modoAnterior;
+    END_CASE;
+END_IF;
+CASE modoActivo...
+...
+modoAnterior := modoActivo;
+```
+Actually odd: at arranque if estadoSeguro false, modoActivo=1, not mode previous; if true, modoAnterior=modoActivo then case. But no first cycle; set modoActivo=1 every cycle when not safe, so even after safe changes, if safe lost, mode resets to manual. This is wrong. It also has redundant clearing. But no compile. Need coherencia: variables uninitialized? modoAnterior not initialized; it is assigned modoActivo first if safe true before CASE? In first scan maybe 0. It uses forzado array not init; on case 2 not safe, clears. But logic has contradictions. Score coherencia maybe 1: some coherence but flawed. Claridad: names descriptive, comments present, but code has no sections, names okay. Score 2? It has comments for variables, but no comments in logic, some redundancy. Maintenance: has magic numbers 0..7, 0..2, array size, no constants. Hard to change. Score 1 maybe.
+
+Need assign 0-3 for each.
+
+For no compile, coherencia often has issues like uninitialized mode vars resetting. We'll assess.
+
+1 A6-1663: 
+```
+VAR modoPendiente : INT; confirmarForzadoAnt : BOOL; forzados...
+// Inicialización
+modoActivo := 1; modoPendiente :=1; confirmarForzadoAnt := FALSE;
+IF estadoSeguro THEN
+ if valid selector modoPendiente:=selector;
+ modoActivo := modoPendiente;
+ELSE
+ modoPendiente := modoActivo;
+END_IF
+...
+```
+But it assigns modoActivo:=1 every scan, so a pending change while estadoSeguro false? Actually if stateSeguro false, modePendiente:=modoActivo, but modoActivo always set 1 at start each scan, so mode never changes? Wait first line modoActivo:=1 always each scan, so later IF stateSeguro true modoActivo:=modoPendiente (valid selector), so changes. If stateSeguro false, modeActivo remains 1 from initialization, no pending. So mode reset to manual on unsafe instead of pending. This is a coherence issue. But no compile. Coherence maybe 1. Claridad names okay, comments variable but no logic sections. Mant: no constants/size, but uses arrays; score 1.
+
+2 A6-6019: 
+```
+modoSeleccionado init 1; no explicit modoActivo init but assigned.
+IF stateSeguro THEN if valid selector modoSeleccionado:=selector; END_IF; 
+modoActivo := modoSeleccionado;
+CASE ...
+```
+Actually this applies pending? If stateSeguro false, modoSeleccionado stays previous; modoActivo remains. That's correct. But input selector invalid when safe false? ignored. It lacks first cycle but default init of modoSeleccionado=1; okay. No compile missing i. Coherencia: mostly coherent, but no forced state? It has forzadoActivo array, applies in maintenance, clears on not safe. But modeSeleccionado not reset. Good. Missing END_IF after IF on line? The code has "END_IF" maybe no semicolon? It does show "END_IF" but no semicolon; compiles? No compile due missing i. I'd score coherence 2: mostly coherent. Claridad: variable comments, logic okay but no sections, comments some. Score 2. Mant: no constants, magic 0..2,0..7, score 1.
+
+3 A6-5711 pass. Need coherencia, claridad, mantenibilidad. Code is robust: primerCiclo init, edge prevs, states forced array, state loss edge clear, mode change clears on exit, actuators reflect forced. Some possible redundant but coherent. Coherencia 3. Claridad 3: descriptive names, sections, comments explaining why. Mantenibilidad 3: uses constants? It still magic numbers 0..7, 0..2 and mode literals, but variables for arrays; could be modified but no constants. However "parámetros como variables o constantes declaradas" not explicit. There are no magic? There are literals 0,1,2, 0..7; but in PLC tasks these are specified. Could score 2 or 3. "Mantenibilidad 2: parámetros como variables o constantes declaradas; cambios localizados. 3: además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)." This code has duplicate loops for clearing arrays; not modular but decent. No constants for mode. So I'd assign mantenibilidad 2 or 3. Since "3 además diseño extensible" not really. I'd assign 2. Need consistent for pass codes. Most pass codes do not use constants; loops duplicate. So mantenibilidad maybe 2.
+Coherencia 3, claridad 3, mantenibilidad 2.
+
+4 A6-9717 no compile. Code similar to A6-1663 with modeActivo init every scan but missing i. It uses forzadoActivo array. It does not have separate forced values? Actually uses actuador directly and forzadoActivo boolean but not used to retain? In maintenance, when edge confirm sets actuador[idx] and forzadoActivo true. But in later cycles stateSeguro true, no else path to set actuador to forzadoActivo, but because it set actuador directly, output remains. If stateSeguro false, clears. It has `IF NOT estadoSeguro THEN` clears; else edge. Good. It also modeActivo:=1 every scan, so mode change? same problem. It no comp. Coherencia 1 maybe. Claridad 2, Mant 1.
+
+5 A6-2982 pass. Code: primer Ciclo init. Mode change only if stateSeguro and valid and selector<>modoInterno. It clears forzados when leaving maintenance. Detects edge down of stateSeguro during maintenance clearing. For maintenance: if stateSeguro and edge confirm, set forced; loops outputs from forced. If stateSeguro false, outputs maybe remain previous? Wait code: In CASE 2:
+```
+IF stateSeguro AND edge confirm THEN ... END_IF;
+FOR i ... actuador[i] := estadoForzado[i] END_FOR;
+END_CASE;
+```
+But if stateSeguro goes false during maintenance, they have earlier block `IF (NOT estadoSeguro) AND estadoSeguroPrev AND (modoInterno=2) THEN estadoForzado[i]:=FALSE;` and then later they also update outputs from forced array (all false) each scan. So outputs zero. Good.
+Coherencia 3.
+Claridad 3 (comments sections "--- Gestion..." etc).
+Mantenibilidad 2 (magic numbers, loops but okay).
+
+6 A6-6456 no compile. Code: `modoVigente init 1; forzado array init; IF stateSeguro THEN CASE selector... END_CASE; END_IF; IF selector out range THEN modoVigente := modoVigente; END_IF; modoActivo := modoVigente; ...` It doesn't maintain pending: if stateSeguro false, mode remains modeVigente previous (good) because no assignment; however initially modeVigente init 1. In mode maintenance, it first apaga all then if confirmarForzado THEN (not edge) sets actuador and forzado TRUE. It doesn't use edge detection despite requirement; but no comp. Also `IF confirmarForzado` not edge; it may set every scan if confirm stays high. It uses forzado array but doesn't use to hold. Coherence 0 or 1? Conditions okay but not full. I'd score 1.
+Claridad: comments variables, sections? Some comments. Maybe 2? But not well structured. Mant 1.
+
+7 A6-4813 pass. Code uses R_TRIG; no forced array; direct actuador. It has modeActivo init 1. It changes mode only if safe valid. It detects entry to maintenance by modoAnterior !=2 and clears actuador. Then case maintenance: if not safe clear; else edge confirm set if idx valid. It doesn't track edge of safety; it applies clear every scan when not safe. Good. On exit, mode changes and modeAnterior updated before case? Let's check order: mode change, rTrig, entry init, modoAnterior:=modoActivo, then CASE. If leaving maint to manual, entry init? IF (modoActivo=2) and (modoAnterior<>2) false; modoAnterior set to new mode; then CASE manual outputs cmdManual. Forced direct outputs not stored. Good. Passing. Coherencia 2 or 3? Without forced state array, still safe. But subtle: confirm edge detected every cycle, but in case 2 if not safe it clears, else if edge q applies. If confirm is high and stateSeguro true, rTrig Q true one scan. Good. There is no explicit clear of outputs on entry if mode changes from maintenance to auto? Not needed. Might be okay. Coherencia 2: transiciones complete, but no separate forced state means if an output was forced and later stateSeguro false then true, outputs cleared and stay off. Good. Interlocks? Good. I'd give 2 or 3. R_TRIG. It lacks explicit "anulación de forzados al salir" but direct outputs overwritten by auto/manual. For entry to maint clears. Good. Could be 3. I'll give 2 because output retention is implicit and no separate forced state, but still complete. Wait coherencia rubric 3: robust, interlocks complete, no unreachable, safe simultaneous inputs. It seems robust. I'd score 3. But no forced array required. Hmm.
+Claridad: comments sections. 2 or 3. It has "1. Gestion..." etc. Names descriptive. Comments useful. Score 2? It has one comment "Nota:..."? Actually A6-2630 has note. A6-4813 has short comments. Score 2 or 3. I'll maybe 2 because comments are okay but not extensive; but structural sections numbered. Could be 3. 
+Mantenibilidad: direct array loops duplicated; no constants. Score 2.
+
+8 A6-9389 pass. Similar direct, manual edge. Coherencia 2/3. Claridad 2/3. Mant 2.
+
+9 A6-5300 pass. R_TRIG direct. Similar. Coherence 2/3. Claridad 2/3. Mant 2.
+
+10 A6-8649 fail. Need coherencia: The logic for pending mode is mostly coherent but main flaw: no forced state array / no clear on entry to maintenance. It does clear on leaving maintenance. It also uses modePendiente and selectorPendiente; but in stateSeguro false changes recorded. Logic can be coherent but incomplete. There is a notable contradiction? In mode change block when stateSeguro active, if selector invalid else? It handles invalid by clearing pending? Actually code:
+```
+IF selector >=0 AND <=2 THEN
+  IF estadoSeguro THEN
+    IF selector <> modoInterno THEN ...
+    modePendiente := FALSE;
+  ELSE
+    IF selector <> modoInterno THEN modoPendiente := TRUE; selectorPendiente := selector; ELSE modoPendiente := FALSE; END_IF;
+  END_IF;
+ELSE
+  modoPendiente := FALSE;
+END_IF;
+```
+Then flanco stateSeguro: if stateSeguro AND NOT prev then if pending and selectorPendiente valid... maybe if selector still indicating? The code in flanco block uses `selectorPendiente`, not current selector. But earlier stateSeguro true block would already have applied current selector if valid. There may be conflict: In the first scan when stateSeguro rises, the first IF stateSeguro true runs before flanco? It sees selector valid and if selector<>modeInterno applies it immediately, so pending not needed. If selector invalid, else clears pending. So pending logic only matters if selector invalid? Actually if stateSeguro false and selector valid != modeInterno, pending true. Then when stateSeguro becomes true, the first active block applies the current selector if valid, and clears pending; so flanco block not needed. It still has flanco block but it may also use selectorPendiente. Coherent though redundant. But failure maintenance due no entry clearing. Coherencia maybe 2 (no contradictions? but missing behavior). The maintenance logic isn't contradictory, just incomplete. It doesn't initialize outputs on entry to maintenance; it initializes no forced state. It may be considered coherent but incomplete. Score 2. 
+Claridad: very well structured with separator comments. Score 3.
+Mantenibilidad: pending variables, but no constants, some duplication; score 2.
+
+11 A6-1068 pass. Code: stateForced array, firstCycle init. Similar to A6-2982. Coherence 3. Clarity 3. Mant 2.
+
+12 A6-5359 no comp (method unexpected). Code has METHOD inside FUNCTION_BLOCK; IEC method may be extension/CoDeSys but user places `Update();` after method, compiled error "Instrucción inesperada". Fixed func/iec 0. Need other scores. Code: modeVigente init 1, forzado array. Method Update: 
+```
+IF selector out range modoActivo:=modoVigente ELSE modoActivo:=selector; 
+IF stateSeguro THEN modoVigente:=modoActivo; 
+CASE modoActivo...
+```
+This is flawed: It updates modoActivo to selector even without stateSeguro, but uses modoVigente only outputs? Actually it then if stateSeguro false, modeVigente stays previous; but modoActivo has already changed to selector. It uses modoActivo for case; so mode changes despite no safe. That's a major logic flaw. Also method not called? It intended Update but call outside method after END_METHOD, causing syntax error. Coherence 0/1? Conditions contradictory: `IF selector out range modoActivo:=modoVigente ELSE modoActivo:=selector; IF stateSeguro THEN modoVigente:=modoActivo;` This allows unsafe mode changes. So coherencia 0 or 1. I'd give 0 because fundamental safety logic contradiction. But it has structured method; maybe 1. 
+Claridad: names descriptive, comments but method structure invalid. Score 1 or 2. I'd maybe 1 because code not recognizable due method placement. Mant: has magic numbers, no constants; 1.
+
+13 A6-2630 pass. Code R_TRIG direct. Similar to A6-5300 but with note. Coherence 2/3. Clarify 3? Comments include "Nota: Al salir..." explanatory. Score 3. Mant 2.
+
+14 A6-5020 no compile missing i. Code: modeSolicitado init 1, confirm prev, forzadoActivo. It only updates modoActivo when stateSeguro true (`IF stateSeguro THEN modoActivo:=modoSolicitado;`). If stateSeguro false, modoActivo not assigned; output variable may have initial? It is not initialized in VAR_OUTPUT; default 0, but must start manual 1? It doesn't initialize modoActivo. Actually first scan stateSeguro false, so modoActivo remains default 0. That violates arranque manual. But no comp. Coherence 1 or 0. It has forzadoActivo, good. But modeActivo uninitialized. I'd score coherencia 1. Claridad 2 (comments, but no sections). Mant 1.
+
+15 A6-1266 pass. Code: modeActivo init 1; manual edge; no forced array direct. Does not explicitly clear on leaving maintenance but commands overwrite. It clears on entry to maintenance? Actually in mode change block:
+```
+IF modoActivo <> selector THEN
+    modoActivo := selector;
+    IF modoActivo = 2 THEN
+        FOR i ... actuador[i] := FALSE;
+    END_IF;
+END_IF;
+```
+Yes clear on entry. Does not clear on exit, but manual/auto overwrites. Good. Coherence 2/3. Direct output retention. Similar to A6-4813 but manual. I'd give coherencia 2 maybe 3. Let's decide maybe for direct output codes, coherencia 2 because lack separate forced state makes some hidden behavior (e.g., if leaving maintenance to another mode with same cmd arrays all false? no issue). But robust enough. I'll assign coherencia 2 for direct output codes to differentiate from array forced state codes? However they pass all. The rubric: 3 robust includes interlocks and safe simultaneous. They are robust. But there is a subtle simultaneous input: if confirm edge occurs exactly at entry to maintenance, ordering? In A6-1266, edge computed before mode change; then in mode maintenance when execute edge, confirm and prev; if confirm true and prev false at scan of entry, the edge is true, then mode change to 2 clears actuators, but then CASE 2 sees flancoConfirmar true and applies forzado. Is that acceptable? The requirement: "En cada transición de FALSE a TRUE de confirmarForzado, si idxForzado..." So if confirm pulse occurs same scan as mode entry, yes should apply. Good. If stateSeguro false during maintenance, clears. Good. Could be 3. I'd assign 3 for all passes except perhaps those with no clear on entry? They clear on entry. Good.
+
+But to keep variation, consider mantenibilidad 2 etc. We can assign coherencia 3 for all pass codes? That's okay. But then some pass codes with no forced array still get 3. The rubric does not require separate array. I think all pass are correct and robust enough. So coherencia 3 for all full pass? Need check A6-4813, A6-9389, A6-5300, A6-2630 direct output. They handle loss of safety during maintenance by clearing output; yes. Handle entry clear. Exit overwritten. So functionally robust. Coherencia 3.
+
+What about A6-8625 pass: It clears on entry with prevModoActivo, edge computed before; if edge at entry same issue; then case 2: `IF prevModoActivo <> 2 THEN clear; END_IF` occurs after mode change and edge, so clears then applies edge? Wait code order: Mode management first, then edge compute, then CASE. In case 2, first if prevModoActivo<>2 clears actuators; then if not stateSeguro clear; else if flanco apply. So if edge same scan, after clear, it applies forced. Good. So robust. Coherencia 3.
+
+A6-8649 failing: coherencia maybe 2.
+
+Let's assign coherencia:
+- All no comps with adequate but no i: maybe 1-2 depending. Need assign individually.
+- All pass: 3? We'll see.
+- Fails: A6-8649, A6-5385, A6-6945 maybe 2 (coherent but incomplete). Could be 1 for A6-5385? Let's evaluate A6-5385: It lacks pending mode when stateSeguro false? At arranque stateSeguro false selector=0; modeInterno 1; because estadoSeguro false skip mode change; case manual. Good. Step2 stateSeguro true changes. It does not clear on entry. It also has no forced state; but direct outputs. It handles loss of safety only on falling edge (using estadoSeguro_ant) rather than every scan. Good. But if stateSeguro false from reset at step11, estadoSeguro_ant true from step10, so clears; step12 stateSeguro true no edge clear but remains zero. Step13 edge confirm set. Good. This direct output behavior passes except entry. So it's mostly coherent, just missing entry clear. Coherencia 2.
+A6-8649: pending logic maybe more complex, but maintenance missing entry clear. Coherencia 2.
+A6-6945: similar, it has explicit if mode 2 and not safe clear every scan, but misses entry clear. Coherencia 2.
+
+Now Claridad:
+- Pass codes often well-commented. Need assign maybe 3 for those with sections/comments explaining why. Many have numbered sections. 
+  A6-5711: comments explain sections, variable names. 3.
+  A6-2982: 3.
+  A6-4813: 2? It has numbered comments but somewhat terse. Still good. 3 maybe.
+  A6-9389: 2 or 3.
+  A6-5300: 2 or 3.
+  A6-1068: 3.
+  A6-2630: 3.
+  A6-1266: 2 (uses //, comments sparse).
+  A6-8625: 2 or 3 (sections numbered, //). I'd say 3? It has clear sections and comments. But //.
+- Fails:
+  A6-8649: very clear sections, comments. 3.
+  A6-5385: clear sections, comments. 3.
+  A6-6945: clear sections, comments. 3.
+- No comps: Many have variable comments but no structured logic. Scores 1-2.
+  A6-5636: comments only variable, some logic comments. Names descriptive. Could be 2.
+  A6-1663: comments variable, sections? Some "Inicialización", "Gestión". It uses //. Could be 2.
+  A6-6019: comments variable, no sections. 2.
+  A6-9717: comments variable, some sections. 2.
+  A6-6456: comments variable, some logic comments. 2.
+  A6-5359: method structure but code invalid; comments variable; maybe 2 because comments present but structuring invalid.
+  A6-5020: comments variable, sections "Gestión". 2.
+  A6-3215: comments variable. 2.
+  A6-5870: comments variable. 2.
+  A6-4100: comments variable, method invalid. 2? 
+  A6-4942: comments variable. 2.
+  A6-1659: comments variable. 2.
+
+But clarity rubric: "0 sin estructura reconocible, nombres crípticos, sin comentarios; 1 estructura básica, nombres pobres o comentarios ausentes o incorrectos; 2 nombres descriptivos, secciones ordenadas, comentarios útiles; 3 además modularización adecuada..." Most no comp have descriptive names and comments but not modular; so 2. Some maybe 1 if poor. I can assign 2 for all no comps except maybe some that have a lot of comments? Still 2. Need not over granular.
+
+Mantenibilidad:
+- No comps: often magic numbers, no constants, duplicate loops. score 1. Could be 0 if magic values everywhere? They use numbers 0..7/0..2 but task fixed; many variables. Score 1 for most. Some with arrays initialized maybe 1. 
+- Pass codes: 2 mostly. A6-5711 maybe 3? It uses arrays but no constants and duplicated loops. The rubric 3 "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)". All pass codes duplicate loops for clearing/assign. No constants for mode. Thus 2. Maybe A6-8649 with pending logic still duplicate loops; 2. A6-5359 method maybe 1. 
+Could any pass get mantenibilidad 3? Not really. They don't parameterize modes. But because inputs are per task; still no duplicación? Some have loops repeated. So no 3. But some code uses direct array loops repeated; I'd assign 2.
+
+Need also for no comps maybe "forzado array initialized" etc. A6-6456 initializes forzado with full array literal; maybe mantenibilidad 1 or 2. It uses CASE for modes. But magic numbers. I'd assign 1.
+
+Need coherencia no comps:
+Let's set a consistent mapping.
+
+Detailed no-comp coherencia evaluation:
+
+0 A6-5636:
+- Missing i; has `modoAnterior` not initialized. If stateSeguro false at start, `modoActivo := 1`; mode changes only if safe. But because no first cycle, it resets to 1 every unsafe scan. Example if modeActivo=2 and stateSeguro false, first line `IF NOT estadoSeguro THEN modoActivo:=1` changes away from maintenance even though unsafe; violates "si no está seguro se mantiene modo vigente". Actually if in maintenance and safety lost, requirement says keep maintenance and actuators off; this code would set modeActivo=1 immediately, wrong. So logical contradiction. Thus coherencia 0 or 1. It has some coherent parts. I'd assign 1.
+- It also later does CASE based on that. 
+Score coherencia 1.
+
+1 A6-1663:
+- `modoActivo := 1` every scan. If stateSeguro false after being in mode 2, it resets manual. Contradicts mode hold. But pending logic "modoPendiente := modoActivo" after reset. So wrong. Coherencia 1.
+2 A6-6019:
+- No reset to manual every scan; uses modoSeleccionado init. It is mostly coherent. But modeActivo not initialized explicitly but assigned. It has no pending variable but if stateSeguro false it maintains modoSeleccionado. Good. Some missing edge for confirm? It uses `confirmarForzado AND NOT confirmarForzadoAnt`. Good. Coherencia 2.
+3 A6-5711 pass: coherencia 3.
+4 A6-9717:
+- `modoActivo :=1` every scan, similar to A6-1663. Coherencia 1.
+5 A6-2982 pass: 3.
+6 A6-6456:
+- `modoVigente init 1`; if stateSeguro false no assignment, so holds. Good. But confirmarForzado not edge: sets if true every scan. It also writes `forzado[idx] := TRUE` but never uses forzado. Coherence maybe 1 or 2. The case maintenance starts with `FOR actuador[i]:=FALSE` every scan, so if confirmarForzado remains TRUE, it sets after clearing; if false it clears. That might behave like level rather than edge: if confirmarForzado held true, every scan re-clears then applies; output remains forced. But if another actuador? It always clears all first, then applies only one, so never accumulates forced values. Requirement says one by one and conserve; if confirm held high, perhaps not relevant. More seriously, after forcing idx 3, next scan with confirm false, it clears all then does nothing -> loses previous forced values. So forzados not conserved. Thus logica internally incoherent with stated requirement. Coherencia 1.
+7 A6-4813 pass: coherencia 3.
+8 A6-9389 pass: 3.
+9 A6-5300 pass: 3.
+10 A6-8649 fail: 2.
+11 A6-1068 pass: 3.
+12 A6-5359 no comp: mode changes without stateSeguro? It sets `modoActivo := selector` before checking stateSeguro; if selector valid and stateSeguro false, case uses selector mode, so mode changes unsafely. Coherence 0 or 1. But structurally method invalid. I'd assign 0 because contradicts central safety requirement. However it also has a `modoVigente` but not used for output. Let's assign coherencia 0.
+13 A6-2630 pass: 3.
+14 A6-5020:
+- `modoActivo` not initialized. If stateSeguro false first scan, it never assigns; output default 0. Requirement arranque manual. It also modeActivo assigned only if safe. This is a coherence/safety issue but not contradiction. It has forzadoActivo and edge. I'd assign coherencia 1 (uninitialized output). Maybe 0 because variables sin inicializar con efecto. That's rubric 0: variables sin inicializar con efecto. `modoActivo` uninitialized with effect: initial mode wrong. So coherencia 0. Let's use 0 for A6-5020.
+15 A6-1266 pass: 3.
+16 A6-3215:
+- Similar to A6-5020? It has `modoSolicitado init 1`; `IF stateSeguro THEN modoActivo := modoSolicitado`; if stateSeguro false modeActivo not assigned. It lacks init in VAR_OUTPUT. Default 0. So initial manual fails. Also no forzado array; direct actuator. Not comp missing i. Coherencia 0 (uninitialized variable with effect). But it has some logic. I'd assign 0.
+17 A6-5385 fail: 2.
+18 A6-5870:
+- `modoActivo :=1; modoPendiente:=1;` every scan, so reset to manual on unsafe (like A6-1663). It uses forzados array. Coherencia 1.
+19 A6-8625 pass: 3.
+20 A6-4100 no comp method invalid: mode changes unsafely? `IF selector out range modoActivo:=modoVigente ELSE modoActivo:=selector; IF stateSeguro THEN modoVigente:=modoActivo;`. If stateSeguro false, modeActivo changes to selector regardless. If out of range, modeActivo:=modoVigente (previous). But if stateSeguro false and selector valid, mode change unsafely. Coherencia 0 or 1. Also method structure invalid. I'd assign 0.
+21 A6-4942:
+- `modoVigente init 1; IF stateSeguro THEN CASE selector...`; holds when not safe. It then `IF selector>2 OR ... OR NOT stateSeguro THEN modoVigente := modoVigente;` redundant. In maintenance, confirmarForzado not edge; clears all each scan before applying if confirm true. It doesn't conserve. But mode logic coherent. Coherencia 2? It has no uninitialized variables. It lacks edge but that's functional. Coherencia maybe 1 because forzados no persistence. I'd assign 1.
+22 A6-1659:
+- Uses `modoAnterior init 1`, `modoActivo` not init. IF stateSeguro then CASE selector ... ELSE modoActivo:=modoAnterior; ELSE modoActivo:=modoAnterior. If stateSeguro false, modeActivo=modoAnterior (1 initially). Good hold. Maintenance clears all each scan and applies if confirm true (not edge). Not conserved. Coherencia 2? It uses modoAnterior updated only if stateSeguro; so if stateSeguro false after entering mode0, modoAnterior remains 1? Actually stateSeguro true step2: CASE selector 0 -> modoActivo:=0; then update modoAnterior:=modoActivo (0). So ok. If stateSeguro false and selector changes, modeActivo=modoAnterior (0). Good. Coherencia 2. But confirm not edge; but variable forzado not used? It sets forzado but not uses. Forzados not conserved. Coherencia 1/2. I'd assign 2 because transiciones mode coherent, but forced logic simplified. Hmm.
+23 A6-6945 fail: 2.
+
+But perhaps too many 0s. Need align rubric.
+
+For no comps, we can read code for coherencia. I'll create table.
+
+Claridad for no comps:
+- Most use descriptive names and comments. I'll assign mostly 2.
+- A6-5359 and A6-4100 use METHOD inside FB invalid; as code structure not recognizable in standard; but names and comments are there. I'd assign 1? The code has method invalid; overall structure broken. The rubric: "2: nombres descriptivos, secciones ordenadas, comentarios útiles." It doesn't mention syntax. But method not allowed maybe. I'd assign 1 for method invalid because structure outside standard.
+- Some short code with no section headings but variable comments: 2. 
+Maybe no comps should get clarity 1 or 2. We'll set:
+  A6-5636: 2 (variable comments, logic comments but no sections)
+  A6-1663: 2
+  A6-6019: 2
+  A6-9717: 2
+  A6-6456: 2
+  A6-5359: 1 (method invalid)
+  A6-5020: 2
+  A6-3215: 2
+  A6-5870: 2
+  A6-4100: 1 (method invalid)
+  A6-4942: 2
+  A6-1659: 2
+Actually A6-5359/A6-4100 not necessarily "names crípticos" no; but code is not recognizably structured because method in FB. But there are comments. I'd assign 1 to reflect structure basic with method issue.
+
+Mantenibilidad no comps:
+- Almost all 1. Some with arrays initialized and some constants? None. Maybe A6-6456 has initialized forzado array full, still magic. 1. 
+- A6-5359 and A6-4100 method? Might be 1. 
+So assign 1 for all no comps. Maybe A6-5636 has variables but magic; 1.
+
+Now pass coherencia: We said 3 for all pass. But let's verify A6-2982, A6-1068, etc. Yes.
+Claridad pass:
+- A6-5711: 3 (comments explaining why)
+- A6-2982: 3
+- A6-4813: 3? It has numbered sections but comments brief; maybe 3. 
+- A6-9389: 3? It has comments for each section but brief; okay.
+- A6-5300: 3? similar.
+- A6-1068: 3
+- A6-2630: 3
+- A6-1266: 2 (sparser comments and //)
+- A6-8625: 3? It has numbered comments and clear; despite //. I'd assign 2 or 3. Let's keep 3 because formatted with sections and comments useful. But if // comments maybe 2. Hmm.
+Maybe assign clarity 3 for all pass with clear section comments; A6-1266 and A6-8625 have // but still clear; A6-1266 lacks explicit section separators? It has "// Detección", "// Gestión", "// Lógica", comments. Could be 2. I'll assign 2 for A6-1266, 3 for A6-8625.
+Wait A6-8625 has `// 1. Gestión...` etc. Good. Use 3.
+Could also assign 2 for A6-8625 because no comments explaining why. But "comentarios útiles" yes.
+
+Mantenibilidad pass: all 2. Is there any pass with 3? A6-5711 maybe uses variables for modes but no constants; no duplication? It has loops repeated. So 2. Good.
+
+For fails:
+- A6-8649, A6-5385, A6-6945 claridad 3 (well structured). mantenibilidad 2. coherencia 2.
+
+Need justifications lines. They should be short.
+
+Let's craft final JSON. But before final, need ensure values fixed: For no comp, funcional=0 iec=0 fixed. In output, set exactly. For pass, funcional=3. For fail, functional=1. We need just_func_iec empty for no comp because both fixed. For pass/fail not both fixed, fill line.
+
+Need also for A6-5359 and A6-4100 no comp fixed both -> just_func_iec ""; coherencia etc.
+
+Let's ensure `resultado_codesys` no comp but funcional_fijo=0 iec_fijo=0. Yes.
+
+Need produce JSON list.
+
+Let's first create detailed table with all scores.
+
+I'll define final scores:
+
+Index 0: A6-5636
+funcional: 0 (fijo)
+iec: 0 (fijo)
+coherencia: 1
+claridad: 2
+mantenibilidad: 1
+just_func_iec: ""
+just_coherencia: "Modo se reinicia a manual cuando estadoSeguro está inactivo y modoAnterior sin inicializar; lógica contraría al requisito de mantener modo."
+just_claridad: "Nombres descriptivos y comentarios de variables, pero sin secciones claras en la lógica."
+just_mantenibilidad: "Valores 0..2 y 0..7 sin constantes; lógica con bucles duplicados y difícil de parametrizar."
+
+Index 1: A6-1663
+funcional 0, iec 0
+coherencia 1
+claridad 2
+mant 1
+just_func_iec: ""
+just_coh: "modoActivo se asigna a 1 cada ciclo, por lo que no mantiene modo vigente ante estadoSeguro inactivo."
+just_clar: "Comentarios y nombres aceptables; estructura con bloques básicos."
+just_mant: "Sin constantes ni abstracción; cambios requieren tocar varios bucles."
+
+Index 2: A6-6019
+funcional 0, iec 0
+coherencia 2
+claridad 2
+mant 1
+just_func_iec ""
+just_coh "La máquina de modos es coherente y mantiene pendiente; falla solo por no declarar índice de bucle y detalles menores."
+just_clar "Nombres claros y comentarios por variable; lógica ordenada por bloques."
+just_mant "Valores mágicos de modos e índices sin constantes; pocas abstracciones."
+
+Index 3: A6-5711 pass
+funcional 3 fijo, iec 2 (we need choose; earlier manual edge ->2)
+coherencia 3
+claridad 3
+mant 2
+just_func_iec: "Funcional fijado en 3; IEC: compila sin cambios y usa ST estándar, detección manual de flanco correcta aunque sin bloques estándar." 
+just_coh: "Transiciones completas, inicialización en primer ciclo e interlocks de seguridad robustos."
+just_clar: "Código bien seccionado, nombres descriptivos y comentarios que explican el qué y el porqué."
+just_mant: "Lógica clara y localizable, pero literales 0..2/0..7 y bucles repetidos sin constantes."
+
+Need if iec=2 or 3. Let's set iec=2 for manual edge pass as rule. We'll use 2. Good.
+
+Index 4: A6-9717 no comp
+funcional 0, iec 0
+coherencia 1
+claridad 2
+mant 1
+just_func_iec ""
+just_coh "modoActivo se fuerza a 1 cada ciclo y forzadoActivo no se aprovecha para conservar estados."
+just_clar "Nombres y comentarios básicos; estructura de bloques reconocible."
+just_mant "Sin constantes y con bucles repetidos."
+
+Index 5: A6-2982 pass
+funcional 3 fijo, iec 2
+coherencia 3
+claridad 3
+mant 2
+just_func_iec "Funcional fijado en 3; IEC: compila sin cambios, código ST estándar con detección manual de flanco."
+just_coh "Separación de estados forzados, flanco de seguridad y actualización por modo claras y sin estados muertos."
+just_clar "Buenas secciones, nombres descriptivos y comentarios útiles."
+just_mant "Cambios localizados, pero literales y bucles duplicados no parametrizados."
+
+Index 6: A6-6456 no comp
+funcional 0, iec 0
+coherencia 1
+claridad 2
+mant 1
+just_func_iec ""
+just_coh "confirmarForzado se evalúa por nivel y no por flanco; los forzados se borran cada ciclo, contradiciendo la retención."
+just_clar "Variables comentadas y estructura mínima legible."
+just_mant "Números mágicos y lógica repetida; poco extensible."
+
+Index 7: A6-4813 pass
+funcional 3 fijo, iec 3? It uses R_TRIG ->3. Let's set iec=3. coherencia 3, claridad 3, mant 2.
+just_func_iec "Funcional fijado en 3; IEC: R_TRIG bien instanciado y declaraciones estándar, sin extensiones."
+just_coh "Aunque no conserva array de forzado, la lógica directa es robusta y apaga/sobrescribe salidas en los flancos correctos."
+Wait if coherencia 3 but says "aunque no conserva array" okay.
+just_clar "Secciones numeradas y comentarios breves pero útiles; nombres descriptivos."
+just_mant "Duplicación de bucles y literales, sin parámetros."
+
+Index 8: A6-9389 pass
+funcional 3, iec 2 (manual edge)
+coherencia 3
+claridad 3
+mant 2
+just_func_iec "Funcional fijado en 3; IEC: compila y usa ST estándar con detección manual de flanco."
+just_coh "Secuencia de cambio/entrada/pérdida de seguridad bien cerrada; salidas directas son seguras."
+just_clar "Código ordenado, con comentarios por sección."
+just_mant "Falta parametrización de modos e índices; bucles repetidos."
+
+Index 9: A6-5300 pass
+funcional 3, iec 3 (R_TRIG)
+coherencia 3
+claridad 3
+mant 2
+just_func_iec "Funcional fijado en 3; IEC: usa R_TRIG estándar correctamente y variables tipadas."
+just_coh "Transiciones de modo y manejo de mantenimiento consistentes, sin estados inalcanzables."
+just_clar "Comentarios por paso y nombres claros."
+just_mant "Sin constantes de configuración; lógica de apagado repetida."
+
+Index 10: A6-8649 fail
+funcional 1, iec 2 (manual edge fail)
+coherencia 2
+claridad 3
+mant 2
+just_func_iec "Funcional: falla pasos de mantenimiento (no apaga al entrar y arrastra salidas); IEC: compila y es ST estándar."
+just_coh "Lógica de modos pendientes coherente, pero incompleta: no limpia actuadores al entrar a mantenimiento."
+just_clar "Muy bien seccionado y comentado."
+just_mant "Buena estructura, aunque literales y bucles repetidos."
+
+Need check if `funcional` for fail should maybe 0. Let's revisit. I choose 1. Just line mentions fails maintenance. Accept.
+
+Index 11: A6-1068 pass
+funcional 3 fijo, iec 2 (manual edge)
+coherencia 3
+claridad 3
+mant 2
+just_func_iec "Funcional fijado en 3; IEC: ST estándar con flanco manual correctamente implementado."
+just_coh "Estado forzado separado y flancos bien definidos; lógica robusta ante pérdida de seguridad."
+just_clar "Secciones claras y comentarios que explican la intención."
+just_mant "Buena localización, pero faltan constantes para modos y tamaños."
+
+Index 12: A6-5359 no comp
+funcional 0, iec 0
+coherencia 0
+claridad 1
+mant 1
+just_func_iec ""
+just_coh "El método no puede ejecutarse y el cambio de modo depende de selector sin estadoSeguro; contradice requisito central."
+just_clar "Nombres aceptables, pero METHOD dentro del FB y llamada fuera de lugar rompen la estructura."
+just_mant "Magic numbers y lógica acoplada; no parametrizada."
+
+Index 13: A6-2630 pass
+funcional 3, iec 3 (R_TRIG)
+coherencia 3
+claridad 3
+mant 2
+just_func_iec "Funcional fijado en 3; IEC: R_TRIG estándar y declaraciones correctas."
+just_coh "Lógica directa sin contradicciones; entrada/salida de mantenimiento se comporta de forma segura."
+just_clar "Secciones numeradas y nota explicativa útil."
+just_mant "Sin duplicación excesiva, pero literales y bucles sin parámetros."
+
+Index 14: A6-5020 no comp
+funcional 0, iec 0
+coherencia 0
+claridad 2
+mant 1
+just_func_iec ""
+just_coh "modoActivo no se inicializa y solo se asigna con estadoSeguro; arranque incorrecto en caso nominal."
+just_clar "Comentarios y nombres claros, aunque sin secciones."
+just_mant "Valores mágicos y bucles dispersos; poca capacidad de cambio."
+
+Index 15: A6-1266 pass
+funcional 3 fijo, iec 2 (manual edge // comments)
+coherencia 3
+claridad 2
+mant 2
+just_func_iec "Funcional fijado en 3; IEC: compila con // como comentario (extensión) y flanco manual."
+just_coh "Lógica completa: limpia al entrar en mantenimiento y la salida directa se sobrescribe al salir."
+just_clar "Código legible aunque con comentarios más escuetos; nombres correctos."
+just_mant "Sin constantes ni aislamiento de parámetros."
+
+Index 16: A6-3215 no comp
+funcional 0, iec 0
+coherencia 0
+claridad 2
+mant 1
+just_func_iec ""
+just_coh "modoActivo sin inicializar y sólo actualizado con estadoSeguro; en arranque no entra en manual."
+just_clar "Variables comentadas y estructura básica."
+just_mant "Números mágicos y lógica repetida."
+
+Index 17: A6-5385 fail
+funcional 1, iec 2 (manual)
+coherencia 2
+claridad 3
+mant 2
+just_func_iec "Funcional: no apaga al entrar a mantenimiento y falla pasos de forzado; IEC: ST estándar con flanco manual."
+just_coh "Lógica de modos consistente, pero falta inicialización de salidas en la entrada a mantenimiento."
+just_clar "Bien seccionada y comentada."
+just_mant "Buena organización, aunque sin constantes."
+
+Index 18: A6-5870 no comp
+funcional 0, iec 0
+coherencia 1
+claridad 2
+mant 1
+just_func_iec ""
+just_coh "modoActivo y modoPendiente se reinician a 1 cada ciclo, impidiendo mantener el modo ante seguridad inactiva."
+just_clar "Comentarios por variable y bloques básicos legibles."
+just_mant "Sin parametrización y con lógica repetida."
+
+Index 19: A6-8625 pass
+funcional 3 fijo, iec 2 (manual edge //)
+coherencia 3
+claridad 3
+mant 2
+just_func_iec "Funcional fijado en 3; IEC: compila y usa ST con detección manual de flanco; // como comentario no es IEC puro."
+just_coh "Transiciones, flancos y retención coherentes; no hay estados muertos."
+just_clar "Buenas secciones numeradas y comentarios útiles."
+just_mant "Sin constantes de modos/índices y con bucles duplicados."
+
+Index 20: A6-4100 no comp
+funcional 0, iec 0
+coherencia 0
+claridad 1
+mant 1
+just_func_iec ""
+just_coh "El código dentro de METHOD no se ejecuta; además el selector cambia modoActivo sin estadoSeguro."
+just_clar "Comentarios y nombres existen, pero METHOD en FB rompe la estructura estándar."
+just_mant "Valores mágicos y lógica acoplada; difícil de modificar."
+
+Index 21: A6-4942 no comp
+funcional 0, iec 0
+coherencia 1
+claridad 2
+mant 1
+just_func_iec ""
+just_coh "La lógica de modo es simple, pero confirmarForzado por nivel y el borrado por ciclo anulan la retención."
+just_clar "Variables comentadas y estructura comprensible."
+just_mant "Sin constantes y lógica de limpieza repetida."
+
+Index 22: A6-1659 no comp
+funcional 0, iec 0
+coherencia 2? We said 2. 
+claridad 2
+mant 1
+just_func_iec ""
+just_coh "Máquina de modos coherente; sin embargo confirmarForzado no es por flanco y el array forzado no conserva la salida."
+just_clar "Comentarios en variables y secciones mínimas."
+just_mant "Sin constantes y con lógica repetida."
+
+Index 23: A6-6945 fail
+funcional 1, iec 2 (manual)
+coherencia 2
+claridad 3
+mant 2
+just_func_iec "Funcional: falla pasos de mantenimiento al no apagar al entrar y arrastrar salidas previas; IEC: ST estándar con flanco manual."
+just_coh "Gestión de pendientes clara, pero incompleta en la entrada a mantenimiento."
+just_clar "Estructura muy clara y comentada."
+just_mant "Bien localizado, aunque sin constantes."
+
+Need ensure no `just_func_iec` for no comps empty. Yes.
+
+Need check if for no comps with both fixed, the just_func_iec string should be `""`. We'll include empty.
+
+Now about functional for fail compiles: We set 1. Need maybe avoid giving 3 to any fail. Yes.
+
+Need maybe for compiles pass all, funcional_fijo=3. Copy exactly.
+
+Now IEC scoring: Let's revisit our earlier choice. We set manual edge pass as 2, R_TRIG pass 3, manual fail 2. But for A6-5711 using manual edge with primeCiclo, maybe 2 by that rule. Good. However A6-1068 uses manual edge but also separate forced state; we set iec 2. Good. A6-2982 manual 2. A6-9389 manual 2. A6-1266 manual // 2. A6-8625 manual // 2. A6-8649/5385/6945 manual 2. So IEC scores only 0,2,3. Is this too low? The rubric says 2 for declarations/types correct. If manual edge and comments are standard, maybe 3. But our rule groups all manual as 2. Is that justifiable? "Construcciones idiomáticas" includes R_TRIG example. Manual edge is also idiomatic but maybe less so. Could challenge. But I think acceptable.
+
+However for A6-5711, A6-2982, A6-9389, A6-1068, A6-8625 maybe they should get 3 for IEC? Hmm. The final just_func_iec says "ST estándar con detección manual de flanco" but score 2; that's contradictory: if uses standard, 2 indicates declarations/types correct but not "además idiomático". We can say "correcto, aunque sin bloques estándar" to justify 2. But is manual flank detection idiomatic? In PLC ST, manual edge detection with prev variable is common. The rubric's examples are TON/R_TRIG/CTU, but not mandatory. Still, score 2 okay.
+
+Need maybe assign iec=3 for A6-8625? It uses // but not standard; no.
+
+Now coherencia for no comp A6-6019 2, A6-1659 2; but no comp due missing i. Coherencia maybe okay. We need not overdo.
+
+Let's ensure each no comp code doesn't have both fixed; if no comp, functional=0 iec=0. yes.
+
+Potential issue: A6-5359 no comp due "Instrucción inesperada" and method; it has `FUNCTION_BLOCK` and `METHOD`. But it uses METHOD inside FB. In IEC 61131-3, methods are part of OOP extension? CODESYS supports but in FB methods may be allowed; but the error is due `Update();` call after method? Actually CODESYS error line 1 unexpected statement maybe because call outside method? We can say METHOD and call illegal for this environment. Fixed.
+
+Need final output JSON only, no markdown. Need avoid any text before.
+
+Let's double-check index count and codigos correct:
+0 A6-5636
+1 A6-1663
+2 A6-6019
+3 A6-5711
+4 A6-9717
+5 A6-2982
+6 A6-6456
+7 A6-4813
+8 A6-9389
+9 A6-5300
+10 A6-8649
+11 A6-1068
+12 A6-5359
+13 A6-2630
+14 A6-5020
+15 A6-1266
+16 A6-3215
+17 A6-5385
+18 A6-5870
+19 A6-8625
+20 A6-4100
+21 A6-4942
+22 A6-1659
+23 A6-6945
+
+Need maybe set funcional for fail as 1. If evaluator expects stricter, maybe 0. Let's further consider functional criterion.
+
+For A6-8649:
+It passes steps: 0-5 (6 steps) maybe 6,7,8,9,10 fail, 11-14 passes? Wait it fails 6,7,8,9,10,15 (six fails). So passes 11 steps. It handles initial manual and auto mode and safety. For maintenance, it fails to clear outputs and forced values. Is this "fails en el caso nominal" -> 0? The functional rubric for 0: "no implementa la lógica pedida o falla en el caso nominal." The requested logic includes maintenance. If a grader sees it fails step 6 (entering maintenance), they'd likely not give 0 if many steps pass? But functional 0 is reserved for no logic or failing nominal case. The "nominal case" might be basic operation in one mode; they do pass steps 0-5. But the assignment has three modes; maintenance is as important as auto/manual. I'd say failing maintenance entry is a major functional defect. However it still implements some part. The decision rule says "Si compila pero falla pasos: funcional 0, 1 o 2 según la rúbrica, usando qué pasos fallan y el protocolo." It doesn't say if fail any step from core then 0; needs judgment.
+
+Rubric:
+- 0: no implementa la lógica pedida o falla en el caso nominal.
+- 1: funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia).
+- 2: correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo.
+- 3: correcto en todos los casos.
+
+Does "caso nominal" refer to the happy path all main features? Step 6 is nominal entering maintenance. Fail means not 1 by strict but 0. Yet the code works in auto/manual nominal. A teacher might give 1 for partial. The question asks "Básico" 1: works in nominal but fails edge cases. Here it doesn't work in a nominal case of maintenance. So maybe 0. But then many fail? Hmm.
+
+Could assign functional=0 for these three fail. Let's think from harness: It fails 6 of 17, including all maintenance operation except loss safety/regain/force bit0 after regain? Actually step13 passes? It can pass 13 if after losing safety outputs zero, then regain and force bit0 -> 1. It passes step11,12,13,14. So it has maintenance force functioning after zero condition. The only defect is not clearing on entry to maintenance and not preserving "forzados" as separate state? Actually failing steps 6-10 and 15 due lack of entry clear. That is a specific missing initial clearing on mode entry and lack of accumulator? In step10 it would pass if entry had cleared? Let's simulate if entry clear were added: Step6 zero; step7 set bit3 ->8; step8 invalid leaves 8; step9 set bit5 ->40; step10 set bit3 false ->32; step15 reenter zero. Yes all would pass. So the rest of forced edge logic is mostly correct (using direct actuador). So it's a single missing entry-clear. That still fails all maintenance forced steps because it starts with stale outputs. Is that "falla en caso nominal"? Yes. But code otherwise complete. Could be 1 because it "funciona en el caso nominal? no, maintenance nominal fails". Hmm.
+
+I think a careful teacher would assign functional 1 or 2? It fails core maintain, but implements most. 1 seems fair: "Básico" not 0 because it doesn't totally fail. However "falla en el caso nominal" could include enter maintenance. I'm torn.
+
+Let's maybe assign functional=1 for all three to reflect partial. The justification says fails maintenance steps, not enough for 2. That should be okay.
+
+Need maybe for A6-8649 due pending mode logic, functional could be 2? It fails 6/17; not "mayoría de casos límite"? Actually it passes 11/17, which is majority? But fails critical path. The rubric 2 "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." It fails not minor. So cannot be 2. 1 or 0. I'd use 1.
+
+Now coherencia for fail: 2. Is that consistent with functional 1? Coherencia criterion separate from functional. It has no contradictions but incomplete. Score 2.
+
+Need maybe for no comp codes use fixed 0 for functional and iec. Fine.
+
+Let's verify all no comp fixed: All `funcional_fijo` 0 and `iec_fijo` 0. We'll copy 0.
+
+Now perhaps "iec_fijo" equals null for pass/fail; we must set between 1 and 3. We set 2 or 3.
+
+Let's produce JSON exactly. Need no accidental trailing commas. Use Spanish quotes. Ensure strings escaped.
+
+Let's compose final answer carefully.
+
+But before final, let's maybe refine just_func_iec line length: one line. For no comps, empty.
+
+Need maybe if `funcional_fijo` not fixed and `iec_fijo` not fixed, just_func_iec includes functional+iec. For fail compiles, both null. Our just lines include both. Good.
+For pass, funcional fixed, iec not fixed. Our just lines mention "Funcional fijado en 3; IEC..." good.
+
+Now final JSON.
+
+Let's ensure the JSON is valid:
+[
+ {"codigo":"A6-5636","funcional":0,"iec":0,"coherencia":1,"claridad":2,"mantenibilidad":1,"just_func_iec":"","just_coherencia":"...","just_claridad":"...","just_mantenibilidad":"..."},
+ ...
+]
+
+Need no markdown. Use double quotes.
+
+Let's write in final.

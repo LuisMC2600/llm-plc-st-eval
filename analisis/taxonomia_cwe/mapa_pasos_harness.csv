@@ -1,0 +1,211 @@
+harness,paso,categoria,cwe_id,requisito_del_paso
+B1,0,INICIALIZACION,CWE-665,Reposo: motor apagado sin ordenes
+B1,1,NOMINAL,,Arranque con pulso de marcha (funcion nominal)
+B1,2,SECUENCIA,CWE-670,Autorretencion: el motor se mantiene al soltar la marcha
+B1,3,SEGURIDAD,CWE-754,Paro normal
+B1,4,NOMINAL,,Rearranque tras paro normal (funcion nominal)
+B1,5,SEGURIDAD,CWE-754,Paro de emergencia
+B1,6,SEGURIDAD,CWE-754,Liberada la emergencia con la marcha pulsada el motor no rearranca solo
+B2,0,INICIALIZACION,CWE-665,Reposo: valvula cerrada
+B2,1,TEMPORIZACION,CWE-670,Nivel alto 3 s: aun no abre (TON de 5 s)
+B2,2,TEMPORIZACION,CWE-670,Nivel alto 6 s acumulados: ya abre
+B2,3,TEMPORIZACION,CWE-670,Cae el nivel: cierra de inmediato sin retardo a la desconexion
+B2,4,TEMPORIZACION,CWE-665,Nuevo ciclo completo: rearme del temporizador
+B2,5,TEMPORIZACION,CWE-670,Cierre final sin retardo
+B3,0,INICIALIZACION,CWE-665,Reset inicial: cuenta 0 y lote apagado
+B3,1,NOMINAL,,Primer flanco ascendente: cuenta 1 (funcion nominal)
+B3,2,FLANCO,CWE-372,Sensor sostenido en alto: no debe seguir contando
+B3,3,FLANCO,CWE-372,Vuelta a bajo: la cuenta se conserva (no cuenta el flanco de bajada)
+B3,4,CALCULO,CWE-697,10 flancos (11 piezas): el lote aun no se activa (preset menor que 12)
+B3,5,CALCULO,CWE-697,1 flanco mas (12 piezas): el lote se activa (preset mayor que 12)
+B3,6,INICIALIZACION,CWE-665,Reset final: cuenta 0 y lote apagado
+B4,0,INICIALIZACION,CWE-665,Reposo: ambas salidas apagadas
+B4,1,NOMINAL,,Marcha adelante (funcion nominal)
+B4,2,SECUENCIA,CWE-670,Autorretencion al soltar la orden
+B4,3,SEGURIDAD,CWE-754,Reversa sin pasar por paro: prohibida
+B4,4,SEGURIDAD,CWE-754,Paro
+B4,5,NOMINAL,,Marcha en reversa tras el paro (funcion nominal)
+B4,6,SEGURIDAD,CWE-754,Ambas ordenes con el motor girando: la salida activa bloquea a la otra
+B4,7,SEGURIDAD,CWE-754,Paro
+B4,8,SEGURIDAD,CWE-754,Ambas ordenes desde el reposo: las salidas no coexisten
+B4,9,SEGURIDAD,CWE-754,Paro final
+B5,0,AMBIGUO,,Reposo al arranque: ventilador apagado si el quemador nunca encendio: mezcla INICIALIZACION y TEMPORIZACION (construccion del retardo a la desconexion) [v2]
+B5,1,NOMINAL,,El ventilador acompana al quemador (funcion nominal)
+B5,2,TEMPORIZACION,CWE-670,Post-enfriamiento: a los 29 s aun encendido
+B5,3,TEMPORIZACION,CWE-670,Post-enfriamiento: a los 30.2 s ya apagado
+B5,4,NOMINAL,,Se reenciende el quemador (funcion nominal)
+B5,5,TEMPORIZACION,CWE-670,Post-enfriamiento en curso (10 s): aun encendido
+B5,6,TEMPORIZACION,CWE-665,Reencendido en pleno post-enfriamiento: rearme del temporizador
+B5,7,TEMPORIZACION,CWE-665,Segundo post-enfriamiento: a los 29 s aun encendido (rearme a 30 s completos)
+B5,8,TEMPORIZACION,CWE-670,Segundo post-enfriamiento: a los 30.2 s ya apagado
+B6,0,INICIALIZACION,CWE-665,Reposo inicial sin alarma: lampara apagada (vigilancia continua)
+B6,1,TEMPORIZACION,CWE-670,Alarma activa: intervalos ON y OFF de 1 s +/- 150 ms medidos
+B6,2,SECUENCIA,CWE-670,Alarma retirada: la lampara se apaga y permanece apagada (vigilancia continua)
+B8,0,INICIALIZACION,CWE-665,Reset inicial: cuenta 0 y aviso apagado
+B8,1,NOMINAL,,Primer flanco: 1 apertura (funcion nominal)
+B8,2,FLANCO,CWE-372,Puerta sostenida abierta: no debe seguir contando
+B8,3,FLANCO,CWE-372,Puerta cerrada: la cuenta se conserva
+B8,4,CALCULO,CWE-697,4 aperturas: aviso apagado (umbral)
+B8,5,CALCULO,CWE-697,5 aperturas: aviso activo (umbral mayor o igual a 5)
+B8,6,CALCULO,CWE-697,6 aperturas: aviso activo y cuenta sin saturar
+B8,7,INICIALIZACION,CWE-665,Reset: cuenta 0 y aviso apagado
+B8,8,INICIALIZACION,CWE-665,Tras soltar el reset vuelve a contar
+C3,0,INICIALIZACION,CWE-665,Reposo: motor y lampara apagados (vigilancia continua)
+C3,1,NOMINAL,,Arranque con marcha (funcion nominal)
+C3,2,AMBIGUO,,Autorretencion del motor y lampara apagada durante 5 s (vigilancia continua): mezcla SECUENCIA y TEMPORIZACION
+C3,3,TEMPORIZACION,CWE-670,Lampara encendida tras ~10 s de motor (TON T1 de 10 s)
+C3,4,SEGURIDAD,CWE-754,Paro: motor y lampara apagados y T1 reiniciado
+C3,5,SEGURIDAD,CWE-754,Tras el paro todo permanece apagado (vigilancia continua)
+C3,6,SEGURIDAD,CWE-696,Marcha y paro a la vez: gana el contacto NC de paro (prioridad)
+C3,7,NOMINAL,,Rearranque (funcion nominal)
+C3,8,TEMPORIZACION,CWE-665,T1 empieza de cero tras el rearranque: lampara apagada 9 s (rearme)
+C3,9,TEMPORIZACION,CWE-670,Lampara encendida tras completar los 10 s
+C3,10,SEGURIDAD,CWE-754,Paro final
+I1,0,SECUENCIA,CWE-670,Deshabilitado en reposo: verde y rojo apagados (vigilancia continua)
+I1,1,SECUENCIA,CWE-670,Al habilitar la secuencia arranca en verde
+I1,2,TEMPORIZACION,CWE-670,Verde 20 s y paso a amarillo
+I1,3,TEMPORIZACION,CWE-670,Amarillo 4 s y paso a rojo
+I1,4,TEMPORIZACION,CWE-670,Rojo 15 s y paso a verde
+I1,5,TEMPORIZACION,CWE-670,Segundo ciclo: verde 20 s y paso a amarillo
+I1,6,TEMPORIZACION,CWE-670,Segundo ciclo: amarillo 4 s y paso a rojo
+I1,7,AMBIGUO,,Deshabilitado estando en rojo: amarillo intermitente 1 s/1 s medido con verde y rojo vigilados: mezcla TEMPORIZACION y SECUENCIA
+I1,8,SECUENCIA,CWE-670,Al rehabilitar reinicia en verde y no continua en rojo
+I2,0,INICIALIZACION,CWE-665,Reposo: todas las salidas apagadas
+I2,1,NOMINAL,,Arranque: abre la valvula de llenado (funcion nominal)
+I2,2,AMBIGUO,,Nivel alto: transicion a mezcla y mezcla aun activa 1 s despues: mezcla SECUENCIA y TEMPORIZACION [v2]
+I2,3,TEMPORIZACION,CWE-670,~59.5 s de mezcla: aun no termina
+I2,4,TEMPORIZACION,CWE-670,~60.5 s: ya descarga
+I2,5,SECUENCIA,CWE-670,Nivel bajo: vuelve a reposo
+I2,6,NOMINAL,,Nuevo ciclo (funcion nominal)
+I2,7,SEGURIDAD,CWE-754,Paro en llenado: estado seguro
+I2,8,NOMINAL,,Rearranque tras el paro (funcion nominal)
+I2,9,SECUENCIA,CWE-670,Entra en mezcla en el segundo ciclo
+I2,10,SEGURIDAD,CWE-754,Paro en mezcla: estado seguro
+I2,11,SEGURIDAD,CWE-754,Tras el paro permanece en reposo sin rearrancar solo
+I3,0,INICIALIZACION,CWE-665,Reposo con los ACK activos: sin sirena y codigo 0
+I3,1,NOMINAL,,Alarma baja activa: sirena y codigo 3 (funcion nominal)
+I3,2,SECUENCIA,CWE-670,ACK con la causa presente: la alarma no se borra (retencion)
+I3,3,SECUENCIA,CWE-670,Causa retirada: la alarma sigue retenida
+I3,4,SECUENCIA,CWE-670,ACK con la causa retirada: la alarma se borra
+I3,5,CALCULO,CWE-682,Dos alarmas: codigo de la de mayor prioridad
+I3,6,CALCULO,CWE-682,Entra la de prioridad alta: codigo 1
+I3,7,CALCULO,CWE-682,Se retira y reconoce la alta: codigo 2
+I3,8,CALCULO,CWE-682,Se retira y reconoce la media: codigo 3
+I3,9,SECUENCIA,CWE-670,Se retira y reconoce la baja: todo en reposo
+I4,0,INICIALIZACION,CWE-665,Reposo: contactores apagados
+I4,1,NOMINAL,,Fase estrella antes de 8 s: kM y kY activos y kD apagado (funcion nominal)
+I4,2,TEMPORIZACION,CWE-670,Pasada la transicion de 8 s: en triangulo
+I4,3,SEGURIDAD,CWE-754,Tiempo muerto medido entre la caida de kY y la subida de kD
+I4,4,SEGURIDAD,CWE-754,Paro en cualquier momento: todo a reposo
+I4,5,TEMPORIZACION,CWE-665,Rearranque: vuelve a estrella sin saltar a triangulo (rearme del temporizador)
+I5,0,AMBIGUO,,Reposo: banda en marcha y piston y contadores en cero: verifica todas las salidas en reposo [v2]
+I5,1,NOMINAL,,Primera pieza baja con presencia sostenida: cuenta una vez (funcion nominal y flanco)
+I5,2,FLANCO,CWE-372,Se retira la pieza baja: la cuenta no cambia
+I5,3,NOMINAL,,Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)
+I5,4,TEMPORIZACION,CWE-670,0.3 s antes del inicio del pulso: piston aun apagado
+I5,5,TEMPORIZACION,CWE-670,Dentro del pulso de 1 s que empieza 2 s despues de la deteccion: piston activo
+I5,6,TEMPORIZACION,CWE-670,0.3 s despues del fin del pulso: piston apagado
+I6,0,CALCULO,CWE-682,Escalado en el punto medio: 13824 -> 50.0
+I6,1,CALCULO,CWE-697,Umbral superior 80.0: el enfriador se activa
+I6,2,CALCULO,CWE-697,Dentro de la banda bajando: conserva ON (histeresis)
+I6,3,CALCULO,CWE-20,Fuera de rango con el enfriador encendido: alarma y enfriador apagado
+I6,4,CALCULO,CWE-697,Umbral inferior 75.0: enfriador apagado
+I6,5,CALCULO,CWE-697,Dentro de la banda subiendo: conserva OFF (histeresis)
+I6,6,CALCULO,CWE-20,Fuera de rango por el limite inferior: alarma
+I6,7,CALCULO,CWE-20,Vuelve al rango: la alarma se desactiva
+I7,0,INICIALIZACION,CWE-665,Reposo: bombas apagadas
+I7,1,INICIALIZACION,CWE-665,Primera demanda tras el arranque: la principal es bomba1 [v2: CWE-665 en lugar de CWE-456]
+I7,2,NOMINAL,,Sin demanda: ambas paradas (funcion nominal)
+I7,3,SECUENCIA,CWE-670,Nueva demanda: alterna a bomba2
+I7,4,NOMINAL,,Sin demanda (funcion nominal)
+I7,5,SECUENCIA,CWE-670,Nueva demanda: alterna de nuevo a bomba1
+I7,6,SEGURIDAD,CWE-754,Falla de la principal: arranca el respaldo y almFalla
+I7,7,SEGURIDAD,CWE-754,Desaparece la falla: vuelve la principal
+I7,8,SEGURIDAD,CWE-754,Falla solo del respaldo: sin alarma
+I7,9,SEGURIDAD,CWE-754,Ambas con falla: ninguna funciona y almFalla
+I7,10,SEGURIDAD,CWE-754,Sin demanda: sin alarma aunque haya fallas
+I7,11,SECUENCIA,CWE-670,Cuarta demanda: alterna a bomba2
+I7,12,SEGURIDAD,CWE-754,Falla de la principal bomba2: respaldo bomba1 y almFalla
+I7,13,NOMINAL,,Sin demanda (funcion nominal)
+I8,0,CALCULO,CWE-682,Faltan todos los permisivos: causaBloqueo reporta el menor (1)
+I8,1,TEMPORIZACION,CWE-670,Aceite correcto aun sin 3 s continuos: causa 1 y sin arranque
+I8,2,AMBIGUO,,Permisivos completos sin pulsar marcha: no arranca solo y causa 0: mezcla SEGURIDAD y TEMPORIZACION
+I8,3,NOMINAL,,Flanco de marcha con permisivos: arranca (funcion nominal)
+I8,4,SECUENCIA,CWE-670,Enclavado al soltar la marcha (autorretencion)
+I8,5,SEGURIDAD,CWE-754,Pierde temperatura: se detiene y causa 2
+I8,6,SEGURIDAD,CWE-754,Se recupera el permisivo: sin rearranque automatico
+I8,7,SEGURIDAD,CWE-696,Marcha y paro a la vez: prioridad del paro
+I8,8,FLANCO,CWE-372,Se suelta el paro con marcha sostenida: sin flanco no arranca
+I8,9,NOMINAL,,Reposo sin ordenes (funcion nominal)
+I8,10,NOMINAL,,Nuevo flanco de marcha: arranca (funcion nominal)
+I8,11,SEGURIDAD,CWE-754,Alarma activa: se detiene y causa 3
+I8,12,CALCULO,CWE-682,Faltan todos: causa 1
+I8,13,TEMPORIZACION,CWE-665,Marcha con el aceite aun temporizando (temporizador reiniciado): no arranca y causa 1
+I8,14,FLANCO,CWE-372,Los permisivos llegan con la marcha sostenida: no arranca sin flanco
+I8,15,NOMINAL,,Reposo sin ordenes (funcion nominal)
+I8,16,NOMINAL,,Flanco de marcha: arranca (funcion nominal)
+I8,17,SEGURIDAD,CWE-754,Perdida momentanea de aceite: se detiene
+I8,18,TEMPORIZACION,CWE-670,El aceite vuelve pero no lleva 3 s continuos: causa 1
+A2,0,INICIALIZACION,CWE-665,Reposo con producto: fase 0
+A2,1,SECUENCIA,CWE-670,Abort en reposo: sin efecto
+A2,2,NOMINAL,,Inicio de receta: fase 1 (funcion nominal)
+A2,3,SECUENCIA,CWE-670,Espera de nivelA en fase 1
+A2,4,SECUENCIA,CWE-670,nivelA: transicion a fase 2
+A2,5,SECUENCIA,CWE-670,Inicio durante la receta: se ignora
+A2,6,SECUENCIA,CWE-670,nivelB: transicion a fase 3
+A2,7,CALCULO,CWE-697,Temperatura 59.9: no basta para avanzar
+A2,8,AMBIGUO,,Temperatura 60.0: fase 4 con solo el mezclador activo: mezcla CALCULO (umbral mayor o igual) y TEMPORIZACION o SECUENCIA (arranque de la mezcla) [v2]
+A2,9,TEMPORIZACION,CWE-670,Mezcla: aun no cumple 120 s
+A2,10,TEMPORIZACION,CWE-670,Mezcla: cumplio 120 s y pasa a descarga
+A2,11,SECUENCIA,CWE-670,Vacio: vuelve a reposo
+A2,12,NOMINAL,,Nueva receta (funcion nominal)
+A2,13,SEGURIDAD,CWE-754,Abort con producto: cierra actuadores y descarga (fase 5)
+A2,14,SEGURIDAD,CWE-754,Tras el abort sigue descargando
+A2,15,SECUENCIA,CWE-670,Vacio tras el abort: reposo
+A2,16,NOMINAL,,Receta con reactor vacio (funcion nominal)
+A2,17,SEGURIDAD,CWE-754,Abort sin producto: directo a reposo
+A2,18,NOMINAL,,Nueva receta (funcion nominal)
+A2,19,SECUENCIA,CWE-670,nivelA: fase 2
+A2,20,SECUENCIA,CWE-670,nivelB: fase 3 (calentando)
+A2,21,SEGURIDAD,CWE-754,Abort en fase 3: calentador cerrado y descarga
+A2,22,SEGURIDAD,CWE-754,Sigue la descarga tras el abort
+A2,23,SEGURIDAD,CWE-754,Abort durante la descarga: continua
+A2,24,SECUENCIA,CWE-670,Vacio: reposo
+A3,0,INICIALIZACION,CWE-665,Reposo: ocupado ok y error apagados
+A3,1,NOMINAL,,Flanco de txReq: intento 1 con txData 100 (funcion nominal)
+A3,2,TEMPORIZACION,CWE-670,0.40 s: aun en el intento 1 (plazo demasiado corto)
+A3,3,AMBIGUO,,0.65 s: intento 2 (plazo demasiado largo o sin reintento): mezcla TEMPORIZACION y SECUENCIA
+A3,4,SECUENCIA,CWE-670,Eco correcto: ok y se conserva nIntentos 2
+A3,5,SECUENCIA,CWE-670,ok permanece
+A3,6,SECUENCIA,CWE-670,Nuevo intercambio: ok se borra e intento 1
+A3,7,SEGURIDAD,CWE-754,Eco erroneo (55 frente a 100): la respuesta erronea cuenta como intento fallido (condicion anomala) [v2]
+A3,8,FLANCO,CWE-372,Flanco de txReq durante el intercambio: se ignora
+A3,9,TEMPORIZACION,CWE-670,Vence el intento 2: pasa al 3
+A3,10,SECUENCIA,CWE-670,Vence el intento 3: error y ocupado apagado
+A3,11,SECUENCIA,CWE-670,error permanece y nIntentos se conserva
+A3,12,SECUENCIA,CWE-670,Nuevo intercambio: error se borra
+A3,13,TEMPORIZACION,CWE-670,~0.41-0.46 s del intento 1: aun ocupado
+A3,14,TEMPORIZACION,CWE-670,Eco dentro del plazo: ok (plazo demasiado corto)
+A5,0,INICIALIZACION,CWE-456,5 llamadas sin evento: indice -1 y nEventos 0
+A5,1,NOMINAL,,Primer evento con nuevoEvento sostenido 3 llamadas: indice 0 y marca (funcion nominal)
+A5,2,FLANCO,CWE-372,2 llamadas sin flanco: sin registros nuevos
+A5,3,CALCULO,CWE-682,19 eventos: indice 19 y nEventos 20
+A5,4,CALCULO,CWE-682,Evento 21: sobrescribe el mas antiguo (indice circular 0)
+A5,5,CALCULO,CWE-682,Dos eventos mas: indice 2 y contenido
+A6,0,AMBIGUO,,Arranque en modo manual y sin estado seguro no cambia: mezcla INICIALIZACION y SEGURIDAD
+A6,1,SEGURIDAD,CWE-754,Sin estado seguro no se acepta el cambio de modo
+A6,2,SEGURIDAD,CWE-754,El cambio pendiente se aplica al activarse estadoSeguro
+A6,3,CALCULO,CWE-20,Selector fuera de rango (5): se ignora
+A6,4,CALCULO,CWE-20,Selector fuera de rango (-1): se ignora
+A6,5,NOMINAL,,Modo automatico: sigue a cmdAuto (funcion nominal)
+A6,6,SECUENCIA,CWE-670,Entrada a mantenimiento: todos los actuadores apagados
+A6,7,NOMINAL,,Forzado de actuador[3] por flanco de confirmarForzado (funcion nominal)
+A6,8,CALCULO,CWE-129,idxForzado fuera de rango (8): se ignora
+A6,9,NOMINAL,,Forzado de actuador[5] (funcion nominal)
+A6,10,NOMINAL,,Forzado a FALSE (funcion nominal)
+A6,11,SEGURIDAD,CWE-754,Se pierde estadoSeguro en mantenimiento: se anulan los forzados
+A6,12,SECUENCIA,CWE-670,Vuelve estadoSeguro: los forzados siguen anulados
+A6,13,NOMINAL,,Nuevo forzado (funcion nominal)
+A6,14,SECUENCIA,CWE-670,Salida a manual
+A6,15,SECUENCIA,CWE-670,Al volver a mantenimiento los forzados anteriores no reaparecen
+A6,16,NOMINAL,,Vuelta a automatico (funcion nominal)

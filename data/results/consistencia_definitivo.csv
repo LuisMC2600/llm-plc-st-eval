@@ -1,0 +1,11 @@
+﻿criterio,modelo,celdas_3de3,celdas_2de3,celdas_1de3,celdas_0de3,celdas
+CRITERIO 2 (compila),gemini-3.1-pro-preview,46,2,1,1,50
+CRITERIO 2 (compila),claude-sonnet-4-6,41,6,1,2,50
+CRITERIO 2 (compila),gpt-4o-2024-08-06,39,0,2,9,50
+CRITERIO 2 (compila),qwen2.5-coder_14b,37,3,3,7,50
+CRITERIO 2 (compila),TODOS,163,11,7,19,200
+CRITERIO 1 (pasa el harness),gemini-3.1-pro-preview,44,4,1,1,50
+CRITERIO 1 (pasa el harness),claude-sonnet-4-6,30,10,4,6,50
+CRITERIO 1 (pasa el harness),gpt-4o-2024-08-06,12,7,4,27,50
+CRITERIO 1 (pasa el harness),qwen2.5-coder_14b,8,7,4,31,50
+CRITERIO 1 (pasa el harness),TODOS,94,28,13,65,200

@@ -1,0 +1,253 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A3 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>A3 — Protocolo de comunicación con reintentos (Avanzado)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja A3 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa un intercambio de petición/respuesta con un dispositivo externo. Cada transición de FALSE a TRUE de txReq inicia un intercambio: coloca el valor de prueba 100 en la salida txData, activa ocupado y comienza el intento 1. El intento es correcto si, dentro de un plazo de 500 milisegundos desde su inicio, se recibe rxOk activa con rxData igual al valor transmitido (eco). Si el plazo vence sin confirmación, o si rxOk llega con un valor distinto, el intento falla y se inicia el siguiente con un plazo nuevo; se permiten como máximo 3 intentos en total. La salida nIntentos indica el número del intento en curso (1, 2 o 3) y conserva el último valor al terminar. Si un intento es correcto, se activan ok y se desactiva ocupado; si fallan los 3, se activan error y se desactiva ocupado. ok y error permanecen activas hasta el siguiente intercambio. Una transición de txReq durante un intercambio en curso se ignora. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Com con variables de entrada txReq, rxOk (BOOL) y rxData (INT), y salidas txData (INT), ocupado, ok, error (BOOL) y nIntentos (INT). Usa el tiempo T#500MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_A3.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea A3 (FB_Com: peticion/respuesta con reintentos)
+    ---------------------------------------------------------------------------
+    Validado en codesys/validar_harness_A3.py: 9 implementaciones (1 correcta y
+    8 defectuosas), ciclos de 4, 10 y 20 ms. Tabla generada desde el validador.
+    rxOk se aplica como pulso de UN scan al entrar en el paso (ver validador).
+    eN = -1 o eTx = -1: ese valor no se evalua en el paso.
+
+    Paso: (txReq, pulso rxOk, rxData) duracion -&gt; (ocupado, ok, error, nIntentos, txData)   [- = no se evalua]
+  0 (F,-,0)   0.20 s -&gt; (F,F,F,-,-)  reposo
+  1 (T,-,0)   0.20 s -&gt; (T,F,F,1,100) flanco: intento 1
+  2 (F,-,0)   0.20 s -&gt; (T,F,F,1,-)   0.40 s: aun intento 1   (plazo corto)
+  3 (F,-,0)   0.25 s -&gt; (T,F,F,2,-)   0.65 s: intento 2        (plazo largo / sin reintento)
+  4 (F,P,100) 0.20 s -&gt; (F,T,F,2,-)   eco correcto: ok, conserva nIntentos=2
+  5 (F,-,0)   0.30 s -&gt; (F,T,F,2,-)   ok permanece
+  6 (T,-,0)   0.10 s -&gt; (T,F,F,1,100) nuevo intercambio: ok se borra
+  7 (F,P,55)  0.10 s -&gt; (T,F,F,2,-)   eco erroneo: falla el intento 1
+  8 (T,-,0)   0.10 s -&gt; (T,F,F,2,-)   flanco de txReq durante el intercambio: se ignora
+  9 (T,-,0)   0.50 s -&gt; (T,F,F,3,-)   vence el intento 2
+ 10 (T,-,0)   0.40 s -&gt; (F,F,T,3,-)   vence el intento 3: error
+ 11 (F,-,0)   0.30 s -&gt; (F,F,T,3,-)   error permanece, nIntentos se conserva
+ 12 (T,-,0)   0.20 s -&gt; (T,F,F,1,100) nuevo intercambio: error se borra
+ 13 (T,-,0)   0.20 s -&gt; (T,F,F,1,-)   ~0.41-0.46 s del intento 1 (segun el ciclo)
+ 14 (T,P,100) 0.20 s -&gt; (F,T,F,1,-)   eco al inicio del paso: dentro del plazo (plazo demasiado corto)
+NOTA: la primera version usaba 0.25 s en el paso 13 y REPROBABA a la correcta con
+ciclo de 20 ms (el eco llegaba a ~0.51 s): cada cambio de paso consume un scan.
+
+--- Pasos (CASE paso OF) ---
+
+        0: txReq := FALSE; pulsoStep := FALSE; rxData := 0; tEspera := T#200MS;
+            eOcup := FALSE; eOk := FALSE; eErr := FALSE; eN := -1; eTx := -1;
+        1: txReq := TRUE; pulsoStep := FALSE; rxData := 0; tEspera := T#200MS;
+            eOcup := TRUE; eOk := FALSE; eErr := FALSE; eN := 1; eTx := 100;
+        2: txReq := FALSE; pulsoStep := FALSE; rxData := 0; tEspera := T#200MS;
+            eOcup := TRUE; eOk := FALSE; eErr := FALSE; eN := 1; eTx := -1;
+        3: txReq := FALSE; pulsoStep := FALSE; rxData := 0; tEspera := T#250MS;
+            eOcup := TRUE; eOk := FALSE; eErr := FALSE; eN := 2; eTx := -1;
+        4: txReq := FALSE; pulsoStep := TRUE; rxData := 100; tEspera := T#200MS;
+            eOcup := FALSE; eOk := TRUE; eErr := FALSE; eN := 2; eTx := -1;
+        5: txReq := FALSE; pulsoStep := FALSE; rxData := 0; tEspera := T#300MS;
+            eOcup := FALSE; eOk := TRUE; eErr := FALSE; eN := 2; eTx := -1;
+        6: txReq := TRUE; pulsoStep := FALSE; rxData := 0; tEspera := T#100MS;
+            eOcup := TRUE; eOk := FALSE; eErr := FALSE; eN := 1; eTx := 100;
+        7: txReq := FALSE; pulsoStep := TRUE; rxData := 55; tEspera := T#100MS;
+            eOcup := TRUE; eOk := FALSE; eErr := FALSE; eN := 2; eTx := -1;
+        8: txReq := TRUE; pulsoStep := FALSE; rxData := 0; tEspera := T#100MS;
+            eOcup := TRUE; eOk := FALSE; eErr := FALSE; eN := 2; eTx := -1;
+        9: txReq := TRUE; pulsoStep := FALSE; rxData := 0; tEspera := T#500MS;
+            eOcup := TRUE; eOk := FALSE; eErr := FALSE; eN := 3; eTx := -1;
+        10: txReq := TRUE; pulsoStep := FALSE; rxData := 0; tEspera := T#400MS;
+            eOcup := FALSE; eOk := FALSE; eErr := TRUE; eN := 3; eTx := -1;
+        11: txReq := FALSE; pulsoStep := FALSE; rxData := 0; tEspera := T#300MS;
+            eOcup := FALSE; eOk := FALSE; eErr := TRUE; eN := 3; eTx := -1;
+        12: txReq := TRUE; pulsoStep := FALSE; rxData := 0; tEspera := T#200MS;
+            eOcup := TRUE; eOk := FALSE; eErr := FALSE; eN := 1; eTx := 100;
+        13: txReq := TRUE; pulsoStep := FALSE; rxData := 0; tEspera := T#200MS;
+            eOcup := TRUE; eOk := FALSE; eErr := FALSE; eN := 1; eTx := -1;
+        14: txReq := TRUE; pulsoStep := TRUE; rxData := 100; tEspera := T#200MS;
+            eOcup := FALSE; eOk := TRUE; eErr := FALSE; eN := 1; eTx := -1;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#A3-9003">A3-9003</a><a href="#A3-6370">A3-6370</a><a href="#A3-4983">A3-4983</a></div>
+<div class="caja resp" id="A3-9003"><div class="cod"><h3>A3-9003</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 4 de 15 pasos del harness (pasos 7,8,9,10; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Com
+VAR_INPUT
+    txReq : BOOL; (* Solicitud de transmision *)
+    rxOk : BOOL; (* Confirmacion de recepcion *)
+    rxData : INT; (* Datos recibidos *)
+END_VAR
+VAR_OUTPUT
+    txData : INT; (* Datos a transmitir *)
+    ocupado : BOOL; (* Indicador de intercambio en curso *)
+    ok : BOOL; (* Indicador de exito *)
+    error : BOOL; (* Indicador de error *)
+    nIntentos : INT; (* Numero de intento actual *)
+END_VAR
+VAR
+    txReqPrev : BOOL; (* Estado previo de txReq *)
+    intentoActual : INT; (* Contador de intentos *)
+    tTimeout : TON; (* Temporizador de timeout *)
+    intercambioActivo : BOOL; (* Indicador de intercambio activo *)
+END_VAR
+
+(* Inicializacion de variables *)
+IF NOT intercambioActivo THEN
+    IF txReq AND NOT txReqPrev THEN
+        (* Inicio de un nuevo intercambio *)
+        txData := 100;
+        ocupado := TRUE;
+        ok := FALSE;
+        error := FALSE;
+        intentoActual := 1;
+        nIntentos := intentoActual;
+        intercambioActivo := TRUE;
+        tTimeout(IN := TRUE, PT := T#500MS);
+    END_IF
+ELSE
+    (* Proceso de intercambio en curso *)
+    tTimeout(IN := NOT tTimeout.Q); (* Reiniciar temporizador si no ha expirado *)
+
+    IF rxOk AND (rxData = txData) THEN
+        (* Intento exitoso *)
+        ok := TRUE;
+        ocupado := FALSE;
+        intercambioActivo := FALSE;
+    ELSIF tTimeout.Q THEN
+        (* Intento fallido, verificar siguiente intento *)
+        intentoActual := intentoActual + 1;
+        IF intentoActual &gt; 3 THEN
+            (* Todos los intentos fallaron *)
+            error := TRUE;
+            ocupado := FALSE;
+            intercambioActivo := FALSE;
+        ELSE
+            (* Iniciar siguiente intento *)
+            nIntentos := intentoActual;
+            tTimeout(IN := TRUE, PT := T#500MS);
+        END_IF
+    END_IF
+END_IF
+
+(* Actualizar estado previo de txReq *)
+txReqPrev := txReq;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A3-6370"><div class="cod"><h3>A3-6370</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 15 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Com
+VAR_INPUT
+    txReq  : BOOL; (* Solicitud de inicio de intercambio *)
+    rxOk   : BOOL; (* Confirmacion recibida del dispositivo externo *)
+    rxData : INT;  (* Dato recibido (eco esperado) *)
+END_VAR
+VAR_OUTPUT
+    txData   : INT;  (* Dato transmitido al dispositivo externo *)
+    ocupado  : BOOL; (* Intercambio en curso *)
+    ok       : BOOL; (* Ultimo intercambio exitoso *)
+    error    : BOOL; (* Fallaron los 3 intentos *)
+    nIntentos: INT;  (* Numero del intento en curso *)
+END_VAR
+VAR
+    tTimeout  : TON;          (* Temporizador de plazo por intento *)
+    txReqPrev : BOOL;         (* Valor anterior de txReq para detectar flanco *)
+    activo    : BOOL;         (* Intercambio en curso (interno) *)
+    txValor   : INT := 100;   (* Valor de prueba fijo *)
+END_VAR
+
+(* --- Deteccion de flanco ascendente en txReq --- *)
+IF txReq AND NOT txReqPrev AND NOT activo THEN
+    (* Inicio de nuevo intercambio *)
+    activo    := TRUE;
+    ocupado   := TRUE;
+    ok        := FALSE;
+    error     := FALSE;
+    nIntentos := 1;
+    txData    := txValor;
+    tTimeout(IN := FALSE, PT := T#500MS); (* Reset del temporizador *)
+END_IF;
+txReqPrev := txReq;
+
+(* --- Logica principal del intercambio --- *)
+IF activo THEN
+    (* Ejecutar temporizador del intento actual *)
+    tTimeout(IN := TRUE, PT := T#500MS);
+
+    (* Verificar respuesta correcta: rxOk activo y eco correcto *)
+    IF rxOk AND (rxData = txValor) THEN
+        (* Intento exitoso *)
+        ok       := TRUE;
+        ocupado  := FALSE;
+        activo   := FALSE;
+        tTimeout(IN := FALSE, PT := T#500MS); (* Detener temporizador *)
+
+    (* Verificar fallo: plazo vencido o eco incorrecto *)
+    ELSIF tTimeout.Q OR (rxOk AND (rxData &lt;&gt; txValor)) THEN
+        tTimeout(IN := FALSE, PT := T#500MS); (* Reset del temporizador *)
+
+        IF nIntentos &lt; 3 THEN
+            (* Iniciar siguiente intento *)
+            nIntentos := nIntentos + 1;
+            (* El temporizador arrancara en el proximo ciclo con IN=TRUE *)
+        ELSE
+            (* Agotados los 3 intentos: error *)
+            error   := TRUE;
+            ocupado := FALSE;
+            activo  := FALSE;
+        END_IF;
+    END_IF;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A3-4983"><div class="cod"><h3>A3-4983</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 14 de 15 pasos del harness (pasos 1,2,3,4,5,6,7,8,9,10,11,12,13,14; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Com
+VAR_INPUT
+    txReq : BOOL; (* Petición de transmisión *)
+    rxOk : BOOL; (* Confirmación de recepción *)
+    rxData : INT; (* Datos recibidos *)
+END_VAR
+VAR_OUTPUT
+    txData : INT; (* Datos a transmitir *)
+    ocupado : BOOL; (* Estado de ocupado *)
+    ok : BOOL; (* Confirmación de éxito *)
+    error : BOOL; (* Confirmación de error *)
+    nIntentos : INT; (* Número de intentos *)
+END_VAR
+VAR
+    tEspera : TP; (* Temporizador de espera *)
+    estado : INT; (* Estado actual del intercambio *)
+    intentos : INT; (* Contador de intentos *)
+END_VAR
+
+(* Estados: 0 = Inactivo, 1 = En espera de respuesta, 2 = Éxito, 3 = Error *)
+IF txReq AND NOT ocupado THEN
+    estado := 1;
+    intentos := 1;
+    txData := 100;
+    ocupado := TRUE;
+    tEspera(IN := TRUE, PT := T#500MS);
+END_IF
+
+CASE estado OF
+    1: (* Esperando respuesta *)
+        IF tEspera.Q THEN
+            IF rxOk AND rxData = txData THEN
+                estado := 2;
+                ok := TRUE;
+                ocupado := FALSE;
+            ELSE
+                intentos := intentos + 1;
+                IF intentos &gt; 3 THEN
+                    estado := 3;
+                    error := TRUE;
+                    ocupado := FALSE;
+                ELSE
+                    tEspera(IN := TRUE, PT := T#500MS);
+                END_IF;
+            END_IF;
+        END_IF;
+    2: (* Éxito *)
+        (* Mantener ok activo hasta el siguiente intercambio *)
+    3: (* Error *)
+        (* Mantener error activo hasta el siguiente intercambio *)
+END_CASE;
+
+nIntentos := intentos;
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

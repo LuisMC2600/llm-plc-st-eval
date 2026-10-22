@@ -1,0 +1,58 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20261002233958
+Nombre de usuario: DESKTOP-2K8TKD6\LUIS C
+Usuario RunAs: DESKTOP-2K8TKD6\LUIS C
+Nombre de la configuración: 
+Máquina: DESKTOP-2K8TKD6 (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\ejecutar_calibracion.ps1
+Id. de proceso: 37220
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+===== 1. Entorno =====
+
+  [ok] openai
+  [ok] anthropic
+  [ok] google.genai
+  [ok] yaml
+
+===== 2. Claves de API (solo se comprueba presencia, nunca el valor) =====
+  [ok] OPENAI_API_KEY presente (164 caracteres)
+  [ok] ANTHROPIC_API_KEY presente (108 caracteres)
+  [ok] GOOGLE_API_KEY presente (53 caracteres)
+
+===== 3. Modelo local (Ollama) =====
+NAME                                       ID              SIZE      MODIFIED    
+qwen2.5-coder:14b                          9ec8897f747e    9.0 GB    2 hours ago    
+orcarouter/Qwen3.8-27B-Uncensored:iq2_m    37ed24968d9c    11 GB     3 weeks ago
+
+===== 4. Dry-run (debe reportar 48 pendientes) =====
+
+Resumen: 0 ya existÝan, 48 pendientes.
+
+===== 5. Confirmacion =====
+Se van a realizar hasta 48 llamadas reales (estimado: menos de 1 USD).
+
+===== 6. Ejecucion =====
+
+
+Duracion total: 9,5 minutos
+
+===== 7. Verificacion (debe reportar 0 pendientes) =====
+
+Resumen: 48 ya existÝan, 0 pendientes.
+
+===== 8. Resumen del log =====
+
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20261002234946
+**********************

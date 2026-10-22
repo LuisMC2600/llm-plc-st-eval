@@ -1,0 +1,236 @@
+Respuestas de codigo: 600 | con harness: 600 | REVISAR: 0
+
+===== CRITERIO 2 - compila en CODESYS (estricto) (n = 600) =====
+  GLOBAL                             518/600 =  86.3 % [ 83.4;  88.9]
+  gemini-3.1-pro-preview             143/150 =  95.3 % [ 90.7;  97.7]
+  claude-sonnet-4-6                  136/150 =  90.7 % [ 84.9;  94.4]
+  gpt-4o-2024-08-06                  119/150 =  79.3 % [ 72.2;  85.0]
+  qwen2.5-coder_14b                  120/150 =  80.0 % [ 72.9;  85.6]
+  gemini-3.1-pro-preview | zero_shot  71/ 75 =  94.7 % [ 87.1;  97.9]
+  gemini-3.1-pro-preview | few_shot   72/ 75 =  96.0 % [ 88.9;  98.6]
+  claude-sonnet-4-6 | zero_shot       68/ 75 =  90.7 % [ 82.0;  95.4]
+  claude-sonnet-4-6 | few_shot        68/ 75 =  90.7 % [ 82.0;  95.4]
+  gpt-4o-2024-08-06 | zero_shot       58/ 75 =  77.3 % [ 66.7;  85.3]
+  gpt-4o-2024-08-06 | few_shot        61/ 75 =  81.3 % [ 71.1;  88.5]
+  qwen2.5-coder_14b | zero_shot       57/ 75 =  76.0 % [ 65.2;  84.2]
+  qwen2.5-coder_14b | few_shot        63/ 75 =  84.0 % [ 74.1;  90.6]
+  nivel Basico                       189/192 =  98.4 % [ 95.5;  99.5]
+  nivel Intermedio                   178/192 =  92.7 % [ 88.1;  95.6]
+  nivel Avanzado                      80/144 =  55.6 % [ 47.4;  63.4]
+  nivel Complementaria                71/ 72 =  98.6 % [ 92.5;  99.8]
+  -- zero-shot vs few-shot por modelo (McNemar exacto, pareado por tarea x ejecucion; Wilcoxon por tarea)
+     gemini-3.1-pro-preview     solo zero= 1  solo few= 2  p=1.000 | Wilcoxon p=0.564
+     claude-sonnet-4-6          solo zero= 4  solo few= 4  p=1.000 | Wilcoxon p=1.000
+     gpt-4o-2024-08-06          solo zero= 0  solo few= 3  p=0.250 | Wilcoxon p=0.180
+     qwen2.5-coder_14b          solo zero= 0  solo few= 6  p=0.031 | Wilcoxon p=0.063
+  -- modelo vs modelo (McNemar exacto, pareado por tarea x estrategia x ejecucion; Holm sobre 6 comparaciones)
+     gemini-3.1-pro-preview vs claude-sonnet-4-6      solo 1.o= 11 solo 2.o=  4  p=0.12  p Holm=0.24 | Wilcoxon por celda p=0.16
+     gemini-3.1-pro-preview vs gpt-4o-2024-08-06      solo 1.o= 25 solo 2.o=  1  p=8e-07  p Holm=4.8e-06 | Wilcoxon por celda p=0.0043
+     gemini-3.1-pro-preview vs qwen2.5-coder_14b      solo 1.o= 24 solo 2.o=  1  p=1.5e-06  p Holm=7.7e-06 | Wilcoxon por celda p=0.0026
+     claude-sonnet-4-6      vs gpt-4o-2024-08-06      solo 1.o= 22 solo 2.o=  5  p=0.0015  p Holm=0.0061 | Wilcoxon por celda p=0.026
+     claude-sonnet-4-6      vs qwen2.5-coder_14b      solo 1.o= 23 solo 2.o=  7  p=0.0052  p Holm=0.016 | Wilcoxon por celda p=0.052
+     gpt-4o-2024-08-06      vs qwen2.5-coder_14b      solo 1.o= 12 solo 2.o= 13  p=1  p Holm=1 | Wilcoxon por celda p=0.72
+
+===== CRITERIO 1 - pasa el harness (estricto) (n = 600) =====
+  GLOBAL                             351/600 =  58.5 % [ 54.5;  62.4]
+  gemini-3.1-pro-preview             141/150 =  94.0 % [ 89.0;  96.8]
+  claude-sonnet-4-6                  114/150 =  76.0 % [ 68.6;  82.1]
+  gpt-4o-2024-08-06                   54/150 =  36.0 % [ 28.8;  43.9]
+  qwen2.5-coder_14b                   42/150 =  28.0 % [ 21.4;  35.7]
+  gemini-3.1-pro-preview | zero_shot  70/ 75 =  93.3 % [ 85.3;  97.1]
+  gemini-3.1-pro-preview | few_shot   71/ 75 =  94.7 % [ 87.1;  97.9]
+  claude-sonnet-4-6 | zero_shot       56/ 75 =  74.7 % [ 63.8;  83.1]
+  claude-sonnet-4-6 | few_shot        58/ 75 =  77.3 % [ 66.7;  85.3]
+  gpt-4o-2024-08-06 | zero_shot       20/ 75 =  26.7 % [ 18.0;  37.6]
+  gpt-4o-2024-08-06 | few_shot        34/ 75 =  45.3 % [ 34.6;  56.6]
+  qwen2.5-coder_14b | zero_shot       21/ 75 =  28.0 % [ 19.1;  39.0]
+  qwen2.5-coder_14b | few_shot        21/ 75 =  28.0 % [ 19.1;  39.0]
+  nivel Basico                       139/192 =  72.4 % [ 65.7;  78.2]
+  nivel Intermedio                   104/192 =  54.2 % [ 47.1;  61.1]
+  nivel Avanzado                      52/144 =  36.1 % [ 28.7;  44.2]
+  nivel Complementaria                56/ 72 =  77.8 % [ 66.9;  85.8]
+  -- zero-shot vs few-shot por modelo (McNemar exacto, pareado por tarea x ejecucion; Wilcoxon por tarea)
+     gemini-3.1-pro-preview     solo zero= 2  solo few= 3  p=1.000 | Wilcoxon p=0.655
+     claude-sonnet-4-6          solo zero=10  solo few=12  p=0.832 | Wilcoxon p=0.719
+     gpt-4o-2024-08-06          solo zero= 2  solo few=16  p=0.001 | Wilcoxon p=0.015
+     qwen2.5-coder_14b          solo zero=10  solo few=10  p=1.000 | Wilcoxon p=0.964
+  -- modelo vs modelo (McNemar exacto, pareado por tarea x estrategia x ejecucion; Holm sobre 6 comparaciones)
+     gemini-3.1-pro-preview vs claude-sonnet-4-6      solo 1.o= 33 solo 2.o=  6  p=1.4e-05  p Holm=2.9e-05 | Wilcoxon por celda p=0.0023
+     gemini-3.1-pro-preview vs gpt-4o-2024-08-06      solo 1.o= 88 solo 2.o=  1  p=2.9e-25  p Holm=1.5e-24 | Wilcoxon por celda p=6.6e-08
+     gemini-3.1-pro-preview vs qwen2.5-coder_14b      solo 1.o=101 solo 2.o=  2  p=1.1e-27  p Holm=6.3e-27 | Wilcoxon por celda p=9.8e-09
+     claude-sonnet-4-6      vs gpt-4o-2024-08-06      solo 1.o= 67 solo 2.o=  7  p=2.1e-13  p Holm=6.4e-13 | Wilcoxon por celda p=7.9e-06
+     claude-sonnet-4-6      vs qwen2.5-coder_14b      solo 1.o= 74 solo 2.o=  2  p=7.7e-20  p Holm=3.1e-19 | Wilcoxon por celda p=1.9e-07
+     gpt-4o-2024-08-06      vs qwen2.5-coder_14b      solo 1.o= 29 solo 2.o= 17  p=0.1  p Holm=0.1 | Wilcoxon por celda p=0.3
+
+===== Categorias (criterio 1) =====
+  gemini-3.1-pro-preview     PASA=141  FALLA_LOGICA=2  INTERFAZ_NO_CONFORME=0  NO_COMPILA=7
+  claude-sonnet-4-6          PASA=114  FALLA_LOGICA=22  INTERFAZ_NO_CONFORME=0  NO_COMPILA=14
+  gpt-4o-2024-08-06          PASA=54  FALLA_LOGICA=43  INTERFAZ_NO_CONFORME=22  NO_COMPILA=31
+  qwen2.5-coder_14b          PASA=42  FALLA_LOGICA=72  INTERFAZ_NO_CONFORME=6  NO_COMPILA=30
+
+===== Criterio 1 por tarea: aciertos de 3 (zero/few) =====
+  tarea  gemini-3.1-p  claude-sonne  gpt-4o-2024-  qwen2.5-code   total/24
+  B1     3 / 3         3 / 2         1 / 0         1 / 3          16
+  B2     3 / 3         3 / 3         2 / 3         2 / 0          19
+  B3     3 / 2         3 / 3         2 / 3         2 / 2          20
+  B4     2 / 3         3 / 3         2 / 3         1 / 0          17
+  B5     3 / 3         0 / 1         0 / 0         0 / 0           7
+  B6     3 / 3         3 / 2         0 / 3         3 / 0          17
+  B7     3 / 3         3 / 3         2 / 3         0 / 3          20
+  B8     3 / 3         3 / 3         3 / 3         2 / 3          23
+  I1     3 / 3         3 / 0         0 / 2         0 / 0          11
+  I2     3 / 3         2 / 3         0 / 0         0 / 0          11
+  I3     3 / 3         3 / 3         3 / 3         3 / 1          22
+  I4     3 / 3         2 / 3         0 / 0         0 / 0          11
+  I5     3 / 3         1 / 3         0 / 0         0 / 0          10
+  I6     3 / 3         3 / 3         0 / 0         3 / 2          17
+  I7     3 / 3         1 / 0         0 / 2         0 / 0           9
+  I8     3 / 3         3 / 3         0 / 1         0 / 0          13
+  A1     0 / 1         2 / 0         0 / 0         0 / 0           3
+  A2     3 / 3         2 / 2         2 / 1         0 / 0          13
+  A3     3 / 2         2 / 3         0 / 0         0 / 0          10
+  A4     2 / 3         2 / 3         0 / 0         0 / 0          10
+  A5     3 / 3         1 / 0         0 / 0         0 / 0           7
+  A6     3 / 3         0 / 3         0 / 0         0 / 0           9
+  C3     3 / 3         3 / 3         0 / 1         0 / 1          14
+  C7     3 / 3         2 / 3         3 / 3         2 / 3          22
+  C8     3 / 3         3 / 3         0 / 3         2 / 3          20
+
+===== Lenguaje natural vs Ladder: aciertos de 6 por modelo =====
+  B3 (LN) vs C7 (LD): gemini 5/6  claude 6/5  gpt-4o 5/6  qwen2. 4/5
+  B2 (LN) vs C8 (LD): gemini 6/6  claude 6/6  gpt-4o 5/3  qwen2. 2/5
+
+===== Casos senalados =====
+  variable `dt` (INC-33): {('A1', 'claude'): 4, ('A1', 'gemini'): 5, ('A4', 'gemini'): 1, ('A1', 'gpt-4o'): 3, ('A1', 'qwen2.'): 6, ('A4', 'qwen2.'): 2}
+  `END_STRUCT;` (INC-34): {('A5', 'claude'): 5, ('A5', 'gpt-4o'): 2}
+
+===== S1 - CRITERIO 2 sin A1 (n = 576) =====
+  GLOBAL                             515/576 =  89.4 % [ 86.6;  91.7]
+  gemini-3.1-pro-preview             142/144 =  98.6 % [ 95.1;  99.6]
+  claude-sonnet-4-6                  134/144 =  93.1 % [ 87.7;  96.2]
+  gpt-4o-2024-08-06                  119/144 =  82.6 % [ 75.6;  88.0]
+  qwen2.5-coder_14b                  120/144 =  83.3 % [ 76.4;  88.5]
+  gemini-3.1-pro-preview | zero_shot  71/ 72 =  98.6 % [ 92.5;  99.8]
+  gemini-3.1-pro-preview | few_shot   71/ 72 =  98.6 % [ 92.5;  99.8]
+  claude-sonnet-4-6 | zero_shot       66/ 72 =  91.7 % [ 83.0;  96.1]
+  claude-sonnet-4-6 | few_shot        68/ 72 =  94.4 % [ 86.6;  97.8]
+  gpt-4o-2024-08-06 | zero_shot       58/ 72 =  80.6 % [ 70.0;  88.0]
+  gpt-4o-2024-08-06 | few_shot        61/ 72 =  84.7 % [ 74.7;  91.2]
+  qwen2.5-coder_14b | zero_shot       57/ 72 =  79.2 % [ 68.4;  86.9]
+  qwen2.5-coder_14b | few_shot        63/ 72 =  87.5 % [ 77.9;  93.3]
+  nivel Basico                       189/192 =  98.4 % [ 95.5;  99.5]
+  nivel Intermedio                   178/192 =  92.7 % [ 88.1;  95.6]
+  nivel Avanzado                      77/120 =  64.2 % [ 55.3;  72.2]
+  nivel Complementaria                71/ 72 =  98.6 % [ 92.5;  99.8]
+  -- zero-shot vs few-shot por modelo (McNemar exacto, pareado por tarea x ejecucion; Wilcoxon por tarea)
+     gemini-3.1-pro-preview     solo zero= 1  solo few= 1  p=1.000 | Wilcoxon p=1.000
+     claude-sonnet-4-6          solo zero= 2  solo few= 4  p=0.688 | Wilcoxon p=0.317
+     gpt-4o-2024-08-06          solo zero= 0  solo few= 3  p=0.250 | Wilcoxon p=0.180
+     qwen2.5-coder_14b          solo zero= 0  solo few= 6  p=0.031 | Wilcoxon p=0.063
+  -- modelo vs modelo (McNemar exacto, pareado por tarea x estrategia x ejecucion; Holm sobre 6 comparaciones)
+     gemini-3.1-pro-preview vs claude-sonnet-4-6      solo 1.o= 10 solo 2.o=  2  p=0.039  p Holm=0.077 | Wilcoxon por celda p=0.054
+     gemini-3.1-pro-preview vs gpt-4o-2024-08-06      solo 1.o= 24 solo 2.o=  1  p=1.5e-06  p Holm=9.3e-06 | Wilcoxon por celda p=0.0056
+     gemini-3.1-pro-preview vs qwen2.5-coder_14b      solo 1.o= 23 solo 2.o=  1  p=3e-06  p Holm=1.5e-05 | Wilcoxon por celda p=0.0038
+     claude-sonnet-4-6      vs gpt-4o-2024-08-06      solo 1.o= 20 solo 2.o=  5  p=0.0041  p Holm=0.016 | Wilcoxon por celda p=0.046
+     claude-sonnet-4-6      vs qwen2.5-coder_14b      solo 1.o= 21 solo 2.o=  7  p=0.013  p Holm=0.038 | Wilcoxon por celda p=0.079
+     gpt-4o-2024-08-06      vs qwen2.5-coder_14b      solo 1.o= 12 solo 2.o= 13  p=1  p Holm=1 | Wilcoxon por celda p=0.72
+
+===== S1 - CRITERIO 1 sin A1 (n = 576) =====
+  GLOBAL                             348/576 =  60.4 % [ 56.4;  64.3]
+  gemini-3.1-pro-preview             140/144 =  97.2 % [ 93.1;  98.9]
+  claude-sonnet-4-6                  112/144 =  77.8 % [ 70.3;  83.8]
+  gpt-4o-2024-08-06                   54/144 =  37.5 % [ 30.0;  45.6]
+  qwen2.5-coder_14b                   42/144 =  29.2 % [ 22.4;  37.1]
+  gemini-3.1-pro-preview | zero_shot  70/ 72 =  97.2 % [ 90.4;  99.2]
+  gemini-3.1-pro-preview | few_shot   70/ 72 =  97.2 % [ 90.4;  99.2]
+  claude-sonnet-4-6 | zero_shot       54/ 72 =  75.0 % [ 63.9;  83.6]
+  claude-sonnet-4-6 | few_shot        58/ 72 =  80.6 % [ 70.0;  88.0]
+  gpt-4o-2024-08-06 | zero_shot       20/ 72 =  27.8 % [ 18.8;  39.0]
+  gpt-4o-2024-08-06 | few_shot        34/ 72 =  47.2 % [ 36.1;  58.6]
+  qwen2.5-coder_14b | zero_shot       21/ 72 =  29.2 % [ 19.9;  40.5]
+  qwen2.5-coder_14b | few_shot        21/ 72 =  29.2 % [ 19.9;  40.5]
+  nivel Basico                       139/192 =  72.4 % [ 65.7;  78.2]
+  nivel Intermedio                   104/192 =  54.2 % [ 47.1;  61.1]
+  nivel Avanzado                      49/120 =  40.8 % [ 32.5;  49.8]
+  nivel Complementaria                56/ 72 =  77.8 % [ 66.9;  85.8]
+  -- zero-shot vs few-shot por modelo (McNemar exacto, pareado por tarea x ejecucion; Wilcoxon por tarea)
+     gemini-3.1-pro-preview     solo zero= 2  solo few= 2  p=1.000 | Wilcoxon p=1.000
+     claude-sonnet-4-6          solo zero= 8  solo few=12  p=0.503 | Wilcoxon p=0.417
+     gpt-4o-2024-08-06          solo zero= 2  solo few=16  p=0.001 | Wilcoxon p=0.015
+     qwen2.5-coder_14b          solo zero=10  solo few=10  p=1.000 | Wilcoxon p=0.964
+  -- modelo vs modelo (McNemar exacto, pareado por tarea x estrategia x ejecucion; Holm sobre 6 comparaciones)
+     gemini-3.1-pro-preview vs claude-sonnet-4-6      solo 1.o= 32 solo 2.o=  4  p=1.9e-06  p Holm=3.9e-06 | Wilcoxon por celda p=0.0009
+     gemini-3.1-pro-preview vs gpt-4o-2024-08-06      solo 1.o= 87 solo 2.o=  1  p=5.8e-25  p Holm=2.9e-24 | Wilcoxon por celda p=9e-08
+     gemini-3.1-pro-preview vs qwen2.5-coder_14b      solo 1.o=100 solo 2.o=  2  p=2.1e-27  p Holm=1.2e-26 | Wilcoxon por celda p=1.4e-08
+     claude-sonnet-4-6      vs gpt-4o-2024-08-06      solo 1.o= 65 solo 2.o=  7  p=7e-13  p Holm=2.1e-12 | Wilcoxon por celda p=1.2e-05
+     claude-sonnet-4-6      vs qwen2.5-coder_14b      solo 1.o= 72 solo 2.o=  2  p=2.9e-19  p Holm=1.2e-18 | Wilcoxon por celda p=2.9e-07
+     gpt-4o-2024-08-06      vs qwen2.5-coder_14b      solo 1.o= 29 solo 2.o= 17  p=0.1  p Holm=0.1 | Wilcoxon por celda p=0.3
+  S2 claude-sonnet-4-6 A5 few_shot ejec_1: compila 0 -> 1 | pasa 0 -> 0
+  S2 claude-sonnet-4-6 A5 few_shot ejec_2: compila 0 -> 1 | pasa 0 -> 0
+  S2 claude-sonnet-4-6 A5 few_shot ejec_3: compila 0 -> 1 | pasa 0 -> 0
+  S2 claude-sonnet-4-6 A5 zero_shot ejec_1: compila 0 -> 1 | pasa 0 -> 1
+  S2 claude-sonnet-4-6 A5 zero_shot ejec_2: compila 0 -> 1 | pasa 0 -> 0
+  S2 gpt-4o-2024-08-06 A5 few_shot ejec_1: compila 0 -> 1 | pasa 0 -> 1
+  S2 gpt-4o-2024-08-06 A5 few_shot ejec_2: compila 0 -> 1 | pasa 0 -> 0
+
+===== S2 - CRITERIO 2 con END_STRUCT; normalizado (n = 600) =====
+  GLOBAL                             525/600 =  87.5 % [ 84.6;  89.9]
+  gemini-3.1-pro-preview             143/150 =  95.3 % [ 90.7;  97.7]
+  claude-sonnet-4-6                  141/150 =  94.0 % [ 89.0;  96.8]
+  gpt-4o-2024-08-06                  121/150 =  80.7 % [ 73.6;  86.2]
+  qwen2.5-coder_14b                  120/150 =  80.0 % [ 72.9;  85.6]
+  gemini-3.1-pro-preview | zero_shot  71/ 75 =  94.7 % [ 87.1;  97.9]
+  gemini-3.1-pro-preview | few_shot   72/ 75 =  96.0 % [ 88.9;  98.6]
+  claude-sonnet-4-6 | zero_shot       70/ 75 =  93.3 % [ 85.3;  97.1]
+  claude-sonnet-4-6 | few_shot        71/ 75 =  94.7 % [ 87.1;  97.9]
+  gpt-4o-2024-08-06 | zero_shot       58/ 75 =  77.3 % [ 66.7;  85.3]
+  gpt-4o-2024-08-06 | few_shot        63/ 75 =  84.0 % [ 74.1;  90.6]
+  qwen2.5-coder_14b | zero_shot       57/ 75 =  76.0 % [ 65.2;  84.2]
+  qwen2.5-coder_14b | few_shot        63/ 75 =  84.0 % [ 74.1;  90.6]
+  nivel Basico                       189/192 =  98.4 % [ 95.5;  99.5]
+  nivel Intermedio                   178/192 =  92.7 % [ 88.1;  95.6]
+  nivel Avanzado                      87/144 =  60.4 % [ 52.3;  68.0]
+  nivel Complementaria                71/ 72 =  98.6 % [ 92.5;  99.8]
+  -- zero-shot vs few-shot por modelo (McNemar exacto, pareado por tarea x ejecucion; Wilcoxon por tarea)
+     gemini-3.1-pro-preview     solo zero= 1  solo few= 2  p=1.000 | Wilcoxon p=0.564
+     claude-sonnet-4-6          solo zero= 3  solo few= 4  p=1.000 | Wilcoxon p=0.705
+     gpt-4o-2024-08-06          solo zero= 0  solo few= 5  p=0.062 | Wilcoxon p=0.180
+     qwen2.5-coder_14b          solo zero= 0  solo few= 6  p=0.031 | Wilcoxon p=0.063
+  -- modelo vs modelo (McNemar exacto, pareado por tarea x estrategia x ejecucion; Holm sobre 6 comparaciones)
+     gemini-3.1-pro-preview vs claude-sonnet-4-6      solo 1.o=  6 solo 2.o=  4  p=0.75  p Holm=1 | Wilcoxon por celda p=0.53
+     gemini-3.1-pro-preview vs gpt-4o-2024-08-06      solo 1.o= 23 solo 2.o=  1  p=3e-06  p Holm=1.5e-05 | Wilcoxon por celda p=0.0066
+     gemini-3.1-pro-preview vs qwen2.5-coder_14b      solo 1.o= 24 solo 2.o=  1  p=1.5e-06  p Holm=9.3e-06 | Wilcoxon por celda p=0.0026
+     claude-sonnet-4-6      vs gpt-4o-2024-08-06      solo 1.o= 24 solo 2.o=  4  p=0.00018  p Holm=0.00054 | Wilcoxon por celda p=0.012
+     claude-sonnet-4-6      vs qwen2.5-coder_14b      solo 1.o= 23 solo 2.o=  2  p=1.9e-05  p Holm=7.8e-05 | Wilcoxon por celda p=0.0037
+     gpt-4o-2024-08-06      vs qwen2.5-coder_14b      solo 1.o= 12 solo 2.o= 11  p=1  p Holm=1 | Wilcoxon por celda p=0.93
+
+===== S2 - CRITERIO 1 con END_STRUCT; normalizado (n = 600) =====
+  GLOBAL                             353/600 =  58.8 % [ 54.9;  62.7]
+  gemini-3.1-pro-preview             141/150 =  94.0 % [ 89.0;  96.8]
+  claude-sonnet-4-6                  115/150 =  76.7 % [ 69.3;  82.7]
+  gpt-4o-2024-08-06                   55/150 =  36.7 % [ 29.4;  44.6]
+  qwen2.5-coder_14b                   42/150 =  28.0 % [ 21.4;  35.7]
+  gemini-3.1-pro-preview | zero_shot  70/ 75 =  93.3 % [ 85.3;  97.1]
+  gemini-3.1-pro-preview | few_shot   71/ 75 =  94.7 % [ 87.1;  97.9]
+  claude-sonnet-4-6 | zero_shot       57/ 75 =  76.0 % [ 65.2;  84.2]
+  claude-sonnet-4-6 | few_shot        58/ 75 =  77.3 % [ 66.7;  85.3]
+  gpt-4o-2024-08-06 | zero_shot       20/ 75 =  26.7 % [ 18.0;  37.6]
+  gpt-4o-2024-08-06 | few_shot        35/ 75 =  46.7 % [ 35.8;  57.8]
+  qwen2.5-coder_14b | zero_shot       21/ 75 =  28.0 % [ 19.1;  39.0]
+  qwen2.5-coder_14b | few_shot        21/ 75 =  28.0 % [ 19.1;  39.0]
+  nivel Basico                       139/192 =  72.4 % [ 65.7;  78.2]
+  nivel Intermedio                   104/192 =  54.2 % [ 47.1;  61.1]
+  nivel Avanzado                      54/144 =  37.5 % [ 30.0;  45.6]
+  nivel Complementaria                56/ 72 =  77.8 % [ 66.9;  85.8]
+  -- zero-shot vs few-shot por modelo (McNemar exacto, pareado por tarea x ejecucion; Wilcoxon por tarea)
+     gemini-3.1-pro-preview     solo zero= 2  solo few= 3  p=1.000 | Wilcoxon p=0.655
+     claude-sonnet-4-6          solo zero=11  solo few=12  p=1.000 | Wilcoxon p=0.897
+     gpt-4o-2024-08-06          solo zero= 2  solo few=17  p=0.001 | Wilcoxon p=0.010
+     qwen2.5-coder_14b          solo zero=10  solo few=10  p=1.000 | Wilcoxon p=0.964
+  -- modelo vs modelo (McNemar exacto, pareado por tarea x estrategia x ejecucion; Holm sobre 6 comparaciones)
+     gemini-3.1-pro-preview vs claude-sonnet-4-6      solo 1.o= 32 solo 2.o=  6  p=2.4e-05  p Holm=4.9e-05 | Wilcoxon por celda p=0.0027
+     gemini-3.1-pro-preview vs gpt-4o-2024-08-06      solo 1.o= 87 solo 2.o=  1  p=5.8e-25  p Holm=2.9e-24 | Wilcoxon por celda p=7.3e-08
+     gemini-3.1-pro-preview vs qwen2.5-coder_14b      solo 1.o=101 solo 2.o=  2  p=1.1e-27  p Holm=6.3e-27 | Wilcoxon por celda p=9.8e-09
+     claude-sonnet-4-6      vs gpt-4o-2024-08-06      solo 1.o= 68 solo 2.o=  8  p=5.6e-13  p Holm=1.7e-12 | Wilcoxon por celda p=8.2e-06
+     claude-sonnet-4-6      vs qwen2.5-coder_14b      solo 1.o= 75 solo 2.o=  2  p=4e-20  p Holm=1.6e-19 | Wilcoxon por celda p=1.8e-07
+     gpt-4o-2024-08-06      vs qwen2.5-coder_14b      solo 1.o= 30 solo 2.o= 17  p=0.079  p Holm=0.079 | Wilcoxon por celda p=0.25

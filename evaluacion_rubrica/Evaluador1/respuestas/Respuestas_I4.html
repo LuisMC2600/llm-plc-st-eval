@@ -1,0 +1,1404 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>I4 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>I4 — Arranque estrella-triángulo (Intermedio)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja I4 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa un arranque estrella-triángulo. Al pulsar btnMarcha se activan el contactor principal kM y el contactor de estrella kY. Después de 8 segundos se desactiva kY, se espera un tiempo muerto de 100 milisegundos y se activa el contactor de triángulo kD. Las salidas kY y kD jamás deben estar activas simultáneamente. El botón btnParo desactiva todos los contactores en cualquier momento. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_EstrellaTriangulo con variables de entrada btnMarcha, btnParo (BOOL) y salidas kM, kY, kD (BOOL). Usa los tiempos T#8S y T#100MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_I4.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea I4 (arranque estrella-triangulo)
+    ---------------------------------------------------------------------------
+    Aplica la enmienda 2 de ENMIENDAS_HARNESSES.md: DOS verificaciones
+    independientes, porque una transicion con 0 ms de tiempo muerto no produce
+    ningun scan con kY AND kD y por tanto la bandera de interlock por si sola
+    no la detecta.
+      1. Seguridad (continua y enclavada): si en cualquier scan kY AND kD, la
+         bandera &#x27;interlock&#x27; queda en TRUE hasta el final del banco.
+      2. Tiempo muerto (medido): se cronometra el intervalo entre la caida de
+         kY y la subida de kD y se exige que alcance el minimo.
+
+    Ciclo de MainTask: 4 a 10 ms (enmienda 3). El umbral del tiempo muerto
+    absorbe un ciclo de cuantizacion del scan.
+
+    USO: crear este PROGRAM junto al FUNCTION_BLOCK de la respuesta a evaluar y
+    ejecutar en modo Simulacion. Al terminar, leer &#x27;veredicto&#x27;: 1 = supera,
+    2 = falla. &#x27;resultado&#x27; indica el paso; &#x27;interlock&#x27; y &#x27;duracionMuerto&#x27; se
+    registran aparte porque una violacion de seguridad es cualitativamente
+    distinta de un fallo funcional (enmienda 4).
+
+    ---------------------------------------------------------------------------
+    CORRECCION DEL 2026-09-09 (enmienda 5). La version anterior tenia tres
+    fallos, verificados por simulacion con validar_harness_I4.py:
+
+      1. El paso 2 exigia NOT kD a los 8,3 s, cuando una implementacion
+         correcta ya tiene el triangulo dentro desde los 8,1 s. Reprobaba al
+         100 % de las implementaciones validas. Era un residuo del enfoque de
+         muestreo que la enmienda 2 habia descartado.
+      2. La medida reiniciaba su temporizador con un ciclo de retraso, de modo
+         que contaba de menos alrededor de un scan: un tiempo muerto correcto
+         de 100 ms se media como 96 ms con ciclo de 4 ms y 80 ms con 20 ms, y
+         se comparaba contra un umbral estricto de 100 ms.
+      3. Si kY caia y kD subia en el MISMO scan, ambas condiciones se cumplian
+         en el mismo ciclo, la medida leia un valor viejo del cronometro y
+         registraba 8 208 ms: daba por bueno el defecto de 0 ms de tiempo
+         muerto, que es exactamente el que la enmienda 2 persigue.
+
+    La medida pasa a hacerse por DIFERENCIA de dos lecturas de un cronometro
+    libre que nunca se reinicia. Eso elimina el retraso de un ciclo y hace que
+    el caso simultaneo mida 0 ms por construccion, sin necesidad de un caso
+    especial. El paso 2 pasa a comprobar que la transicion se completo, y el
+    instante exacto queda a cargo de la medida en el paso 3.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reposo *)
+            btnMarcha := FALSE; btnParo := FALSE;
+            tEspera   := T#200MS;
+        1:  (* Fase estrella: se evalua antes de los 8 s de transicion *)
+            btnMarcha := TRUE;
+            tEspera   := T#7800MS;
+        2:  (* Ya pasada la transicion: debe estar en triangulo *)
+            tEspera   := T#500MS;
+        3:  (* Confirmacion del veredicto de tiempo muerto *)
+            tEspera   := T#300MS;
+        4:  (* Paro en cualquier momento: todo a reposo *)
+            btnMarcha := FALSE; btnParo := TRUE;
+            tEspera   := T#200MS;
+        5:  (* Rearranque: debe volver a estrella, no saltar a triangulo *)
+            btnParo := FALSE; btnMarcha := TRUE;
+            tEspera := T#200MS;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#I4-2611">I4-2611</a><a href="#I4-7007">I4-7007</a><a href="#I4-5661">I4-5661</a><a href="#I4-1792">I4-1792</a><a href="#I4-7740">I4-7740</a><a href="#I4-3109">I4-3109</a><a href="#I4-4531">I4-4531</a><a href="#I4-6607">I4-6607</a><a href="#I4-6264">I4-6264</a><a href="#I4-2405">I4-2405</a><a href="#I4-2644">I4-2644</a><a href="#I4-1547">I4-1547</a><a href="#I4-6164">I4-6164</a><a href="#I4-8729">I4-8729</a><a href="#I4-6563">I4-6563</a><a href="#I4-4147">I4-4147</a><a href="#I4-3062">I4-3062</a><a href="#I4-2763">I4-2763</a><a href="#I4-8365">I4-8365</a><a href="#I4-2920">I4-2920</a><a href="#I4-7806">I4-7806</a><a href="#I4-7176">I4-7176</a><a href="#I4-8454">I4-8454</a><a href="#I4-1208">I4-1208</a></div>
+<div class="caja resp" id="I4-2611"><div class="cod"><h3>I4-2611</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Pulsador de marcha *)
+    btnParo   : BOOL; (* Pulsador de paro   *)
+END_VAR
+
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal  *)
+    kY : BOOL; (* Contactor estrella   *)
+    kD : BOOL; (* Contactor triángulo  *)
+END_VAR
+
+VAR
+    (* Temporizador estrella: 8 s en estrella *)
+    tEstrella  : TON;
+    (* Temporizador tiempo muerto: 100 ms entre kY y kD *)
+    tMuerto    : TON;
+
+    (* Máquina de estados *)
+    eEstado    : INT; (* 0=Reposo 1=Estrella 2=TiempoMuerto 3=Triangulo *)
+END_VAR
+
+(* ─────────────────────────────────────────────
+   Lógica principal - Arranque Estrella-Triángulo
+   ───────────────────────────────────────────── *)
+
+(* PARO: tiene prioridad absoluta en cualquier estado *)
+IF btnParo THEN
+    eEstado := 0;
+END_IF;
+
+CASE eEstado OF
+
+    (* ── Estado 0: Reposo ── *)
+    0:
+        kM := FALSE;
+        kY := FALSE;
+        kD := FALSE;
+        tEstrella(IN := FALSE, PT := T#8S);    (* Resetear temporizadores *)
+        tMuerto  (IN := FALSE, PT := T#100MS);
+
+        IF btnMarcha AND NOT btnParo THEN
+            eEstado := 1; (* Pasar a estrella *)
+        END_IF;
+
+    (* ── Estado 1: Funcionamiento en Estrella ── *)
+    1:
+        kM := TRUE;
+        kY := TRUE;  (* Estrella activa  *)
+        kD := FALSE; (* Triángulo inactivo - enclavamiento *)
+
+        tEstrella(IN := TRUE, PT := T#8S);
+        tMuerto  (IN := FALSE, PT := T#100MS); (* Mantener reseteado *)
+
+        IF tEstrella.Q THEN
+            kY      := FALSE;  (* Desactivar estrella antes de cambiar estado *)
+            eEstado := 2;      (* Pasar a tiempo muerto *)
+        END_IF;
+
+    (* ── Estado 2: Tiempo Muerto (kY y kD ambos inactivos) ── *)
+    2:
+        kM := TRUE;
+        kY := FALSE; (* Estrella inactiva  - enclavamiento garantizado *)
+        kD := FALSE; (* Triángulo inactivo - enclavamiento garantizado *)
+
+        tEstrella(IN := TRUE,  PT := T#8S);    (* Mantener Q activo para no resetear *)
+        tMuerto  (IN := TRUE,  PT := T#100MS); (* Iniciar cuenta de tiempo muerto *)
+
+        IF tMuerto.Q THEN
+            eEstado := 3; (* Pasar a triángulo *)
+        END_IF;
+
+    (* ── Estado 3: Funcionamiento en Triángulo ── *)
+    3:
+        kM := TRUE;
+        kY := FALSE; (* Estrella inactiva  - enclavamiento *)
+        kD := TRUE;  (* Triángulo activo   *)
+
+        tEstrella(IN := TRUE, PT := T#8S);    (* Mantener temporizadores estables *)
+        tMuerto  (IN := TRUE, PT := T#100MS);
+
+        (* Permanece en triángulo hasta que se pulse btnParo *)
+
+    ELSE
+        (* Estado desconocido: ir a reposo de forma segura *)
+        eEstado := 0;
+
+END_CASE;
+
+(* Enclavamiento hardware por software: garantía adicional *)
+(* kY y kD nunca pueden ser TRUE simultáneamente          *)
+IF kY AND kD THEN
+    kY := FALSE;
+    kD := FALSE;
+    kM := FALSE;
+    eEstado := 0; (* Fallo: volver a reposo *)
+END_IF;</pre></div>
+<div class="caja resp" id="I4-7007"><div class="cod"><h3>I4-7007</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;btnMarcha&#x27; no es ninguna entrada de &#x27;FB_ESTRELLATRIANGULO&#x27;).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR
+    // Entradas
+    btnMarcha : BOOL;
+    btnParo : BOOL;
+    
+    // Salidas
+    kM : BOOL := FALSE;
+    kY : BOOL := FALSE;
+    kD : BOOL := FALSE;
+    
+    // Variables internas
+    estado : INT := 0;
+    timerEstrella : TON; // Temporizador para el modo estrella
+    timerMuerto : TON;   // Temporizador para el tiempo muerto
+END_VAR
+
+// Inicialización de los temporizadores
+timerEstrella(IN := FALSE, PT := T#8S);
+timerMuerto(IN := FALSE, PT := T#100MS);
+
+// Lógica de control
+IF btnParo THEN
+    // Si se presiona el botón de paro, desactivar todos los contactores
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    estado := 0;
+ELSIF btnMarcha THEN
+    CASE estado OF
+        0: // Estado inicial
+            kM := TRUE; // Activar contactor principal
+            kY := TRUE; // Activar contactor estrella
+            timerEstrella(IN := TRUE); // Iniciar temporizador estrella
+            estado := 1;
+        
+        1: // Esperando que termine el temporizador estrella
+            IF timerEstrella.Q THEN
+                kY := FALSE; // Desactivar contactor estrella
+                timerEstrella(IN := FALSE); // Reiniciar temporizador estrella
+                timerMuerto(IN := TRUE); // Iniciar temporizador muerto
+                estado := 2;
+            END_IF
+        
+        2: // Esperando que termine el tiempo muerto
+            IF timerMuerto.Q THEN
+                kD := TRUE; // Activar contactor triángulo
+                timerMuerto(IN := FALSE); // Reiniciar temporizador muerto
+                estado := 3;
+            END_IF
+        
+        3: // Estado final, contactor triángulo activado
+            // Mantener el estado hasta que se presione btnParo
+            // o se desactive btnMarcha
+            IF NOT btnMarcha THEN
+                kM := FALSE;
+                kD := FALSE;
+                estado := 0;
+            END_IF
+    END_CASE
+ELSE
+    // Si btnMarcha no está activo, asegurarse de que todo esté apagado
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    estado := 0;
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-5661"><div class="cod"><h3>I4-5661</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 6 pasos del harness (pasos 1,3; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Botón de marcha *)
+    btnParo : BOOL; (* Botón de paro *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor de estrella *)
+    kD : BOOL; (* Contactor de triángulo *)
+END_VAR
+VAR
+    tEstrella : TP; (* Temporizador para el contacto de estrella *)
+    tMuerto : TP; (* Temporizador para el tiempo muerto *)
+    estado : INT; (* Variable de estado para el arranque estrella-triángulo *)
+END_VAR
+
+(* Estado 0: Esperando inicio *)
+(* Estado 1: Contacto de estrella activo *)
+(* Estado 2: Tiempo muerto *)
+(* Estado 3: Contacto de triángulo activo *)
+
+(* Botón de paro desactiva todos los contactores *)
+IF btnParo THEN
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    estado := 0;
+ELSIF btnMarcha THEN
+    CASE estado OF
+        0:
+            (* Inicia el arranque estrella-triángulo *)
+            kM := TRUE;
+            kY := TRUE;
+            kD := FALSE;
+            tEstrella(IN := TRUE, PT := T#8S);
+            estado := 1;
+        1:
+            (* Espera el fin del temporizador de estrella *)
+            IF tEstrella.Q THEN
+                kY := FALSE;
+                tMuerto(IN := TRUE, PT := T#100MS);
+                estado := 2;
+            END_IF;
+        2:
+            (* Espera el fin del tiempo muerto *)
+            IF tMuerto.Q THEN
+                kD := TRUE;
+                estado := 3;
+            END_IF;
+        3:
+            (* Mantén el contacto de triángulo activo *)
+            kY := FALSE;
+    END_CASE;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-1792"><div class="cod"><h3>I4-1792</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Pulsador de marcha *)
+    btnParo   : BOOL; (* Pulsador de paro   *)
+END_VAR
+
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal  *)
+    kY : BOOL; (* Contactor estrella   *)
+    kD : BOOL; (* Contactor triángulo  *)
+END_VAR
+
+VAR
+    (* Temporizador para el tiempo en estrella: 8 s *)
+    tEstrella  : TON;
+    (* Temporizador para el tiempo muerto: 100 ms   *)
+    tMuerto    : TON;
+
+    (* Máquina de estados *)
+    eEstado : INT := 0;
+    (*
+        0 = Reposo
+        1 = Marcha en estrella
+        2 = Tiempo muerto (kY y kD ambos OFF)
+        3 = Marcha en triángulo
+    *)
+END_VAR
+
+(* ─────────────────────────────────────────────────────────────
+   Lógica principal: máquina de estados estrella-triángulo
+   ───────────────────────────────────────────────────────────── *)
+
+CASE eEstado OF
+
+    (* ── Estado 0: Reposo ─────────────────────────────────── *)
+    0:
+        kM := FALSE;
+        kY := FALSE;
+        kD := FALSE;
+        tEstrella(IN := FALSE, PT := T#8S);
+        tMuerto  (IN := FALSE, PT := T#100MS);
+
+        IF btnMarcha AND NOT btnParo THEN
+            eEstado := 1; (* Pasar a arranque en estrella *)
+        END_IF;
+
+    (* ── Estado 1: Marcha en estrella ─────────────────────── *)
+    1:
+        kM := TRUE;
+        kY := TRUE;  (* Estrella activa  *)
+        kD := FALSE; (* Triángulo inactivo — interbloqueo *)
+
+        (* Arrancar temporizador de estrella *)
+        tEstrella(IN := TRUE, PT := T#8S);
+
+        IF btnParo THEN
+            eEstado := 0; (* Paro inmediato *)
+        ELSIF tEstrella.Q THEN
+            (* Tiempo en estrella cumplido → tiempo muerto *)
+            tEstrella(IN := FALSE, PT := T#8S); (* Resetear *)
+            eEstado := 2;
+        END_IF;
+
+    (* ── Estado 2: Tiempo muerto (100 ms) ─────────────────── *)
+    2:
+        kM := TRUE;
+        kY := FALSE; (* Estrella ya desactivada  *)
+        kD := FALSE; (* Triángulo aún inactivo   *)
+
+        (* Arrancar temporizador de tiempo muerto *)
+        tMuerto(IN := TRUE, PT := T#100MS);
+
+        IF btnParo THEN
+            eEstado := 0; (* Paro inmediato *)
+        ELSIF tMuerto.Q THEN
+            (* Tiempo muerto cumplido → activar triángulo *)
+            tMuerto(IN := FALSE, PT := T#100MS); (* Resetear *)
+            eEstado := 3;
+        END_IF;
+
+    (* ── Estado 3: Marcha en triángulo ────────────────────── *)
+    3:
+        kM := TRUE;
+        kY := FALSE; (* Estrella inactiva — interbloqueo *)
+        kD := TRUE;  (* Triángulo activo  *)
+
+        IF btnParo THEN
+            eEstado := 0; (* Paro inmediato *)
+        END_IF;
+
+    (* ── Estado por defecto: seguridad ───────────────────── *)
+    ELSE
+        eEstado := 0;
+
+END_CASE;</pre></div>
+<div class="caja resp" id="I4-7740"><div class="cod"><h3>I4-7740</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 3 de 6 pasos del harness (pasos 2,3,4; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; // Botón de marcha
+    btnParo : BOOL;   // Botón de paro
+END_VAR
+
+VAR_OUTPUT
+    kM : BOOL;       // Contactor principal
+    kY : BOOL;       // Contactor de estrella
+    kD : BOOL;       // Contactor de triángulo
+END_VAR
+
+VAR
+    timerEstrella : TON; // Temporizador para el contacto de estrella
+    timerMuerto : TON;   // Temporizador para el tiempo muerto
+    estado : INT;       // Variable de estado del arranque
+END_VAR
+
+// Inicialización de temporizadores
+timerEstrella(IN := FALSE, PT := T#8S);
+timerMuerto(IN := FALSE, PT := T#100MS);
+
+// Máquina de estados
+CASE estado OF
+    0: // Estado inicial
+        IF btnMarcha THEN
+            kM := TRUE; // Activar el contactor principal
+            kY := TRUE; // Activar el contactor de estrella
+            timerEstrella(IN := TRUE); // Iniciar temporizador para el contacto de estrella
+            estado := 1; // Transición al estado 1
+        END_IF
+
+    1: // Esperando el fin del temporizador de estrella
+        IF timerEstrella.Q THEN
+            kY := FALSE; // Desactivar el contactor de estrella
+            timerMuerto(IN := TRUE); // Iniciar temporizador para el tiempo muerto
+            estado := 2; // Transición al estado 2
+        END_IF
+
+    2: // Esperando el fin del temporizador de tiempo muerto
+        IF timerMuerto.Q THEN
+            kD := TRUE; // Activar el contactor de triángulo
+            estado := 3; // Transición al estado 3
+        END_IF
+
+    3: // Estado final
+        // Mantener los contactores activados según el estado actual
+        IF btnParo THEN
+            kM := FALSE; // Desactivar el contactor principal
+            kY := FALSE; // Desactivar el contactor de estrella
+            kD := FALSE; // Desactivar el contactor de triángulo
+            estado := 0; // Reiniciar a estado inicial
+        END_IF
+END_CASE</pre></div>
+<div class="caja resp" id="I4-3109"><div class="cod"><h3>I4-3109</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 3 de 6 pasos del harness (pasos 2,3,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Botón de marcha *)
+    btnParo : BOOL;   (* Botón de paro *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor de estrella *)
+    kD : BOOL; (* Contactor de triángulo *)
+END_VAR
+VAR
+    tEstrella : TON; (* Temporizador para el modo estrella *)
+    tMuerto : TON;   (* Temporizador para el tiempo muerto *)
+    estado : INT;    (* Estado del arranque *)
+END_VAR
+
+(* Lógica de control para el arranque estrella-triángulo *)
+IF btnParo THEN
+    (* Si se presiona el botón de paro, desactivar todos los contactores *)
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    estado := 0;
+ELSIF btnMarcha THEN
+    CASE estado OF
+        0: (* Estado inicial, activar contactor principal y de estrella *)
+            kM := TRUE;
+            kY := TRUE;
+            tEstrella(IN := TRUE, PT := T#8S);
+            estado := 1;
+        1: (* Esperar 8 segundos en modo estrella *)
+            IF tEstrella.Q THEN
+                kY := FALSE; (* Desactivar contactor de estrella *)
+                tMuerto(IN := TRUE, PT := T#100MS);
+                estado := 2;
+            END_IF
+        2: (* Esperar tiempo muerto de 100 ms *)
+            IF tMuerto.Q THEN
+                kD := TRUE; (* Activar contactor de triángulo *)
+                estado := 3;
+            END_IF
+        3: (* Modo triángulo activo *)
+            (* Mantener el estado hasta que se presione el botón de paro *)
+    END_CASE
+ELSE
+    (* Si no se presiona ningún botón, mantener el estado actual *)
+    tEstrella(IN := FALSE);
+    tMuerto(IN := FALSE);
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-4531"><div class="cod"><h3>I4-4531</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; // Botón de arranque
+    btnParo   : BOOL; // Botón de parada (TRUE = detener)
+END_VAR
+
+VAR_OUTPUT
+    kM : BOOL; // Contactor principal
+    kY : BOOL; // Contactor de estrella
+    kD : BOOL; // Contactor de triángulo
+END_VAR
+
+VAR
+    bRun        : BOOL; // Memoria del estado de marcha
+    tonStar     : TON;  // Temporizador para la fase de estrella
+    tonDeadTime : TON;  // Temporizador para el tiempo muerto
+END_VAR
+
+// 1. Lógica de retención (Marcha / Paro)
+// El paro tiene prioridad sobre la marcha
+IF btnParo THEN
+    bRun := FALSE;
+ELSIF btnMarcha THEN
+    bRun := TRUE;
+END_IF;
+
+// 2. Temporizador de la fase de estrella (8 segundos)
+tonStar(IN := bRun, PT := T#8S);
+
+// 3. Control del contactor de Estrella (kY)
+// Activo si hay marcha, no ha terminado el tiempo de estrella y kD está apagado (enclavamiento)
+kY := bRun AND NOT tonStar.Q AND NOT kD;
+
+// 4. Temporizador de tiempo muerto (100 milisegundos)
+// Comienza a contar solo cuando termina la fase de estrella y kY se ha desactivado
+tonDeadTime(IN := tonStar.Q AND NOT kY, PT := T#100MS);
+
+// 5. Control del contactor de Triángulo (kD)
+// Activo si hay marcha, terminó el tiempo muerto y kY está apagado (enclavamiento)
+kD := bRun AND tonDeadTime.Q AND NOT kY;
+
+// 6. Control del contactor Principal (kM)
+// Activo siempre que el sistema esté en marcha
+kM := bRun;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-6607"><div class="cod"><h3>I4-6607</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 3 de 6 pasos del harness (pasos 2,3,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Botón de marcha *)
+    btnParo : BOOL;   (* Botón de paro *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor de estrella *)
+    kD : BOOL; (* Contactor de triángulo *)
+END_VAR
+VAR
+    tEstrella : TON; (* Temporizador para el modo estrella *)
+    tMuerto : TON;   (* Temporizador para el tiempo muerto *)
+    estado : INT;    (* Estado del arranque *)
+END_VAR
+
+(* Lógica de control del arranque estrella-triángulo *)
+IF btnParo THEN
+    (* Si se pulsa el botón de paro, desactivar todos los contactores *)
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    estado := 0;
+ELSE
+    CASE estado OF
+        0: (* Estado inicial *)
+            IF btnMarcha THEN
+                kM := TRUE;  (* Activar contactor principal *)
+                kY := TRUE;  (* Activar contactor de estrella *)
+                tEstrella(IN := TRUE, PT := T#8S);
+                estado := 1;
+            END_IF
+
+        1: (* Temporización en modo estrella *)
+            IF tEstrella.Q THEN
+                kY := FALSE; (* Desactivar contactor de estrella *)
+                tMuerto(IN := TRUE, PT := T#100MS);
+                estado := 2;
+            END_IF
+
+        2: (* Tiempo muerto *)
+            IF tMuerto.Q THEN
+                kD := TRUE;  (* Activar contactor de triángulo *)
+                estado := 3;
+            END_IF
+
+        3: (* Modo triángulo *)
+            (* Mantener el estado hasta que se pulse el botón de paro *)
+            (* No se requiere acción adicional en este estado *)
+    END_CASE
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-6264"><div class="cod"><h3>I4-6264</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 3 de 6 pasos del harness (pasos 2,3,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Botón de marcha *)
+    btnParo : BOOL;   (* Botón de paro *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor de estrella *)
+    kD : BOOL; (* Contactor de triángulo *)
+END_VAR
+VAR
+    tEstrella : TON; (* Temporizador para el modo estrella *)
+    tMuerto : TON;   (* Temporizador para el tiempo muerto *)
+    estado : INT;    (* Estado del arranque *)
+END_VAR
+
+(* Lógica de control del arranque estrella-triángulo *)
+IF btnParo THEN
+    (* Si se pulsa el botón de paro, desactivar todos los contactores *)
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    estado := 0;
+ELSE
+    CASE estado OF
+        0: (* Estado inicial *)
+            IF btnMarcha THEN
+                kM := TRUE;  (* Activar contactor principal *)
+                kY := TRUE;  (* Activar contactor de estrella *)
+                tEstrella(IN := TRUE, PT := T#8S);
+                estado := 1;
+            END_IF
+        1: (* Modo estrella activado *)
+            IF tEstrella.Q THEN
+                kY := FALSE; (* Desactivar contactor de estrella *)
+                tMuerto(IN := TRUE, PT := T#100MS);
+                estado := 2;
+            END_IF
+        2: (* Tiempo muerto *)
+            IF tMuerto.Q THEN
+                kD := TRUE;  (* Activar contactor de triángulo *)
+                estado := 3;
+            END_IF
+        3: (* Modo triángulo activado *)
+            (* Mantener el estado hasta que se pulse el botón de paro *)
+            IF NOT btnMarcha THEN
+                kM := FALSE;
+                kD := FALSE;
+                estado := 0;
+            END_IF
+    END_CASE
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-2405"><div class="cod"><h3>I4-2405</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Boton de marcha *)
+    btnParo   : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor estrella *)
+    kD : BOOL; (* Contactor triangulo *)
+END_VAR
+VAR
+    marcha    : BOOL; (* Memoria de marcha (enclavamiento) *)
+    tEstrella : TON;  (* Temporizador fase estrella: 8 s *)
+    tMuerto   : TON;  (* Temporizador tiempo muerto: 100 ms *)
+END_VAR
+
+(* --- Gestion del enclavamiento de marcha/paro --- *)
+IF btnParo THEN
+    marcha := FALSE; (* Paro inmediato *)
+ELSIF btnMarcha THEN
+    marcha := TRUE;  (* Arranque *)
+END_IF;
+
+(* --- Temporizador de fase estrella (8 s desde el arranque) --- *)
+tEstrella(IN := marcha, PT := T#8S);
+
+(* --- Temporizador de tiempo muerto (100 ms tras fin de estrella) --- *)
+tMuerto(IN := tEstrella.Q, PT := T#100MS);
+
+(* --- Asignacion de salidas --- *)
+kM := marcha;                        (* Contactor principal activo durante toda la marcha *)
+kY := marcha AND NOT tEstrella.Q;    (* Estrella: activo hasta que vence el temporizador de 8 s *)
+kD := marcha AND tMuerto.Q;          (* Triangulo: activo solo tras el tiempo muerto *)
+
+(* Nota de seguridad: kY y kD no pueden ser TRUE simultaneamente porque
+   kY se desactiva cuando tEstrella.Q=TRUE y kD se activa solo cuando
+   tMuerto.Q=TRUE (despues de los 100 ms adicionales). *)
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-2644"><div class="cod"><h3>I4-2644</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Boton de marcha *)
+    btnParo   : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor estrella *)
+    kD : BOOL; (* Contactor triangulo *)
+END_VAR
+VAR
+    marcha    : BOOL; (* Memoria de marcha (enclavamiento) *)
+    tEstrella : TON;  (* Temporizador fase estrella: 8 s *)
+    tMuerto   : TON;  (* Temporizador tiempo muerto: 100 ms *)
+END_VAR
+
+(* --- Gestion del enclavamiento de marcha/paro --- *)
+IF btnParo THEN
+    marcha := FALSE; (* Paro inmediato *)
+ELSIF btnMarcha THEN
+    marcha := TRUE;  (* Arranque *)
+END_IF;
+
+(* --- Temporizador de fase estrella (8 s desde el arranque) --- *)
+tEstrella(IN := marcha, PT := T#8S);
+
+(* --- Temporizador de tiempo muerto (100 ms tras fin de estrella) --- *)
+tMuerto(IN := tEstrella.Q, PT := T#100MS);
+
+(* --- Asignacion de salidas --- *)
+kM := marcha;                        (* Contactor principal activo durante toda la marcha *)
+kY := marcha AND NOT tEstrella.Q;    (* Estrella: activo hasta que vence el temporizador de 8 s *)
+kD := marcha AND tMuerto.Q;          (* Triangulo: activo solo tras el tiempo muerto *)
+
+(* Nota de seguridad: kY y kD no pueden ser TRUE simultaneamente porque
+   kY se desactiva cuando tEstrella.Q=TRUE y kD solo se activa cuando
+   tMuerto.Q=TRUE (lo que requiere tEstrella.Q=TRUE), garantizando
+   al menos 100 ms de separacion entre ambos contactores. *)
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-1547"><div class="cod"><h3>I4-1547</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;btnMarcha&#x27; no es ninguna entrada de &#x27;FB_ESTRELLATRIANGULO&#x27;).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR
+    // Entradas
+    btnMarcha : BOOL;
+    btnParo : BOOL;
+    
+    // Salidas
+    kM : BOOL := FALSE;
+    kY : BOOL := FALSE;
+    kD : BOOL := FALSE;
+    
+    // Variables internas
+    estado : INT := 0;
+    timerEstrella : TON; // Temporizador para el modo estrella
+    timerMuerto : TON;   // Temporizador para el tiempo muerto
+END_VAR
+
+// Configuración de los temporizadores
+timerEstrella(IN := FALSE, PT := T#8S);
+timerMuerto(IN := FALSE, PT := T#100MS);
+
+// Lógica de control
+IF btnParo THEN
+    // Si se presiona el botón de paro, desactivar todos los contactores
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    estado := 0;
+ELSIF btnMarcha THEN
+    CASE estado OF
+        0: // Estado inicial
+            kM := TRUE;
+            kY := TRUE;
+            timerEstrella(IN := TRUE);
+            estado := 1;
+        
+        1: // Esperando el tiempo de estrella
+            IF timerEstrella.Q THEN
+                kY := FALSE;
+                timerEstrella(IN := FALSE);
+                timerMuerto(IN := TRUE);
+                estado := 2;
+            END_IF
+        
+        2: // Tiempo muerto entre estrella y triángulo
+            IF timerMuerto.Q THEN
+                kD := TRUE;
+                timerMuerto(IN := FALSE);
+                estado := 3;
+            END_IF
+        
+        3: // Modo triángulo
+            // Mantenerse en este estado hasta que se presione el botón de paro
+            // No se requiere acción adicional
+    END_CASE
+ELSE
+    // Si no se presiona ningún botón, asegurar que los contactores estén desactivados
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    estado := 0;
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-6164"><div class="cod"><h3>I4-6164</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (2 errores).<div class="err">Mensajes del compilador: L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;ESTADO_INICIAL&#x27; || L?nea 9, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;IF&#x27;</div></div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Botón de marcha *)
+    btnParo : BOOL; (* Botón de paro *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor de estrella *)
+    kD : BOOL; (* Contactor de triángulo *)
+END_VAR
+VAR
+    tEstrella : TP; (* Temporizador para el contacto de estrella *)
+    tMuerto : TP; (* Temporizador para el tiempo muerto *)
+    estado : INT; (* Estado actual del arranque estrella-triángulo *)
+END_VAR
+
+(* Estados del arranque estrella-triángulo *)
+CONST
+    ESTADO_INICIAL := 0;
+    ESTADO_ESTRELLA := 1;
+    ESTADO_MUERTO := 2;
+    ESTADO_TRIANGULO := 3;
+END_CONST
+
+(* Paro inmediato *)
+IF btnParo THEN
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    estado := ESTADO_INICIAL;
+ELSIF btnMarcha THEN
+    CASE estado OF
+        ESTADO_INICIAL:
+            kM := TRUE;
+            kY := TRUE;
+            kD := FALSE;
+            tEstrella(IN := TRUE, PT := T#8S);
+            estado := ESTADO_ESTRELLA;
+        ESTADO_ESTRELLA:
+            IF tEstrella.Q THEN
+                kY := FALSE;
+                tMuerto(IN := TRUE, PT := T#100MS);
+                estado := ESTADO_MUERTO;
+            END_IF;
+        ESTADO_MUERTO:
+            IF tMuerto.Q THEN
+                kD := TRUE;
+                estado := ESTADO_TRIANGULO;
+            END_IF;
+        ESTADO_TRIANGULO:
+            (* Mantener kD activo mientras kY esté inactivo *)
+            kD := TRUE;
+    END_CASE;
+END_IF;
+
+(* Asegurar que kY y kD no estén activos simultáneamente *)
+IF kY AND kD THEN
+    kY := FALSE;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-8729"><div class="cod"><h3>I4-8729</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 6 pasos del harness (pasos 2,3; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; // Botón de marcha
+    btnParo : BOOL; // Botón de paro
+END_VAR
+
+VAR_OUTPUT
+    kM : BOOL; // Contactor principal
+    kY : BOOL; // Contactor de estrella
+    kD : BOOL; // Contactor de triángulo
+END_VAR
+
+VAR
+    timerStar : TON; // Temporizador para el contacto de estrella
+    timerDelta : TON; // Temporizador para el contacto de triángulo
+    state : INT := 0; // Estado actual del programa
+    deadTime : TON; // Temporizador para el tiempo muerto
+END_VAR
+
+// Inicialización de temporizadores
+timerStar(IN := FALSE, PT := T#8S);
+timerDelta(IN := FALSE, PT := T#100MS);
+deadTime(IN := FALSE, PT := T#100MS);
+
+// Lógica del programa
+CASE state OF
+    0: // Estado inicial
+        IF btnMarcha THEN
+            kM := TRUE;
+            kY := TRUE;
+            timerStar(IN := TRUE);
+            state := 1;
+        END_IF
+        IF btnParo THEN
+            kM := FALSE;
+            kY := FALSE;
+            kD := FALSE;
+            state := 0;
+        END_IF
+
+    1: // Esperando para desactivar kY
+        IF timerStar.Q THEN
+            kY := FALSE;
+            timerStar(IN := FALSE);
+            deadTime(IN := TRUE);
+            state := 2;
+        END_IF
+        IF btnParo THEN
+            kM := FALSE;
+            kY := FALSE;
+            kD := FALSE;
+            state := 0;
+        END_IF
+
+    2: // Tiempo muerto
+        IF deadTime.Q THEN
+            kD := TRUE;
+            deadTime(IN := FALSE);
+            state := 3;
+        END_IF
+        IF btnParo THEN
+            kM := FALSE;
+            kY := FALSE;
+            kD := FALSE;
+            state := 0;
+        END_IF
+
+    3: // Estado final
+        IF btnParo THEN
+            kM := FALSE;
+            kY := FALSE;
+            kD := FALSE;
+            state := 0;
+        END_IF
+END_CASE</pre></div>
+<div class="caja resp" id="I4-6563"><div class="cod"><h3>I4-6563</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Boton de arranque *)
+    btnParo : BOOL;   (* Boton de parada *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor de estrella *)
+    kD : BOOL; (* Contactor de triangulo *)
+END_VAR
+VAR
+    tEstrella : TON; (* Temporizador de la fase estrella *)
+    tMuerto : TON;   (* Temporizador del tiempo muerto *)
+END_VAR
+
+(* Memoria del contactor principal: se activa con marcha, se apaga con paro *)
+kM := (btnMarcha OR kM) AND NOT btnParo;
+
+(* Temporizadores para la transicion *)
+tEstrella(IN := kM, PT := T#8S);
+tMuerto(IN := tEstrella.Q, PT := T#100MS);
+
+(* Contactor estrella: activo al inicio, se apaga a los 8s, interbloqueado con kD *)
+kY := kM AND NOT tEstrella.Q AND NOT kD;
+
+(* Contactor triangulo: activo tras el tiempo muerto, interbloqueado con kY *)
+kD := kM AND tMuerto.Q AND NOT kY;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-4147"><div class="cod"><h3>I4-4147</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Boton de marcha *)
+    btnParo   : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor estrella *)
+    kD : BOOL; (* Contactor triangulo *)
+END_VAR
+VAR
+    marcha    : BOOL; (* Memoria de marcha (enclavamiento) *)
+    tEstrella : TON;  (* Temporizador fase estrella: 8 s *)
+    tMuerto   : TON;  (* Temporizador tiempo muerto: 100 ms *)
+END_VAR
+
+(* --- Gestion del enclavamiento de marcha/paro --- *)
+IF btnParo THEN
+    marcha := FALSE;
+ELSIF btnMarcha THEN
+    marcha := TRUE;
+END_IF;
+
+(* --- Temporizador de fase estrella (8 s desde el arranque) --- *)
+tEstrella(IN := marcha, PT := T#8S);
+
+(* --- Temporizador de tiempo muerto (100 ms tras fin de estrella) --- *)
+tMuerto(IN := tEstrella.Q, PT := T#100MS);
+
+(* --- Asignacion de salidas --- *)
+(* Contactor principal: activo mientras haya marcha *)
+kM := marcha;
+
+(* Contactor estrella: activo desde el arranque hasta que vence tEstrella *)
+kY := marcha AND NOT tEstrella.Q;
+
+(* Contactor triangulo: activo solo tras el tiempo muerto; nunca simultaneo con kY *)
+kD := marcha AND tMuerto.Q AND NOT kY;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-3062"><div class="cod"><h3>I4-3062</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 6 pasos del harness (pasos 1,3; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Boton de marcha *)
+    btnParo : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor de estrella *)
+    kD : BOOL; (* Contactor de triangulo *)
+END_VAR
+VAR
+    tEstrella : TP; (* Temporizador para el contacto de estrella *)
+    tMuerto : TP; (* Temporizador para el tiempo muerto *)
+    estado : INT := 0; (* Estado actual del arranque *)
+END_VAR
+
+(* Estado 0: Esperando el botón de marcha *)
+IF btnMarcha AND estado = 0 THEN
+    estado := 1;
+    kM := TRUE;
+    kY := TRUE;
+    kD := FALSE;
+    tEstrella(IN := TRUE, PT := T#8S);
+ELSIF btnParo THEN
+    estado := 0;
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+END_IF
+
+(* Estado 1: Esperando el temporizador de estrella *)
+IF estado = 1 AND tEstrella.Q THEN
+    estado := 2;
+    kY := FALSE;
+    tMuerto(IN := TRUE, PT := T#100MS);
+END_IF
+
+(* Estado 2: Esperando el tiempo muerto *)
+IF estado = 2 AND tMuerto.Q THEN
+    estado := 3;
+    kD := TRUE;
+END_IF
+
+(* Mantener kY y kD inactivos simultáneamente *)
+IF kY AND kD THEN
+    kY := FALSE;
+    kD := FALSE;
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-2763"><div class="cod"><h3>I4-2763</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 6 pasos del harness (pasos 5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Pulsador de marcha *)
+    btnParo   : BOOL; (* Pulsador de paro   *)
+END_VAR
+
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal  *)
+    kY : BOOL; (* Contactor estrella   *)
+    kD : BOOL; (* Contactor triángulo  *)
+END_VAR
+
+VAR
+    (* Temporizador para el tiempo en estrella: 8 s *)
+    tEstrella  : TON;
+    (* Temporizador para el tiempo muerto: 100 ms   *)
+    tMuerto    : TON;
+
+    (* Máquina de estados *)
+    eEstado : INT;
+    (*  0 = Reposo
+        1 = Marcha en estrella
+        2 = Tiempo muerto (kY abierto, kD aún cerrado)
+        3 = Marcha en triángulo                        *)
+END_VAR
+
+(* ─────────────────────────────────────────────────────────────
+   Lógica principal
+   ───────────────────────────────────────────────────────────── *)
+
+(* PARO: tiene prioridad absoluta en cualquier estado *)
+IF btnParo THEN
+    eEstado        := 0;
+    tEstrella.IN   := FALSE;
+    tMuerto.IN     := FALSE;
+END_IF
+
+CASE eEstado OF
+
+    (* ── Estado 0: Reposo ─────────────────────────────────── *)
+    0:
+        kM := FALSE;
+        kY := FALSE;
+        kD := FALSE;
+
+        IF btnMarcha AND NOT btnParo THEN
+            eEstado := 1; (* Pasar a arranque en estrella *)
+        END_IF
+
+    (* ── Estado 1: Marcha en estrella ─────────────────────── *)
+    1:
+        kM := TRUE;
+        kY := TRUE;  (* Estrella activa  *)
+        kD := FALSE; (* Triángulo inactivo — nunca simultáneos *)
+
+        (* Arrancar temporizador de 8 s *)
+        tEstrella(IN := TRUE, PT := T#8S);
+
+        IF tEstrella.Q THEN
+            (* Tiempo en estrella cumplido: abrir kY *)
+            tEstrella.IN := FALSE; (* Resetear temporizador *)
+            eEstado      := 2;     (* Pasar a tiempo muerto  *)
+        END_IF
+
+    (* ── Estado 2: Tiempo muerto (100 ms) ─────────────────── *)
+    2:
+        kM := TRUE;
+        kY := FALSE; (* Estrella ya desactivada  *)
+        kD := FALSE; (* Triángulo aún inactivo   *)
+
+        (* Arrancar temporizador de tiempo muerto *)
+        tMuerto(IN := TRUE, PT := T#100MS);
+
+        IF tMuerto.Q THEN
+            (* Tiempo muerto cumplido: cerrar kD *)
+            tMuerto.IN := FALSE; (* Resetear temporizador *)
+            eEstado    := 3;     (* Pasar a marcha triángulo *)
+        END_IF
+
+    (* ── Estado 3: Marcha en triángulo ────────────────────── *)
+    3:
+        kM := TRUE;
+        kY := FALSE; (* Estrella inactiva — nunca simultáneos *)
+        kD := TRUE;  (* Triángulo activo *)
+
+        (* Permanece aquí hasta que se pulse btnParo *)
+
+    ELSE
+        (* Estado desconocido: ir a reposo por seguridad *)
+        eEstado := 0;
+
+END_CASE
+
+(* ─────────────────────────────────────────────────────────────
+   Enclavamiento de seguridad hardware por software:
+   garantizar que kY y kD nunca estén activos a la vez.
+   ───────────────────────────────────────────────────────────── *)
+IF kY AND kD THEN
+    kY := FALSE;
+    kD := FALSE;
+    kM := FALSE;
+    eEstado := 0; (* Volver a reposo ante condición anómala *)
+END_IF</pre></div>
+<div class="caja resp" id="I4-8365"><div class="cod"><h3>I4-8365</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Boton de arranque *)
+    btnParo : BOOL;   (* Boton de parada *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor de estrella *)
+    kD : BOOL; (* Contactor de triangulo *)
+END_VAR
+VAR
+    enMarcha : BOOL; (* Memoria del estado de marcha *)
+    tEstrella : TON; (* Temporizador de la fase estrella *)
+    tMuerto : TON;   (* Temporizador del tiempo muerto *)
+END_VAR
+
+(* Control de marcha con prioridad a la parada *)
+enMarcha := (enMarcha OR btnMarcha) AND NOT btnParo;
+
+(* Temporizadores para la transicion *)
+tEstrella(IN := enMarcha, PT := T#8S);
+tMuerto(IN := tEstrella.Q, PT := T#100MS);
+
+(* Activacion de contactores con enclavamiento mutuo de seguridad *)
+kM := enMarcha;
+kY := enMarcha AND NOT tEstrella.Q AND NOT kD;
+kD := enMarcha AND tMuerto.Q AND NOT kY;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-2920"><div class="cod"><h3>I4-2920</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Botón de inicio del motor *)
+    btnParo   : BOOL; (* Botón de parada del motor *)
+END_VAR
+
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor de estrella *)
+    kD : BOOL; (* Contactor de triángulo *)
+END_VAR
+
+VAR
+    xEnMarcha   : BOOL; (* Memoria de estado del motor *)
+    tonEstrella : TON;  (* Temporizador para la fase de estrella *)
+    tonTrans    : TON;  (* Temporizador para el tiempo muerto (transición) *)
+END_VAR
+
+(* Lógica de retención (Marcha / Paro) *)
+IF btnParo THEN
+    xEnMarcha := FALSE;
+ELSIF btnMarcha THEN
+    xEnMarcha := TRUE;
+END_IF;
+
+(* Temporizador de la fase Estrella (8 segundos) *)
+tonEstrella(IN := xEnMarcha, PT := T#8S);
+
+(* Temporizador de tiempo muerto entre Estrella y Triángulo (100 ms) *)
+(* Inicia cuando termina la fase de estrella *)
+tonTrans(IN := tonEstrella.Q, PT := T#100MS);
+
+(* Asignación de salidas con enclavamientos de seguridad *)
+(* El contactor principal se activa siempre que el sistema esté en marcha *)
+kM := xEnMarcha;
+
+(* Estrella: Activo en marcha, antes de los 8s, y NUNCA si Triángulo está activo *)
+kY := xEnMarcha AND NOT tonEstrella.Q AND NOT kD;
+
+(* Triángulo: Activo en marcha, tras el tiempo muerto, y NUNCA si Estrella está activo *)
+kD := xEnMarcha AND tonTrans.Q AND NOT kY;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-7806"><div class="cod"><h3>I4-7806</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 3 de 6 pasos del harness (pasos 2,3,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; // Botón de marcha
+    btnParo : BOOL;   // Botón de paro
+END_VAR
+
+VAR_OUTPUT
+    kM : BOOL := FALSE; // Contactor principal
+    kY : BOOL := FALSE; // Contactor estrella
+    kD : BOOL := FALSE; // Contactor triángulo
+END_VAR
+
+VAR
+    timerEstrella : TON; // Temporizador para el modo estrella
+    timerMuerto : TON;   // Temporizador para el tiempo muerto
+    estado : INT := 0;   // Estado del proceso
+END_VAR
+
+// Implementación del arranque estrella-triángulo
+IF btnParo THEN
+    // Si se presiona el botón de paro, desactivar todos los contactores y resetear el estado
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    estado := 0;
+ELSE
+    CASE estado OF
+        0: // Estado inicial
+            IF btnMarcha THEN
+                // Al presionar el botón de marcha, activar el contactor principal y el de estrella
+                kM := TRUE;
+                kY := TRUE;
+                timerEstrella(IN := TRUE, PT := T#8S);
+                estado := 1;
+            END_IF
+
+        1: // Estado de temporización en estrella
+            IF timerEstrella.Q THEN
+                // Después de 8 segundos, desactivar el contactor de estrella y activar el temporizador muerto
+                kY := FALSE;
+                timerEstrella(IN := FALSE);
+                timerMuerto(IN := TRUE, PT := T#100MS);
+                estado := 2;
+            END_IF
+
+        2: // Estado de tiempo muerto
+            IF timerMuerto.Q THEN
+                // Después de 100 ms, activar el contactor de triángulo
+                timerMuerto(IN := FALSE);
+                kD := TRUE;
+                estado := 3;
+            END_IF
+
+        3: // Estado de funcionamiento en triángulo
+            // Mantener el estado hasta que se presione el botón de paro
+            // No se requiere acción adicional aquí
+    END_CASE
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-7176"><div class="cod"><h3>I4-7176</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (2 errores).<div class="err">Mensajes del compilador: L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;ESTADO_INICIAL&#x27; || L?nea 9, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;IF&#x27;</div></div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; // Botón de marcha
+    btnParo : BOOL;   // Botón de paro
+END_VAR
+
+VAR_OUTPUT
+    kM : BOOL; // Contactor principal
+    kY : BOOL; // Contactor de estrella
+    kD : BOOL; // Contactor de triángulo
+END_VAR
+
+VAR
+    timerEstrella : TON; // Temporizador para el contacto de estrella
+    timerMuerto : TON;   // Temporizador para el tiempo muerto
+    estado : INT;       // Estado actual del arranque estrella-triángulo
+END_VAR
+
+// Estados del arranque estrella-triángulo
+CONST
+    ESTADO_INICIAL := 0;
+    ESTADO_MARCHA := 1;
+    ESTADO_TIEMPO_MUERTO := 2;
+    ESTADO_TRIANGULO := 3;
+END_CONST
+
+// Inicialización
+IF NOT btnParo THEN
+    CASE estado OF
+        ESTADO_INICIAL:
+            kM := FALSE;
+            kY := FALSE;
+            kD := FALSE;
+            IF btnMarcha THEN
+                estado := ESTADO_MARCHA;
+                kM := TRUE;
+                kY := TRUE;
+                timerEstrella(IN := TRUE, PT := T#8S);
+            END_IF;
+        
+        ESTADO_MARCHA:
+            IF timerEstrella.Q THEN
+                estado := ESTADO_TIEMPO_MUERTO;
+                kY := FALSE;
+                timerMuerto(IN := TRUE, PT := T#100MS);
+            END_IF;
+        
+        ESTADO_TIEMPO_MUERTO:
+            IF timerMuerto.Q THEN
+                estado := ESTADO_TRIANGULO;
+                kD := TRUE;
+            END_IF;
+        
+        ESTADO_TRIANGULO:
+            // Mantener kD activo mientras no se presione btnParo
+            kD := TRUE;
+    END_CASE;
+ELSE
+    // Paro forzado
+    estado := ESTADO_INICIAL;
+    kM := FALSE;
+    kY := FALSE;
+    kD := FALSE;
+    timerEstrella(IN := FALSE);
+    timerMuerto(IN := FALSE);
+END_IF;</pre></div>
+<div class="caja resp" id="I4-8454"><div class="cod"><h3>I4-8454</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; (* Boton de arranque *)
+    btnParo : BOOL; (* Boton de parada *)
+END_VAR
+VAR_OUTPUT
+    kM : BOOL; (* Contactor principal *)
+    kY : BOOL; (* Contactor de estrella *)
+    kD : BOOL; (* Contactor de triangulo *)
+END_VAR
+VAR
+    enMarcha : BOOL; (* Memoria del estado del motor *)
+    tEstrella : TON; (* Temporizador para la fase de estrella *)
+    tMuerto : TON; (* Temporizador para el tiempo muerto *)
+END_VAR
+
+(* Control de marcha con prioridad a la parada *)
+enMarcha := (btnMarcha OR enMarcha) AND NOT btnParo;
+
+(* Temporizadores de transicion *)
+tEstrella(IN := enMarcha, PT := T#8S);
+tMuerto(IN := tEstrella.Q, PT := T#100MS);
+
+(* Asignacion de salidas con enclavamiento de seguridad *)
+kM := enMarcha;
+kY := enMarcha AND NOT tEstrella.Q AND NOT kD;
+kD := enMarcha AND tMuerto.Q AND NOT kY;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I4-1208"><div class="cod"><h3>I4-1208</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 6 pasos del harness.</div><pre>FUNCTION_BLOCK FB_EstrellaTriangulo
+VAR_INPUT
+    btnMarcha : BOOL; // Botón de arranque
+    btnParo   : BOOL; // Botón de parada (prioridad a la parada)
+END_VAR
+
+VAR_OUTPUT
+    kM : BOOL; // Contactor principal
+    kY : BOOL; // Contactor de estrella
+    kD : BOOL; // Contactor de triángulo
+END_VAR
+
+VAR
+    tonEstrella   : TON; // Temporizador para la fase de estrella (8s)
+    tonTransicion : TON; // Temporizador para el tiempo muerto (100ms)
+END_VAR
+
+// 1. Lógica del contactor principal (kM)
+// Enclavamiento con btnMarcha, se rompe al pulsar btnParo
+kM := (btnMarcha OR kM) AND NOT btnParo;
+
+// 2. Temporizadores
+// El temporizador de estrella inicia al arrancar el motor (kM = TRUE)
+tonEstrella(IN := kM, PT := T#8S);
+
+// El temporizador de transición inicia cuando termina la fase de estrella
+tonTransicion(IN := tonEstrella.Q, PT := T#100MS);
+
+// 3. Lógica de los contactores de fase (con enclavamiento mutuo de seguridad)
+// kY se activa con kM, se apaga al terminar tonEstrella, y nunca si kD está activo
+kY := kM AND NOT tonEstrella.Q AND NOT kD;
+
+// kD se activa al terminar el tiempo muerto, y nunca si kY está activo
+kD := kM AND tonTransicion.Q AND NOT kY;
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

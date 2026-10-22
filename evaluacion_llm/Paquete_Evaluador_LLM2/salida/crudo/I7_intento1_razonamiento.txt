@@ -1,0 +1,866 @@
+We need answer only JSON list 24 objects. Need evaluate each. Need carefully parse. We need produce exact codes and scores. Need no markdown. Let's analyze each response against protocol. Need understand harness steps.
+
+We have 24 responses. Need score rubrics. Need consider functional fixed: if funcional_fijo not null copy. For compile pass all steps funcional_fijo=3. For others functional null and compile fail/no? Some compile fail? Here all compile? Actually result indicates all "Compila." maybe none no compile. Need evaluate functional for fail cases. IEC fixed? null for all except maybe none? We assign 1-3. Need score coherencia claridad mantenibilidad. Need justifications one line each. We need be consistent. Critical: We need determine functional for failures. Let's map each code.
+
+Need inspect protocol: steps 0-13. Step list:
+0 F,F,F -> F,F,F
+1 T,F,F -> T,F,F principal b1
+2 F,F,F -> F,F,F
+3 T,F,F -> F,T,F principal b2
+4 F,F,F -> F,F,F
+5 T,F,F -> T,F,F principal b1
+6 T,T,F -> F,T,T principal b1 (falla principal b1 -> respaldo b2 alm)
+7 T,F,F -> T,F,F (vuelve principal b1)
+8 T,F,T -> T,F,F (falla solo respaldo b2, no alarma)
+9 T,T,T -> F,F,T (ambas falla)
+10 F,T,T -> F,F,F (sin demanda no alarma)
+11 T,F,F -> F,T,F (cuarta demanda principal b2)
+12 T,F,T -> T,F,T (principal b2 falla -> respaldo b1)
+13 F,F,F -> F,F,F
+
+Need consider alternation on each FALSE->TRUE transition. First demand after block initialization principal b1. In many solutions they initialize principal BOOL with default or use primer flag. Need check subtle first cycle: In CODESYS FB initial values apply. Harness likely sequential steps each step executed maybe one cycle. Need evaluate.
+
+I need score each response. Let's enumerate with details.
+
+Response codes:
+1 I7-1859: Compila. Falla 8 pasos: 1,3,5,6,7,8,11,12. Code: principal1 BOOL:=TRUE; flancoSubida := demanda AND NOT demandaAntes; IF flanco THEN principal1 := NOT principal1. Then logic. Issue: first demand step 1: at start principal1 TRUE, flanco true => toggles to FALSE => b2 principal, so outputs bomba2 true not b1. Hence fail steps 1 and all alternation. Also step 3 toggles back TRUE etc. Actually step 3 demand true after false, toggles to TRUE => b1 principal but expected b2. So yes. Anyway functional fail. Need score functional maybe 1? It implements nominal logic? Case nominal actually falla all? It fails first demand nominal. So functional 0? Rubric 0: no implementa lógica pedida o falla en el caso nominal. It fails first demand nominal output b2 instead b1. So functional 0. Need see fixed? null. We assign. IEC: compiles, uses standard. But uses manual edge detection not R_TRIG: that's okay standard. Variables typed correctly. Could give 2 (compila sin cambios; declaraciones y tipos correctos). Could give 3? It uses idiomatic? Manual edge detection is standard but maybe not as idiomatic as R_TRIG, no TON etc. But ST constructs if. I think IEC 2. Coherencia: It toggles at new demand but initial wrong; logic coherent otherwise. Variables initialized? principal1 init true, demandaAntes false. However initialization and alternating works but first edge toggles incorrectly. Is that contradiction? Coherencia: logic internally complete with transitions. No dead states. Could give 2. Clarity: comments good, names good. 2 or 3. Maintainability: uses boolean principal1 no constants needed. Could be 2? No magic numbers, but logic duplicated for two branches; not FB params. Maybe 2.
+
+But need be consistent across similar. Let's keep maybe 2 for everything except functional.
+
+2 I7-5823: Pasa 14. funcional_fijo=3. code: principal BOOL; lastDemanda BOOL; IF NOT lastDemanda AND demanda THEN principal := NOT principal; no init of principal. In CODESYS default FALSE, so first demand flanco -> NOT FALSE=TRUE -> bomba1 principal. That passes? Step 1: antes first cycle lastDemanda false, demand true => principal true. logic b1. step 3: previous lastDemanda false? Step 2 demand false lastDemanda false? Let's trace: after step1 lastDemanda true; step2 demand false: no toggle, logic else, lastDemanda false. Step3 demand true flanco -> principal false => b2. Works. IEC: manual edge detection but compiles. Could assign 2 or maybe 3? It uses standard; not R_TRIG. "compila sin cambios y usa construcciones idiomáticas del estándar" Manual edge detection is not as idiomatic? It is standard though. But for basic task maybe can give 2 for correct declarations/types but not idiomatic? Some solutions use R_TRIG. Need distinguish: Those using R_TRIG could get iec=3; manual edge detection with clear ST probably iec=2. Yes. Coherencia: principal initialized by default? It relies on default FALSE but not explicitly. Is it correct. Minor not explicit. Could give 2 or 3. Clarity 2. Maintainability 2. Need maybe for all pass answers similar.
+
+Need maybe score IEC for all pass using R_TRIG: give 3 if uses R_TRIG correctly? R_TRIG is standard IEC 61131-3. Some use R_TRIG but with comments. Those with manual edge detection still standard (edge as boolean expression), declarations valid. The rubric says 3: "compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." So if solution uses R_TRIG or other standard block, we can give 3. If manual edge detection only, maybe 2 because no standard block but compiles. However all are FUNCTION_BLOCK as required POU. Use BOOL. Since it says "POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados" as examples. Manual edge detection may still be "correcto" but maybe not idiomatic. I'd give 2 for basic manual, 3 for R_TRIG.
+
+Need evaluate all codes accordingly.
+
+3 I7-2190: Pasa 14. Similar to I7-5823 but no explicit initialization. principal default false. Manual edge. Same. Funcional 3 fixed. IEC 2. Coherencia maybe 2? Clarity 2. Maintainability 2. Maybe no comments for why; ok.
+
+4 I7-6860: Pasa 14. Uses R_TRIG; turnoBomba1 BOOL := FALSE. rTrigDemanda(CLK:=demanda); IF Q THEN toggle. Initial turnoBomba1 false? Wait they comment "turnoBomba1 BOOL := FALSE; Alternancia, inicia en FALSE para que el primer cambio sea a TRUE". Step1: edge Q true -> turnoBomba1 true => b1 principal. Good. Uses R_TRIG. Functional 3 fixed. IEC 3. Coherencia: variable init false, tick toggles, logic equation concise. Complete transitions. Could give 3? It's robust, interlocks regarding fallas using boolean expressions. Clarity: comments good, names good. Could give 3? Maybe.
+Maintainability: boolean equations maybe not parameterized but changes localized. Could give 3? It doesn't have a separate FB parameters, but task requires basic. "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)" It uses equations without duplication; parameters already input. Could give 3. But maybe no duplication, very maintainable. So I7-6860 maybe high scores.
+
+5 I7-5664: Compila. Falla steps 1,5,6,7,8. Code: principal BOOL; lastDemanda BOOL; initialization IF NOT demanda AND NOT lastDemanda THEN principal := TRUE; Alternancia IF demanda AND NOT lastDemanda THEN principal := NOT principal; This still issue first edge? Let's simulate step0 demand false lastDemanda false: principal true. Step1 demand true lastDemanda false: alternancia toggles principal false, then control with principal false => b2 true expected b1. So fail nominal first. But step3? step2 demand false lastDemanda true? Actually step1 lastDemanda set true. Step2 demand false: initialization false? condition NOT false AND NOT true = false; alternancia no; lastDemanda false; control else. Step3 demand true lastDemanda false: alternancia principal := not false? Principal from step1 false, toggles true -> b1, expected b2. Fails. So similar to I7-1859. Functional 0 or perhaps 1? Fails first nominal. 0. IEC compiles, uses manual edge. 2. Coherencia: There's contradictory initialization "IF not demand and not lastDemanda" only when both false at start, not every cycle; variable principal toggles. The initialization condition weird because "lastDemanda" means previous, during step0 it sets principal true; then first edge toggles. Not logically correct with requirement. But internally maybe coherent? There's possibly uninitialized principal if first demand true in first cycle? But in harness first step false. We judge code. Could coherencia 1 or 2? It has logic, but redundant condition dead? Actually after step0 principal true, then first demand flanco toggles to false. They misunderstood ordering. Not contradictory exactly. Could give 1 because condition "IF NOT demanda AND NOT lastDemanda THEN principal := TRUE" is only true once after first cycle if both false; if FB starts with demand true (not in protocol maybe) principal not initialized. But not dead. Need perhaps 2? The rubric: "0: condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar. 1: lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave. 2: sin contradicciones; inicialización correcta; transiciones completas." It has initial principal not initialized if initial demand true; but harness starts false. They attempted init. I'd say 1 due to initialization and first edge ordering causing operation wrong. But maybe coherencia independent of functional? We can say 1.
+Clarity: comments use // not IEC comments? In ST, // can be accepted? CODESYS ST supports // maybe. But IEC uses (* *). The rubrics: IEC maybe not penalize if compiles. Claridad: comments with // but visible, names okay. 2 or 1. Could 2. Maintainability 2.
+
+6 I7-4023: Pasa 14. code uses primerCiclo BOOL; principal INT. `IF primerCiclo THEN principal:=1; primerCiclo:=FALSE; demanda_ant:=FALSE; END_IF`. Wait default primerCiclo FALSE? It does not initialize primerCiclo := TRUE! Actually VAR: primerCiclo : BOOL; no initial value. In CODESYS, BOOL default FALSE. Thus first cycle IF primerCiclo THEN not executed; principal INT default 0. Then edge detection on first demand? Step1: primerCiclo false, principal=0. Edge true (demanda true AND NOT demanda_ant (false)). Then IF principal=1 ELSE principal:=1. So principal becomes 1. Then logic principal=1 b1. So passes from step1? Let's trace:
+- At first call step0: primerCiclo false no init. demanda false so edge false. logic defaults off. demanda_ant := false.
+- step1: primerCiclo still false; edge true: principal 0 -> else principal:=1. Logic principal=1 => b1. Good.
+- step3: after step2 demanda_ant false; edge true; principal 1 -> set 2. logic b2. Pass.
+Note primerCiclo false is okay because fallback when principal=0 also yields 1 on first demand. Actually if first demand starts true after init, principal 0 -> else principal=1. Fine. It passes. This is a bit odd: primerCiclo never used because not initialized. But functionality passes due to INT default 0 mapping to b1. However comment says "primerCiclo BOOL" and condition. This is potentially coherencia issue: primerCiclo no init to TRUE, so initialization block is dead? It never executes. That's a dead condition/state. Does not affect because the edge else sets principal:=1 anyway, but the intended init is dead. Need score coherencia maybe 1 or 2? It passes all but has dead flag. Rubric coherencia 1: "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." That fits exactly: `primerCiclo` initialized FALSE by default leading to dead initialization block. So coherencia 1 maybe 2? Since effect is not grave and functionality passes, could be 2? But rubric says 1 for conditions muertas. We'll likely give coherencia 2? Need careful. "primerCiclo" never set to TRUE anywhere, so the IF primerCiclo block is unreachable. That is a dead condition. So coherence should be 1. But it's "sin efecto grave" because principal is set later. So 1.
+
+But for a pass answer, can we give coherencia 1 while other pass answers get 2/3? Yes. Need mention dead firstCycle flag. Clarity: It has extensive comments but not matching logic? comments mention primerCiclo. Could be 2 or 3? I'd give 2. Maintainability: uses INT principal, variables, but dead block. 2.
+
+IEC: no standard blocks except manual edge. Compiles; declarations correct. Could give 2. (Doesn't use R_TRIG but manual edge). Not 2? yes.
+
+7 I7-8200: Pasa 14. Uses R_TRIG, turnoBomba2 BOOL:=TRUE; comment "Inicia en TRUE para que la primera demanda asigne el turno a la bomba 1". Logic `IF NOT turnoBomba2 THEN bomba1 principal`. Step1: edge toggles turnoBomba2 false -> b1 principal. Pass. IEC 3. Coherencia maybe correct 3. Clarity 3. Maintainability 2/3.
+
+8 I7-7155: Compila. Falla 4 de 14: steps 3,10,11,12. Code is weird state machine:
+VAR estado : INT := 0; cambio : BOOL := FALSE;
+IF demanda THEN estado:=1; cambio:=TRUE; END_IF
+Then execute state logic with new estado? Need trace. Step0 demanda false -> no set. State logic for estado=1 not execute? Actually code sequential:
+IF demanda THEN estado :=1; cambio:=TRUE; END_IF
+IF estado=1 THEN ... bomba1 etc. So step0 no.
+Step1 demanda true: sets estado=1, cambio true. Then estado=1 logic if not falla1 => bomba1 true, bomba2 false, almFalla false. Then "Cambio de estado en nueva demanda": IF demanda AND cambio THEN if estado=1 then estado:=2 else estado:=1; cambio:=FALSE. This executes same cycle! So after state1 logic, it changes estado to 2. So step1 outputs bomba1 true expected, but after step1 estado=2. This will affect step3? Let's trace:
+Step1 expected b1 true. It outputs b1 true because state1 logic before toggle? Actually estado=1 logic outputs b1 true; then cambio toggles estado=2. So step1 output okay. But internal estado now 2 for next step.
+Step2 demanda false: "Detener bombas al quitar demanda" if NOT demanda then bomba1 false, bomba2 false, cambio:=TRUE; (almFalla not explicitly set false! In state0? Actually at step2, no state logic because state still 2? It will execute IF estado=2 THEN... since code after detection? Let's carefully order code:
+1) IF demanda THEN estado:=1; cambio:=TRUE; END_IF
+2) IF estado=1 THEN ...
+3) IF estado=2 THEN ...
+4) IF demanda AND cambio THEN ... toggle
+5) IF NOT demanda THEN bomba1:=FALSE; bomba2:=FALSE; cambio:=TRUE; END_IF
+No explicit almFalla = false when not demanda except state logic else maybe. Step2 demanda false: skip step1. State remains 2 from step1. It executes IF estado=2 THEN (falla2 false) -> bomba1 false,bomba2 true, almFalla false. Then step4 skip, step5 set bomba1 false,bomba2 false,cambio true. almFalla remains false. Step2 expected false,false,false. okay but before step5 outputs b2 true but harness at end maybe after full loop? Typically outputs read at end of program. So b2 false. State remains 2.
+Step3 demanda true: step1 sets estado:=1, cambio:=true. (Not good: it resets to 1 instead of alternating; alternation state lost by IF demanda always estado=1). Then estado=1 logic outputs b1 true, expected b2 true. Fail step3. Also step10? Let's trace failures. The code has significant state machine flaw, resetting state to 1 each demand. Falla steps 3,10,11,12. Functional maybe 1? It passes step0,1,2,4? Step1 output b1 yes. But fails alternation. Does it fail step5? Let's simulate: At step3 after code: step1 demand true sets estado 1; logic b1; step4 toggles estado to2. So step3 output b1 (expected b2) but internal estado2. Step4 demanda false: state2 logic -> b2 true then false; cambio true. Step5 demand true: step1 set estado1; b1 true expected b1? Actually step5 expected principal b1. So step5 outputs b1. Wait harness says fails 3,10,11,12 not 5. So yes step5 passes. Step10? Let's trace maybe almFalla not off? Step10 demanda false with falla1 true falla2 true. State? After step9 both falla true demand true: step1 sets estado1; logic falla1 true, falla2 true -> bomba1 false bomba2 false almFalla true; step4 toggles estado2. Step10 demand false: state2 logic with falla2 true falla1 true -> bomba1 false bomba2 false almFalla true? Actually estado=2: IF NOT falla2 false, ELSE IF NOT falla1 false, ELSE bomba1 false bomba2 false almFalla true. Then step5 sets bomba1 false bomba2 false cambio true but does NOT set almFalla false. So almFalla remains true expected false -> fail step10. Good. Step11 demand true after step10 falla false? Wait step10 inputs falla true, but step11 falla false. After step10 state remains 2 (no demand); step11 demand true: step1 sets estado1 cambio true; state1 logic no fallas => b1 true expected b2 -> fail. Step12 demand true falla1 false falla2 true: step1 sets estado1; state1 logic falla1 false -> b1 true, expected b1 true? Wait step12 expected principal b2 falla -> b1 true almFalla true. But step1 reset to b1 principal so no falla1 => b1 true almFalla false. Expected almFalla true, so fail. Yes.
+
+Functional score: It doesn't implement alternation correctly; fails nominal step3. Does it fail nominal case? Step3 is nominal alternate. The "caso nominal" maybe first demand step1 passes, but the core alternating fails. Rubric 0: no implementa la lógica pedida o falla en el caso nominal. The nominal includes alternation, so 0. It fails obvious alternation. However maybe give 1 if works some cases but fails alternation? "1: funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." This is not a limit; alternation is core. So functional 0. 
+
+IEC: compiles, uses state machine with INT, no R_TRIG. Variables correct. 2.
+Coherencia: Major contradiction: `IF demanda THEN estado := 1` always resets state. But also alternation toggling. Actually state transition code toggles but then next demand sets to 1; no unreachable exactly but contradictory. Could give 1 or 0? It has unreachable? The `estado := 2` from alternation after step1 is overwritten on next demand by `estado := 1`; creating partial dead logic. But state2 logic can execute during demand false if estado=2 (after step1 toggles to2, then step2 false), so not dead. Coherence maybe 1. 
+Clarity: state machine with comments but not clear due to sequential issues. Names okay. Could 1 or 2. Maybe 2 for names/comments but logic confusing. I'd give 1? Need consistent. Since comments not explaining flaw. Maybe 2? We'll decide later.
+Maintainability: state machine array? constants? 1 or 2. Could 1 due to tangled state changes.
+
+9 I7-3525: Compila. Falla 5 de 14: steps 3,6,8,9,11. Code:
+VAR estado INT:=0; demandaAnterior BOOL:=FALSE;
+IF demanda THEN
+ CASE estado OF
+  0: estado:=1; bomba1:=TRUE; bomba2:=FALSE;
+  1: IF falla1 THEN bomba1:=FALSE; bomba2:=TRUE; almFalla:=TRUE; ELSE almFalla:=FALSE; END_IF
+  2: IF falla2 THEN bomba2:=FALSE; bomba1:=TRUE; almFalla:=TRUE; ELSE almFalla:=FALSE; END_IF
+ END_CASE
+ELSE
+ bomba1:=FALSE; bomba2:=FALSE; almFalla:=FALSE; estado:=0;
+END_IF
+
+IF demanda AND NOT demandaAnterior THEN
+ CASE estado OF
+  1: estado:=2;
+  2: estado:=1;
+ END_CASE
+END_IF
+demandaAnterior := demanda;
+
+This alternates after setting estado? Step0 false: else sets estado0. Step1 demand true: CASE 0 -> estado1, b1 true. Then edge detection: `demanda AND NOT demandaAnterior` true; CASE estado OF 1 => estado:=2. So after step1 state=2. outputs b1 true. Step2 demand false: else set state0, outputs off. Step3 demand true: case 0 -> estado1,b1 true. Then edge true: case estado 1 -> state2. Expected b2. Fail. Step6 demand true (no edge? previous demand true) state? After step5? Let's trace step5 maybe state issues. Step5 expected b1; let's simulate after step3 state2. Step4 false else state0. Step5 demand true case0 -> state1,b1 true; edge true -> state2. Expected b1 yes (b1 output). So step5 passes. Step6 demand true no edge; case 2? Since after step5 state2. CASE 2: IF falla2 false (falla2 false) -> almFalla false; but does not set bomba1/bomba2. Outputs from previous? The ELSE branch not executed because demanda true, and CASE 2 doesn't assign bomba1/bomba2 except if falla2. So bomba1,bomba2 retain previous values? In ST, outputs maybe retain from last assignment in previous cycle. At step5 b1 true b2 false. Step6 expected b2 true almFalla true but state2 considers falla2 false and only sets almFalla false, leaving b1 true,b2 false. Fails. Step8 demand true falla1 false falla2 true (no edge? step7 demand true falla1 false falla2 false; step8 demand true no edge). State? After step5 state2? Step6 state2; step7 demand true no edge, CASE 2 falla2 false -> almFalla false, leaves b1 true? But step7 expected b1 true, okay. Step8 falla2 true: CASE 2 IF falla2 THEN bomba2:=FALSE; bomba1:=TRUE; almFalla:=TRUE; Expected b1 true almFalla false? Protocol step8: demand true falla1 false falla2 true -> bomba1 true,bomba2 false, almFalla false (falla only respaldo). This code triggers falla2 as if principal, so almFalla true, but b1 true. Fails. Step9 step demand true falla1 true falla2 true maybe state2 still: CASE2 falla2 true -> bomba2 false bomba1 true almFalla true; expected bomba1 false,bomba2 false, almFalla true. Fails. Step11 after step10 false -> state0? Step10 demand false else state0. Step11 demand true no fallas: case0 outputs b1 true; edge toggles to state2. Expected b2. Fails. So functional flawed. It fails first alternation step3 core. Functional 0? It does pass first demand but fails nominal alternation. 0.
+
+IEC: compiles. 2.
+Coherencia: The alternation toggles state after output and ignores edge when current state maybe 2 etc. State0 on demand false resets. There is issue bomba outputs sometimes not assigned during state1/2 when no falla (e.g. state2 if no falla doesn't set bomba1/bomba2 explicitly, relying on previous values, dangerous but in ST outputs retain value? In FB variables outputs keep values between calls; if not assigned, they remain from previous assignment. In CODESYS, if output not written in certain path, it retains value. This is a coherence/maintenance issue; could lead to ghost outputs. We can mention. Score coherencia 1 (conditions with missing assignments). Clarity 1/2. Maintainability 1.
+
+10 I7-7598: Compila. Falla 6 pasos: 1,5,6,7,8,9. Code:
+VAR estado : INT; demandaAnterior : BOOL;
+IF NOT demandaAnterior AND demanda THEN estado := 1; END_IF
+IF demanda THEN
+ CASE estado OF
+  1: bomba1 := TRUE; bomba2 := FALSE; IF falla1 THEN bomba1:=FALSE; bomba2:=TRUE; almFalla:=TRUE; ELSE almFalla:=FALSE; END_IF
+  2: bomba2 := TRUE; bomba1 := FALSE; IF falla2 THEN bomba2:=FALSE; bomba1:=TRUE; almFalla:=TRUE; ELSE almFalla:=FALSE; END_IF
+ END_CASE
+ELSE ... off
+END_IF
+IF NOT demandaAnterior AND demanda THEN
+ IF estado = 1 THEN estado := 2; ELSE estado := 1; END_IF
+END_IF
+demandaAnterior := demanda;
+
+Trace step1: At start demandaAnterior false. First IF edge -> estado:=1. Then CASE 1 b1 true. Then second IF same edge: if estado=1 -> estado:=2. So outputs b1; state2. Step2 false off? ELSE bomba1 false bomba2 false almFalla false; then second IF false; demandaAnterior false. Step3 demand true: first IF edge -> estado:=1 (because assigns 1 each edge) then CASE1 b1, second IF edge if estado=1 -> estado:=2. Expected b2 fail. Similar. Step5? After step3 state2. Step4 false off, step5 edge assigns estado1,b1; then toggles to2. expected b1 passes. Step6 no edge, state2, falla2 false, CASE2 sets bomba2 true, bomba1 false, almFalla false; expected b2 true almFalla true? Wait step6 principal b1 falla1 true falla2 false. Since state2 is principal b2, no falla -> bomba2 true. Fails. Step7 no edge, state2 falla2 false -> b2 true expected b1 true. Fails. Step8 no edge, state2 falla2 true -> falla2 branch sets bomba2 false, bomba1 true, almFalla true expected b1 true almFalla false. Fails. Step9 no edge, state2 falla2 true falla1 true -> falla2 branch sets bomba1 true? It sets `bomba2:=FALSE; bomba1:=TRUE; almFalla:=TRUE` regardless falla1 false? Wait falla1 true, but branch doesn't check falla1. Expected both off. Fails. Functional 0.
+
+IEC 2. Coherencia 1 (edge handling resets state to1 each edge, contradictory; state loses alternating). Clarity 1/2. Maintainability 1/2.
+
+11 I7-1736: Pasa 14. code: uses manual edge, `turnoBomba1 BOOL := TRUE; primerArranque BOOL := TRUE`. Edge: IF demanda AND NOT demandaAnt THEN IF primerArranque THEN turnoBomba1 := TRUE; primerArranque:=FALSE; ELSE turnoBomba1 := NOT turnoBomba1; END_IF; END_IF; demandaAnt := demanda. Then default false and logic. This works first demand because turnoBomba1 remains TRUE, then alternates next. IEC: manual edge, no R_TRIG. Could give 2. Coherencia: explicit initialization correct, robust. Clarity 3 maybe comments good. Maintainability 2/3.
+
+12 I7-8285: Compila. Falla 6 pasos: 3,6,7,8,9,11. Very similar to I7-3525 but has fallas check. Code state machine; edge alternates after processing. Step1 CASE0 b1; edge toggles state 2. Step3 after false state0 -> case0 b1; edge toggles 2. Fails. Functional 0. IEC 2. Coherencia 1. Clarity maybe 1/2. Maintainability 1.
+
+13 I7-8111: Pasa 14. Uses R_TRIG, `bomba1Principal BOOL := TRUE`, `primerArranque BOOL := TRUE`. Edge: if Q then if primerArranque then primerArranque := FALSE else bomba1Principal := NOT bomba1Principal; end. Logic. Works. IEC 3 (R_TRIG). Coherencia 3. Clarity 3. Maintainability 3 perhaps. Need check step1: bomba1Principal true and primerArranque true; edge Q true first cycle; IF primerArranque then primerArranque false; no toggle, principal true. Good. Next edge toggles. Fine.
+
+14 I7-5182: Compila. Falla 8 pasos: 1,3,5,6,7,8,11,12. Similar to I7-1859: flanco toggles at each rising edge incl first, causing first demand b2. Functional 0. IEC 2. Coherencia 2? It uses principal1 initialized true, then first edge toggles false, so doesn't meet requirement but internal logic complete. Could say 1 or 2. Need consistent with I7-1859 etc. I7-1859 coherencia maybe 2? We said 2. But first edge issue is functional not contradiction. The code is coherent but initialization sequence wrong. We might give coherencia 2. But some reviewers might give 1 due to requirement misfit. But rubrics coherencia about contradictions, initializations, dead states. If variable initialized true then toggles first edge, it is a wrong behavior due to sequencing; not a dead condition. I'd maybe 2 for simple versions. Need decide.
+
+15 I7-2045: Compila. Falla 1 step: 9. Code state machine with estado INT :=0, demandaAnterior. IF demanda THEN IF NOT demandaAnterior THEN estado := (estado+1) MOD 3; IF estado=0 THEN estado:=1; END_IF; END_IF; CASE estado OF 1: if falla1 then bomba1:=FALSE; bomba2:=NOT falla2; almFalla:=NOT falla2; else b1 true b2 false almFalla false. 2 similar. ELSE off; update.
+Trace step0 false -> else off, state0. Step1 demand true, edge: estado=(0+1)MOD3=1 not 0; state1 no falla -> b1 true. Pass. Step2 false off. Step3 demand edge: state=2 -> b2 true. Pass. Step5 edge state=0? (2+1)MOD3=0 -> then set 1 -> b1 true. Pass. Step6 no edge, state? After step5 state1. falla1 true -> b1 false; bomba2 := NOT falla2 true; almFalla := NOT falla2 true. Expected b2 true almFalla true. Pass. Step7 no edge, state1 falla1 false -> b1 true b2 false almFalla false. Pass. Step8 no edge state1 falla1 false falla2 true -> b1 true b2 false almFalla false. Pass. Step9 no edge state1 falla1 true falla2 true -> falls in falla1 true branch: bomba1:=FALSE; bomba2 := NOT falla2 => FALSE; almFalla := NOT falla2 => FALSE. Expected almFalla true, both off. Fails only step9. So functional 2? Correct in nominal and most limits; one fault? It misses both fault case alarm. Not dangerous? The expected almFalla true if both fail with demand. It's a critical alarm case. Rubric 2: "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." Missing almFalla when both fail maybe could be risk. But it only fails one step. Could be functional 2, not 3 because not fixed. Since compila falla pasos no fixed. Could be 2 or 1? It fails an important edge: both fallas. But core and alarm with principal failure generally works; only both failed alarm is absent. I'd give 2. Need assess: It fails to activate almFalla when both have falla and demanda present. Requirement says if both have falla, ninguno funciona y almFalla se activa. This is explicit, not minor. But rubric 1 requires "falla en casos límite evidentes (flancos, reset, paro de emergencia)"; it passes flanks, reset. Falla both fallas. I'd lean 2 due "mayoria casos límite; fallas menores sin riesgo" but alarm missing is not minor. However point scale from 0 to 3; only one failed step. A careful teacher might give 2. We'll assign 2. But "funcional": 2 = "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." "menores sin riesgo" maybe no. Could maybe 2 still. We'll use 2. Need not be too harsh.
+
+IEC: uses state INT and manual edge. 2. Coherencia: The `estado := (estado+1) MOD 3; IF estado=0 THEN estado:=1` handles wrap. Initial state0, edge to1. No dead. Condition for falla1 true with falla2 true incorrectly sets almFalla := NOT falla2 false. That's logic error but not contradiction. The state machine is coherent. Maybe coherencia 2. Clarity 2. Maintainability 2.
+
+16 I7-3489: Pasa 14. Uses R_TRIG, `bomba1Principal BOOL := FALSE`; flancoDemanda(CLK:=demanda); IF q toggle. Logic with boolean equations. Step1 edge toggles false->true b1 principal. Good. IEC 3. Coherencia 3. Clarity 3 maybe. Maintainability 3 (concise equations, no duplication). 
+
+17 I7-3883: Compila. Falla 8 pasos 1,3,5,6,7,8,11,12. Similar to I7-1859: `principal BOOL := TRUE` but code: 
+(* Detectar flanco ... *) IF (demanda AND NOT demandaAnt) THEN principal := NOT principal; END_IF; 
+(* Actualizar estado anterior *) demandaAnt := demanda;
+Then logic. It alternates before logic, first demand toggles principal true->false. Fails first demand. Functional 0. IEC 2. Coherencia 2 maybe. Clarity 2. Maintain 2.
+
+18 I7-1098: Compila. Falla 8 steps 1,3,5,6,7,8,11,12. Code missing END_FUNCTION_BLOCK? It includes VAR etc but maybe not shown? The result Compila. It has `demanda_prev` not initialized? 
+VAR demanda_prev : BOOL; principal_es1 : BOOL := TRUE;
+IF demanda AND NOT demanda_prev THEN principal_es1 := NOT principal_es1; END_IF;
+Then logic. First demand toggles principal_es1 true->false. Fails first and alternating. Functional 0. IEC 2. The code has no `END_FUNCTION_BLOCK` in snippet but compiles? Maybe parser maybe not considering. Not relevant, but if no END_FUNCTION_BLOCK maybe compile fail? result compiles. Need score based result. Coherencia similar: demand_prev not initialized explicit but CODESYS default false. `principal_es1` true. Same first edge issue. 2 maybe. Clarity 2. Maintainability 2.
+
+19 I7-6285: Pasa 14. Uses R_TRIG, `bomba1Principal BOOL := FALSE`; edge toggle. `bomba1Principal` false initially; first Q toggles true. Logic equations. Pass. IEC 3. Coherencia 3. Clarity 3. Maintainability 3.
+
+20 I7-2100: Compila. Falla 5 steps 1,5,6,7,8. Similar to I7-5664 maybe: initialization IF NOT demanda AND NOT lastDemanda THEN principal := TRUE; alternation toggles first edge. Step1 fail b2 instead b1? It fails steps 1,5,6,7,8. Let's trace: step1 output b2 maybe yes. Functional fails first nominal -> 0? Wait I7-5664 fail steps 1,5,6,7,8. This same. Does it fail step1? Result says yes. Fails first demand. So functional 0. IEC 2. Coherencia maybe 1? Same. Clarity 1? It uses // comments. Could 2. Maintainability 2.
+
+21 I7-1170: Compila. Falla 10 steps: 2,4,5,6,7,8,9,11,12,13. Code:
+estado INT:=0; demandaAnterior BOOL:=FALSE;
+IF demanda AND NOT demandaAnterior THEN estado := (estado+1) MOD 3; END_IF
+CASE estado OF 0 off, 1 b1 not falla1, b2 falla1 AND NOT falla2, 2 b1 falla2 AND NOT falla1, b2 not falla2; END_CASE
+almFalla := (estado=1 AND falla1) OR (estado=2 AND falla2);
+demandaAnterior := demanda;
+Issues: It only increments on rising edge; initial state0 -> first edge state1. Step0 false state0 outputs off. Step1 demand true edge state1 outputs b1 true alm false. Pass. Step2 demand false no edge, state1 still; CASE state1 executes even demanda false? It sets bomba1 := NOT falla1 (true) and bomba2 := falla1 AND NOT falla2 (false). No demand gating. So outputs bomba1 true expected off. Fails step2. Indeed fails many when demand false. Functional 0 maybe. In addition almFalla not gated by demand so step2 false alarm? Step2 fallas false so alm false. Step10 with fallas true demand false state1? need maybe state? Fails. This doesn't turn off pumps when demand false, a serious issue. Functional 0.
+
+IEC compiles. 2. Coherencia: The CASE state not gated by demand; outputs drive even no demand. Could give 1. Clarity 2 (comments okay). Maintainability 2? 
+Need maybe evaluate code: eq concise but no demand gating. Score maintainability 2 or 1? I'd 1 or 2. Since variables state and equations, but needs logic changes to add demand gating. Could be 2 if change localized? Hmm.
+
+22 I7-8887: Compila. Falla 8 steps 1,3,5,6,7,8,11,12. Same as I7-1859/5182/3883 with principal1 TRUE toggles first demand. Functional 0. IEC 2. Coherencia 2. Clarity 2. Maintain 2.
+
+23 I7-7783: Compila. Falla 8 steps 1,3,5,6,7,8,11,12. Code weird: principal_es1 BOOL := TRUE; Initial edge detection block empty:
+IF demanda AND NOT demanda_ant THEN
+    (* comment... no code *)
+END_IF
+Then logic uses principal_es1 TRUE. Then after logic:
+IF demanda AND NOT demanda_ant THEN
+    principal_es1 := NOT principal_es1;
+END_IF
+demanda_ant := demanda.
+Let's trace first demand step1: At start principal_es1 true, demanda_ant false. Empty edge detection doesn't change. Logic before second IF uses principal_es1 true -> b1 true. Then second IF toggles principal_es1 false for next. So step1 b1 pass? Wait result says fails step1. Hmm maybe step1 outputs b1? Let's simulate timing: The code order: empty IF. comment. Logic IF NOT demanda ELSE. So principal_es1 true; fallas false; bomba1 true; bomba2 false; alm false. Then after logic second IF edge -> principal_es1 := NOT true => false. Then demanda_ant set true. So step1 outputs b1 true expected. Why harness says fails step1? Perhaps because the outputs are read after program; bomba1 true yes. But maybe harness fails because bomba1Principal toggled after logic affects next but not current. Why fail step1? Let's re-read code: It has earlier comment block: 
+(* ---------------------------------------------------------------
+   Detección de flanco ascendente de demanda:
+   En cada transición FALSE→TRUE se alterna el rol de principal.
+   En el primer ciclo tras el arranque del bloque, principal_es1
+   ya vale TRUE (inicializado), por lo que bomba1 es la principal.
+--------------------------------------------------------------- *)
+IF demanda AND NOT demanda_ant THEN
+    (* ... no code *)
+END_IF
+This empty IF shouldn't affect. Then logic. Then AFTER logic the actual IF toggles.
+In CODESYS, a function block output variable retains values from previous writes; but code does assign in all paths? For step1 principal_es1 true. The logic `IF NOT demanda THEN ... ELSE ...` yes. It writes bomba1 true. So why fail? Perhaps because step1 fails because almFalla? expected almFalla false. It writes false. Should pass. The result says "Falla 8 pasos (pasos 1,3,5,6,7,8,11,12)" same as typical first edge toggle. Maybe there is a nuance: The harness may execute FB for each step with perhaps one call per step but with inputs changing, and outputs are sampled after `FB_Duplex(...)`? In CODESYS, variables in FB are updated at end of call. Output should be current. So step1 pass. Why fail? Let's trace actual edge: At step1, first block execution after reset? Program may call FB every cycle. Step0 call: demanda false, falla false. At start principal_es1 true. In step0, empty IF no; logic `IF NOT demanda THEN` sets bomba1 false bomba2 false alm false. Then second IF edge false no toggle. demanda_ant := false. Step1 call: as above. Should produce bomba1 true. So maybe result includes step1 failing due to different initial condition: Is `demanda_ant` initialized? VAR `demanda_ant : BOOL;` no initial, default false. `principal_es1` true. Okay.
+Wait later code toggles `principal_es1` after logic in step1, so for step1 it uses principal_es1 true. should pass. Maybe harness checks result after multiple cycles? It might simulate step changes with `demanda` set TRUE, and the `R_TRIG`? Not.
+
+Let's inspect the code order carefully: There is an early empty IF `IF demanda AND NOT demanda_ant THEN (* comment only *) END_IF`. Then logic. Then at end `IF demanda AND NOT demanda_ant THEN principal_es1 := NOT principal_es1; END_IF`. Wait both IFs use same condition `demanda AND NOT demanda_ant`. In ST, `demanda_ant` is not updated until after logic. So in step1, the second IF also sees `demanda_ant` false, hence toggles principal_es1 after logic. That's what I said. Output should still be b1. Why fail step1? Unless the first empty IF doesn't actually execute but no.
+
+Maybe the harness outputs are sampled after the second IF? Yes after full call, bomba1 true still. The second IF only toggles principal_es1, not bomba1. So still pass. The reported failure pattern maybe is from a typical solution that toggles before logic. I7-7783 fails same pattern? Let's examine expected step1: demand true false, outputs b1 true. It would pass if principal_es1 true. The result says fails step1. Could there be an issue because `bomba1` output not assigned before logic when `demanda` false? It is assigned. Hmm.
+
+Maybe there is an initial cycle issue: At the very first call step0 with demanda false, principal_es1 true, logic sets outputs false, then second IF false. At step1 output true. Why not?
+
+Wait maybe the harness executes not just one call per step, but "ciclos de 4, 10 y 20 ms" indicates they ran each step for multiple cycles? Protocol says step CASE with inputs, maybe each step held for certain cycles? They likely run `PRG_Test_I7` with `paso` increments each cycle? Hmm if steps are held one cycle? Actually the harness as shown uses `CASE paso OF` for inputs and outputs `e1,e2,eAlm`. The PRG probably increments `paso` after checking? It might execute each step for some cycles, perhaps one or several. If each step is executed multiple cycles, first demand step1 at first cycle outputs b1, but at second cycle within same step demand still true, `demanda_ant` now true, principal_es1 false (toggled previous cycle), so logic computes bomba2 true. The expected outputs might be checked after initial cycle? If step1 held for multiple PLC cycles, the output after first cycle b1 but then subsequent cycles b2. The harness may check only after step time (e.g., 4ms) and could see b2. That would explain failing step1 even though first instant okay. So effectively this code toggles too early/after first cycle within same demand, causing output wrong for the rest of the demand. So functional fail first demand.
+
+This is important: Some edge detection and alternation should toggle at the edge only once, but if step held multiple cycles, `demanda_ant` updates after first cycle so no toggles. In this code, it toggles after first cycle and then `demanda_ant` true; in later cycles no edge. The outputs in later cycles use principal_es1 false -> b2. Thus if harness checks after step period, step1 fails. So our initial simulation with one cycle not sufficient. The harness says it fails steps 1,3,... So yes. Good to note.
+
+For scores, we already rely on harness. For I7-7783, it has an empty IF and toggles after logic. In actual held step, output after first cycle within the same step flips to b2, so fails. The code is logically attempting to alternate for next demand but because each demand step lasts multiple cycles, first cycle is okay but rest wrong. Functional 0. Coherencia: There is a completely empty IF empty branch (dead code) and comment mismatch. That's a clear problem. Give coherencia 1 or 2? The code toggles after logic causing first cycle correct but held step wrong. The empty IF is dead/empty. I'd give clear 1 maybe. It also mentions "Solución: usar un flag de primera vez" in comment but not implemented; inconsistent. So coherencia 1. Clarity 2 because comments extensive but includes false explanatory text? Actually the comment claims solution but code doesn't implement it. Claridad maybe 1 or 2. Since comments inaccurate, could give 1. Maintainability 2? It has complex comments and dead code. Maybe 1.
+
+Need maybe similarly for simple edge toggle before logic under multi-cycle, they still output wrong first cycle? Let's analyze typical I7-1859 which toggles before logic. Step1 first cycle: principal true initial; edge toggles false; logic b2. No subsequent change because demanda_ant becomes true. Output b2 the entire step. So fail. Functional 0. I7-7783 toggles after logic; first cycle b1 but later cycles b2. Result still fails step1 after harness.
+
+Need consider if harness maybe one cycle per step? But failure pattern from I7-7783 strongly suggests toggling after logic still fails because held multiple cycles. However I7-4023 passes all despite toggling principal at edge before logic but using principal=0 default? Let's examine if multi-cycle, edge occurs only first cycle, principal set to1. For held step1: first cycle principal becomes1, logic b1; second cycle demanda true, demanda_ant true, no edge, principal remains1, logic b1. Pass. Fine.
+
+Need now think about scoring coherencia for all. Need ensure 24 objects.
+
+Let's list all codes and proposed scores.
+
+We need maybe before final verify values.
+
+But let's continue fully analyzing each for coherencia/claridad/mantenibilidad, potentially nuanced.
+
+Given there are 24 responses. Many share patterns. We can group:
+
+Group A: manual edge, principal init true, toggle before logic; fails 8 steps (steps 1,3,5,6,7,8,11,12). Codes: I7-1859, I7-5182, I7-3883, I7-1098, I7-8887 maybe. Also maybe I7-7783 similar but toggle after.
+Functional 0. IEC 2. Coherencia maybe 2 (but then maybe for I7-1859 etc). Clarity 2. Maintainability 2.
+
+But I7-1859 has declaration `principal1 BOOL := TRUE`. Actually same. I7-5182 same. I7-3883 same. I7-1098 same. I7-8887 same. Need same scores.
+
+Group B: manual edge with `principal` not init or init via condition; fail first nominal sometimes: I7-5664, I7-2100. They initialize principal true on first time then toggle first edge; fail steps 1,5,6,7,8. Codes I7-5664 and I7-2100 similar. Functional 0. IEC 2. Coherencia maybe 1? They have initialization condition odd. We'll maybe assign coherencia 1 because `principal` uninitialized if first demand true? I7-5823 and I7-2190 from similar but pass because principal default false no explicit init. Wait I7-5823 has NO initialization condition, so passes. I7-5664/2100 includes initialization `IF NOT demanda AND NOT lastDemanda THEN principal := TRUE;` which makes first edge toggle wrong. It also has lastDemanda false initially; this initialization runs step0, setting principal true. Then step1 edge toggles false. So fails. Coherencia: They tried to improve but wrong. Could be 1 or 2. Maybe 1 for initialization causing first transition wrong? But first transition issue is functional. Coherencia about contradictions. However the initialization condition `IF NOT demanda AND NOT lastDemanda` will run in first executions, setting principal true. There's no contradiction. lastDemanda also used for edge detection. It's logically consistent but just mis-ordered. I'd maybe 2? But maybe "inicialización correcta" in rubric: not correct because if start with demand true, principal uninitialized/default false. Yet edge detection then toggles false->true, so actually initial demand true would produce b1. Wait if initial cycle demand true, lastDemanda false; the init IF condition demands NOT demanda false so skipped. principal default false. Alternancia IF demanda AND NOT lastDemanda => toggles principal true. Then logic with principal true -> b1. Works. But in normal start demanda false, init sets principal true; first demand toggles false. So it produces b2, violating first demand. But coherencia not necessarily.
+
+Maybe coherencia for these: no contradictory, but logic has redundancy: init condition only checked when demand false and lastDemanda false; at step0 sets principal true, then edge toggles to false. The initialization's effect is immediately undone on first edge. That could be considered "redundancia" no effect grave? It affects behavior. Hmm.
+
+Let's use coherencia 2 for straightforward coherent but mis-sequenced.
+
+Group C: state machines with resets and alternation after; fail. I7-7155, I7-3525, I7-8285, I7-7598 maybe. Functional 0. IEC 2. Coherencia maybe 1. Clarity 1 or 2. Maintainability 1 or 2.
+
+Group D: I7-2045 passes 13/14, functional 2. IEC 2. Coherencia 2. Clarity 2. Maintain 2 maybe.
+
+Group E: I7-1170: fails 10 due no demand gating. Functional 0. IEC 2. Coherencia 1. Clarity 2. Maintain 2.
+
+Group F: pass all manual edge no R_TRIG: I7-5823, I7-2190, I7-4023, I7-1736 maybe. Need scores.
+- I7-5823: manual edge, principal default false no init. Notably no explicit initial; relies on default BOOL false. Is that "inicialización correcta"? Hmm yes but not explicit. Coherencia 2? Clarity 2. Maintain 2. IEC 2.
+- I7-2190: same. Coherencia 2. Clarity 2. Maintain 2.
+- I7-4023: passes, manual edge with dead primerCiclo. We thought coherencia 1. But maybe if we score too strict? It has a dead initialization block; yes 1. Clarity maybe 2. Maintain 2. IEC 2.
+- I7-1736: manual edge, explicit primerArranque, robust. Coherencia 3? It initializes flags; no dead; all transitions complete. Clarity 3? Comments clear and logical. Maintain 2/3. Since no duplication and parameters organized? There is some duplicated logic branches. But maybe 2. I need decide. Could spread scores. IEC 2.
+
+Group G: pass all using R_TRIG: I7-6860, I7-8200, I7-8111, I7-3489, I7-6285 maybe. IEC 3. Coherencia/claridad/mantenibilidad high maybe 3 or 2.
+
+Need maybe produce justifications one line, including "funcional_fijo 3" maybe. If funcional and iec fixed? Here only funcional fixed for pass. IEC not fixed. We can provide just_func_iec line maybe. If both were fixed, could be empty. But instruction: "just_func_iec": "una línea, o \"\" si las dos estaban fijadas". For pass responses, funcional_fijo not null, but iec_fijo null, so we should provide just_func_iec with iec justification? It says "una línea, o \"\" si las dos estaban fijadas". Since only one fixed, provide one line. For non-pass both null, provide just_func_iec maybe mention functional and iec. Need final object include.
+
+Need determine exact functional scores for each non-pass according to rubric.
+
+Let's parse result for each non-pass:
+1 I7-1859: fails 8 of 14 steps. Fails first demand. Functional 0. 
+5 I7-5664: fails 5 steps 1,5,6,7,8. Fails first demand step1 due initially principal true then toggles. But wait why fail step1? It toggles before logic, so principal false -> b2. Does it fail step3? Step3 maybe expected b2 but output maybe b1? Let's trace from step1: Step1 first edge toggles principal false? initial principal set true step0, edge true -> principal false. output b2. Step2 demand false lastDemanda set false? At step1 lastDemanda true. Step2 demand false no toggle, lastDemanda false; output off. Step3 demand true edge toggles principal true? principal was false -> true. output b1. Expected b2. So fails step3. Result says fails steps 1,5,6,7,8 not 3? Wait result for 5664: "Falla 5 de 14 pasos (pasos 1,5,6,7,8)". That's interesting. Let's re-evaluate: Maybe step3 expected principal b2, but code with `principal := TRUE` at step0 then toggle step1 to false giving b2 expected? Wait step1 expected b1, fails; step3 maybe principal false from step1, step2 no toggle; step3 edge not lastDemanda? let's trace carefully with `lastDemanda` updated at end of each cycle.
+
+S5674 code order:
+IF NOT demanda AND NOT lastDemanda THEN principal := TRUE; END_IF
+IF demanda AND NOT lastDemanda THEN principal := NOT principal; END_IF
+... control ...
+lastDemanda := demanda;
+Step0: demanda F, lastDemanda F => init principal true. edge no. control else. lastDemanda F.
+Step1: demanda T, lastDemanda F => init skipped. edge true => principal := NOT true = false. control principal false => b2 true. lastDemanda set T at end.
+Step2: demanda F, lastDemanda T => init skipped. edge false. control else off. lastDemanda F.
+Step3: demanda T, lastDemanda F => edge true => principal := NOT false = true. control b1 true. Expected b2. So step3 should fail. Why result doesn't include step3? Hmm maybe harness uses multiple cycles per step and after step1 first cycle output b2, but later cycles within same step? Since demanda remains true, lastDemanda true after first cycle; no further edge, principal remains false, b2. So step1 fail. Step2: held false for cycles, lastDemanda false. Step3: first cycle demand true lastDemanda false -> edge toggles principal false->true and output b1; second cycle within step3, lastDemanda true, principal true, output b1; expected b2. So step3 should fail. But result excludes step3. Maybe my assumption of steps? Let's check result for 5664 says fails 5 steps: 1,5,6,7,8. That's weird: it fails step1 but step3 passes. How could step3 pass? Let's simulate with edge toggle before logic but maybe `lastDemanda` not updated until after logic; step3 first cycle output b1; if harness checks only after one cycle, step3 fails. But maybe harness expects step3 maybe b2? It would fail. Could result list be wrong? The provided result is authoritative. Wait maybe I misread code 5664: initialization IF NOT demanda AND NOT lastDemanda THEN principal := TRUE. This runs every cycle when both false. Step2 demand false lastDemanda true? At step2 lastDemanda from step1 true. So no init. okay. Step3 edge toggles false->true. b1. So fail step3. Unless principal before step3 got reset? No.
+
+Could the harness numeric steps in result exclude step3? It says fails 5 de 14 pasos (pasos 1,5,6,7,8). Maybe step3 expected b2 but code outputs b1. That is a fail. Did I maybe mistake reported list: It says "pasos 1,5,6,7,8" no 3. Maybe there is another behavior: initial principal not initialized when step0? Actually they didn't set `lastDemanda` to false initially? It's default false. Step0 init principal true. Step1 edge toggles principal false. Step2 no init because lastDemanda true. Step3 edge toggles false to true, output b1. Hmm.
+
+Maybe the harness's expected step3 after previous step2 demand false is b2; code output b1; should fail. Unless the harness checks after multiple cycles and alternate logic in step1 maybe after first cycle principal false then before step3? No, step3 first cycle b1, later cycles b1. fail.
+
+Why result doesn't include step3? Wait "pasos 1,5,6,7,8" could be a typo? But we must respect given. However for scoring functional, we can refer to result. We don't need replicate exact failure reasoning. But I want to ensure functional score 0 because fails step1. That's enough.
+
+Could result step1 fail but step3 pass due to maybe after step2, `lastDemanda` remains false? If `lastDemanda` was set true at step1, step2 no init? But maybe they run one cycle only per step, not multiple. Step2 demand false and lastDemanda true; no init. Then lastDemanda false. Step3 edge toggles principal false->true. no pass. Hmm.
+
+Maybe code order: At step1 they detect edge and then control, but maybe `lastDemanda` variable is output? no.
+
+Anyway, functional 0 enough.
+
+Need perhaps not over-explain in just_func_iec. We can mention "falla primera demanda; alternancia invertida". Use harness.
+
+But the scoring needs be consistent. Likely the grader expects based on `resultado_codesys` fixed pass/fail. For fail cases, functional according to how many steps. We can assign 0,1,2.
+
+Let's determine from failure counts:
+- Fail 8 of 14 core alternating first demand: functional 0.
+- Fail 5 of 14 including first demand: functional 0.
+- Fail 6 and 4 etc with core alternation: functional 0 or 1?
+- Fail 1 of 14 only step9: functional 2.
+- Fail 10 of 14 no demand off: functional 0.
+
+Need maybe if fails core nominal, 0. If passes some but fails core alt, cannot be 1. The rubric says 1 if functional nominal but fails limits. Here core includes alternation. So yes 0 for all except I7-2045 maybe 2; I7-1170 0; state machines maybe 0. If someone passes first demand but fails later alternation, is that "falla en el caso nominal"? The nominal includes "en cada nueva demanda alterna", so failing step3 is core. So 0. Good.
+
+What about I7-7155 which fails 4 steps: 3,10,11,12. It passes step1 but fails alternation and no alarma off. So core alternation fail -> 0.
+I7-3525 fail 5; core alternation fail -> 0.
+I7-8285 fail 6; same.
+I7-7598 fail 6; same.
+I7-2045 fail only step9 both falla alarm; functional 2.
+I7-1170 fail 10; no demand off, core issue -> 0.
+
+Now IEC scores:
+- All compile.
+- Those using R_TRIG get 3? But need check "bloques estándar como TON, R_TRIG o CTU bien instanciados". Yes R_TRIG instantiated in VAR and called with CLK. 
+R_TRIG users: 4 I7-6860, 7 I7-8200, 13 I7-8111, 16 I7-3489, 19 I7-6285 maybe also 18? No I7-1098 manual. So IEC 3 for those.
+- All others compile; declarations/types correct. Could be 2 or 3. Some use standard modules? I7-2045 uses manual edge with state; no standard block. I7-1170 manual. So 2. 
+- Maybe I7-4023 includes `primerCiclo BOOL` not initialized but compiles. Types correct. 2. 
+- Could some use `//` comments which are not IEC??? ST standard comments are (* *). CODESYS supports //? It compiled. But `//` is not IEC 61131-3 standard (some implementations support). The task says conforme IEC. If we penalize extensions for // comments? The rubric "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." Many codes use `//` comments (I7-5664, I7-3525, I7-7598, I7-8285, I7-2100, I7-8111 uses // too but compiles). Are // comments an extension outside standard? Strict IEC 61131-3 ST uses (* *) comments. CODESYS accepts //? It compiled, so maybe not an issue, but if we follow standard, // might be non-standard. However all result compila. The task says ST conforme IEC 61131-3. If using // comments could be considered non-standard extension? Actually IT? In CODESYS ST, single-line `//` may be accepted as an extension. Should we lower IEC to 1 for those? The rubric says "2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." It doesn't mention comment syntax. "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." Since these compiled in CODESYS, not after corrections. But use // extension? We need not penalize maybe because CODESYS accepts as standard in its ST? I think ST in CODESYS supports // as comment for convenience, but IEC standard only (* *). The prompt says "conforme IEC". A careful teacher might lower to 1 if uses //. But the result says compila. However many nice solutions use // (I7-8111 uses // for comments and R_TRIG) and pass all. Do we want to give iec=1 if //? That would be too harsh perhaps. The rubric focuses on declarations/types and standard blocks. It doesn't explicitly ask to penalize //. I'd ignore //.
+
+Could there be codes with `END_IF` missing? Some use `END_IF` without underscore? In CODESYS maybe `END_IF` is valid? It compiled. Fine.
+
+Now coherencia:
+Need calibrate:
+0: contradictory, uninitialized with effect, dead states preventing operation.
+1: mostly coherent with redundancies or dead conditions without grave effect.
+2: no contradictions; initializations correct; transitions complete.
+3: robust, interlocks complete, no unreachable states, safe under simultaneous inputs.
+
+We need assign. For pass all with R_TRIG maybe 3 if concise and robust. For pass manual maybe 2 or 3. For fail maybe 1 or 2.
+
+Let's go through each code and decide coherencia.
+
+I'll create a detailed table.
+
+1 I7-1859:
+- `principal1 BOOL := TRUE` initial; `demandaAntes BOOL := FALSE`. Edge toggles before logic. Logic branches all assigned in all cases. No uninitialized outputs. Though first edge mis-seq. Internally complete. Could give 2 ("sin contradicciones; inicialización correcta; transiciones completas"). But initial principal1 true then first edge toggles to false; the behavior violates requirement but not coherencia. `principal1` initialized. Could even 2. However there is no contradiction. I'd give 2. Claridad: comments clear. 2. Mant: 2.
+
+But maybe to distinguish from pass? We can give coherencia 2.
+
+5 I7-5664:
+- `principal` not explicitly init; `lastDemanda` not init. It has initialization block only when not demand and not lastDemanda. It is unusual. There is a path if first call demand true and lastDemanda false: principal default FALSE, edge toggles TRUE -> works. If first call demand false: init principal true, lastDemanda false; next demand edge toggles false -> wrong. It's internally coherent but initial assignment effect undone. Could still 2? But there is potential uninitialized `principal`? CODESYS default false. In ST all variables have default 0/FALSE. So not uninit. Maybe 2. But I'd maybe give 1 because of redundant initialization causing first demand issue. The rubric 1: "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." The init condition effect is significant. But not contradiction. Hmm.
+
+Need perhaps not too generous. Let's mark coherencia 1 for those with faulty init (I7-5664, I7-2100). But if so, maybe I7-1859 also has faulty first toggle due init. But it is simpler. Maybe same issue but no weird init. Could also 1? Let's think.
+
+Maybe coherencia score should reflect not functional but logical consistency. In I7-1859 code, initial state `principal1 := TRUE`, then edge handler toggles immediately. That means the initial value is subverted on first edge. The code comments say "primera demanda principal b1" but logic does not achieve it. This is a logical inconsistency. Could be 1 rather than 2. In I7-4023 has a dead flag but passes. We might give it 1. 
+Rubric says 2: "sin contradicciones; inicialización correcta; transiciones completas." Here initialization is not aligned with edge transition; one could call it "condiciones muertas" but no. However the initial value of principal1 is true, but first edge makes it false; redundant contradictory. So 1 perhaps. I think a careful teacher might give 1 for coherencia for first edge toggles before initial demand. It indicates the state/transition logic is not complete. 
+
+But if we assign coherencia 1 to all these fail 8? We need see.
+
+For simple toggles fail 8:
+- Logic otherwise complete. Edge/init mismatch. Could 1.
+- Claridad 2, Mant 2. 
+Maybe that is better.
+
+However the rubric 0 includes "estados muertos que impiden operar" not the case; 1 includes "redundancias o condiciones muertas sin efecto grave." The first-edge mismatch has grave effect on functionality but coherencia can still be mostly coherent. I'd use 1 for many.
+
+But maybe the final scores should differentiate functional fail but code structurally okay. I don't want to over-penalize coherencia due functional. Hmm.
+
+Let's decide per group later.
+
+For pass all with manual edge:
+- I7-5823 and I7-2190: they use `principal` false initially and first edge toggles to true. That works. But `principal` not explicitly initialized; in CODESYS default false. Is that "inicialización correcta"? It relies on default. Could be 2. Could maybe 2. 
+- I7-1736: explicit flags, no dead, robust. Could 3.
+- I7-4023: dead primerCiclo. Could 1.
+
+For R_TRIG pass:
+- I7-3489, I7-6285, I7-6860, I7-8200, I7-8111: coherencia 3. Need check I7-6285: `bomba1Principal := FALSE` and edge toggles first. Good. No primer flag; edge toggles false->true at first demand. Works. All branches complete. 3.
+I7-6860: `turnoBomba1 := FALSE`, edge toggles true first; equations cover all. 3.
+I7-8200: `turnoBomba2 := TRUE`, edge toggles false first; equations cover. 3.
+I7-8111: primerArranque flag; robust. 3.
+
+Could any R_TRIG pass have issue? I7-6860 comments say "turnoBomba1 inicia en FALSE para que el primer cambio sea a TRUE". Fine.
+
+Now clarity:
+Scale: 0 sin estructura reconocible, nombres crípticos, sin comentarios. 1 estructura básica, nombres pobres o comentarios ausentes/incorrectos. 2 nombres descriptivos, secciones ordenadas, comentarios útiles. 3 modularización adecuada y comentarios explican porqué.
+Most simple solutions are 2. Some with // comments and no section headers maybe 2? Some with inaccurate comments could 1.
+We need assign one score 0-3.
+
+Let's evaluate each for clarity.
+
+1 I7-1859: good comments explaining each section; names descriptive. 2 or 3? No modularization beyond comments. 2.
+2 I7-5823: comments and sections. 2.
+3 I7-2190: same. 2.
+4 I7-6860: well commented equations; concise. 3? Comments explain why. It's elegant. Could give 3.
+5 I7-5664: uses // comments, comments basic. Names okay. Structure sequential. 2 maybe 1 because comments sparse. I'd give 2.
+6 I7-4023: extensive comments but one comment about primerCiclo inaccurate/dead. "Inicialización en primer ciclo" block never executes; comments misleading. Clarity maybe 1? Or 2 despite misleading? It does have sections. I'd give 2? If comments are incorrect, rubric 1 says comentarios ausentes o incorrectos. The comment about initialization is incorrect because primerCiclo not initialized true. But most comments okay. I'd give 1? Hmm. Maybe 2 too generous. Let's think. The code has a block:
+VAR primerCiclo : BOOL;
+...
+IF primerCiclo THEN ... principal:=1; primerCiclo:=FALSE; ...
+The comment says "Inicialización en primer ciclo de ejecución del bloque" but this will never execute because primerCiclo default false. This is an incorrect comment. This merits clarity 1 (incorrect comments) or maybe 2 because code still readable. I'd give 1 to be careful. 
+7 I7-8200: comments and R_TRIG. 3.
+8 I7-7155: comments basic, state machine not clearly structured because `IF demanda THEN estado:=1` no section. Could 1 or 2. Names okay. I'd give 2 maybe.
+9 I7-3525: // comments; structure clear CASE. 2.
+10 I7-7598: // comments; structure. 2.
+11 I7-1736: comments good; but manual edge; 3? Maybe 2.
+12 I7-8285: // comments; 2 maybe.
+13 I7-8111: comments, R_TRIG, clear. 3.
+14 I7-5182: comments good; 2.
+15 I7-2045: comments minimal but names okay; 2.
+16 I7-3489: comments and equations with explanation "La bomba 1 arranca si ..." good. 3.
+17 I7-3883: comments basic, clear; 2.
+18 I7-1098: comments extensive and clear; 2/3. It has section headers. But behavior wrong. Maybe 2.
+19 I7-6285: comments and equations; 3.
+20 I7-2100: // comments; structure basic. 1 or 2. Names okay. Maybe 2.
+21 I7-1170: comments; structure clear equations. 2 or 3. Use CASE. Could 2.
+22 I7-8887: comments; 2.
+23 I7-7783: very verbose comments but contains empty IF and misleading comments. Maybe 1 or 2. Since comments describe a solution not implemented, incorrect. Clarity maybe 1. 
+24? Wait there are 24 responses? We listed 23? Let's count: The JSON array from prompt has 24 entries. I need ensure list: 
+1 I7-1859
+2 I7-5823
+3 I7-2190
+4 I7-6860
+5 I7-5664
+6 I7-4023
+7 I7-8200
+8 I7-7155
+9 I7-3525
+10 I7-7598
+11 I7-1736
+12 I7-8285
+13 I7-8111
+14 I7-5182
+15 I7-2045
+16 I7-3489
+17 I7-3883
+18 I7-1098
+19 I7-6285
+20 I7-2100
+21 I7-1170
+22 I7-8887
+23 I7-7783
+24 I7-7378? Ah I missed 24. At end I7-7378 similar to 5664/2100. Need include. There are 24. Good. We'll note 24 I7-7378.
+I7-7378: fails 5 steps 1,5,6,7,8. Similar to 5664/2100. Clarity //, 2.
+
+Need maintainability:
+Scale: 0 magic values everywhere; 1 modifiable with effort; 2 parameters variables/constants; 3 extensible params/no duplication.
+
+For most small FB with input params and no magic values, maybe 2. Some use boolean equations no duplication -> 3. Some state and duplicated branches -> 2.
+Let's evaluate each.
+
+1 I7-1859: uses variables, no duplication? It duplicates main/respaldo logic for two branches. Maintainability 2.
+2 I7-5823: duplicated branches; 2.
+3 I7-2190: duplicated branches; 2.
+4 I7-6860: boolean equations, no duplicated nested IF; local variable turnoBomba1; could include falla2, no magic numbers. Extensible? Could be 3.
+5 I7-5664: duplicated branches with hardcoded; 2.
+6 I7-4023: variables, but uses INT principal values 1/2; no duplication (structured). Has dead flag. 2.
+7 I7-8200: boolean equations; no duplication; 3.
+8 I7-7155: state machine with INT states but hardcoded transitions; not parametrized; could be 1? There are magic numbers 0,1,2 but state enum would be better. But small. Rubric 2: "parámetros como variables o constantes declaradas; cambios localizados." It uses estado variable. Changes local but scattered. 2 maybe 1. I'd give 2? 
+9 I7-3525: INT state, magic numbers, but manageable. 1 or 2. I'd give 1 because state magic numbers and duplicated cases.
+10 I7-7598: similar. 1.
+11 I7-1736: variables, duplicated branches; 2. 
+12 I7-8285: similar to state; 1.
+13 I7-8111: boolean equations, primer flag; no duplication, variables. 3.
+14 I7-5182: same as 1859; 2.
+15 I7-2045: state machine with modular state +1 mod; no duplicated branch? It has IF state cases but branches nested. Could be 2 or 3? It has states 1/2 and uses `NOT falla2` equations. Could be maintained. But no parameterization. 2.
+16 I7-3489: boolean equations; 3.
+17 I7-3883: duplicated branches; 2.
+18 I7-1098: duplicated branches but variables; 2.
+19 I7-6285: boolean equations; 3.
+20 I7-2100: duplicated branches, hardcoded; 2.
+21 I7-1170: boolean equations using estado; no demand gating; 2.
+22 I7-8887: duplicated; 2.
+23 I7-7783: duplicated branches and dead comments; 1 or 2. I'd give 2? It includes extensive comments but not parameterized. Maybe 2.
+24 I7-7378: duplicated branches like 2100; 2.
+
+Need maybe ensure maintainability scores not too high across the board. 3 for R_TRIG equations maybe enough.
+
+Now coherencia more detailed with groups:
+
+Let's allocate coherencia:
+
+1 I7-1859: 1? We need decide. Let's define rule: If code uses edge toggle before logic with initial principal true, causing first demand wrong, that's a logical state initialization issue. I'd assign 1. 
+Also I7-5182, I7-3883, I7-1098, I7-8887 same: coherencia 1.
+But maybe I7-1859 and I7-5182 etc are actually coherent state with mis-specified initial condition. The initial value of principal1 true plus first edge toggles false. That means the role alternates, but initial cycle isn't held. Since no contradiction? Yet to meet requirement, they need first edge should not toggle or init false. The current code has a "dead initial assignment" because principal1 true is immediately toggled before first use. That is similar to redundant condition. So 1. 
+Let's assign 1 for all these.
+
+Would that make claridad 2, mantenibilidad 2. Good.
+
+For I7-7783:
+- It has empty first edge block and toggles after logic. In multi-cycle it also fails first demand. There is dead empty IF and inconsistent comments. Coherencia 1. 
+Clarity 1 due misleading comments. Maintainability 2.
+
+For I7-5664, I7-2100, I7-7378:
+- They have init block and first edge toggles wrong. Coherencia 1? Could also be 1. 
+- Clarity 2, Maintainability 2.
+
+For I7-4023:
+- Pass all but primerCiclo dead. Coherencia 1 due dead flag. 
+Clarity maybe 1 (incorrect comments). Maintain 2.
+- `just_coherencia`: "primerCiclo nunca se activa por inicialización en FALSE; inicialización muerta, aunque el resto funciona"
+- `just_claridad`: "comentarios extensos pero el bloque de inicialización es incorrecto/engañoso"
+- `just_mantenibilidad`: "sin valores mágicos, pero el flag muerto debería eliminarse"
+
+For state machines:
+
+I7-7155:
+- State reset on every demand (`IF demanda THEN estado:=1; cambio:=TRUE`) conflicts with alternation. Also almFalla not cleared on demand false. Coherencia 1. Clarity 2 maybe. Maintainability 2? Could be 1 due scattered state changes. I'll assign mantenibilidad 2? Hmm. It uses `estado` as INT, no constants. But changes to state are in two places (`IF demanda THEN estado:=1`, `IF demanda AND cambio`). This is confusing but modifications localized? I'd say mantenibilidad 1 because state transitions tangled and no separation. But to be consistent with scores, maybe state machines get mantenibilidad 2? Let's think: Rubric 1: "modificable con esfuerzo; constantes parcialmente parametrizadas." It is indeed modifiable with effort. Since state numbers are magic and logic intermixed, 1.
+Clarity 2? There are comments for each state, but the state flow is wrong. I'd give 1 maybe because structure not revealing actual issue. But maybe comments are okay. I'll assign clarity 2? Need not over-penalize. Let's be fair: They did provide comments and state labels. So clarity 2. Mant 1.
+
+I7-3525:
+- Similar: edge alternation after state case; outputs sometimes not assigned in no falla case for state1? Wait in state1, if falla1 false, it only sets almFalla false but bomba1/bomba2 were assigned in CASE 0? But no, for state1 branch when falla1 false, it doesn't assign bomba1/bomba2 at all; they may retain previous values from CASE 0? In step6 state2 no falla, outputs retained incorrectly. This is a coherence issue: incomplete assignments. Coherencia 1. Clarity 2 (comments). Mant 1.
+I7-7598:
+- Similar but assigns b1/b2 at start of each state. Coherencia also edge resets state. Could 1. Clarity 2. Mant 1.
+I7-8285:
+- Similar; some outputs not assigned. 1. Clarity 2. Mant 1.
+
+I7-2045:
+- State machine works except both fallas alarm. It has no dead states; initialization correct. Coherence 2. Clarity 2. Mant 2.
+- Note it uses `estado := (estado+1) MOD 3; IF estado=0 THEN estado:=1;` toggles from initial state0 to1, then 1->2, 2->0->1, 1->2 etc. Good. 
+- It has both falla branch `almFalla := NOT falla2` false when falla2 true; a logic error but not contradiction. Coherencia 2.
+
+I7-1170:
+- State transitions okay but no demand gating. It also has initial state0. `estado := (estado+1) MOD 3;` first edge to state1, later 2, then 0; no mapping 0 to1 after wrap except on next edge? Let's see: Step? State sequence: start state0; first edge ->1; second edge ->2; third edge ->0 (because 2+1 mod3)=0; fourth edge ->1. So in state0, pumps off until next demand, causing missing cycle. This is a core flaw. The CASE uses state0 off regardless demand. Coherencia maybe 1 because transitions don't cover required 0->1 wrap appropriately and no demand gating. But maybe 0? Variables initialized, no dead. Yet state0 after every third edge leaves outputs off under demand, which is dead? Could be 1. Clarity 2, Mant 2.
+
+Now for pass all manual:
+
+I7-5823, I7-2190:
+- Uses principal not explicitly initialized; default false. First edge toggles true. Transitions complete. Coherencia 2. 
+But maybe variable `principal` not explicitly initialized could be considered "sin inicialización" but default applies. It's okay. 2.
+I7-1736:
+- Explicit flags, good. Coherencia 3.
+I7-4023:
+- 1 as above.
+I7-218? no.
+Maybe I7-7378 is similar to 2100 and not pass.
+I7-2045: 2.
+I7-1170: 1.
+
+Pass R_TRIG:
+I7-6860 3; I7-8200 3; I7-8111 3; I7-3489 3; I7-6285 3.
+
+Clarity and maintainability for R_TRIG:
+I7-6860: comments are brief. Could clarity 3 because uses standard blocks and equations. 
+I7-8200: also 3.
+I7-8111: comments and flag. 3.
+I7-3489: comments and equations. 3.
+I7-6285: comments and equations. 3.
+Maintainability:
+I7-6860: 3.
+I7-8200: 3.
+I7-8111: 3.
+I7-3489: 3.
+I7-6285: 3.
+But maybe clarity 3 reserved for modularization: none have separate FB? The task already is FB. "modularización adecuada (FB reutilizable, separación entre lógica y E/S)" All are FB. Comments explain why. So 3 reasonable.
+Maybe I7-6860 and 8200 have clearer comments. Yes.
+
+Now IEC for those R_TRIG: 3. For manual pass I7-1736 maybe manual edge but no R_TRIG. IEC 2. Could I7-1736 be idiomatic? It uses R_TRIG? no. It does declare variables properly and is robust but not standard block. I'd give 2. 
+Could maybe I7-1736 deserve IEC 3 because it uses `FUNCTION_BLOCK` efficiently, but no R_TRIG. The rubric examples include R_TRIG "bien instanciados"—not mandated. It uses manual edge, which is standard. "3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." It is POU adecuado, types correct, but doesn't use standard blocks. However "construcciones idiomáticas del estándar" can include edge detection expression? Manual `demanda AND NOT demandaAnt` is idiomatic ST too. Hmm. Is it enough for 3? Many teachers might give 3 for correct standard ST even if manual edge. But the rubric specifically says "bloques estándar como TON, R_TRIG o CTU bien instanciados" as examples of idiomatic. It doesn't say mandatory. 
+Need maybe distinguish: 
+- 2: "compila sin cambios; declaraciones y tipos correctos."
+- 3: "compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)."
+Since all are correct FBs and standard ST. Manual edge detection is not non-idiomatic. But maybe all responses that are correct would be 3? The difference between 2 and 3 might be enough to use standard blocks. The prompt emphasizes "CODESYS" and "IEC 61131-3"; using R_TRIG demonstrates standard block. We can reserve 3 for R_TRIG to show distinction. That might be fair. 
+For manual pass, could still be 2. They use no R_TRIG. 
+For non-pass, even if manual, compiles. 2.
+If some use `//` comments (non-IEC), we might still give 2.
+
+Now functional for I7-2045 2: Need just_func_iec mention fails only step9 ambas falla. 
+For pass all fixed funcional 3, but we still need maybe just_func_iec one line. Since funcional fixed, but iec not, line can say "Pasa el banco completo."? Actually just_func_iec maybe covers functional and iec. If only funcional fixed, we can write "Pasa los 14 pasos; IEC..." maybe. The instruction says "una línea, o \"\" si las dos estaban fijadas". We'll provide a concise line.
+
+Need ensure final JSON has exactly 24 objects in same order. Need include all fields:
+{"codigo": "I7-1859", "funcional": 0, "iec": 2, "coherencia": 1, "claridad": 2, "mantenibilidad": 2, "just_func_iec": "Falla...", "just_coherencia": "...", "just_claridad": "...", "just_mantenibilidad": "..."}
+
+Need decide final scores for each.
+
+Let's create table with final proposed scores:
+
+1 I7-1859: func 0, iec 2, cohe 1, clar 2, mant 2.
+2 I7-5823: func 3 (fixed), iec 2, cohe 2, clar 2, mant 2.
+3 I7-2190: func 3, iec 2, cohe 2, clar 2, mant 2.
+4 I7-6860: func 3, iec 3, cohe 3, clar 3, mant 3.
+5 I7-5664: func 0, iec 2, cohe 1, clar 2, mant 2.
+6 I7-4023: func 3, iec 2, cohe 1, clar 1, mant 2? Wait check functional fixed 3, yes. But cohe 1. Need maybe IEC 2. Is just_coherencia "primerCiclo queda en FALSE, por lo que el bloque de inicialización es código muerto". 
+7 I7-8200: func 3, iec 3, cohe 3, clar 3, mant 3.
+8 I7-7155: func 0, iec 2, cohe 1, clar 2, mant 1.
+9 I7-3525: func 0, iec 2, cohe 1, clar 2, mant 1.
+10 I7-7598: func 0, iec 2, cohe 1, clar 2, mant 1.
+11 I7-1736: func 3, iec 2, cohe 3, clar 2, mant 2? Maybe clarity 3? It has good comments and explicit primer flag. Could give 3? But no R_TRIG. Clarity independent. Comments explain why. I'd maybe give clarity 2 or 3. Since I gave I7-6860 3, I7-1736 could be 3 if comments explain why and sections. But manual edge variable, no standard block. Let's settle: clarity 3 for well-structured. Maintainability 2 (duplicated branch). Cohe 3. 
+12 I7-8285: func 0, iec 2, cohe 1, clar 2, mant 1.
+13 I7-8111: func 3, iec 3, cohe 3, clar 3, mant 3.
+14 I7-5182: func 0, iec 2, cohe 1, clar 2, mant 2.
+15 I7-2045: func 2, iec 2, cohe 2, clar 2, mant 2.
+16 I7-3489: func 3, iec 3, cohe 3, clar 3, mant 3.
+17 I7-3883: func 0, iec 2, cohe 1, clar 2, mant 2.
+18 I7-1098: func 0, iec 2, cohe 1, clar 2, mant 2.
+19 I7-6285: func 3, iec 3, cohe 3, clar 3, mant 3.
+20 I7-2100: func 0, iec 2, cohe 1, clar 2, mant 2.
+21 I7-1170: func 0, iec 2, cohe 1, clar 2, mant 2? Maybe mantenibilidad 2.
+22 I7-8887: func 0, iec 2, cohe 1, clar 2, mant 2.
+23 I7-7783: func 0, iec 2, cohe 1, clar 1, mant 2? Or clar 2? Let's maybe 2? It has extensive comments but misleading. I'd give 1 for clarity. 
+24 I7-7378: func 0, iec 2, cohe 1, clar 2, mant 2.
+
+Need maybe double-check I7-1098 IEC: no `END_FUNCTION_BLOCK` in visible code, but result compiles, so maybe no issue. IEC 2.
+Need maybe coherencia for I7-1098 1? It has demand_prev not initialized but default false. `principal_es1` true and first edge toggles false. Same. 1.
+Claridad for I7-1098: sections with headers. Could be 2 (not 3 because wrong? Comments explain section but not why). Maybe 2.
+Mant 2.
+
+Let's revisit I7-4023: It passes all but firstCycle dead. Could that be considered "inicialización correcta" for coherencia no; 1. 
+But could `primerCiclo` default be FALSE, so `IF primerCiclo THEN` can be optimized away. Yes dead. 
+Clarity: there are extensive comments; but initialization comment is misleading. We could give 2 with note "comentarios extensos y ordenados"; but some comments incorrect. The rubric says "comentarios útiles." The block comment for initialization is not useful because it's dead, but rest is okay. I'd perhaps give clarity 2 rather than 1 to avoid being too harsh on an otherwise passing solution. But "comentarios incorrectos" would be 1. Hmm.
+
+Need maybe calibrate so not uneven: I7-7783 also extensive comments but dead/misleading; maybe clarity 1. I7-4023 has one dead block but many good sections; maybe clarity 2. 
+Let's decide: I7-4023 clarity 2, cohe 1, mant 2. 
+I7-7783 clarity 1 due "Solución: usar un flag..." commented but not implemented and empty IF. 
+
+Now need maybe ensure `funcional_fijo` fixed copied for pass all: 3. For non-pass where `funcional_fijo` null, we assign. All 0, except I7-2045 2. Good.
+
+Now produce justifications in Spanish, one line each. Need concise. 
+For each object, can use "Falla primera demanda y alternancia; no cumple caso nominal." for func, "ST estándar, declara BOOL correctamente." for iec. For pass "Pasa los 14 pasos; usa R_TRIG/edge manual; declaración y tipos correctos." etc.
+
+Need avoid "just_func_iec" empty? For pass with funcional fijo but iec assigned, we provide line. For non-pass both null, provide line. So all non-empty maybe. If both fixed none? no.
+
+Let's craft final justifications. Need each one line. Some may be similar.
+
+Let's go one by one and assign final with justifications.
+
+1 I7-1859:
+- just_func_iec: "Falla pasos 1-12: alterna en el flanco inicial y deja elegida la bomba opuesta; IEC compila con ST estándar."
+But maybe "pasos 1,3,5..." not all. Just line.
+- just_coherencia: "La transición de flanco se ejecuta antes de usar el turno, subvirtiendo la inicialización y alternancia."
+- just_claridad: "Comentarios y nombres claros, estructura por secciones."
+- just_mantenibilidad: "Lógica clara y localizada, aunque duplica ramas de falla."
+
+Need maybe should not mention "pasos 1-12" ambiguous. Use "Falla 8 pasos, incluida la primera demanda; alternancia invertida.".
+
+2 I7-5823:
+- func 3 fixed, iec 2. just: "Pasa los 14 pasos; punta de flanco manual con BOOL, tipos correctos." 
+- cohe: "Sin contradicciones; el FALSE implícito de principal hace que el primer flanco elija bomba1." 
+- clar: "Comentarios claros y flujo por secciones." 
+- mant: "Cambios localizados, aunque lógica de falla duplicada para cada bomba."
+
+3 I7-2190:
+- same. 
+"Pasa los 14 pasos; ST básico correcto, sin R_TRIG." 
+"Transiciones completas; inicialización por defecto correcta." 
+"Comentarios y nombres descriptivos; sección de control clara." 
+"Ramas duplicadas pero variables/parámetros claros."
+
+4 I7-6860:
+- just_func_iec: "Pasa los 14 pasos; usa R_TRIG correctamente instanciado y tipos BOOL." 
+- cohe: "Ecuaciones booleanas cubren todas las combinaciones de demanda/falla sin estados muertos." 
+- clar: "Comentarios breves que explican el porqué; estructura concisa." 
+- mant: "Sin duplicación de lógica; fórmula de respaldo fácil de extender."
+
+5 I7-5664:
+- just: "Falla primera demanda y alarmas; punta de flanco manual choca con la inicialización; compila." 
+- cohe: "Inicialización condicional y flanco se contradicen: principal queda invertida en el arranque." 
+- clar: "Comentarios básicos y nombres aceptables." 
+- mant: "Constantes locales ausentes; ramas de falla repetidas."
+
+But "constantes locales ausentes" maybe okay.
+
+6 I7-4023:
+- just: "Pasa los 14 pasos; ST estándar con punta de flanco manual y tipos correctos." (Actually `primerCiclo` not used. But IEC okay.)
+- cohe: "El flag primerCiclo nace en FALSE y nunca se activa; bloque de inicialización muerto." 
+- clar: "Comentarios extensos, pero el bloque de inicialización descrito no se ejecuta." 
+- mant: "Lógica sin duplicación mayor, aunque el flag muerto debería eliminarse."
+
+7 I7-8200:
+- just: "Pasa los 14 pasos; usa R_TRIG correctamente instanciado." 
+- cohe: "Ecuaciones cubren todos los casos; turno inicial correcto." 
+- clar: "Nombres descriptivos y comentarios concisos." 
+- mant: "Fórmulas booleanas sin duplicación, fáciles de ajustar."
+
+8 I7-7155:
+- just: "Falla alternancia y apagado de alarma; compila pero no cumple." 
+- cohe: "IF demanda fuerza estado := 1 cada demanda, contradiciendo el cambio de estado y dejando almFalla sin apagar." 
+- clar: "Comentarios de estado, pero el flujo de control es confuso." 
+- mant: "Transiciones entremezcladas; modificar requiere reescribir estado."
+
+Maybe clar 2 but just says confuso. Score 2? We set 2. That's okay "comentarios de estado y nombres, aunque flujo confuso".
+
+9 I7-3525:
+- just: "Falla alternancia y casos con falla; la máquina de estados no asigna salidas en todos los caminos; compila." 
+- cohe: "Alterna después del CASE y puede dejar bombas retenidas por falta de asignación." 
+- clar: "Comentarios básicos y estructura CASE legible." 
+- mant: "Estados con números mágicos y lógica repetida; cambios esforzados."
+
+10 I7-7598:
+- just: "Falla primera demanda y alarmas; alternancia se resetea a estado 1 en cada flanco; compila." 
+- cohe: "Dos bloques de flanco asignan y alternan el estado, generando secuencia inconsistente." 
+- clar: "Comentarios básicos; algunos no explican la secuencia." 
+- mant: "Números de estado sin constantes; duplicación en ramas."
+
+11 I7-1736:
+- just: "Pasa los 14 pasos; punta de flanco manual con variables BOOL correctas." 
+- cohe: "Inicialización y alternancia explícitas mediante primerArranque; transiciones completas." 
+- clar: "Comentarios que explican el propósito de cada sección." 
+- mant: "Lógica de falla duplicada, pero parámetros y bandera claras."
+
+Maybe IEC 2? We set 2.
+
+12 I7-8285:
+- just: "Falla alternancia y casos de falla; compila." 
+- cohe: "La máquina de estados no asigna salidas en todos los caminos y alterna tras el CASE." 
+- clar: "Comentarios básicos; estructura de estados visible." 
+- mant: "Estados mágicos y lógica acoplada; mantenimiento esforzado."
+
+13 I7-8111:
+- just: "Pasa los 14 pasos; usa R_TRIG y bandera de primer arranque." 
+- cohe: "Sin estados muertos; primerArranque y turno cubren toda la secuencia." 
+- clar: "Comentarios claros y organización por detección/control." 
+- mant: "Fórmulas sin duplicación; fácil de extender."
+
+14 I7-5182:
+- just: "Falla primera demanda y alternancia; flanco se aplica antes del uso de principal1; compila." 
+- cohe: "Inicialización y flanco se contradicen para el primer ciclo." 
+- clar: "Comentarios y secciones claras." 
+- mant: "Ramas duplicadas; cambios localizados."
+
+15 I7-2045:
+- just: "Pasa 13/14; solo falla almFalla con ambas fallas (paso 9); ST compila." 
+- cohe: "Máquina de estados con transición MOD y estados completos; sin contradicciones." 
+- clar: "Comentarios concisos y nombres claros." 
+- mant: "Cambios localizados en CASE; usa estado numérico."
+
+Need functional 2. Good.
+
+16 I7-3489:
+- just: "Pasa los 14 pasos; usa R_TRIG y ecuaciones booleanas estándar." 
+- cohe: "Todas las combinaciones de demanda y falla están cubiertas; sin estados inalcanzables." 
+- clar: "Comentarios por ecuación y secciones claras." 
+- mant: "Lógica compacta sin duplicación; muy extensible."
+
+17 I7-3883:
+- just: "Falla primera demanda y alternancia; ST correcto." 
+- cohe: "La alternancia ocurre antes de que se evalúe el primer ciclo; se contradice con el requisito." 
+- clar: "Comentarios y nombres correctos." 
+- mant: "Ramas duplicadas; variables claras."
+
+18 I7-1098:
+- just: "Falla primera demanda y alternancia; ST compila." 
+- cohe: "principal_es1 se invierte en el primer flanco antes de operar; secuencia inicial no lograda." 
+- clar: "Secciones separadas y comentarios claros." 
+- mant: "Lógica por ramas y variables explícitas."
+
+19 I7-6285:
+- just: "Pasa los 14 pasos; usa R_TRIG y ecuaciones BOOL." 
+- cohe: "Alternancia y fallas cubiertas por expresiones booleanas completas." 
+- clar: "Comentarios de intención y expresiones legibles." 
+- mant: "Sin duplicación; ajuste local y extensible."
+
+20 I7-2100:
+- just: "Falla primera demanda y alarmas; ST básico compila." 
+- cohe: "El bloque de inicialización y el flanco se contradicen en la primera demanda." 
+- clar: "Comentarios básicos y nombres descriptivos." 
+- mant: "Lógica duplicada; cambios por rama."
+
+21 I7-1170:
+- just: "Falla apagado y alternancia; no inhabilita salidas con demanda OFF; compila." 
+- cohe: "CASE no está condicionado por demanda y la secuencia MOD cae en estado 0." 
+- clar: "Comentarios cortos y estructura clara." 
+- mant: "Ecuaciones compactas, pero falta gateado de demanda."
+
+22 I7-8887:
+- just: "Falla primera demanda y alternancia; ST compila." 
+- cohe: "Flanco y principal1 inicial se contradicen; primer ciclo no respeta el turno." 
+- clar: "Comentarios y secciones ordenadas." 
+- mant: "Ramas duplicadas; variables bien definidas."
+
+23 I7-7783:
+- just: "Falla primera demanda y alternancia; compila." 
+- cohe: "IF vacío y comentario que anuncia una solución no implementada; código muerto." 
+- clar: "Comentarios abundantes pero engañosos y bloques sin lógica." 
+- mant: "Lógica de falla repetida; la alternancia está mezclada con control."
+
+24 I7-7378:
+- just: "Falla primera demanda y alarmas; ST básico compila." 
+- cohe: "Inicialización y flanco se contradicen para la primera demanda." 
+- clar: "Comentarios básicos y estructura directa." 
+- mant: "Lógica duplicada; variables claras."
+
+Need maybe I7-7378 is similar to I7-2100. Good.
+
+Now verify numeric values:
+All funcional values:
+0,3,3,3,0,3,3,0,0,0,3,0,3,0,2,3,0,0,3,0,0,0,0,0. Wait index 7 I7-8200 pass 3. Good.
+Number of pass all: 2,3,4,6,7,11,13,16,19? Also maybe 15? 15 not pass all. Also 18? no. Let's list pass all: I7-5823,2190,6860,4023,8200,1736,8111,3489,6285 = 9. Actually I7-4023 passes all. We assigned func 3. Good.
+
+Check `funcional` for I7-4023 fixed 3. yes.
+
+Need maybe ensure `iec` values: only 0 if no compile; all compile, so iec between 1 and 3. We assign 2 or 3. Good.
+For non-pass `funcional` between 0 and 2. I7-2045 2, others 0. Good.
+
+Need maybe consider I7-7155 functional maybe maybe 1? It fails 4 steps but not first? It fails step3 alternation. We assigned 0. Should be okay. 
+I7-3525/8285/7598 fail 5/6 steps but first demand maybe pass? They fail alternation core. 0. 
+I7-1170 fails many; 0.
+
+Need maybe consider I7-5664/2100/7378 fail first demand? We think yes. Good.
+
+Now potential issue: For I7-4023, `funcional_fijo` is 3 but it uses a dead primerCiclo. Does it truly pass all? Result says yes. Need accept. Our coherencia 1 may seem inconsistent with pass all, but okay due dead code.
+
+Now maybe need include `just_func_iec` for pass codes where functional fixed 3 and iec not fixed. We provide one line.
+
+Need maybe make sure final JSON is raw JSON list, no markdown. 
+We'll craft final carefully.
+
+Double-check order of codes as input:
+1 I7-1859
+2 I7-5823
+3 I7-2190
+4 I7-6860
+5 I7-5664
+6 I7-4023
+7 I7-8200
+8 I7-7155
+9 I7-3525
+10 I7-7598
+11 I7-1736
+12 I7-8285
+13 I7-8111
+14 I7-5182
+15 I7-2045
+16 I7-3489
+17 I7-3883
+18 I7-1098
+19 I7-6285
+20 I7-2100
+21 I7-1170
+22 I7-8887
+23 I7-7783
+24 I7-7378
+
+Need include all.
+
+Potential issue: Some codes missing END_FUNCTION_BLOCK maybe.
+I7-1098 code ends without `END_FUNCTION_BLOCK`; result compila. Fine.
+
+Now maybe revise clarity for I7-1098: It has no END_FUNCTION_BLOCK in snippet? But if compiles, okay. 
+Maybe clar 2.
+
+Let's maybe include in final justifications not too long. Need each one line. 
+Need maybe avoid using quotes inside json strings? We will escape if needed. We'll use normal text, no quotes.
+
+Let's craft final JSON. Need ensure valid JSON. 
+
+Let's draft:
+
+[
+{
+"codigo":"I7-1859",
+"funcional":0,
+"iec":2,
+"coherencia":1,
+"claridad":2,
+"mantenibilidad":2,
+"just_func_iec":"Falla la primera demanda y la alternancia; ST compila con declaraciones y tipos BOOL correctos.",
+"just_coherencia":"La alternancia se ejecuta antes de usar el turno, subvirtiendo la inicialización.",
+"just_claridad":"Comentarios y nombres descriptivos, con secciones ordenadas.",
+"just_mantenibilidad":"Lógica clara y cambios localizados, aunque duplica ramas de falla."
+},
+...
+]
+
+Need ensure "just_func_iec" doesn't imply IEC if already fixed? It's okay.
+
+Let's final.
+
+But before final, let's think if any functional_fijo null and code compiles but fails maybe no first demand? Need maybe I7-2045 functional 2. We wrote 2. Good.
+
+Let's maybe re-evaluate I7-2045 functional vs "fallas menores sin riesgo" issue. It fails both fallas alm; maybe alm false could be safety risk. Should functional be 1? The rubric: 
+0: no implementa lógica pedida o falla en el caso nominal.
+1: funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia).
+2: correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo.
+3: correcto en todos...
+I7-2045 passes all except both falla alarm. Both fallas is an evident fault case. It fails alarm activation, but pumps off. Is that minor? It may be a safety alarm, not minor. But number of failed steps only 1 and it handles main. I think 2 is fair. If they had risk, maybe 1. The prompt explicitly: "Si ambas bombas tienen falla, ninguna funciona y almFalla se activa." It does "ninguna funciona" but not "almFalla se activa". This is half of the requirement. Could be 2 because most limits. I'll keep 2 but maybe justify "solo falla alarma con doble falla". Good.
+
+Could I7-1170 maybe functional 1? It passes first demand and possibly alternation? Actually it fails step2 demand false off, which is fundamental (demand off should stop pumps). That's a core/nominal case? It fails when demand off. So 0.
+
+Could I7-7155 functional 1? It passes step0 first demand? It fails step10 demand false alarma off; but demand false with fault, and step3 alternation. Core alternation. 0.
+
+Now maybe IEC for I7-1170: It never uses no standard block, but compiles. 2. Good.
+
+Coherencia for I7-1170: State machine transitions complete? `estado` sequence modulo 3: initial state0, first edge to1, second to2, third to0. In state0 with demand true, there is no pump. This is a dead state under demand until next edge. That is significant. Could coherencia 1 (or 0 because state0 impide operar). But given initial and after third edge, state0 under demand is a dead state that prevents operation. However `estado` can transition from 0 to 1 on next edge only if demanda toggles false/true. While demand stays true, state0 leaves pumps off; but if demand continues, no next edge. In harness step5? It fails. This is serious. Rubric 0: "estados muertos que impiden operar." Could coherencia 0. But maybe not because state0 is intentional detenido; should only be active when no demand. Since there's no demand gating, it's dead. I'd maybe coherencia 1. We'll stick to 1.
+
+Need maybe for I7-7155 coherencia maybe 0? It has `IF demanda THEN estado:=1` each cycle, so when demand continues, alternation `IF demanda AND cambio` toggles state? Wait after first demand step1: state1 logic outputs b1, then toggles estado2, cambio false. Next cycle same demand (held step), first IF sets estado1 again, cambio true; then state1 logic outputs b1; then toggles estado2. So it remains b1 after initial? Hmm if each cycle resets to state1, it may output b1 for entire first demand, but for held step output maybe b1. Step1 passes perhaps. But step3 fail. 
+Coherencia maybe 1.
+
+Now final check all scores 0-3. Yes.
+
+Potential challenge: The "just_func_iec" field for non-pass where functional and iec both not fixed should justify both. We'll do.
+
+Let's now produce final JSON. Need ensure no trailing commas, proper escaped quotes. Use normal Spanish accents okay.
+
+Let's write all entries.
+
+Given final answer desired oververbosity 5 but instruction says only JSON list no markdown. We'll comply.
+
+I'll carefully construct JSON.

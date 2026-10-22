@@ -1,0 +1,1299 @@
+We need answer only JSON list of 24 objects. Need evaluate each response. We need be careful. Need produce valid JSON no markdown. Let's parse problem. We have 24 responses. Need score funcional, iec, coherencia, claridad, mantenibilidad, justifications. Some funcional fijo etc. Need examine each code. We need follow fixed rules. Need map codes in order.
+
+We need produce 24 objects in same order. Let's enumerate responses:
+
+1 A2-8363
+2 A2-7833
+3 A2-7551
+4 A2-3687 (no compila, funcional=0, iec=0 fixed)
+5 A2-2878 (compila fails 5 steps: 8,9,10,11,12? need analyze)
+6 A2-1185
+7 A2-7260 no compila
+8 A2-5299 compila fails steps 8,9
+9 A2-3859
+10 A2-7745 no compila
+11 A2-4520 compila fails 10 steps 8,9,17,18,19,20,21,22,23,24
+12 A2-5579 no compila
+13 A2-5565 no compila
+14 A2-8269
+15 A2-8208
+16 A2-3851
+17 A2-2820 no compila
+18 A2-4087
+19 A2-5337
+20 A2-4573 no compila
+21 A2-2424
+22 A2-8499
+23 A2-5655 compila fails 9 steps 1,2,3,4,5,6,7,8,9
+24 A2-2376
+
+Need score. Let's understand task and harness. The harness tests buttons mostly level-triggered? It says "btnInicio arranca la receta solo desde reposo; durante una receta en curso se ignora." It doesn't explicitly require edge detection; but in harness, tick 200ms. For code level-triggered maybe pass if harness holds true for one step then transitions. They pass. Some implement edge. Both acceptable.
+
+Functional fixed: If pasa todos, funcional=3. Many pass. Need not set functional. For compila fails, assign based on protocol and steps. Need determine for failures. Also if compiles but fails, functional never 3. Need evaluate 0,1,2.
+
+Let's list passes and fails.
+
+- A2-8363 passes: funcional_fijo=3, iec null. We need IEC score 1-3. It uses TON and R_TRIG standard. Comments. No issue. Should be 3? Standard idiomatic. Actually uses R_TRIG, TON, CASE, booleans comparisons. Good. IEC 3.
+- A2-7833 passes. Does not use edge triggers, has recetaEnCurso. It uses TON inside CASE phase 4 each scan with IN:=TRUE. Standard. Should compile. IEC 2 or 3? It uses standard types, correct; could be 3? Need "idiomatic constructions" use TON standard. But some variables maybe recetaEnCurso redundant? But functional. It compiles. Standard. Probably IEC 3? But if using recetaEnCurso and not R_TRIG? The task says btnInicio arranca "solo desde reposo; durante receta se ignora". Level-triggered startup is tolerated by harness? It may pass. The code checks btnInicio AND NOT recetaEnCurso at phase 0. Since recetaEnCurso set true, start ignored. But after phase 0, recetaEnCurso remains false? At phase 0 they set? Actually they initialize recetaEnCurso false? It is not explicitly initial but default FALSE. In phase 0 they don't clear recetaEnCurso. Wait they set recetaEnCurso := FALSE only when phase 5 complete or abort with empty. Good. At phase 0, recetaEnCurso is false after complete. But if initial phase 0, false. Fine. So each phase 0 start works level-triggered. In harness step 0 initial with F, fase 0. Step 2 btnInicio true, T#200ms; in FB, at phase0 btnInicio true and not recetaEnCurso true, sets fase 1. Next step btnInicio false but already phase1. Good. So pass. IEC 2/3. It initializes all outputs false every scan. Timer IN true only in phase4. standard TON. It has recetaEnCurso variable. Fine.
+
+Need score coherencia etc. We'll evaluate later systematically.
+
+Need produce detailed justifications one line. Need not overdo but consistent.
+
+Let's inspect each code deeply for quality.
+
+We'll create table.
+
+Important: Fixed funcional: for pass all, fixed=3. If no compila, functional=0 iec=0. If compila fails: need assign.
+
+Let's analyze failing compiles thoroughly.
+
+A2-2878: Compiles. Fails pasos 8,9,10,11,12 (0-index). Let's understand harness step sequence.
+
+Step 0: (F,F,F,F,F,20) 0.2s -> fase 0
+1: abort in reposo -> 0
+2: start -> 1
+3: wait levelA -> 1
+4: nivelA true -> 2
+5: btnInicio true during recipe (levelA true? Actually step5: T,F,F,T,F,20 -> fase 2 expected; btnInicio ignored)
+6: T,T,F,F,F,20 -> fase 3
+7: T,T,F,F,F,59.9 -> fase 3
+8: T,T,F,F,F,60.0 -> fase 4 expected
+9: T,T,F,F,F,60.0 118s -> fase 4 expected
+10: T,T,F,F,F,60.0 3.0s -> fase 5 expected
+11: T,T,T,F,F,60.0 -> fase 0 expected
+12: new start with F,F,F,T,F -> 1 expected.
+
+A2-2878 fails 8,9,10,11,12. Need understand code:
+FUNCTION_BLOCK inputs/out. VAR tMezcla TON; recetaEnCurso BOOL;
+Initialize outputs false.
+IF NOT recetaEnCurso THEN
+    IF btnInicio THEN recetaEnCurso:=TRUE; fase:=1; ELSE fase:=0;
+ELSE
+    CASE fase OF
+        1: vA := NOT nivelA; IF nivelA THEN vA:=FALSE; fase:=2; END_IF;
+        2: vB := NOT nivelB; IF nivelB THEN vB:=FALSE; fase:=3; END_IF;
+        3: calentador := temp < 60.0; IF temp >= 60.0 THEN calentador:=FALSE; fase:=4; tMezcla(IN:=TRUE, PT:=T#120S); END_IF;
+        4: mezclador := tMezcla.Q; IF tMezcla.Q THEN mezclador:=FALSE; fase:=5; END_IF;
+        5: vDescarga := NOT nivelVacio; IF nivelVacio THEN vDescarga:=FALSE; recetaEnCurso:=FALSE; fase:=0; END_IF;
+    END_CASE;
+END_IF;
+(* Abort *)
+IF btnAbort AND recetaEnCurso THEN
+    vA:=FALSE; vB:=FALSE; calentador:=FALSE; mezclador:=FALSE;
+    IF fase <> 5 THEN fase := 5; END_IF;
+END_IF;
+
+Issues:
+- Timer TON only called in phase 3 when transition to 4 (IN:=TRUE) and in phase 4? Actually in phase 4 they do not call tMezcla at all. So TON instance data retains. TON when IN TRUE called at transition (rising edge? TON with IN from false to true). It starts timing. Q becomes TRUE after 120s. However the call occurs only once when entering phase 4. Then later in phase 4 the function block code is not called each cycle, only referenced tMezcla.Q in condition. In CODESYS, TON object updates only when called. So Q will never become true because no further call. After 118s and 3s, not. Thus fail 8? Wait step 8 expected phase 4; code transitions to phase 4 in step8; functional harness checks at end of step 8. It expects phase 4. Does this code pass step8? Let's simulate in first scan of step8: inputs temp 60.0. Previous phase 3. code: IF NOT recetaEnCurso false (recetaEnCurso true). CASE fase=3: calentador := temp < 60.0 -> false (60.0 < 60 false); IF temp>=60 -> true: calentador:=FALSE, fase:=4, tMezcla(IN:=TRUE, PT:=120s); after CASE, abort false. At end outputs? vA/vB etc: vA false, vB false, calentador false, mezclador? initialized/output? In phase3 before transition they did not set mezclador false. Initialization at top before IF sets mezclador false. So okay for "exactly active salida of phase" expected phase4? At step8, expected phase 4; active salida exactly v? In phase4 they expect mezclador TRUE? Protocol says al final de cada paso se exige fase esperada y que esté activa exactamente la salida de esa fase (fase0 none). For phase4, "salida de esa fase" = mezclador? Yes. For phase4, code sets mezclador := tMezcla.Q. tMezcla.Q false at first call. So expected phase 4 but mezclador false, so step8 fails likely. Thus listed.
+
+Then fails subsequent.
+
+Other issue in phase4: condition IF tMezcla.Q never true because not called. But after enough time? no.
+
+Also recetaEnCurso remains true until phase5 complete; after entering phase4 fail, no recovery. So fails 8,9,10,11,12? Why step11,12 fail? Step11 expected after vacío true maybe phase0 with descarga? But code stuck phase4 likely, so fails. Step12 expected new recipe, but stuck phase4 maybe. Good.
+
+Functional score: It fails nominal sequence at phase 4 (core case). According rubric: 0: no implementa lógica pedida o falla en el caso nominal. This is fail nominal? It passes through phases 1-3 then fails at phase4; phase 4 is core nominal. Also step8-10. Should be functional 0? Could be 1: works nominal? Here it fails at phase4, which is central. But perhaps "caso nominal" includes full recipe. It fails nominal. So 0. However some might say 1 because most basic phases work until mezcla. Need decide. The rubric says 0 if "no implementa la lógica pedida o falla en el caso nominal." It fails the main sequential recipe after heating. That is a nominal case (step 8 etc.) so functional 0. But let's think if there is any partial credit 1: "funciona en el caso nominal pero falla en casos límite evidentes". Not this because nominal fails. So 0. Fixed funcional null, we set 0. But maybe "Compila. Falla 5 de 25" includes step8 transition to phase4, but it actually at step8 gets phase 4? It fails because output mezclador maybe false. It fails exact output condition not just phase. That is core. So 0. If only one step failure around timer maybe 1? But failing phase 4 mixing output is core. We'll assign 0.
+
+Need IEC for A2-2878: compiles. It uses TON standard, CASE, correct declarations. But timer not called in phase4 (logic issue). IEC score 2 maybe? "compila sin cambios; declaraciones y tipos correctos." It uses standard. Could be 2 or 3? IEC rubric: 3 if additionally idiomatic (TON correctly instanciado). They instantiated TON but did not call it each scan. However IEC compliance separate from logic. It compiles and uses standard. I'd give 2, perhaps because it doesn't use TON idiomatically (not called in phase4), but declarations are correct. The instruction "3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." Here TON is not well instanced/called; it's instantiated but not called in phase4, so not well used. Thus IEC 2. Fine.
+
+Coherencia for A2-2878: code has contradictory/incorrect phase4: mezclador := tMezcla.Q; IF tMezcla.Q THEN ... without calling tMezcla => dead logic. Timer never runs. Also recetaEnCurso and abort logic perhaps okay. Coherence score: 1? "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." But timer not called is dead condition that impedes operation; that's a serious logic error. Could be 0: "condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar." Since phase4 transition is dead, operation cannot proceed. So coherencia 0. Need see other issues: In phase2 etc outputs vA/vB maybe weird (vA := NOT nivelA). Good. But there is no reset of tMezcla when leaving. But main issue dead timer. Coherencia 0.
+
+Clarity for A2-2878: Maybe basic structured, names okay, comments. But logic issue not clarity. Clarity score 2? It has comments, sections, names descriptive. Maybe 1? It initializes outputs at top. No severe crypticism. I'd give 2.
+Mantenibilidad: constants? T#120S magic in code. But many. It has recetaEnCurso, tMezcla, outputs; no parameterization. Score 1 or 2? "valores mágicos por todas partes" T#120S used once, not duplicates. But degree of modification local. It has T#120S in transition. Could be 2 if constants as variables? no. "parámetros como variables o constantes declaradas; cambios localizados" not. So 1.
+
+Need maybe justifications.
+
+Next A2-5299 fails steps 8,9. Need analyze.
+
+A2-5299 code:
+VAR tMezclar : TP; inicioPulsado, abortPulsado BOOL.
+Control start:
+IF btnInicio AND NOT inicioPulsado AND fase=0 THEN fase:=1; inicioPulsado:=TRUE; END_IF
+(* missing reset immediately, later resets if NOT btnInicio *)
+Abort:
+IF btnAbort AND NOT abortPulsado THEN
+  abortPulsado:=TRUE;
+  CASE fase OF
+    1..4:
+      vA:=FALSE; vB:=FALSE; calentador:=FALSE; mezclador:=FALSE;
+      IF NOT nivelVacio THEN fase:=5; ELSE fase:=0; END_IF;
+    5:
+      IF NOT nivelVacio THEN fase:=5; ELSE fase:=0; END_IF;
+  END_CASE;
+END_IF
+Control fases CASE 1-5,0:
+1 vA TRUE, if nivelA...
+2 vB...
+3 calentador...
+4 mezclador := TRUE; tMezclar(IN:=TRUE, PT:=T#120S); IF tMezclar.Q THEN mezclador:=FALSE; fase:=5; END_IF;
+5 vDescarga := TRUE; IF nivelVacio THEN vDescarga:=FALSE; fase:=0; END_IF;
+0 outputs false, IF btnAbort THEN abortPulsado := TRUE; END_IF.
+
+Reinicio flags at end:
+IF NOT btnInicio THEN inicioPulsado:=FALSE; END_IF; IF NOT btnAbort THEN abortPulsado:=FALSE; END_IF.
+
+Uses TP timer. TP: pulse timer, output Q true for PT after rising edge, regardless input. Called each scan in phase 4 with IN TRUE. Should work. It passes all except step8 and 9? Let's simulate: step7 temp 59.9 fase 3. Step8 temp 60.0 in phase3: calentador TRUE at beginning; IF temp >=60 then calentador FALSE fase:=4. After fase change, since CASE uses IF? It does CASE, one branch per scan, so phase4 not executed that scan. At end outputs? vA? In phase3 only calentador was set, but previous outputs? At top they don't initialize all outputs false before CASE. However outputs may retain from prior scan. In phase3 branch, vA/vB not assigned false; but they were false from previous step? In step7 phase3, previous step6 phase2 set vB? Actually step6 (T,T,F,F,F,20) phase3. At step5 phase2 maybe vB false? Let's trace: step4 (T,F,F,F,F) phase2: in phase2 set vB TRUE, then immediately IF nivelB false no transition. Wait code: CASE fase 2: vB := TRUE; IF nivelB THEN... So output vB true at step4. But harness expects phase2 active salida vB true. Step5 (T,F,F,T,F) phase2, btnInicio true, code phase2 sets vB true. Good. Step6: T,T,F,F,F, phase3 branch: calentador:=TRUE; does not set vB false, so vB remains TRUE from previous scan! This likely causes harness failure? Step6 expected phase3 with active salida calentador exactly. If vB remains true, fails. But failure list only 8,9. Wait how pass step6? Let's inspect perhaps outputs are set in code before CASE? no. But in phase 3, prior phase 2 vB true; at step6, phase3 sets calentador true, but vB still true. That would fail exact output. However maybe CODESYS outputs are reset automatically between calls? No, assignment persists. So why step6 not failed? Did I miss: In phase2, on transition to phase3, it sets vB := FALSE before fase :=3. Code:
+2: vB := TRUE; IF nivelB THEN vB := FALSE; fase :=3; END_IF.
+At step6, nivelB true, so vB false. Good. At step5 nivelB false, no transition. Step6 when B true, vB false. okay.
+For phase3 transition to phase4 at step8: code in phase3: calentador := TRUE; IF temp>=60 THEN calentador := FALSE; fase:=4; END_IF. So calentador false, no other outputs. Previous outputs? phase3 had vA false, vB false, mezclador false, descarga false. Good. So step8 expected phase4 active mezclador true. But because transition occurs in same scan, phase4 logic not executed. So mezclador remains false. Harness fails step8. Step9 expected phase4 still; In step9, phase4 executes mezclador:=TRUE; tMezclar(IN:=TRUE) first call? Actually tMezclar TP. At step8 it did not execute timer. Step9 initiates timer with PT 120s, Q false. It fails step9 expected phase4? It expects active salida phase4 = mezclador true. In step9, code with TP(IN:=TRUE), Q false. But it sets mezclador := TRUE before timer. So should be true. Why step9 fails? Maybe because TP output Q turns true? Wait step9 duration 118s; if TP called with IN TRUE, after 118s Q false. mezclador true. Should pass. But listed step9 fail indicates maybe due to TP block behavior with IN true continuously; TP Q false until PT elapsed, so mezclador true. Hmm weird.
+
+Maybe harness "Al final de cada paso se exige la fase esperada y que este activa exactamente la salida de esa fase (fase 0: ninguna)." Step9 expected phase4. Code phase4 at end of step9: fase is 4, output mezclador true. It should pass. But maybe it fails because at step9, the timer has been running already since step8? Let's simulate step8: transition from phase3, phase4 not executed. tMezclar is not called in step8; TP retains initial state false. At step9, phase4 calls tMezclar IN:=TRUE with PT 120s. TP Q false after call, mezclador true. So pass step9. But result says fails step8 and 9. Perhaps step8 and step9 both fail because expected phase4 and output mezclador? Step8 fails as above; step9 maybe due to timer Q? Actually step9 duration 118s; if harness checks at end after 118s, maybe at final cycle of step9, the timer got called continuously for 118s and maybe at next to last? TP Q false. output mezclador TRUE. Should pass. But maybe precise: CODESYS TP pulse timer Q becomes true for PT after rising edge. At the cycle when exactly 118s? no. So should pass. Could be off-by-one with harness cycle? But result says fails 8,9. Maybe step8/9 failing because after transition to phase4, the old phase3 output calentador maybe? Step8: phase3 branch turns calentador FALSE and sets fase4, output mezclador false. So fails. Step9: In phase4, they call tMezclar(IN := TRUE, PT := T#120S); Because TP has not been initialized before step9, first call is rising edge at step9 start, after 118 s PT=120 s not elapsed; at final check, mezclador true. pass. Unless TP output Q after 118s maybe true if the timer's inputs had been called in step8? It wasn't. No. Could be because in step8, tMezclar not called but maybe at the top of code, not. So why fail step9? Let's not dwell. We just need score based on listed failures. Fails step8 and 9, both phase4 after heating. Since step9 is part of mixing and crucial, maybe functional 1? It passes most recipe, fails to enter phase4 output immediately? Actually fails only two steps around phase4 timing. But after step10 expected phase5? It presumably passes step10 (TP.Q true after 120s) and rest. So functional score: It works nominal mostly, fails at phase4 transition edge due to outputs not set on transition. But fails step8 and step9? Wait step8 and step9 are phase4 mixing; if step9 fails, maybe no mixing output? But I suspect due to harness design the step8 fails because phase4 not entered with output same scan; step9? Hmm. Let's inspect step numbering and durations:
+8: (T,T,F,F,F,60.0) 0.2s -> 4   first 0.2s in phase4? Actually step8 is first sample after temp>=60. When running with cycle maybe previous step7 temp=59.9 for 0.2s. On step8 temp=60.0; FB sees temp>=60, transitions to fase4. At end of that cycle expected fase4 and mezclador=true. The code hasn't executed phase4 branch, so output false. Fail.
+
+9: (T,T,F,F,F,60.0) 118s -> 4. Now after previous step, code in phase4. In each scan, phase4 branch sets mezclador:=TRUE before checking timer. So why fail? Maybe because the PT=120s hasn't elapsed but the output mezclador is true. Should pass. Unless the harness also verifies exact output and phase4 output is "timer?" No. Maybe code has issue: tMezclar is TP, not TON. TP input remains true; Q false until 120s. It sets mezclador True. pass. But result says step9 fail. Could be due to variable "tMezclar" type TP. Maybe TP function in CODESYS requires edge not continuous? Actually TP (pulse) starts on rising edge of IN and Q remains TRUE for PT, independent of IN during pulse. It is designed to be called repeatedly. So continuous true is fine.
+
+Maybe step9 failed because at the end of 118s, an off-by-one timing: TP Q might have turned TRUE at exactly t=118s? No, PT=120s. Not. Unless due to simulator cycle 10ms/20ms rounding? no.
+
+Maybe I misread failure steps: "falla 2 de 25 pasos del harness (pasos 8,9; numerados desde 0)." It might fail both because code doesn't run phase4 on same scan and doesn't call timer on subsequent? Wait it does call. Could be because in code, tMezclar is declared TP but the instantiation uses `TP`; maybe `tMezclar(IN := TRUE, PT := T#120S);` if IN stays true, Q after PT becomes true. At step9, after 118s Q is FALSE, so okay.
+
+Maybe check step8 and step9 are actually expected phase4, but step9 fails because phase4 output is not "exactamente la salida de esa fase": In phase4, the code also has tMezclar maybe called and mezclador TRUE, but perhaps because the outputs from CASE 4 don't explicitly set vA/vB/calentador/vDescarga false; but from previous phases they are false. Fine.
+
+Let's not overfocus. For scoring: Fails 2 of 25; not all. It implements almost all phases including mixing. This could be functional 2 (falls in few minor cases) or 1. Rubric: 1: works nominal but fails in boundary cases evident. 2: correct nominal and most boundary; minor failures without risk. Step8 fails because output activation is one-scan late on transition; but harness failure in two consecutive steps? Step9 perhaps maybe not minor? But only 2/25 fail. It likely deserves 2. But functional fixed says if fails, 0/1/2. We'll consider. We'll assign 2 for A2-5299.
+
+IEC: compiles, uses TP standard, signed flags. Standard, maybe 2. It uses TP well? It uses pulse timer maybe not ideal for a 120s delay? TP is valid but less common for delay. But "TP bien instanciado" maybe 3? But not idiomatic for mixing; also flags manual edge detection. I'd give IEC 2.
+
+Coherencia: Logic is mostly coherent; edge flags initial. Abort in phase5 branches duplicate conditional with 1..5 plus 5 duplicate? Wait CASE has 1..4 and 5, so no duplicate, fine. But there is potential logic issue: if abort in phase5 with nivelVacio true sets fase0, but vDescarga? In abort block, it doesn't set vDescarga false; but then CASE fase 0? In same scan? The abort runs before CASE, with fase=0 but phase0 sets vDescarga false. Good.
+Potential bug: phase4 uses TP; output mezclador true for 120s then Q true, turns off and phase5. Good.
+Edge detection manually: they reset flag only after CASE and at bottom. In phase0 if btnAbort true sets abortPulsado true so button ignored until released. Good. Inicio flag set true on start; if btnInicio still true during same scan phase0? It enters start then at bottom if NOT btnInicio false, so flag stays true until button released. Good.
+No initialization of `inicioPulsado` and `abortPulsado`? They have default false. At first scan if btnInicio true and fase=0, starts. Good.
+I'd score coherencia 2 maybe 3. It has redundant IF btnAbort in phase0? Not a contradiction. It handles abort. Robust? Not fully: in phase4 if abort occurs, they only handle phases 1..4, sets fase5. Timer tMezclar remains maybe? But abort does not reset timer. If abort in phase4, timer might continue? In code, tMezclar is called only in phase4 branch; after abort, phase5 branch doesn't call tMezclar, so TP Q remains maybe? But outputs fixed. When next recipe phase4, tMezclar maybe still Q? It might cause immediate transition? They don't reset timer on abort. Specifically if abort during phase4 after 120s? Q true maybe. But abort sets fase5, later returns fase0. When next recipe reaches phase4, phase4 calls TP with IN true, but TP requires rising edge to start pulse; since IN last call was true in phase4 before abort? Actually when in phase5, branch doesn't call tMezclar, so its internal input memory remains? In CODESYS TP has an input memory; if not called, no edge detection occurs. When later called again with IN true, because the function block data has been called? Wait if not called for many cycles, but function block retains last input from previous call? It may compare new IN to last stored IN. Since last IN was true in phase4, next call in phase4 true, no rising edge? Actually there was no call in between, but stored IN remains true. So TP may not start because edge not detected. Hmm this becomes subtle. But probably in CODESYS, if you don't call timer, it retains inputs and if call later with IN true and stored IN true, no pulse. Could break next mixing. The harness may not test repeated recipe after abort in phase4. It passes all except step8/9, so okay. This timer reset issue is not exposed. Coherence 2.
+
+Claridad: comments and structure basic. 2.
+Mantenibilidad: T#120S magic, variables flags. 1.
+
+Next A2-4520 fails 10 steps. Need analyze.
+Code similar to A2-2878 but tMezcla(IN:=TRUE) in phase3 transition to 4, phase4 mezclador := tMezcla.Q; IF NOT tMezcla.Q THEN mezclador:=FALSE; fase:=5; END_IF; Wait this is inverted: It goes to phase5 when NOT tMezcla.Q, i.e., immediately because Q false (or after time? Actually if timer not called, Q false). That means it transitions from phase4 to phase5 immediately, not after 120s. Thus fails steps 8,9,17? Let's simulate:
+Step8: phase3 temp>=60, set fase:=4, call tMezcla(IN:=TRUE). At end phase4 not executed => output? mixture not active? Actually phase3 sets calentador false, then fase4. Outputs default? No initialization? At top? This code:
+IF NOT recetaEnCurso THEN ...
+ELSE
+    CASE fase OF
+        1: vA := NOT nivelA; ...
+        2...
+        3: calentador := temp < 60.0; IF temp>=60 THEN calentador:=FALSE; fase:=4; tMezcla(IN:=TRUE, PT:=T#120S); END_IF
+        4: mezclador := tMezcla.Q; IF NOT tMezcla.Q THEN mezclador:=FALSE; fase:=5; END_IF;
+        5: vDescarga := NOT nivelVacio; ...
+    END_CASE;
+END_IF;
+No top initialization except at very start before IF? It has:
+(* Inicialización de salidas y variables *)
+vA := FALSE; vB:=FALSE; calentador:=FALSE; mezclador:=FALSE; vDescarga:=FALSE;
+Actually at top yes all false before IF, so every scan initializes false. In phase3 transition, calentador false, but then outputs as false; step8 expected phase4 but mezclador false => fail.
+Step9: now phase4 branch: mezclador := tMezcla.Q. tMezcla was called only in previous scan phase3 with IN true; since phase4 does not call it, Q retained false. Then IF NOT tMezcla.Q -> true: mezclador:=FALSE; fase:=5; So end phase5, output vDescarga? vDescarga initialized false then in phase4 branch no vDescarga set; but after IF? Actually code at top false, then phase4 sets mezclador false, fase5. vDescarga remains false. End fase=5 expected phase4? fail.
+So fails many subsequent. It fails 8,9,17-24 maybe because phase5 behavior weird. It fails step17? In step17 abort with empty expected 0. But maybe because phase 5 stuck? Need not detail.
+
+Functional score: It fails central mixing and much of abort. It implements start, phases 1-3 maybe, but phase4 immediate wrong. Core recipe fails. 0.
+
+IEC: compiles, uses TON standard incorrectly (not called), declarations correct. IEC 2? It uses timer TON but not called in phase4. Not idiomatic. Could be 2. Coherencia: Logic for phase4 is contradictory: `IF NOT tMezcla.Q THEN fase:=5` means never mixes. Also recetaEnCurso? abort? This is a serious dead state, score 0. Claridad: comments and names okay; 2 maybe. Mantenibilidad: no constants except magic; 1.
+
+Next A2-5655 fails steps 1,2,3,4,5,6,7,8,9. Need analyze.
+Code:
+VAR timerMezcla TON; inicioPrev BOOL; abortPrev BOOL.
+At start:
+IF NOT btnInicio THEN inicioPrev := FALSE; END_IF
+IF NOT btnAbort THEN abortPrev := FALSE; END_IF
+CASE fase OF
+0: outputs false; IF btnInicio AND NOT inicioPrev THEN fase:=1; END_IF
+1: vA := TRUE; IF nivelA...
+...
+4: mezclador:=TRUE; timerMezcla(IN:=TRUE, PT:=T#120S); IF timerMezcla.Q THEN...
+5: vDescarga:=TRUE; IF nivelVacio THEN...
+END_CASE
+Abort:
+IF btnAbort AND NOT abortPrev THEN
+    vA:=FALSE; vB:=FALSE; calentador:=FALSE; mezclador:=FALSE;
+    IF NOT nivelVacio THEN fase:=5; ELSE fase:=0; END_IF;
+END_IF;
+Actualización:
+inicioPrev := btnInicio;
+abortPrev := btnAbort;
+
+The issue: It handles btnAbort irrespective fase. In step1: at start step0 btnAbort false, abortPrev false. Step1: btnAbort TRUE, level flags false, btnInicio false. At top IF NOT btnAbort false no reset. CASE fase=0: outputs false; IF btnInicio AND NOT inicioPrev (inicioPrev false from prior false?) step0 at top had IF NOT btnInicio then inicioPrev:=FALSE; actualización set false. So no start. Then abort IF btnAbort AND NOT abortPrev -> true, sets outputs false; IF NOT nivelVacio (nivelVacio false) => fase := 5. So step1 expected fase 0 but code goes to phase5. Thus fails step1. Also then step2 start? Fase already 5, so fail etc. So fails first nine steps until maybe step10? Step9 etc. Actually after step9 maybe product? It might eventually? It recovers? Step10 maybe vacio? Step10 expected phase5 after mixing? Hmm likely eventually phase5 when nivelVacio false? Hard. But fail list first 9.
+
+Functional: It fails abort in reposo and immediately proceeds to phase5, so fundamental. But maybe nominal start also? Step1 is abort in reposo; a boundary case. It fails. It also fails steps2-9 due to state changed. Functional score 0 or 1? Rubric: 0 no implementa lógica pedida o falla en el caso nominal. Does it fail nominal? Step2 start expected 1, but code phase5, so nominal start fails too. However because previous step abort in reposo should have no effect; if starting fresh from step0 (without step1) maybe works. But harness includes step1 as boundary; code fails nominal after boundary. Based on protocol, fail first step1 then step2 fail. It doesn't implement abort in reposo correctly, causing recipe not runnable after abort. This is core. 0.
+
+But maybe if we ignore step1, it would pass rest. Still function for abort boundary serious. Score 0.
+
+IEC: compiles, uses TON standard but uses manual edge flags rather than R_TRIG. Declarations correct. 2.
+Coherencia: The abort condition doesn't include recetaEnCurso/fase>0, causing state corruption when button in reposo. Contradicts requirement; dead/incorrect state. Score 0.
+Clarity: comments? It uses minimal comments, names okay. 2 maybe 1? It has comments for phases but not for abort. I'd give 2? The code is fairly clean. But maybe no comments on edge flags? I think 2.
+Mantenibilidad: magic T#120S no constants. 1.
+
+Next A2-7745 no compila. Need score non-fixed criteria. Code has syntax error `ELSE:` in CASE, missing END_IF? We'll inspect: no compila due `ELSE:`. We need score coherencia, claridad, mantenibilidad reading code. Despite syntax error. It has logical structure similar to edge-based, but no initialization of outputs all? It has abort and case. Logic mostly coherent except syntax. But note no compila due `ELSE:` label rather than `ELSE`. Also there might be missing semicolon? The code uses `ELSE:` in CASE. In IEC ST CASE uses `ELSE` not `ELSE:`. So it is invalid. But we can evaluate underlying logic.
+
+A2-7745:
+VAR timerMezcla TON; abortActivo BOOL; btnInicioAnterior, btnAbortAnterior, flancoInicio, flancoAbort.
+Edge detection.
+Abort logic: IF flancoAbort AND (fase>=1 AND fase<=5) THEN abortActivo:=TRUE; vA:=FALSE; vB:=FALSE; calentador:=FALSE; mezclador:=FALSE; IF fase=5 THEN no change; ELSIF nivelVacio THEN vDescarga:=FALSE; fase:=0; abortActivo:=FALSE; ELSE fase:=5; END_IF; END_IF.
+CASE fase OF
+0: outputs false; abortActivo false; IF flancoInicio THEN fase:=1;
+1: vA:=TRUE; IF nivelA...
+...
+4: mezclador:=TRUE; timerMezcla(IN:=TRUE, PT:=T#120S); IF timerMezcla.Q THEN... timerMezcla(IN:=FALSE); fase:=5;
+5: vDescarga:=TRUE; IF nivelVacio THEN ...
+ELSE: fase:=0;
+END_CASE;
+Update prev.
+
+Coherence: The ELSE: syntax error aside. Logic okay but one flaw: In phase 5 after abort, flancoAbort from original abort still maybe true? It only acts on rising edge. In phase5, if an abort occurred in earlier phase, later no effect, descarga continues. Good.
+However in CASE phase2 etc they don't set other outputs false; but since assignment in each phase only sets its active output, previous output may remain TRUE when phase changes if not turned off. Let's check: Phase1 sets vA true, when nivelA then vA false, fase2. Phase2 sets vB true, not vA false? But vA was set false on transition. Phase3 sets calentador true after phase2 transition set vB false. Good. It's okay.
+On abort, they explicitly close vA/vB/calentador/mezclador, but not vDescarga. In phase5 etc.
+Need keep outputs in phase3 etc? Other outputs remain false from prior transitions. Fine.
+One issue: `abortActivo` not used to suppress outputs in phase1-4? But abort changes fase immediately. In phase5 after abort, `abortActivo` true but vDescarga output still true. good. In phase0 reset false. fine.
+Coherence likely 2.
+
+But no compila fixed. We can give coherencia 2, claridad 2, mantenibilidad 1/2. It uses T#120S magic, no parameterization. Comments include sections. So claridad 2, mantenibilidad 1. Need maybe IEC fixed 0, funcional fixed 0.
+
+A2-2820 no compila, similar code to A2-7745 but with `ELSE:` and maybe `END_IF`? It has comments and tMezcla. Let's inspect.
+It has abort logic:
+IF btnAbort AND fase 1-5 THEN
+ abortando:=TRUE;
+ vA:=FALSE; ...
+ IF fase <> 5 THEN
+  IF NOT nivelVacio THEN fase:=5; ELSE fase:=0; abortando:=FALSE; END_IF;
+ END_IF;
+END_IF;
+CASE fase OF
+0: outputs false; abortando false; IF btnInicio THEN fase:=1;
+1: vA := TRUE; vB := FALSE; calentador := FALSE; mezclador := FALSE; vDescarga := FALSE; IF nivelA...
+...
+4: ... tMezcla(IN:=(fase=4), PT:=T#120S); IF tMezcla.Q...
+5...
+ELSE: ...
+END_CASE;
+IF fase<>4 THEN tMezcla(IN:=FALSE); END_IF;
+END_FUNCTION_BLOCK
+Syntax error on ELSE: like before. Actually there is `ELSE:` at CASE, invalid. Also maybe no END_IF for main? It has END_CASE; after end case; no END_IF needed? The main `IF btnAbort...` closed with END_IF. good.
+
+Logic coherent mostly, but there's a bug: In abort block, it doesn't close vB/vA? It sets them false. Good. CASE phase outputs ensure all outputs set each phase. Good.
+But it may have issues with btnAbort level vs edge: It uses `btnAbort AND (fase>=1 AND fase<=5)`, level-triggered. If btnAbort held true from phase5, will repeatedly execute. But there is `abortando` not used? It sets abortando true but doesn't use. In phase5, if btnAbort remains true and fase=5, the first IF still executes (btnAbort true, fase=5) set abortando:=TRUE; if fase<>5 false, no state change. Then CASE phase5 runs. Next scan same, set abortando true etc. Does not affect. Fine.
+But in phase0, if btnAbort held true and then later new recipe starts? The btnAbort is level; if user starts while abort still pressed, latch? Not considered. It might abort as soon as phase becomes >0. But uses level so it does abort, maybe okay? Not.
+Coherence maybe 2; no fatal contradictions. It has `abortando` assigned but never used; redundant but not dead severe. Could be 2.
+Clarity: comments by sections; names descriptive; but syntax error. We might give 2. Mantenibilidad: T#120S magic; 1. Some comments. Need maybe no compila, but evaluation still code. Could be 2.
+
+But wait "No compila" fixed: functional 0, iec 0. The other three criteria scored igual reading code. Coherencia: if syntax invalid due ELSE: maybe not part of logic. I think 2.
+
+A2-7260 no compila, method code. Need analyze.
+It defines `METHOD` inside FUNCTION_BLOCK? In CODESYS, methods can be defined within FB but using `METHOD` block with access? Maybe not allowed in plain ST? The compiler says unexpected instruction at line1 etc. Actually definitions of METHOD inside function block may require class/object? In CODESYS, method can be in function block? Yes with METHOD ... END_METHOD. But maybe syntax not allowed in this installation? The reported errors "Instrucción inesperada" maybe because they placed "METHOD" outside code? Wait code:
+FUNCTION_BLOCK FB_Batch
+VAR_INPUT ... END_VAR
+VAR_OUTPUT ... END_VAR
+VAR ... estado : INT :=0; END_VAR
+
+METHOD StartBatch : BOOL
+...
+END_METHOD
+...
+END_FUNCTION_BLOCK is missing? It ends with `Execute();` no END_FUNCTION_BLOCK. Actually code after Execute(); no END_FUNCTION_BLOCK. Methods definitions before main implementation? In CODESYS, method declarations should be before implementation? Hmm. But invalid. We evaluate logic.
+
+A2-7260 has methods StartBatch, AbortBatch, UpdateBatch, Execute. It has state variable and timer. But `Execute();` at bottom calls method but no specific invocation? In ST, you need call Execute(); that's okay if method defined. However code doesn't have `END_FUNCTION_BLOCK`; so invalid. It uses methods not standard FB body. No syntax.
+
+Logic: StartBatch if btnInicio and estado=0. AbortBatch if btnAbort and estado>0, close valves, set estado. UpdateBatch handles outputs and transitions. However Execute calls StartBatch() OR AbortBatch() OR UpdateBatch() with IF; But methods have side effects. It will call all three? Actually IF StartBatch() OR AbortBatch() OR UpdateBatch() THEN ... END_IF; In ST, OR evaluates all? Usually OR does not short-circuit? IEC ST may not guarantee? Actually boolean expressions may evaluate all operands? In CODESYS, OR perhaps short-circuits? If short-circuit, might skip later methods; not safe. But code invalid. Also StartBatch returns true when started, if first OR true, may skip others? This would be logic flaw. In standard ST, `IF StartBatch() OR AbortBatch() OR UpdateBatch() THEN` may evaluate all? I think OR operator in ST likely evaluates all operands? Hmm. But anyway methods as functions with side effects and returning BOOL not used to sequence properly. However code contains a state machine in UpdateBatch. UpdateBatch will not be called if StartBatch returns true? Could be. But this is not valid. Coherence: I'd give 0 or 1. The code is not structured for IEC standard; methods maybe not valid; logic has unclear execution. But there is a coherent state machine inside UpdateBatch. No timer reset on abort. Could be 1. Because it is invalid, but we score coherence reading code. It has state variable `estado`, outputs okay. The main execution line `Execute();` is outside any method? Actually in FB body after methods, `Execute();` is a statement in FB implementation. That could be calling method. But if valid, it executes Execute each cycle. Execute uses OR may not call UpdateBatch consistently. This severely undermines operation if short-circuit. So coherencia 0 due to dead/unreliable execution. Claridad: Structure with methods is OK, but no comments? Has comments for state. Names okay. I'd give 1 or 2. It lacks end function and methods? It has method names. For clarity maybe 1 due to invalid packaging; in a valid program, modularization methods could be clear but not allowed. But this task expects FUNCTION_BLOCK code. "METHOD" inside FB maybe okay in CODESYS? The compiler rejects "instruction unexpected". So clarity not compilable. But we judge clarity independent. It does have named methods, meaningful. Could be 2. Hmm.
+
+Mantenibilidad: no constants, magic T#120S; methods separate logic though. 1 or 2. It uses state variable and methods; no duplication. But no constants; magic. I'd give 1.
+
+A2-5579 no compila, method definitions but lacks END_FUNCTION_BLOCK? It ends with METHOD Execute ... END_METHOD, no call `Execute();`, no END_FUNCTION_BLOCK. It is invalid. Logic in methods; UpdateBatch sets all outputs. AbortBatch not phase-limited? It acts if btnAbort and regardless estado? It does IF btnAbort THEN if nivelVacio estado=0 else estado=5; It will also act in reposo -> a bug. It has timerMezclador reset in phase4 when Q true. But no start? StartBatch only. Execute method calls StartBatch(); AbortBatch(); UpdateBatch(); sequential. That's better. But code not valid due missing END_FUNCTION_BLOCK maybe and methods placement.
+
+Logic: AbortBatch in reposo: if btnAbort true and nivelVacio false -> estado=5; violates "en reposo btnAbort sin efecto". If nivelVacio true then estado=0 no harm. So functional logic bug. But no compila. Coherence: abort without phase check is a contradictory requirement; could set state 5 while in reposo, but StartBatch may later. Score 1 or 0. It may cause unsafe operation. Also `Execute` is method but not called in FB body. Actually no call, so even if valid, code would not run methods; but in FB, methods are called externally? User might call FB_Batch body implicitly? The FB's main body is empty? It has no statements after VAR? Actually code:
+FUNCTION_BLOCK FB_Batch
+VAR_INPUT ... END_VAR
+VAR_OUTPUT ... END_VAR
+VAR ... END_VAR
+
+METHOD StartBatch : VOID
+...
+END_METHOD
+
+METHOD AbortBatch : VOID
+...
+END_METHOD
+
+METHOD UpdateBatch : VOID
+...
+END_METHOD
+
+METHOD Execute : VOID
+    StartBatch();
+    AbortBatch();
+    UpdateBatch();
+END_METHOD
+No END_FUNCTION_BLOCK, no call Execute. That wouldn't run. But invalid. Coherence is low. I'd give 0 or 1. Since `Execute` not called, states dead. So 0.
+Clarity: methods names helpful but missing comments; no call. I'd give 1.
+Mantenibilidad: no magic? T#120S magic; modular methods; no constants. 1.
+
+A2-5565 no compila with many errors. Code similar with methods, but has some statements inside methods missing semicolons? It has `END_METHOD` etc. It ends with `END_FUNCTION_BLOCK` maybe. Let's inspect. It has `METHOD StartBatch : BOOL` returns BOOL, `RETURN TRUE;` with semicolons? Yes. `AbortBatch` has `END_IF` no semicolon maybe allowed. But compiler errors mention line 4, column 1 Instrucción inesperada etc. likely because METHOD declarations not allowed inside FB? It also has `RETURN TRUE` in methods with `END_IF` missing semicolon before RETURN? In ST, after END_IF no semicolon required. But perhaps method syntax invalid.
+Logic: It has `timerMezcladorActive` flag to call timer once. In phase4:
+IF NOT timerMezcladorActive THEN timerMezclador(IN:=TRUE, PT:=T#120S); timerMezcladorActive:=TRUE; END_IF;
+IF timerMezclador.Q THEN mezclador:=FALSE; timerMezcladorActive:=FALSE; estado:=5; END_IF;
+This only calls timer once, not every scan; same issue as A2-2878: timer doesn't update, Q never true. Coherence: similar dead timer. AbortBatch: if btnAbort AND estado>0, but doesn't handle phase5 continue? It says: IF btnAbort AND estado>0 THEN close vA,vB,calentador,mezclador; IF NOT nivelVacio estado:=5; ELSE estado:=0; END_IF; return true. If abort during phase5, it will set estado=5 repeatedly; okay continue. But repeated abort during phase5 will close valves. vDescarga still controlled in UpdateBatch after Execute? Execute flow: Execute method calls AbortBatch first: IF AbortBatch() THEN RETURN TRUE; END_IF; then StartBatch, then UpdateBatch. Problem: If AbortBatch returns true (abort event), Execute returns immediately and does NOT call UpdateBatch on that scan! So outputs not updated, phase unchanged? However AbortBatch already sets estado and closes valves. Output vDescarga might not update until next scan when UpdateBatch runs. Could be off by one. If AbortBatch called before UpdateBatch and returns true for a cycle, the state machine outputs are stale. Might cause harness fail. But no compila.
+Execution OR/st return issue. Coherence 0. Clarity: uses methods and comments; but no `END_FUNCTION_BLOCK`? It has `END_FUNCTION_BLOCK` at end. Some methods are arguably clear. Score 2? Despite syntax invalid, structure is modular. But comments limited. Maybe 1 or 2. I'd give 2 for clarity? It is pretty readable. However the method calling approach with early return is flawed. Clarity may still be 2. Mantenibilidad: no constants; magic T#120S; method duplication. 1.
+
+Now compile passes.
+
+A2-1185 passes all. Need IEC, coherence, clarity, maintenance.
+
+Let's inspect A2-1185:
+Uses edge detection manually with prev variables; `abortando` flag; large CASE with duplicated abort logic per phase; second CASE outputs assignment and timer call resets. It compiles and passes.
+
+IEC: Standard declarations, TON, manual edge detection; no use of R_TRIG. But "usa construcciones idiomáticas del estándar: POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados." It uses TON well. Does not use R_TRIG but manual edge detection is acceptable. It calls timer each scan in second CASE. It's idiomatic enough? IEC 3. But need see if there are extensions? no. I'd give 3.
+
+Coherence: It's robust; however `abortando` is set true on abort; used in output? Actually in output assignments, it doesn't use `abortando` to block vDescarga; only vDescarga according to phase. For phases 1-4, abort changes phase; and in phase5 output. It has repeated abort handling in each phase 1-4 and phase5. Maybe redundant but clear. It uses `abortando` only in phase5 to avoid marking. Actually not needed. But coherent. It resets timer in all phases. No unreachable states. Score 3.
+Clarity: Very structured; comments with sections; names descriptive; two-case separation. Score 3 maybe. It's long but repeated abort logic. Clarity 3? Could be 2 due to duplication? The instructions: claridad 3: además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué. This code is not modularized (all in one FB), but the task requires one FB. It separates transitions and output assignment. Comments explain what, not why. However typical top clarity 2, maybe 3 if section comments and named variables. Need be consistent. Many pass codes with simple sequential machine. We can give 3 to maybe best ones like A2-8363 or A2-8499? We'll decide.
+
+Mantenibilidad: No parameterization T#120S; repeated abort logic duplicated in phases; but sequence clear. It doesn't use constant for T#120S, no function block parameters. Could be 2? It uses state variables, no constants. The repeated abort blocks cause duplication; adjustments to abort need 4 changes. So maintainability 1 or 2. It does not have constants; magic T#120S but only one occurrence? In A2-1185, `T#120S` appears in timer call in second CASE and `T#120S` in phase4? It appears multiple: phase4 call, maybe in all case outputs `timerMezcla(IN:=... PT:=T#120S)` only in phase4 and in 0,1,2,3,5 calls with PT? Let's check: second CASE:
+0: ... timerMezcla(IN:=FALSE);
+1: ... timerMezcla(IN:=FALSE);
+2: ... timerMezcla(IN:=FALSE);
+3: ... timerMezcla(IN:=FALSE);
+4: ... timerMezcla(IN:=TRUE, PT:=T#120S);
+5: ... timerMezcla(IN:=FALSE);
+Also in phase4 when abort: timerMezcla(IN:=FALSE); ElseIF Q: timerMezcla(IN:=FALSE). So T#120S only in one place. But rest are timer calls with no PT. That's okay. Abort logic duplicated four times. Maintainability perhaps 2? "parámetros como variables o constantes declaradas; cambios localizados." Not exactly. There's no constant for 120s. Duplication of abort code. I'd give 1 or 2. Let's be fair: Many codes will get maintenance 2 if they have T#120S as magic but simple structure; 3 if parameterized. A2-1185 has duplicated abort handling, reducing maintainability. Score 1 or 2. Maybe 2 because changes to outputs local second CASE; abort additions localized in each phase not too bad. But duplicated same logic 4 times. I'd give 2.
+
+But need be consistent among responses. We can develop general scoring.
+
+Now the simple passing codes: A2-8363, A2-7833, A2-7551, A2-3859, A2-8269, A2-8208, A2-3851, A2-4087, A2-5337, A2-2424, A2-8499, A2-2376, A2-1185. Also A2-3859 etc.
+
+Need assign IEC, coherence, clarity, maintenance for each. We can vary based on actual code.
+
+Let's evaluate each in detail.
+
+A2-8363:
+- Uses R_TRIG and TON standard. Clean. Abort handled before CASE, but note it uses `IF trigAbort.Q AND fase > 0` as level edge. It closes outputs? It doesn't explicitly set vA/vB/calentador/mezclador FALSE in abort block; but after CASE, outputs assigned based on fase. If abort changes fase to 5/0, outputs naturally close. Good.
+- Timer called after CASE: `tMezcla(IN := (fase = 4), PT := T#120S);` Good.
+- Potential issue: abort during phase4, timer reset? Timer IN becomes false because fase 5, so TON resets. Good.
+- `fase` variable not initialized but defaults 0.
+- Very idiomatic: R_TRIG for buttons, TON for timer, CASE, boolean. IEC 3.
+- Coherence: robust, no contradictions. Score 3.
+- Claridad: Comments per variable and phase; clear separation: edge detection, abort, state machine, timer, outputs. Excellent. Score 3.
+- Mantenibilidad: T#120S magic, but otherwise output assignments centralized. Edge detection separated. Abort logic simple. No parameterization. Could be 2. Maybe 3? "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)" no parameters for times/levels. No duplication. However T#120S is magic. The rubric for mantenibilidad: 3 attributes "además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)". It doesn't have parameters for time, but task didn't ask. It doesn't duplicate logic. I'd score 2. It is easily modifiable, but no constants. 2.
+
+A2-7833:
+- Uses recetaEnCurso and TON inside phase4. It initializes all outputs false at top. Abort after CASE with btnAbort (not edge). It doesn't use edge detection. It has a potential issue: If btnAbort held true when in phase5, it might phase5 continue? IF btnAbort then vA/vB/... false; IF fase<>0 then IF NOT nivelVacio fase=5; ELSE fase=0; recetaEnCurso=FALSE; END_IF. So if phase5 and nivelVacio false, sets fase5. If nivelVacio true, sets fase0. Fine.
+- In phase0, `recetaEnCurso` may be false. Start level-triggered. Good.
+- The timer call in phase4 repeatedly with IN TRUE; TON standard. However there's no call in other phases; TON retains and resets when IN false? It won't be called. In CODESYS, TON must be called to evaluate; when later phase4 call with IN true? Since the last call when in phase4 had IN true, later when leaving phase4, no call. When next recipe reaches phase4, if the last stored IN was true, calling with IN true won't create rising edge, so timer may not reset and could remain timing. But phase5 resets? It does not call tMezcla(IN:=FALSE) in phase5. This is a subtle flaw. However harness passes. We need coherence maybe 2 not 3 due to timer not reset explicitly. But many codes don't call timer outside phase4, but TON IN true continuously; if not called in other phases, its last IN true remains; upon re-entering phase4, IN true no rising edge, so TON may not restart. In CODESYS, TON evaluation updates internal `IN` value when the block is called. If the block is not called for several scans, then when called again, it sees transition from last `IN` value. Last `IN` was TRUE, new IN TRUE => no rising edge. It would continue elapsed time. This is a problem after first batch. But harness may not test second full batch after phase0? Step16 extends start but only phase1. It doesn't test full second batch; maybe not caught. Coherence: lack of reset may be a hazard. But overall logic mostly correct.
+- IEC: compiles, uses TON, standard. But timer may not be called properly. Could be 2.
+- Coherence: logic is okay for harness but potential state variable recetaEnCurso and timer reset. The start button uses no edge detection; in phase0, if btnInicio remains true, it starts once because recetaEnCurso true. Good. On completion recetaEnCurso false; phase0 at top? It only sets phase0 if NOT recetaEnCurso at start? Actually after phase5 sets recetaEnCurso FALSE and fase:=0. Then all outputs false each scan. If btnInicio still true from previous start, next scan at top: IF btnInicio AND NOT recetaEnCurso THEN fase:=1; recetaEnCurso:=TRUE; That would restart immediately if button still held. The harness step11 (recipe complete) has btnInicio false, so okay. In real, a held start button could restart. But task says btnInicio arranca la receta; maybe edge not required. If level, a continuous true could restart. That's a potential limit. But harness doesn't test held start beyond initial. Coherence maybe 2.
+- Claridad: comments and sections, names okay. 2.
+- Mantenibilidad: no constant for T#120S? It uses `T#120S` directly in phase4. No duplicated. 1/2. I'd give 1 because magic and recetaEnCurso potentially. But many codes have one T#120S magic. Maintenance maybe 2 if constants as variables? "2: parámetros como variables o constantes declaradas; cambios localizados." Here T#120S is not declared, but change is localized, only one occurrence. "1: modificable con esfuerzo; constantes parcialmente parametrizadas." I'd lean 1. But for most simple codes with one magic time, 2 might be too high? Need consistent.
+
+A2-7551:
+- Uses recetaEnCurso, timerMezcla, mezclaTiempo constant TIME := T#120S; uses TON. It initializes `IF NOT recetaEnCurso THEN fase:=0;` This may force phase 0 if recetaEnCurso false but after initial? Wait at start recetaEnCurso default false, so forces fase0 every scan until start. Start sets recetaEnCurso true, so no force. Good.
+- Abort after CASE: `IF btnAbort AND recetaEnCurso THEN ...` Level-triggered; in phase5 with recetaEnCurso true and btnAbort true, closes valves, if NOT nivelVacio fase:=5 else recetaEnCurso FALSE, fase0. Good. But problem: if abort in fase 1-4 and no product? sets recetaEnCurso false and fase0, but output vDescarga? CASE already set? Wait abort after CASE, so if fase changes to 0, outputs were from previous CASE before abort. In same scan, outputs won't be updated to phase0 until next scan. Eg step17 abort sin producto from phase1: Before abort, phase1 sets vA true; abort after CASE sets vA false, vB false, calentador false, mezclador false, recetaEnCurso false, fase0; vDescarga remains false. Good. no issue.
+- Timer called in phase4 every scan with IN true; no reset outside. Same subtle issue.
+- It declares `mezclaTiempo` constant, good maintenance.
+- IEC: standard, uses constant TIME. Good. 3 maybe? It doesn't use R_TRIG/CTU, but TON well instanced. Constant T#120S. I'd give 3? The code uses `//` comments? In ST, `//` is accepted in CODESYS, but IEC uses `(* *)`; Does `//` count extension? Many Codesys supports single-line `//`. IEC 61131-3 standard uses `(* *)`; single-line comments are part of standard? In ST, `//` is not standard? CODESYS supports. But our rubric says "compila sin cambios" and "extensiones fuera estándar". The use of `//` comments is typically accepted as extension but not compiled? The compiler likely accepts. It was compiled. The rubric's IEC 1: uses extensiones fuera del estándar. Should we penalize `//` comments? Across many responses use `//` or `(* *)`. The compiler accepts. We may not penalize comments if CODESYS accepts. But "conforme a IEC 61131-3" standard comment syntax is `(* *)`. However CODESYS supports both; `//` is an extension. If we strictly apply, many with `//` should be IEC 1? The functional/iec fixed null. But we need rate "compila sin cambios" maybe standard? The instructions mention "Cumplimiento IEC cuando compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." Are `//` comments extension? Could be considered extension, but the code still compiles. If we penalize all `//`, almost all 24 use `//` or `(* *)`? Many use `(* *)`. Some use `//` heavily. Need decide. The task says "conforme a IEC 61131-3", standard comments are `(* *)`; `//` is not standard but widely supported. The rubric specifically mentions extensions. Should we mark IEC 1 if they use `//`? Hmm. The "resultado_codesys" says compila. The "iec_fijo" null means we assign. It would be harsh to give 1 to most due to comment style. I think we shouldn't treat `//` as extension for IEC scoring because CODESYS accepts and the task environment is CODESYS, and the rubric's "extensiones fuera del estándar" likely refers to non-standard constructs or types, not comments. But strictly, it is an extension. Yet they ask "Cumplimiento IEC 61131-3" and CODESYS supports `//`. I'd focus on syntax and standard blocks.
+- A2-7551 uses `(* *)`? Actually it uses `//` comments. But compiles. Might still score 2/3. I'd not penalize comments.
+
+- Coherence: Has `recetaEnCurso` and force fase0 when not in curso. But the `IF NOT recetaEnCurso THEN fase :=0; END_IF` at top of every scan could reset phase if recetaEnCurso false and btnInicio false. Good. Start level-triggered. Timer not reset outside phase4, but CODESYS maybe due no call; potential after first batch. Also `timerMezcla` call in phase4 with IN true; after leaving phase4, no call with IN false. As above. This could be a hidden bug. But harness passes. Coherence 2.
+- Claridad: comments, constants, sections. 2.
+- Mantenibilidad: declares constant time, good. But logic duplicate? Abort after CASE centralized. Score 2 or 3? It has recetaEnCurso, outputs in phase, no duplication. It has constant for time. No input parameters. I'd give 2 not 3 because no modularization/extensibility of parameters beyond time; but "diseño extensible (parámetros de entrada del FB)" not. So 2.
+
+A2-3859:
+- Uses btnAbort level-triggered before CASE. Has abortado flag, TON. It passes.
+- It sets all outputs in each CASE, so good. Timer called in phase4 and after CASE `IF fase <>4 THEN tMezcla(IN:=FALSE, PT:=T#120S);` this ensures timer reset outside phase4. Good.
+- Abort block: IF btnAbort AND (fase>=1 AND fase<=5) THEN vA:=FALSE; ... IF fase<>5 THEN IF NOT nivelVacio THEN abortado:=TRUE; fase:=5; ELSE abortado:=FALSE; fase:=0; END_IF; END_IF; END_IF. Level-triggered. If btnAbort held in phase5, it enters, sets abortado? it sets abortado? Actually at start of abort block, it sets vA... but does not set abortado before IF? It sets `abortado := TRUE;`? Let's read A2-3859: 
+```
+IF btnAbort AND (fase >= 1) AND (fase <= 5) THEN
+    vA := FALSE; ...
+    IF fase <> 5 THEN
+        IF NOT nivelVacio THEN
+            abortado := TRUE;
+            fase := 5;
+        ELSE
+            abortado := FALSE;
+            fase := 0;
+        END_IF;
+    END_IF;
+END_IF;
+```
+It does NOT set `abortado := TRUE` when fase=5. Actually not needed. In phase0 CASE resets abortado false. abortado only used not in outputs? not used? It's set in abort and reset in phases; but doesn't affect outputs. Redundant.
+- Uses level-triggered abort; okay. Timer reset. Good. Should IEC 3. Coherence 3? Potential: If btnAbort held during phase5 after an abort from phase1, the abort block executes with fase=5, it closes vA/vB/calentador/mezclador, continues. Fine.
+- Clarity: section comments, explicit outputs per phase. 2 or 3. It is clear.
+- Mantenibilidad: T#120S magic repeated? `tMezcla(IN := (fase=4), PT := T#120S)` in phase4 and `tMezcla(IN := FALSE, PT := T#120S)` outside. Only one time value but repeated. No constants. Score 2.
+
+A2-8269:
+- Simple, uses TON, no edge detection. Passes. Logic:
+Abort: IF btnAbort AND fase >0 THEN IF fase<>5 THEN IF NOT nivelVacio fase:=5; ELSE fase:=0; END_IF; END_IF; END_IF.
+CASE phase transitions, timer after, outputs assigned.
+- It does not explicitly close outputs on abort, but output assignments after case close based on phase. Good.
+- Timer called `TON_Mezcla(IN := (fase=4), PT:=T#120S);` when leaving phase4 to phase5, IN false? But output assignment after case occurs after phase change? Let's see order: Abort, state machine, timer, outputs. In state machine, if in phase4 and tMezcla.Q? But timer called after case, so timer Q from previous scan. When it reaches 120s, the previous scan timer Q remains true, state machine sees it and changes fase to 5. Then timer call sees IN false (fase=5) and resets. Good. If abort in phase4, timer resets similarly. Fine.
+- IEC: standard TON, no R_TRIG but okay. Compiles. 3? It uses simple boolean, CASE, TON well instanced. Actually no R_TRIG. But "usa construcciones idiomáticas" yes TON. I'd give 3.
+- Coherence: robust. But abort uses level btnAbort; if btnAbort held true and phase changes? It handles. No contradictions. 3.
+- Claridad: comments, sections, simple. 3? It has section header comments. Names descriptive. Could be 3. It doesn't have separation into functions; but simpler. Maybe 2.
+- Mantenibilidad: T#120S magic, but no duplication. 2.
+
+A2-8208:
+- Similar to A2-3859 but maybe sets outputs fully. It has `abortando` flag set true but not used in outputs? It is also set in abort block before `IF fase<>5`? Let's read: 
+```
+IF btnAbort AND (fase>=1 AND fase<=5) THEN
+    vA:=FALSE;...
+    abortando := TRUE;
+    IF fase <> 5 THEN
+        IF NOT nivelVacio THEN fase:=5; ELSE fase:=0; abortando:=FALSE; END_IF;
+    END_IF;
+END_IF;
+```
+Actually yes. It uses `abortando` assigned but never read except resets. Redundant.
+- It calls tMezcla in phase4 with PT only in phase4; does not reset outside? In phase0 it calls `tMezcla(IN := FALSE, PT := T#120S)` and in phase4 when Q it resets `tMezcla(IN:=FALSE, PT:=T#120S)`. In phase5 when nivelVacio becomes true, no explicit reset? It doesn't call tMezcla(IN:=FALSE) in phase5; but timer already reset when Q in phase4. If abort during phase4? In abort block, vA/vB... false, if NOT nivelVacio then fase:=5; It does NOT reset tMezcla. Since timer's last call in phase4 was with IN true; after abort, phase5 branch doesn't call timer. Next new recipe phase4, potential no rising edge. But harness might not catch. This is hidden. But some codes do not reset on abort. Coherence maybe 2.
+- IEC: standard TON. 2/3. Possibly 2 because timer not called outside phase4 to reset on abort. But not IEC issue. I'd give 3.
+- Clarity: comments, sections. 3? It has explicit outputs per phase. Good.
+- Mantenibilidad: T#120S appears in phase4/abort? There is T#120S in `tMezcla(IN := TRUE, PT := T#120S)` and other resets with `PT := T#120S` (multiple). Magic time repeated. Some duplication reset. Score 1/2.
+
+A2-3851:
+- Similar to A2-7833 but uses `timerMezcla` and recetaEnCurso, `//` comments. It initializes `IF NOT recetaEnCurso THEN fase:=0; END_IF` at top. Then CASE, outputs. Abort after CASE. It calls timer in phase4 with IN true, no reset outside.
+- Start level-triggered. Good. 
+- Potential timer reset issue. IEC standard. Coherence 2. Clarity 1? It has comments but not many; no section comments? It has `// Inicialización de variables`, `// Lógica de control`, `// Lógica de aborto`. Names okay. Clarity 2.
+- Mantenibilidad: no time constant, only T#120S once. 1/2.
+
+A2-4087:
+- Simple; timer called at top: `timerMezcla(IN := (fase = 4), PT := T#120S);` then abort level, then CASE machine, outputs. Good. Abort no explicit close but outputs at end. Timer updates. 
+- Output assignment after CASE. On step when phase transitions from 3 to4, outputs? At top timer call with fase older? Wait order: timer call before state machine uses current `fase` from previous scan. At step8 transition from phase3 to4: timer call sees fase=3 (IN false), then state machine changes fase to4, outputs set mezclador true. Good. At next scan, timer call with fase=4 starts timer. 
+- For step9 etc good. 
+- Abort level: `IF btnAbort AND (fase>=1 AND fase<=5) THEN IF NOT nivelVacio THEN fase:=5; ELSE fase:=0; END_IF; END_IF;` If abort during phase5 continues. Works. 
+- IEC: standard TON, compiles. 3.
+- Coherence: robust, no issues. Use level abort maybe boundary but okay. 3.
+- Clarity: comments minimal; `fase` output initialized in declaration; clear sequence. Could be 2/3. 
+- Mantenibilidad: no parameterization, T#120S once. 2.
+
+A2-5337:
+- Uses R_TRIG for start/abort, TON. Like A2-8363 but with trig. Passes. IEC 3. Coherence 3. Clarity 3 maybe. Mantenibilidad 2.
+
+A2-2424:
+- Simple with TON, no edge. It has abort logic only for fases 1..4, and phase5 normal. It passes. 
+- It uses `tMezcla(IN := (fase=4), PT := T#120S);` after state machine? Actually order: Abort, state machine, timer, outputs? Code:
+Abort IF btnAbort AND (fase>=1 AND fase<=4)...
+CASE...
+ELSE fase:=0
+tMezcla(IN:=(fase=4), PT:=T#120S);
+outputs.
+Good. Abort in phase5 continues because `fase` remains 5, not affected by abort. 
+- IEC standard TON. 3.
+- Coherence 3.
+- Clarity 2/3. It lacks comments per output maybe? It has comments. 
+- Mantenibilidad 2.
+
+A2-8499:
+- Edge detection manual, `abortando` flag. Passes. 
+- It sets outputs as boolean expressions including `AND NOT abortando` for vA/vB/calentador/mezclador, vDescarga phase5. Timer IN `(fase=4) AND NOT abortando`. 
+- It handles abort edge. However in CASE phase5, it completely ignores flancoAbort (descarga continues). Good. 
+- One subtlety: `abortando` set true on abort in phase1-4, not set false when entering fase5, so outputs vA-vB, calentador, mezclador remain suppressed, vDescarga open. When phase5 reaches vacio, it sets fase0 and abortando false. Good. 
+- If abort during phase4 and nivelVacio true, set fase0? In code Phase4 abort: `abortando := TRUE; timerMezcla(IN:=FALSE); IF NOT nivelVacio THEN fase:=5; ELSE fase:=0; END_IF;` But in phase0, `abortando := FALSE` and outputs based on `vA := (fase=1) AND NOT abortando`. Good.
+- IEC standard TON, manual edge. 3? It doesn't use R_TRIG but manual edge correctly. Standard. 3.
+- Coherence: robust, safe. 3.
+- Claridad: very well commented with sections and rationales. 3.
+- Mantenibilidad: no time constant? It uses T#120S in timer call only. Magic. It has no constants, no parameters. But logic centralized outputs. Score 2 maybe.
+
+A2-2376:
+- Similar to A2-8363 but no comments (minimal). Uses R_TRIG and TON. It passes. IEC 3. Coherence 3. Clarity: No comments and shorter names `nivelA` etc. Variable names are same as inputs. It lacks comments. Score 1? The rubric: 0 sin comentarios/nombres crípticos. It has meaningful names but no comments. 1: estructura básica, nombres pobres o comentarios ausentes. It does have structure (CASE, sections), names okay but comments absent. Could be 2? It states "comentarios ausentes" but names descriptive; maybe 1. Need decide. I'd give 1 or 2. Since code is very clear due simple structure but no comments. Many other codes have plentiful comments. A2-2376 has comments only for edge detection, abort, state machine, assignment. Wait `// Detección de flancos`, `// Lógica de Aborto`, `// Máquina de estados secuencial`, `// Temporizador`, `// Asignación de salidas`. Actually yes it has comments! In code:
+```
+// Detección de flancos para los botones
+...
+// Lógica de Aborto (ignorado en reposo, fase = 0)
+...
+// Máquina de estados secuencial
+CASE fase OF
+    0: // Fase 0: Reposo
+...
+```
+So has enough comments. Clarity 2 or 3. It lacks variable comments in declarations, but section comments. Clear. I'd give 2. Mantenibilidad 2.
+
+A2-5655 already considered.
+A2-4520 considered.
+A2-5299 considered.
+A2-2878 considered.
+
+Non-compiling:
+A2-3687:
+- No compila due `IF btnInicio AND NOT inicioPulsado AND fase = 0 THEN` missing parentheses? Actually syntax error: In ST, boolean expression `NOT inicioPulsado AND fase = 0` may be parsed incorrectly because NOT has precedence? The error says expected ';' in place of NOT. Actually line 4: `IF btnInicio AND NOT inicioPulsado AND fase = 0 THEN` might be invalid due to missing parentheses around `NOT inicioPulsado`? ST supports NOT. Maybe they need `NOT(inicioPulsado)`. Also `CASE 1..4` with range maybe standard. It has `ELSE` at CASE but missing semicolon. No compila. Functional/iec fixed 0.
+- Code uses TP timer, flags. It handles abort edge with flags. Logic mostly state machine. But no compila.
+- Coherence: It has `CASE fase OF 1..4:` and `5:` inside abort; later `CASE fase OF 1..5` for phases. Logic seems coherent but no initialization outputs in all phases. In phase1 etc it sets outputs, but transition to phase2 sets vA false. phase3 transitions set calentador false. Phase5 sets vDescarga true. The abort handles fase0? It has CASE 1..4 and 5, no 0; repo no effect. Good. Timer TP in phase4 with IN true may work if called each scan. But if abort in phase4 before timer complete, timer not reset. Similar.
+- Coherence maybe 2. It has flags edge. Some variables default false. No contradictions. Score 2. But no compila due syntax, fixed.
+- Claridad: comments and names; mostly clear. 2.
+- Mantenibilidad: T#120S magic, flags, no constants. 1.
+
+A2-4573:
+- No compila due CASE duplicate `1..5` and `5`. But logic:
+Abort edge flags; CASE fase OF 1..5 then 5 duplicate. That's a logic error even besides compile; it has redundant branch. The `1..5` branch sets `IF NOT nivelVacio` etc; the `5` branch same. Not fatal but duplicate. The rest phase logic with IFs. It doesn't initialize all outputs in each phase? Each phase sets only its output; transition sets false. Good.
+- No compila fixed.
+- Coherence: Duplicate CASE branch evidence of poor logic but not contradictory; score 1. There is also `IF btnAbort AND NOT abortPulsado THEN ...` no phase0 check; but CASE inside handles only 1..5 and 5. So in phase0, does nothing. Good. It doesn't handle phase0 else? separate IFs for phase0? It lacks phase0 output initializations? At phase0, outputs maybe from previous; but phase5 sets vDescarga false on vacio then fase0. Good. At start initial all outputs default false. Could be okay. Score 2? Duplicate branch is a condition/state dead; but maybe not severe. The code doesn't compile due duplicate label. Coherence maybe 1.
+- Claridad: comments moderate, structure with IFs instead of CASE for phases? It uses IF for phases after abort, not bad. Score 2.
+- Mantenibilidad: Duplicate abort logic; magic T#120S; 1.
+
+A2-5565:
+No compila. Already considered. Coherence 0, clarity maybe 2? Need settle.
+
+Need also evaluate A2-7260 and A2-5579.
+
+Let's define our scoring policy to be consistent.
+
+Functional:
+- Pass all: 3 fixed.
+- No compila: 0 fixed.
+- Compila fails:
+  - 2 fails (A2-5299): functional 2.
+  - 5 fails (A2-2878): functional 0 (fails nominal phase4)
+  - 10 fails (A2-4520): 0
+  - 9 fails (A2-5655): 0
+Need maybe A2-5299 if fails step8/9 around phase4 maybe could be 1. Let's examine protocol step 8 and 9: step8 is transition to phase4; step9 is already in phase4. If fails both, maybe because code not setting active output correctly? Let's simulate more accurately to decide.
+
+A2-5299 code:
+```
+(* Control de inicio *)
+IF btnInicio AND NOT inicioPulsado AND fase = 0 THEN
+    fase := 1;
+    inicioPulsado := TRUE;
+END_IF
+
+(* Control de abort *)
+IF btnAbort AND NOT abortPulsado THEN
+    abortPulsado := TRUE;
+    CASE fase OF
+        1..4:
+            vA := FALSE; vB := FALSE; calentador := FALSE; mezclador := FALSE;
+            IF NOT nivelVacio THEN fase := 5; ELSE fase := 0; END_IF;
+        5:
+            IF NOT nivelVacio THEN fase := 5; ELSE fase := 0; END_IF;
+    END_CASE;
+END_IF
+
+(* Control de las fases *)
+CASE fase OF
+    1: vA := TRUE; IF nivelA THEN vA:=FALSE; fase:=2; END_IF;
+    2: vB := TRUE; ...
+    3: calentador := TRUE; IF temp>=60 THEN calentador:=FALSE; fase:=4; END_IF;
+    4: mezclador := TRUE; tMezclar(IN:=TRUE, PT:=T#120S); IF tMezclar.Q THEN mezclador:=FALSE; fase:=5; END_IF;
+    5: vDescarga := TRUE; IF nivelVacio THEN vDescarga:=FALSE; fase:=0; END_IF;
+    0: vA:=FALSE; vB:=FALSE; calentador:=FALSE; mezclador:=FALSE; vDescarga:=FALSE; IF btnAbort THEN abortPulsado:=TRUE; END_IF;
+END_CASE
+...
+```
+What about step8:
+Previous phase3. At start outputs maybe all false? Step7 phase3 sets calentador true; other outputs from phase2 transition false. In phase3, no vA/vB etc false but from previous step6 they false. At step8, before CASE, start no, abort no (abort false). CASE fase=3: calentador:=TRUE; IF temp>=60 THEN calentador:=FALSE; fase:=4; END_IF. So at end: calentador false, fase4, mezclador remains previous value (false from step7? Actually phase3 step7 did not set mezclador, but initial and previous phase2 false; yes false). Expected active salida phase4 mezclador true, so fail step8. Step9: At start fase4. CASE fase=4: mezclador:=TRUE; tMezclar(IN:=TRUE, PT:=120s); IF tMezclar.Q THEN... But tMezclar is TP. It has not been called before. First call with IN true. According to TP, Q FALSE. But maybe TP's output Q also reflects the timers state; after 118 ms? no. It should pass. Why fail step9? Perhaps because harness expects active salida exactly phase4, but code also has `calentador` maybe? At step9, previous step8 after phase3 had calentador false; phase4 doesn't set calentador, but remains false. vA/vB false. vDescarga false. Good. So active salida only mezclador true. Pass. Why result says fails? Maybe because step9 duration is 118s, and after 118s, with TP timer `PT := T#120S`, Q might become true at 120s, not. So maybe step9 expected phase4 yes active output? pass. Unless the TP pulse timer's `Q` in CODESYS is TRUE for PT **after** IN goes true. At 118s, near 120; maybe if simulation's time step jumps by 3s at final? It could overshoot beyond 120s? Step9 duration is 118s in one step; simulation may advance cycles several times? The harness runs cycles of 4/10/20 ms? The test table tEspera = T#118000MS, so it calls the FB repeatedly for 118s. At the end of the sub-step, when checking, time elapsed may be exactly 118s (or slightly over due to cycles) but still under 120s if cycle 20ms? Starting at 0, after 118s, no overshoot if cycles divide. Not fail.
+Maybe `tMezclar` is TP and `IN := TRUE`. At exact 118s, TP Q false. pass. Strange.
+
+Could the result "Falla 2 de 25 pasos (pasos 8,9)" mean step8 fail (output), step9 also failed because after 118s actually tMezclar.Q became true too early due to TP's PT = 120s but timer started when first called in step9? Wait first call in step9. No.
+
+Hold on: In step8, although phase changed to 4, the `CASE fase OF` statement was evaluated with the value of `fase` at the start of the CASE (3). The selected branch is phase3. So tMezclar is not called. In step9, tMezclar first call starts. Expected phase4 at the end of step9. It may fail because `tMezclar.Q` is true? Could TP Q become true immediately on the first call? Let's recall TP semantics: A pulse timer generates a pulse of given duration on rising edge. In CODESYS TP: `Q := IN AND NOT running?` Actually TP: If IN = TRUE and no pulse active, start timer and Q := TRUE; if timer running and timer reached PT, Q := FALSE. Wait maybe TP output Q is TRUE immediately at the rising edge and remains TRUE for PT. If so, then in step9, output `tMezclar.Q` would be TRUE from the very start of timing, not false! Let's verify: In IEC 61131-3, TP is pulse timer: on rising edge of IN, Q is set to TRUE and elapsed time starts; after PT, Q is set to FALSE. Yes, TP generates a pulse of fixed length regardless of input, starting at the rising edge. I previously confused with TON. So if tMezclar is TP, immediately on first call with IN true, Q becomes TRUE. Then in phase4 code:
+```
+mezclador := TRUE;
+tMezclar(IN:=TRUE, PT:=T#120S);
+IF tMezclar.Q THEN
+    mezclador := FALSE;
+    fase := 5;
+END_IF;
+```
+Q is true immediately, so it transitions to phase5 immediately. Thus step9 would fail because at the end of step9, phase4? Actually step9 expects phase4, but code would already have phase5 maybe. Let's simulate:
+Step8: phase changed to 4 but phase4 branch not executed; step8 fails (expected phase4 but output mezclador false, phase4 actually yes). Step9: phase4 branch executes: sets mezclador true, calls TP (first call) -> Q true, IF true -> mezclador false, fase=5. At end expected fase4, actual fase5, output vDescarga? Wait phase5 branch not executed because CASE selected phase4. Output vDescarga remains false. So fails. That matches two fails step8 and step9. After step9, code in phase5. Step10 expected phase5 with vDescarga true; phase5 branch will set vDescarga true, pass. Great. So A2-5299 fails because it used TP instead of TON, causing mixing phase to end immediately once phase4 runs. This is a core functional failure: phase4 mixing reduced to zero seconds. It fails nominal case at phase4. Functional score should be 0, not 2. It fails the mixing phase altogether (step9). Though it passes later by luck? The recipe's phase4 timing is wrong. So functional 0. Good catch. Thus assign 0 for A2-5299. IEC maybe 2 (uses TP incorrectly, standard but not idiomatic). Coherence 0? Since phase4 logic using TP causes immediate transition, a serious dead logic. Yes coherencia 0. Good.
+
+Now A2-2878 uses TON but not called in phase4, so fails timing. Functional 0.
+
+A2-4520 uses TON not called in phase4 and reversed condition, immediate transition to phase5, functional 0.
+
+A2-5655 uses level abort in reposo causing phase5, fails start, functional 0.
+
+Now maybe any compiles fails should be 0 except maybe none.
+
+Need now settle IEC for pass codes. Let's define rubric:
+- 1 if uses extensions outside standard (e.g., method maybe? But no compila fixed 0). For compiles, no extensions. So IEC mostly 2 or 3.
+- 3 if idiomatic uses TON/R_TRIG/CTU well instanciated, types correct, etc.
+Which pass codes meet 3? 
+  - A2-8363 uses R_TRIG and TON -> 3.
+  - A2-5337 uses R_TRIG and TON -> 3.
+  - A2-2376 uses R_TRIG and TON -> 3.
+  - A2-4087 uses TON correctly -> 3.
+  - A2-8269 uses TON correctly -> 3.
+  - A2-2424 uses TON correctly -> 3.
+  - A2-3859 uses TON correctly and reset -> 3.
+  - A2-7551 uses TON with constant TIME -> 3.
+  - A2-1185 uses TON and manual edge but multiple timers; is TON well instanced? yes calls every scan in output CASE. 3.
+  - A2-8499 uses manual edge, TON with reset; standard -> 3.
+  - A2-8208 uses TON but missing reset on abort; still mostly TON. 3? Maybe 2? I'll consider.
+  - A2-3851 uses TON but no reset outside phase4; standard. 2? 
+  - A2-7833 uses TON but no reset; standard. 2?
+  - A2-2878 TON misused -> 2.
+  - A2-4520 TON misused -> 2.
+  - A2-5299 uses TP correctly as standard but not appropriate, and manual edge flags -> 2.
+  - A2-5655 uses TON standard but R_TRIG absent manual flags with bug -> 2.
+  - Non-compiling fixed 0.
+  - A2-7745 no compila fixed 0.
+  - A2-2820 no compila fixed 0.
+
+The IEC criterion doesn't care logic but says "compila sin cambios; declaraciones y tipos correctos. 3: además usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." For codes using TP/TON but not idiomatic due not calling timer each scan, I'd give 2. For codes that use standard TON but call only in phase4 and no reset outside, many will have hidden issue but from IEC standpoint "bien instanciado" maybe not well. However A2-7833 and A2-7551 compile and use TON but not necessarily call it outside phase4; they may not be robust. But they still instantiate TON and call it each scan while in phase4. The standard TON may be considered well instanced if the same block is called conditionally? Actually the block is called only during phase4; outside it doesn't evaluate. For a TON to operate correctly, the block should be called every scan or at least both with IN false when not timing. Conditional calling can cause issues. The rubric's "TON bien instanciado" implies call every scan. So codes that call TON only inside the CASE phase4 have a subtle issue. But from IEC compliance, it's still a properly declared TON. The use might be considered not idiomatic. I'd give 2 for those.
+- A2-7833: timer call inside phase4 only. IEC 2.
+- A2-7551: timer call inside phase4 only. IEC 2? But it uses constant TIME. Still conditional. Could be 2.
+- A2-3851: timer call inside phase4 only. IEC 2.
+- A2-8208: timer call inside phase4, but also resets in phase0 and on Q. However if abort in phase4, no reset. But calls only phase4. Could be 2.
+- A2-1185: timer call in output CASE every scan regardless phase, using IN based on fase. That's well instanced. 3.
+- A2-3859: timer call inside phase4 and afterwards outside with IN false; effectively every scan. 3.
+- A2-8269: timer call outside CASE every scan. 3.
+- A2-4087: timer call before state machine every scan. 3.
+- A2-2424: timer call after CASE every scan. 3.
+- A2-8499: timer call after CASE? It calls `timerMezcla(IN := (fase = 4) AND NOT abortando, PT := T#120S);` after output assignment, every scan. 3.
+- A2-5337: timer call after CASE every scan. 3.
+- A2-8363: timer after CASE every scan. 3.
+- A2-2376: timer after CASE every scan. 3.
+
+Thus IEC scores: most pass but timer conditional -> 2.
+
+What about A2-7833 and A2-7551 maybe have `recetaEnCurso`; they declare TIME constant for A2-7551. Conditional timer. I'd give 2.
+
+For A2-8208: It calls timer in phase4 with `tMezcla(IN := TRUE, PT := T#120S);` and resets in phase0 when not fase4? It has in phase0 `tMezcla(IN := FALSE, PT := T#120S)`, and when transition 4->5 resets. But no call outside phase4 except phase0. It does not call in phase1-3 or 5. If abort in phase4, no call outside, similar. So conditional. IEC 2.
+
+For A2-3859, despite calls inside phase4 and after CASE resets, likely 3.
+
+Now clarity. We need assign scores 0-3.
+
+Let's create a table of non-fixed criteria.
+
+I'll go through each sequentially with proposed scores and justifications.
+
+1 A2-8363:
+- funcional 3 fixed, iec 3. coherencia 3. claridad 3. mantenibilidad 2.
+Justificaciones: 
+  - just_func_iec: only IEC set? We need fill one line, or "" if both fixed. Here functional fixed but iec set. So we include reason for iec maybe. The spec: `"just_func_iec": "una línea, o \"\" si las dos estaban fijadas"`. For this, only funcional fixed, iec null, so we should write reason for iec. We'll do.
+  - coherencia: "Máquina de estados clara y sin contradicciones; aborto y arranque con flanco, TON reseteado por IN de fase."
+  - claridad: "Separación limpia en detección de flancos, aborto, CASE, temporizador y salidas; comentarios por bloque."
+  - mantenibilidad: "Lógica centralizada y sin duplicación, pero T#120S sin constante."
+  Scores: 3,3,2.
+
+2 A2-7833:
+- funcional 3 fixed, iec 2, coherencia 2, claridad 2, mantenibilidad 1.
+just_iec: "Compila y usa TON, pero temporizador solo se llama dentro de fase 4; declaraciones correctas."
+coherencia: "Control correcto en flujo principal, con recetaEnCurso; el temporizador no se reinicia explícitamente fuera de fase 4, riesgo en recetas repetidas."
+claridad: "Comentarios y nombres aceptables; estructura ordenada aunque con lógica de aborto al final."
+mantenibilidad: "T#120S mágico, sin constante; recetaEnCurso y salidas acopladas en un único bloque."
+Need maybe maintenance 1.
+
+3 A2-7551:
+- funcional fixed, iec 2? We said 2. coherencia 2, claridad 2, mantenibilidad 2 (has time constant).
+just_iec: "TON estándar y tipo TIME correcto; temporizador condicional dentro de CASE, no evaluado en todas las fases."
+coherencia: "Lógica de receta coherente con recetaEnCurso; temporizador no se resetea fuera de fase 4."
+claridad: "Comentarios breves y estructura CASE; nombres descriptivos y constantes."
+mantenibilidad: "Usa constante para T#120S; lógica centralizada, aunque faltan parámetros de receta."
+Score 2.
+
+4 A2-3687 no compila:
+- funcional 0, iec 0 fixed. Need other scores.
+Let's decide:
+Coherence: It uses TP (pulse) for mixing. TP is pulse timer; in phase4 code:
+```
+mezclador := TRUE;
+tMezclador(IN := TRUE, PT := T#120S);
+IF tMezclador.Q THEN
+    mezclador := FALSE;
+    fase := 5;
+END_IF;
+```
+Just like A2-5299, TP Q true immediately. So phase4 would last zero seconds. This is a logic error. However it also uses manual edge flags, abort handling. Score 0? It would fail nominal. Since no compila but logic would also fail due TP immediate. In A2-3687, uses `TP` not TON. So phase4 immediate transition as well. Coherencia 0. But could be 1? The task specifically requires TON-like 120s. TP misapplication is serious. Score 0.
+Clarity: It has comments and section; code structured. 2.
+Mantenibilidad: T#120S magic; duplicate? 1.
+So 0,0 fixed, coh 0, clar 2, mant 1.
+Need maybe `just_func_iec` "" because both fixed. Yes.
+just_coherencia: "Usa TP para mezcla, Q se activa inmediatamente y acortaría la fase 4; no cumple temporización."
+just_claridad: "Comentarios y nombres claros, aunque la elección de TP no se explica."
+just_mantenibilidad: "T#120S mágico y banderas manuales; cambios acotados a un bloque."
+
+5 A2-2878:
+- funcional 0, iec 2, coherencia 0, claridad 2, mantenibilidad 1.
+Need justify.
+Compila fails. functions: 0. Why? It fails phase4.
+iec 2: "TON estándar pero no se invoca en fase 4; el temporizador no actualiza, por eso no es idiomático."
+coherencia: "Temporizador no se ejecuta en fase 4, condición tMezcla.Q inalcanzable y la receta queda detenida."
+claridad: "Estructura CASE y comentarios por fase; nombres descriptivos."
+mantenibilidad: "T#120S directo y sin constantes; temporizador acoplado a transición."
+
+6 A2-1185:
+- funcional fixed 3, iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+just_iec: "Usa TON bien instanciado (llamada cada ciclo vía salidas) y tiempo T#120S con declaraciones correctas."
+coherencia: "Máquina de fases con flancos manuales, aborto en todas las fases y salidas determinadas por fase; sin estados muertos."
+claridad: "Muy organizada: detección de flancos, transiciones, salidas y actualización separadas, con comentarios."
+mantenibilidad: "Detección y salidas separadas, pero aborto repetido en cada fase y T#120S sin constante."
+
+7 A2-7260 no compila:
+- fixed 0,0.
+Need scores:
+Let's analyze methods. It uses methods StartBatch/AbortBatch/UpdateBatch/Execute; OR in Execute could short-circuit issue. Also no `END_FUNCTION_BLOCK`? Code has no end. But logic UpdateBatch state machine okay. AbortBatch has state>0 check. It calls `IF StartBatch() OR AbortBatch() OR UpdateBatch() THEN executed := TRUE; END_IF;` I think in CODESYS OR might short circuit? Not sure. If any method returns true, the later methods may not be invoked. This is a serious logical error. Also `Execute();` at bottom is a statement in FB body; no method called? Actually it would call Execute. But if methods are valid, still.
+Coherence: 0 or 1. Because method execution with boolean OR may skip and not update outputs; also no END_FUNCTION_BLOCK. I'd give 0.
+Clarity: Methods are clear conceptually but invalid placement; comments sparse. Score 1.
+Mantenibilidad: No constants; method decomposition present but not standard; 1.
+just_coherencia: "Execute usa OR entre métodos con efectos laterales; puede saltarse UpdateBatch y dejar salidas/estado sin actualizar."
+just_claridad: "Separación en métodos comprensible, pero ubicación no válida y comentarios escasos."
+just_mantenibilidad: "Métodos separan arranque/abort/actualización, pero T#120S mágico y sin constantes."
+
+8 A2-5299:
+- functional 0 (set by us), iec 2, coherencia 0, claridad 2, mantenibilidad 1.
+Need set `funcional_fijo`? It is null, so we set 0 not fixed. Note rule: if compila but failures, assign 0,1,2; never 3. We assign 0.
+just_func_iec should mention functional and iec? The field is "just_func_iec" one line. We should include both maybe: "Funcional 0: TP Q se activa al entrar a fase 4 y acorta la mezcla; IEC 2: compila con TP estándar pero no es el bloque idiomático para temporización." Good.
+coherencia: "Fase 4 con TP pasa inmediatamente a fase 5 al activarse Q, por lo que mezclar 120s queda inalcanzable."
+claridad: "Código ordenado con CASE y comentarios; nombres claros."
+mantenibilidad: "Sin constantes para T#120S; lógica de botones y fases en un bloque."
+
+9 A2-3859:
+- functional fixed 3, iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+just_iec: "TON estándar bien instanciado, llamado en fase 4 y con reset fuera de fase 4; tipos TIME correctos."
+coherencia: "Abort y máquina de estados cubren fases 1-5 y 0; salidas explícitas por fase y temporizador reseteado."
+claridad: "Comentarios de sección y fase, nombres descriptivos, estructura CASE clara."
+mantenibilidad: "Lógica de salidas separada por fase, sin constantes para T#120S ni parámetros."
+
+10 A2-7745 no compila:
+- fixed 0,0.
+Need scores:
+Code uses edge detection, output assignments per phase, but `ELSE:` syntax. Logic mostly good. However timer `timerMezcla(IN := TRUE, PT := T#120S);` in phase4 every scan and reset on Q; but no reset if abort in phase4? It only resets on Q, not abort. But phase5 later? no. Could be hidden.
+Coherence: Maybe 2. Let's analyze: It has `abortActivo` set true on abort; output assignment? It sets outputs directly in case, not using abortActivo. For phase1-4, after abort, code changes fase to 0 or 5 before CASE, so CASE handles outputs. For phase5 if abort occurred? In abort block if fase=5, no phase change; then CASE phase5 sets vDescarga true. Good. `abortActivo` is mostly unused but doesn't harm. Timer calls in phase4 every scan; okay. On abort phase4, timer not reset, could cause next recipe issue. But overall coherent.
+Coherence: 2, not 3.
+Clarity: Section comments and variables; good but syntax error `ELSE:`. I'd give 2.
+Mantenibilidad: T#120S magic, manual edge, no constants; 1.
+just_coherencia: "Lógica de fases y aborto coherente; 'abortActivo' es informativo y el temporizador no se resetea en abort."
+just_claridad: "Buenas secciones y comentarios, pero sintaxis de CASE inválida (ELSE con ':')."
+just_mantenibilidad: "T#120S mágico y sin constantes; lógica de aborto acoplada en el bloque."
+
+Wait if code no compila, can we say "sintaxis inválida" in claridad? yes.
+
+11 A2-4520:
+- functional 0, iec 2, coherencia 0, claridad 2, mantenibilidad 1.
+Need set. 
+just_func_iec: "Funcional 0: mezcla no temporizada por tMezcla ausente/invertida; IEC 2: compila con TON pero temporizador no se llama en fase 4, no idiomático."
+Actually code calls tMezcla at transition to phase4, not in phase4; plus condition `IF NOT tMezcla.Q THEN fase:=5`. That is inverted.
+coherencia: "Fase 4 usa NOT tMezcla.Q para salir; al ser Q falso se descarga inmediatamente y la mezcla es inalcanzable."
+claridad: "Comentarios por fase y nombres claros; el error no es de legibilidad."
+mantenibilidad: "Sin constantes; temporización embebida en transición de fase."
+
+12 A2-5579 no compila:
+- fixed 0,0.
+Need scores:
+Logic in methods; `Execute` not called in FB body; even if valid doesn't run. Also AbortBatch lacks phase check (acts in reposo if product). Coherence 0.
+Clarity: Methods with clear names but no comments, no body call. 1.
+Mantenibilidad: Some separation by methods, but no constants; magic T#120S. 1.
+just_coherencia: "Execute no se invoca en el cuerpo del FB y AbortBatch actúa también en reposo; estados pueden quedar sin ejecutar."
+just_claridad: "Métodos con nombres claros, pero sin llamada visible y sin comentarios."
+just_mantenibilidad: "Separación por métodos, sin constantes ni parámetros de receta."
+
+13 A2-5565 no compila:
+- fixed 0,0.
+Need scores:
+This one has `Execute` method and early returns. `AbortBatch` returns true and `Execute` returns before UpdateBatch; `timerMezcladorActive` prevents timer from being called after first scan? Actually in phase4 UpdateBatch only calls timer once due timerMezcladorActive flag, but doesn't call it every scan after first active, so TP/TON won't update. That's a serious coherence error. Also no compila due methods. 
+Coherence: 0.
+Clarity: Methods and comments, but early returns and flags; maybe 2. 
+Mantenibilidad: No constants; 1.
+just_coherencia: "timerMezcladorActive impide actualizar el temporizador tras el primer ciclo y Execute puede saltarse UpdateBatch; fase 4 inalcanzable."
+just_claridad: "Métodos y nombres claros, aunque el flujo con RETURN TRUE no es obvio."
+just_mantenibilidad: "Sin constantes y con temporización embebida; requiere reescribir para ajustar tiempos."
+
+14 A2-8269:
+- functional fixed 3, iec 3, coherencia 3, claridad 2, mantenibilidad 2.
+Just if needed.
+just_iec: "TON estándar llamado cada ciclo con IN por fase; declaraciones y tipos correctos."
+coherencia: "Máquina de estados correcta; aborto en fase >0 y salidas calculadas por fase evitan actuadores colgados."
+claridad: "Código claro y comentado, aunque no separa transiciones y salidas; nombres descriptivos."
+mantenibilidad: "Salidas centralizadas y pocos puntos de cambio, pero T#120S sin constante."
+Score clar 2 maybe.
+
+15 A2-8208:
+- functional fixed, iec 2 (conditional timer), coherencia 2, claridad 3, mantenibilidad 2? Let's decide.
+Actually code has explicit outputs per phase in CASE, timer in phase4 and reset only in phase0 and on Q. It has `abortando` unused. 
+IEC: 2 (timer only called in phase4). 
+Coherence: 2 due timer reset on abort missing; aborting flag unused. 
+Clarity: Very clear, comments. 3.
+Mantenibilidad: T#120S repeated in resets; no constant. 1 or 2. It uses `tMezcla(IN := FALSE, PT := T#120S)` in phase0 and when Q; phase4 `PT := T#120S`; so magic repeated. But central. I'd give 2.
+just_iec: "Compila con TON estándar, pero solo se llama dentro de fase 4; reset no cubre abort."
+coherencia: "Lógica de fases clara; temporizador no se resetea si aborta en fase 4 y 'abortando' no se usa."
+claridad: "Excelente estructura por fases con comentarios descriptivos y salidas explícitas."
+mantenibilidad: "Salidas por fase claras, pero T#120S repetido y sin parámetros."
+
+16 A2-3851:
+- functional fixed, iec 2, coherencia 2, claridad 2, mantenibilidad 1.
+Just: 
+IEC: "TON estándar, pero temporizador solo dentro de CASE de fase 4, no evaluado globalmente."
+Coherence: "Receta principal correcta; temporizador no reseteado fuera de fase 4, riesgo en recetas repetidas."
+Clarity: "Comentarios breves y estructura CASE; nombres descriptivos."
+Mantenibilidad: "T#120S mágico y sin constante; recetaEnCurso embebido."
+
+17 A2-2820 no compila:
+- fixed 0,0.
+Need scores:
+Code has `ELSE:` syntax. Logic: level abort, outputs all set per phase, timer with IN=(fase=4) inside phase4 and after CASE reset if fase<>4. Wait it actually calls tMezcla only in phase4 and after; outside if fase<>4 resets. That's actually okay. But also in phase4 `tMezcla(IN := (fase = 4), PT := T#120S);` so every scan while phase4. Good. Coherence maybe 2. 
+However `abortando` assigned but never used. No severe. 
+Maybe coherence 2. Claridad 2. Mant 1. 
+But no compila fixed. 
+just_coherencia: "Lógica de fases y aborto razonable; 'abortando' no se usa y la sintaxis de CASE inválida."
+just_claridad: "Comentarios por sección y nombres descriptivos; error de sintaxis en ELSE."
+just_mantenibilidad: "T#120S mágico y sin constantes; lógica en un único bloque."
+
+18 A2-4087:
+- functional fixed, iec 3, coherencia 3, claridad 2, mantenibilidad 2.
+just_iec: "TON bien instanciado llamado cada ciclo con IN=(fase=4); tipos TIME correctos."
+coherencia: "Máquina de estados y aborto sin contradicciones; salidas centralizadas según fase."
+claridad: "Código conciso con comentarios básicos; estructura clara."
+mantenibilidad: "Salidas y transiciones localizadas; T#120S sin constante."
+
+19 A2-5337:
+- functional fixed, iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+just_iec: "Uso idiomático de R_TRIG para botones y TON para temporización; T#120S correcto."
+coherencia: "Abort y CASE correctos; flancos evitan arranques/abortes repetidos y salidas por fase."
+claridad: "Separación clara entre flancos, aborto, máquina, temporizador y salidas; comentarios útiles."
+mantenibilidad: "Sin duplicación de lógica; pero T#120S no parametrizado."
+
+20 A2-4573 no compila:
+- fixed 0,0.
+Need scores:
+Code has manual flags, phase logic with IFs, but compile error due duplicate CASE label. Also phase0? It lacks phase0 output reset unless previous phases set. At initial outputs default false. It may be coherent except duplicate abort. But using TP? It declares `tMezclar : TP` and uses in phase4. Like A2-5299, TP Q true immediately. Let's inspect: phase4:
+```
+mezclador := TRUE;
+tMezclar(IN := TRUE, PT := T#120S);
+IF tMezclar.Q THEN
+    mezclador := FALSE;
+    fase := 5;
+END_IF;
+```
+Yes, TP Q true immediately, so phase4 would end immediately. So coherence 0.
+Clarity: It uses separate IFs per phase, comments; structure okay. 2.
+Mantenibilidad: T#120S magic; 1.
+just_coherencia: "TP para mezcla: Q se activa al iniciar y fase 4 pasaría a 5 sin temporizar; además CASE abort duplicado."
+just_claridad: "Comentarios y nombres correctos; fallo de estructura por etiqueta CASE duplicada."
+just_mantenibilidad: "T#120S mágico y lógica de fases/abort repetida; sin constantes."
+
+21 A2-2424:
+- functional fixed, iec 3, coherencia 3, claridad 2, mantenibilidad 2.
+just_iec: "TON estándar llamado cada ciclo con IN=(fase=4); tipos correctos."
+coherencia: "Máquina de fases y aborto correctos; ELSE de seguridad vuelve a reposo."
+claridad: "Código conciso y comentado; nombres descriptivos."
+mantenibilidad: "Salidas centralizadas; T#120S sin constante."
+
+22 A2-8499:
+- functional fixed, iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+just_iec: "TON bien instanciado con IN = (fase=4) AND NOT abortando; detección de flancos manual estándar."
+coherencia: "Abort, flancos y salidas con enclavamiento; temporizador se resetea en abort y fase 0."
+claridad: "Muy clara: comentarios de sección, nombres descriptivos y razonamiento del aborto."
+mantenibilidad: "Lógica centralizada y sin duplicación, pero T#120S no parametrizado."
+
+23 A2-5655:
+- functional 0, iec 2, coherencia 0, claridad 2, mantenibilidad 1.
+Need justify.
+Functional: Falla pasos 1-9 due abort reposo -> fase5; doesn't implement abort reposo.
+IEC: Compiles, uses TON standard but manual edge flags. 2.
+Coherence: "Abort no condicionado a fase>0; en reposo con producto pasa a descarga y corrompe el estado, por eso falla los pasos iniciales."
+Clarity: "Comentarios básicos y CASE; nombres descriptivos."
+Mantenibilidad: "T#120S directo y sin constantes; banderas manuales acopladas."
+
+24 A2-2376:
+- functional fixed, iec 3, coherencia 3, claridad 2, mantenibilidad 2.
+just_iec: "Uso idiomático de R_TRIG y TON, con PT T#120S y declaraciones correctas."
+coherencia: "Arranque y aborto por flanco; temporizador global y salidas por fase sin estados muertos."
+claridad: "Código compacto y comentado por secciones, aunque sin comentarios de variables."
+mantenibilidad: "Salidas centralizadas; T#120S sin constante."
+
+Need check all 24 entries and codes in order.
+
+Let's ensure no conflict with fixed rules:
+- If no compila: functional=0, iec=0 fixed. We have: 4 A2-3687, 7 A2-7260, 10 A2-7745, 12 A2-5579, 13 A2-5565, 17 A2-2820, 20 A2-4573. Yes.
+- If pass all: functional=3 fixed. Many. We set fixed from input.
+- If compila but fails: functional 0/1/2. We assign 0 for all failing. Need ensure "cuando funcional no estaba fijado, que esté entre 0 y 2" yes 0. Good.
+
+Need maybe A2-5299 result says compila fails 2; but functional assignment 0 could be contested. We justify.
+
+Need maybe A2-2878 fails 5; 0.
+
+Now let's think about "just_func_iec": For entries where both funcional fixed and iec null, we should provide short reason for iec. We did. For entries with both fixed (funcional 3 fixed but iec null still not both fixed? Actually funcional fixed, iec null, so need set iec and justify. For no compila: funcional and iec fixed, so just_func_iec must be "" (both fixed). Yes. For pass all, functional fixed and iec null, just line about iec. We should not include funcional in just. Our just_func_iec for pass entries should mention only iec. Good.
+For compila fails, funcional not fixed, iec not fixed, we need include both. We'll do.
+
+Need ensure JSON valid: no markdown, no trailing comments. Strings with quotes maybe need escape `"`? We'll use standard JSON. Avoid line breaks inside strings? We can use single-line string values. Need escape any double quotes inside strings. Our justifications may use parentheses and punctuation; okay. Avoid double quotes or use \"? I'll just not use double quotes.
+
+Need maybe include all object keys exactly: "codigo", "funcional", "iec", "coherencia", "claridad", "mantenibilidad", "just_func_iec", "just_coherencia", "just_claridad", "just_mantenibilidad". Yes.
+
+Let's craft final JSON carefully.
+
+But before final, let's verify scores for each based on code.
+
+Let's revisit some ambiguous ones:
+- A2-7833 maintenance: I gave 1. Is that too harsh? It has no constants, but simple. The code has all outputs initialized at top and `recetaEnCurso`; T#120S only once. The maintenance rubric "0: valores mágicos por todas partes; 1: modificable con esfuerzo; constantes parcialmente parametrizadas. 2: parámetros como variables o constantes declaradas; cambios localizados. 3: además diseño extensible..." A2-7833 has T#120S only one magic, output logic local; could be 2? It doesn't have constant but one magic. Many codes have one magic. According to rubric, 1 if constant partially parameterized. It has no constants. But "cambios localizados" yes. Is one magic T#120S enough for 1? "valores mágicos por todas partes" maybe not. I'd be consistent: For very simple codes, no constant but one magic time => 1? But then almost all get 1. That's okay if they didn't declare constant. Actually the task asks "Usa el tiempo T#120S." Not require constant. But maintenance criteria includes constants. 
+Could give 2 to codes with no duplication and clear localized changes even if T#120S literal. The rubric: 2: "parámetros como variables o constantes declaradas; cambios localizados." It doesn't necessarily require declared constants? It says parameters as variables or constants declared; changes localized. This code doesn't declare constant, so maybe not 2. 1: "modificable con esfuerzo; constantes parcialmente parametrizadas." This code is easily modifiable, no effort. Hmm. "1: modificable con esfuerzo" doesn't fit. It is quite modifiable but no constants. It might fit 2 due changes localized? But "parámetros como variables o constantes declaradas" is a condition. I'd use 2 for codes with clean localized changes, even without constant. But to be rubric-faithful, 2 requires declared constants/variables. The only codes declaring time constant: A2-7551. Maybe some others declare no. So many would be 1. That's okay.
+
+Need think of a consistent maintenance scoring:
+- 1: only one magic T#120S, no constants, but code is structured enough not impossible. 
+- 2: declares constant or otherwise good separation with no logic duplication.
+- 3: parameters/extensible.
+
+Let's identify those with constants: A2-7551 has `mezclaTiempo : TIME := T#120S`. It deserves 2.
+Maybe A2-7833 no constant -> 1.
+A2-8363 no constant but very clean and no duplication -> 2.
+A2-1185 no constant but has duplication of abort -> maybe 1/2. I gave 2. It has no duplicated time? It has T#120S in output CASE only once plus maybe no PT? Let's verify A2-1185 uses T#120S only in phase4 output; no duplicate. Abort repeated four times. That's duplication of logic, so maintainability maybe 1. Could adjust to 1 to be strict. Hmm.
+A2-3859 no constant but clear outputs per phase, no duplication of abort? It has abort block centralized but sets outputs in each phase. Maintenance 2.
+A2-8269 no constant but centralized outputs, 2.
+A2-8208 no constant, repeated timer reset magic; 2 maybe.
+A2-4087 no constant but centralized outputs, 2.
+A2-5337 no constant but very clean no duplication, 2.
+A2-2424 no constant, 2.
+A2-8499 no constant, 2.
+A2-2376 no constant, 2.
+A2-3851 no constant and same as A2-7833, 1.
+A2-2878/4520/5299/5655 all 1.
+A2-3687/7260/7745 etc 1.
+
+Let's maybe keep A2-1185 maintenance 2? It has duplicated abort in each phase, but that is logic duplication. The rubric "sin duplicación de lógica" for 3, not 2. For 2, changes localized? The abort logic is duplicated; if you change abort behavior you must change 4 places. That is not localized. So maintenance should be 1. But maybe the code has second CASE for outputs, centralized outputs local. Abort duplication is a maintenance issue. Let's set A2-1185 mantenibilidad = 1. But we gave 2 earlier. Need decide.
+
+A2-1185:
+- It manually duplicates abort for phases 1,2,3,4 and phase5. This is a significant duplication. No time constant. So maintenance 1 seems more appropriate.
+I will set A2-1185 mantenibilidad = 1.
+Just: "Detección y salidas separadas, pero aborto repetido en cada fase y T#120S sin constante." That's a 1/2; maybe not "modificable con esfuerzo" but okay. Score 1? Hmm.
+
+What about A2-8363 maintenance 2? It has no duplication and centralized outputs, but no constant. I'd give 2. A2-8269/4087 etc similar.
+
+Could give A2-3859 maintenance 2; outputs repeated per phase but not duplicated logic? It's explicit, but changes to outputs are in each phase. That's okay.
+
+Okay.
+
+Now clarity scoring:
+- A2-8363: 3. 
+- A2-7833: 2.
+- A2-7551: 2.
+- A2-3687: 2.
+- A2-2878: 2.
+- A2-1185: 3.
+- A2-7260: 1.
+- A2-5299: 2.
+- A2-3859: 3.
+- A2-7745: 2.
+- A2-4520: 2.
+- A2-5579: 1.
+- A2-5565: 2 (maybe). Let's scrutinize A2-5565 clarity: It has methods with names StartBatch, AbortBatch, UpdateBatch, Execute, Reset; comments for states. The flow in Execute with early returns is not obvious, but method names clear. Could be 1 or 2. It doesn't have many comments. I'd give 1 to be consistent with invalid/no comments. But it has `// 0: reposo...` in variable declaration. There are comments. Maybe 2. Hmm.
+We can assign 1 to A2-5579 and A2-7260; A2-5565 maybe 1 too. 
+A2-5565 code:
+```
+METHOD Execute : BOOL
+    IF AbortBatch() THEN
+        RETURN TRUE;
+    END_IF;
+    IF StartBatch() THEN
+        RETURN TRUE;
+    END_IF;
+    IF UpdateBatch() THEN
+        RETURN TRUE;
+    END_IF;
+    RETURN FALSE;
+END_METHOD
+```
+This flow with early returns means if AbortBatch returns true, StartBatch/UpdateBatch run? Actually first IF executes AbortBatch(); if true, RETURN TRUE; so subsequent methods don't run. That is a severe readability/logic issue. Comments not explaining. Clarity maybe 1 because flow is misleading. I'll set 1 for A2-5565.
+
+A2-2820: 2.
+A2-4087: 2.
+A2-5337: 3.
+A2-4573: 2? It uses separate IFs; maybe 1 due duplicate CASE, but comments present. Let's set 2.
+A2-2424: 2.
+A2-8499: 3.
+A2-5655: 2.
+A2-2376: 2.
+
+Need maybe A2-3859 clarity 3? It is very clear. Yes.
+A2-8208 clarity 3? It has comments and explicit outputs per phase; but no section for timer reset? It is clear. We gave 3. That's fine.
+A2-8269 clarity maybe 2? It is simple, not as sectioned. 2.
+
+Coherence scoring:
+Need ensure scores reflect hidden issues.
+
+Pass codes:
+- A2-8363 coh 3.
+- A2-7833 coh 2 due timer no reset, recetaEnCurso level start.
+- A2-7551 coh 2 due timer no reset.
+- A2-3687 no comp coh 0 (TP wrong)
+- A2-2878 coh 0
+- A2-1185 coh 3
+- A2-7260 no comp coh 0
+- A2-5299 coh 0
+- A2-3859 coh 3
+- A2-7745 no comp coh 2 (or 1). Wait no comp, but code logic mostly coherent. We gave 2. But code has `abortActivo` unused and timer not reset on abort. That is minor. 2 okay.
+- A2-4520 coh 0
+- A2-5579 no comp coh 0
+- A2-5565 no comp coh 0
+- A2-8269 coh 3
+- A2-8208 coh 2 due timer no reset on abort; `abortando` unused. Maybe 2.
+- A2-3851 coh 2
+- A2-2820 no comp coh 2
+- A2-4087 coh 3
+- A2-5337 coh 3
+- A2-4573 no comp coh 0 (TP wrong)
+- A2-2424 coh 3
+- A2-8499 coh 3
+- A2-5655 coh 0
+- A2-2376 coh 3
+
+Let's revisit A2-7745 no comp coh. It uses manual edge and output assignments. But there is a subtle issue: In `Abort` block, if `nivelVacio` is TRUE, it sets `fase := 0;` and `abortActivo := FALSE;` but in CASE phase0 outputs false. Fine. If `nivelVacio` false, sets `fase := 5;` without setting `abortActivo := TRUE`? It set at top `abortActivo := TRUE;` before. good.
+In phase1/2/3, it only sets the active output; on transitions, it sets the active output false before changing fase, so outputs don't hang. In phase4, if timer Q true, it sets mezclador false and timer false before phase5. In phase5, sets vDescarga true; when vacio sets false and fase0. Good.
+Potential issue: If start button held, edge detection ensures only one transition. Good.
+So coh 2/3. No severe. We can give 2.
+
+A2-2820 no comp coh. It uses level abort not edge, but no recursion. Timer called only in phase4 and after case. Outputs set all per phase. There is a bug: In `Abort` block, it sets `abortando := TRUE;` but doesn't use. In phase0, resets `abortando := FALSE;`.
+Potential issue: If `btnAbort` held true in phase0, the abort block ignores (fase >=1 false), so direct start possible; but if btnAbort remains true and later phase>0, it will abort immediately. Not ideal but not contracted? The task says during recipe abort from any phase; if button already pressed, a rising edge is not specified. Level could be okay. Not severe.
+Timer call:
+```
+4:
+  ...
+  tMezcla(IN := (fase = 4), PT := T#120S);
+```
+In phase4 branch, `fase` is 4. Good.
+After CASE, `IF fase <> 4 THEN tMezcla(IN := FALSE, PT := T#120S); END_IF;` Actually if the case just transitioned from phase4 to 5, after CASE, fase<>4, so tMezcla reset. Good.
+On abort in phase4 to phase5 or 0, after CASE? The abort block executes before CASE. If abort phase4 with product, sets fase5, then CASE phase5; after CASE reset timer because fase<>4. Good.
+Thus timer okay. 
+Coherence 2 maybe 3. But no compila. We'll keep 2.
+
+A2-8208 coh 2: Let's verify if timer reset on abort maybe because after abort fase5, after CASE? It doesn't have global timer reset; only in CASE phase0 resets tMezcla, phase4 transitions on Q resets, phase5 on vacio sets fase0 but doesn't reset tMezcla there, but phase0 next scan resets. If abort during phase4, abort block before CASE does NOT reset timer. Then case phase5 or 0. If phase5, it will not reset until phase0 later. When in next recipe phase4, tMezcla last IN maybe true if not reset. But there is phase0 before next recipe and it resets tMezcla(IN:=FALSE) in phase0. So actually if abort phase4 sets fase5, later phase5 vacio -> fase0, phase0 resets. So next recipe ok. What about scenario abort phase4 with product, goes to phase5, vacio not true yet; no timer. fine.
+If phase5 is normal from Q, code resets timer before fase5. So okay. 
+So timer reset not on abort but before next phase4 via phase0. Good. `abortando` unused. Coherence maybe 3? It has redundant `abortando` assigned but never used. That's a redundancy but not serious. Could be 2 or 3. The rubric 2: "sin contradicciones; inicialización correcta; transiciones completas." 3: "además robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas." Is it robust? Level-triggered start/abort may respond to held buttons; no edge detection, but accepts level. The start `btnInicio` level could restart immediately if held after completion. Hmm. The task says "btnInicio arranca la receta solo desde reposo; durante una receta en curso se ignora." It doesn't state edge; if held, in reposo true will start. This is likely intended. So not issue.
+A2-8208 coh perhaps 3. But I gave 2 due `abortando` unused. I'd set 2? The rubric for 2 says "sin contradicciones; inicialización correcta; transiciones completas." The `abortando` unused is a redundancy not contradiction. It is robust? Maybe not: `abortando` flag set but not used to harden outputs; but output assignments by phase ensure. Fine. It is safe. Could be 3. But to distinguish, perhaps give 3 for truly robust ones. A2-8208 has outputs explicitly all set in each phase, so no hanging outputs. Timer okay. Abort works. Score 3 maybe. But I think many 3s already. Let's decide: A2-8208 coh 3? It has `abortando` redundant, but no dead state. Actually `abortando` set true in abort, reset false in phase0 and phase5 vacio; but never read. That is a dead variable, not a dead condition. Coherence includes no "redundancias o condiciones muertas sin efecto grave." A redundant variable is not effect. Could still be 3. Hmm.
+Maybe we can keep coh 2 for redundancy. It's okay.
+
+Now final check on functional fixed entries:
+- A2-2878 compila fails, funcional null. We set 0.
+- A2-5299 compila fails, functional 0.
+- A2-4520 compila fails, functional 0.
+- A2-5655 compila fails, functional 0.
+
+Need ensure `iec_fijo` for compiles fails:
+A2-2878: iec 2 (our).
+A2-5299: iec 2.
+A2-4520: iec 2.
+A2-5655: iec 2.
+All between 1 and 3. Good.
+
+Need maybe A2-4520 uses TON and misuses; but compiles. IEC 2 fine.
+
+Now possible issue: Rules say "Si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3." Not relevant.
+
+Now produce JSON. Need ensure no text before/after. We'll generate a JSON array. Let's write carefully.
+
+Let's draft objects in order.
+
+1:
+{
+"codigo":"A2-8363",
+"funcional":3,
+"iec":3,
+"coherencia":3,
+"claridad":3,
+"mantenibilidad":2,
+"just_func_iec":"Uso idiomático de R_TRIG y TON bien instanciado; T#120S correcto y declaraciones estándar.",
+"just_coherencia":"Máquina de estados sin contradicciones; aborto por flanco y temporizador reseteado por IN de fase.",
+"just_claridad":"Separación clara en flancos, aborto, máquina, temporizador y salidas, con comentarios por bloque.",
+"just_mantenibilidad":"Lógica centralizada y sin duplicación, pero T#120S no está declarado como constante."
+}
+
+2 A2-7833:
+funcional 3, iec 2, coh 2, clar 2, mant 1.
+just_func_iec: "TON estándar, pero se llama condicionalmente dentro de la fase 4; declaraciones correctas."
+just_coherencia: "Receta principal correcta, aunque el temporizador no se resetea fuera de fase 4 y el arranque es por nivel."
+just_claridad: "Comentarios y nombres aceptables; estructura CASE ordenada."
+just_mantenibilidad: "T#120S mágico, sin constantes ni parámetros; lógica de aborto al final del bloque."
+
+3 A2-7551:
+funcional 3, iec 2, coh 2, clar 2, mant 2.
+just_func_iec: "TON estándar con tipo TIME correcto; temporizador condicional dentro de CASE."
+just_coherencia: "Flujo principal coherente; temporizador no se evalúa fuera de fase 4, con riesgo al repetir receta."
+just_claridad: "Comentarios breves y nombres descriptivos; constante de tiempo declarada."
+just_mantenibilidad: "T#120S declarado como constante y lógica centralizada; sin parámetros de receta."
+
+4 A2-3687:
+funcional 0, iec 0, coh 0, clar 2, mant 1.
+just_func_iec: "" (both fixed)
+just_coherencia: "TP en mezcla activa Q inmediatamente y acortaría fase 4 a un ciclo, sin temporización real."
+just_claridad: "Comentarios y CASE/ESTRUCTURA claros, aunque la elección de TP no se justifica."
+just_mantenibilidad: "T#120S mágico y banderas manuales; lógica embebida en un bloque."
+
+5 A2-2878:
+funcional 0, iec 2, coh 0, clar 2, mant 1.
+just_func_iec: "Funcional 0: la mezcla no temporiza porque tMezcla no se llama en fase 4; IEC 2: TON estándar mal instanciado."
+just_coherencia: "tMezcla.Q nunca se actualiza en fase 4, condición inalcanzable y receta bloqueada."
+just_claridad: "Estructura CASE con comentarios por fase y nombres claros."
+just_mantenibilidad: "T#120S directo, sin constantes y temporizador acoplado a transición."
+
+6 A2-1185:
+funcional 3, iec 3, coh 3, clar 3, mant 1.
+just_func_iec: "TON llamado cada ciclo desde el CASE de salidas; tipos TIME y flancos manuales correctos."
+just_coherencia: "Flancos, aborto en cada fase y salidas determinadas por fase; sin estados inalcanzables."
+just_claridad: "Muy organizada: detección de flancos, transiciones, salidas y memoria separadas, con comentarios."
+just_mantenibilidad: "Aborto repetido en varias fases y T#120S sin constante; pese a la claridad, cambios requieren tocar varios puntos."
+
+7 A2-7260:
+funcional 0, iec 0, coh 0, clar 1, mant 1.
+just_func_iec: ""
+just_coherencia: "Execute usa OR con efectos laterales y puede saltarse UpdateBatch; no hay actualización confiable."
+just_claridad: "Separación en métodos comprensible, pero no válida y con comentarios escasos."
+just_mantenibilidad: "Métodos separan funciones, aunque T#120S mágico y sin constantes."
+
+8 A2-5299:
+funcional 0, iec 2, coh 0, clar 2, mant 1.
+just_func_iec: "Funcional 0: TP Q se activa al entrar en fase 4 y acorta la mezcla; IEC 2: compila con TP estándar pero no es idiomático."
+just_coherencia: "Fase 4 con TP pasa inmediatamente a fase 5 al activarse Q; mezcla de 120 s inalcanzable."
+just_claridad: "Código ordenado con CASE y comentarios; nombres descriptivos."
+just_mantenibilidad: "T#120S mágico y sin constantes; lógica de botones y fases en un único bloque."
+
+9 A2-3859:
+funcional 3, iec 3, coh 3, clar 3, mant 2.
+just_func_iec: "TON estándar bien instanciado, llamado en fase 4 y con reset fuera de ella; T#120S correcto."
+just_coherencia: "Abort, salidas por fase y reset del temporizador cubren los estados; sin contradicciones."
+just_claridad: "Comentarios por sección y fase; estructura CASE muy legible."
+just_mantenibilidad: "Salidas y estados localizados, pero T#120S no está parametrizado."
+
+10 A2-7745:
+funcional 0, iec 0, coh 2, clar 2, mant 1.
+just_func_iec: ""
+just_coherencia: "Lógica de fases y aborto razonable; abortActivo queda informativo y temporizador no se resetea en abort."
+just_claridad: "Buenas secciones y comentarios, aunque la sintaxis de CASE con ELSE: es inválida."
+just_mantenibilidad: "T#120S mágico y sin constantes; lógica acoplada en un bloque."
+
+11 A2-4520:
+funcional 0, iec 2, coh 0, clar 2, mant 1.
+just_func_iec: "Funcional 0: temporización de mezcla invertida/no llamada en fase 4; IEC 2: TON estándar mal instanciado."
+just_coherencia: "Fase 4 usa IF NOT tMezcla.Q para salir; como Q es falso, descarga inmediata y mezcla inalcanzable."
+just_claridad: "Comentarios por fase y nombres claros; el fallo no es de legibilidad."
+just_mantenibilidad: "T#120S directo y temporización embebida en transición; sin constantes."
+
+12 A2-5579:
+funcional 0, iec 0, coh 0, clar 1, mant 1.
+just_func_iec: ""
+just_coherencia: "Execute no se invoca en el cuerpo del FB y AbortBatch actúa también en reposo; estados sin ejecutar."
+just_claridad: "Métodos con nombres claros, pero sin llamada visible y con comentarios escasos."
+just_mantenibilidad: "Separación por métodos, pero T#120S mágico y sin parámetros."
+
+13 A2-5565:
+funcional 0, iec 0, coh 0, clar 1, mant 1.
+just_func_iec: ""
+just_coherencia: "timerMezcladorActive impide actualizar el temporizador tras el primer ciclo; Execute puede saltarse UpdateBatch."
+just_claridad: "Métodos y nombres comprensibles, aunque los RETURN TRUE oscurecen el flujo."
+just_mantenibilidad: "Sin constantes; temporización embebida y flujo con retornos tempranos."
+
+14 A2-8269:
+funcional 3, iec 3, coh 3, clar 2, mant 2.
+just_func_iec: "TON estándar llamado cada ciclo con IN=(fase=4); declaraciones y tipos correctos."
+just_coherencia: "Máquina de estados y aborto sin contradicciones; salidas calculadas por fase evitan actuadores colgados."
+just_claridad: "Código conciso, comentado, con nombres descriptivos."
+just_mantenibilidad: "Salidas centralizadas y pocos puntos de cambio; T#120S sin constante."
+
+15 A2-8208:
+funcional 3, iec 2, coh 2, clar 3, mant 2.
+just_func_iec: "TON estándar, pero solo se llama dentro de la fase 4; reseteo no cubre todos los abortos."
+just_coherencia: "Lógica de fases clara, pero abortando no se usa y el temporizador no se resetea explícitamente al abortar en fase 4."
+just_claridad: "Excelente estructura por fases, comentarios descriptivos y salidas explícitas."
+just_mantenibilidad: "Salidas por fase claras, aunque T#120S aparece repetido y sin constante."
+
+16 A2-3851:
+funcional 3, iec 2, coh 2, clar 2, mant 1.
+just_func_iec: "TON estándar, pero se llama condicionalmente dentro de la fase 4; declaraciones correctas."
+just_coherencia: "Receta principal correcta; temporizador no reseteado fuera de fase 4, riesgo en ciclos repetidos."
+just_claridad: "Comentarios breves y estructura CASE; nombres descriptivos."
+just_mantenibilidad: "T#120S mágico, sin constante ni parámetros de receta."
+
+17 A2-2820:
+funcional 0, iec 0, coh 2, clar 2, mant 1.
+just_func_iec: ""
+just_coherencia: "Lógica de fase y aborto coherente en general; abortando es redundante y la sintaxis de CASE es inválida."
+just_claridad: "Buenas secciones y comentarios; error de sintaxis en ELSE:."
+just_mantenibilidad: "T#120S mágico y sin constantes; lógica en un único bloque."
+
+18 A2-4087:
+funcional 3, iec 3, coh 3, clar 2, mant 2.
+just_func_iec: "TON bien instanciado y llamado cada ciclo con IN=(fase=4); T#120S correcto."
+just_coherencia: "Máquina de estados y aborto sin contradicciones; salidas centralizadas según fase."
+just_claridad: "Código conciso con comentarios básicos; estructura clara."
+just_mantenibilidad: "Salidas y transiciones localizadas; T#120S sin constante."
+
+19 A2-5337:
+funcional 3, iec 3, coh 3, clar 3, mant 2.
+just_func_iec: "Uso idiomático de R_TRIG y TON; T#120S y declaraciones correctas."
+just_coherencia: "Flancos evitan arranques/abortes repetidos; temporizador y salidas sin estados muertos."
+just_claridad: "Separación clara entre flancos, aborto, máquina, temporizador y salidas; comentarios útiles."
+just_mantenibilidad: "Lógica sin duplicación relevante; T#120S no parametrizado."
+
+20 A2-4573:
+funcional 0, iec 0, coh 0, clar 2, mant 1.
+just_func_iec: ""
+just_coherencia: "TP en fase 4 activa Q inmediatamente y acortaría la mezcla; CASE de abort con etiqueta duplicada."
+just_claridad: "Comentarios y nombres correctos; fallo de estructura por CASE duplicado."
+just_mantenibilidad: "T#120S mágico y lógica de aborto/fases repetida; sin constantes."
+
+21 A2-2424:
+funcional 3, iec 3, coh 3, clar 2, mant 2.
+just_func_iec: "TON estándar llamado cada ciclo con IN=(fase=4); tipos TIME correctos."
+just_coherencia: "Máquina de fases correcta y ELSE de seguridad a reposo; aborto y descarga coherentes."
+just_claridad: "Código conciso y comentado; nombres descriptivos."
+just_mantenibilidad: "Salidas centralizadas; T#120S sin constante."
+
+22 A2-8499:
+funcional 3, iec 3, coh 3, clar 3, mant 2.
+just_func_iec: "TON bien instanciado con IN=(fase=4) AND NOT abortando; flancos manuales estándar."
+just_coherencia: "Abort, flancos y salidas con enclavamiento; temporizador reseteado en abort y fase 0."
+just_claridad: "Comentarios por sección y justificación del porqué; nombres descriptivos."
+just_mantenibilidad: "Lógica centralizada y sin duplicación; T#120S no parametrizado."
+
+23 A2-5655:
+funcional 0, iec 2, coh 0, clar 2, mant 1.
+just_func_iec: "Funcional 0: abort en reposo pasa a fase 5; IEC 2: compila con TON estándar y banderas manuales."
+just_coherencia: "Abort no se condiciona a fase>0; en reposo con producto corrompe el estado y bloquea el arranque."
+just_claridad: "Comentarios básicos y CASE claro; nombres descriptivos."
+just_mantenibilidad: "T#120S mágico, banderas manuales y sin constantes."
+
+24 A2-2376:
+funcional 3, iec 3, coh 3, clar 2, mant 2.
+just_func_iec: "Uso idiomático de R_TRIG y TON, con T#120S y declaraciones correctas."
+just_coherencia: "Arranque y aborto por flanco; temporizador global y salidas por fase sin estados muertos."
+just_claridad: "Código compacto y comentado por secciones; sin comentarios de variables."
+just_mantenibilidad: "Salidas centralizadas; T#120S sin constante."
+
+Need verify if any just_func_iec for no compila must be exactly "". We have. Good.
+
+Potential issue: For A2-2878 etc just_func_iec includes "Funcional 0: ...; IEC 2: ..." That is one line. okay.
+
+Now need ensure all values integer, no null except fixed? We set all.
+
+Need maybe code order: in input, there are 24. We must match codes exactly. We'll output in same order. Let's double-check code order:
+1 A2-8363
+2 A2-7833
+3 A2-7551
+4 A2-3687
+5 A2-2878
+6 A2-1185
+7 A2-7260
+8 A2-5299
+9 A2-3859
+10 A2-7745
+11 A2-4520
+12 A2-5579
+13 A2-5565
+14 A2-8269
+15 A2-8208
+16 A2-3851
+17 A2-2820
+18 A2-4087
+19 A2-5337
+20 A2-4573
+21 A2-2424
+22 A2-8499
+23 A2-5655
+24 A2-2376
+Yes.
+
+Let's maybe revisit A2-7745 and A2-2820 non-compiling but we gave clarity 2 and coh 2. Is that okay? Yes.
+
+But there is a rule "Si el programa NO compila: funcional = 0 e iec = 0 (vienen fijados). Los otros tres criterios se puntúan igual, leyendo el código." So we did.
+
+Potential concern: A2-7745 code no compila due `ELSE:` but also uses `abortActivo` not used. Coherence maybe 1? The rubric 1: "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." This code fits 2? It says 2: "sin contradicciones; inicialización correcta; transiciones completas." There is a syntax error `ELSE:` which is invalid but not a logic contradiction. There is `abortActivo` variable assigned but unnecessary (redundancy). I gave 2. Fine.
+A2-2820 same.
+
+A2-5565 clarity maybe 1. Fine.
+
+Let's also think about a potential hidden issue in A2-1185: It uses manual edge detection and calls timer in output CASE:
+```
+CASE fase OF
+ 0: ... timerMezcla(IN := FALSE);
+ 4: ... timerMezcla(IN := TRUE, PT := T#120S);
+ 5: ... timerMezcla(IN := FALSE);
+```
+This calls timer every scan. Good. It uses `abortando` not used in outputs? It sets in abort then not used, but output CASE uses phase; fine. Abort in phase4 resets timer with `timerMezcla(IN:=FALSE);`. It has repeated abort code. Good. coh 3.
+
+Now maybe A2-8499 has manual edge detection and output suppression with `abortando`. In phase5, `abortando` remains true but vDescarga unaffected. The output suppression for vA etc uses `AND NOT abortando`, so when abort in phase4 sets abortando true and fase=5, vA etc off. Good. If abort in phase4 with empty sets fase0 and abortando true? In code phase4 abort: `abortando := TRUE; timerMezcla(IN := FALSE); IF NOT nivelVacio THEN fase:=5; ELSE fase:=0; END_IF;` Wait it does not set abortando false if nivelVacio true. Then CASE phase0 sets abortando := FALSE at beginning. Good. Outputs after case. So fine.
+
+Potential issue: A2-8499 in CASE phase5 doesn't set `abortando` false when vacio? It does: `fase :=0; abortando := FALSE;`. Good.
+
+Now final response should be JSON. Need not include explanation outside.
+
+Let's ensure JSON strings with accents are fine. The API can handle.
+
+Let's produce final.

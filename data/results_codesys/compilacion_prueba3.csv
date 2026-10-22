@@ -1,0 +1,2 @@
+modelo,tarea,estrategia,ejecucion,archivo,pous,tipos,compila,errores,advertencias,resumen_codesys,primer_error,nota,seg
+claude-sonnet-4-6,B1,few_shot,1,claude-sonnet-4-6\B1\few_shot\ejec_1.st,FB_Motor,FUNCTION_BLOCK,1,0,0,"Compilaci?n terminada -- 0 errores, 0 advertencias",,,1.3

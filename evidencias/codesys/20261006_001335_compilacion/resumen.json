@@ -1,0 +1,14 @@
+﻿{
+    "salida":  "C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\data\\results_codesys\\compilacion_definitivo.csv",
+    "fecha":  "20261006_001335",
+    "duracion_min":  12.9,
+    "sha256_plantilla_antes":  "119B6A663B32E0ABEC287A55E8E9F5523B48AC8E4DB47AE449F0F5511690D8DF",
+    "respuestas":  720,
+    "sha256_script":  "3BF12B608AF5546249928355E342AC136CD4A92EB20843A16E2249343B01F2BF",
+    "codigo_salida":  0,
+    "sha256_plantilla_despues":  "119B6A663B32E0ABEC287A55E8E9F5523B48AC8E4DB47AE449F0F5511690D8DF",
+    "compila_NA":  0,
+    "compila_1":  541,
+    "compila_0":  179,
+    "sha256_csv":  "542B24D4DA51E9F6D0C394767B661DA2C4E1E59F4E9D19C3A2BF84D68E631333"
+}

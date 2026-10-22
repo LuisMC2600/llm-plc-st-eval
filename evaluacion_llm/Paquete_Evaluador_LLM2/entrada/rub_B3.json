@@ -1,0 +1,201 @@
+{
+ "tarea": "B3",
+ "titulo": "Contador de piezas con preset",
+ "nivel": "Basico",
+ "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el conteo de piezas de una línea de producción. Cada vez que el sensor fotoeléctrico detecte una pieza (transición de FALSE a TRUE), la cuenta debe incrementarse en uno. Al llegar a 12 piezas debe activarse la salida de lote completo. Un botón de reset pone la cuenta en cero y desactiva la salida de lote. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Contador con variables de entrada sensorPieza, btnReset (BOOL) y salidas loteListo (BOOL) y cuenta (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+ "protocolo_prueba": "Harness: PRG_Test_B3.st\n\nBANCO DE PRUEBA AUTOVERIFICABLE — Tarea B3 (contador de piezas por flanco)\n    ---------------------------------------------------------------------------\n    CORRIGE la version anterior, que tenia dos defectos fatales:\n\n    1. El CASE asignaba sensorPieza := TRUE y una linea posterior lo invertia\n       antes de llamar al bloque, de modo que el FB recibia siempre FALSE.\n       No se generaba ningun flanco y el paso 4 reprobaba SIEMPRE, incluso a\n       implementaciones correctas (falso negativo del 100%).\n\n    2. La alternancia ocurria una vez por scan, por lo que el numero de flancos\n       dependia del ciclo de la MainTask (2 flancos con 20 ms, 12 con 4 ms).\n       El resultado era un accidente del entorno, no una medicion.\n\n    SOLUCION: generador determinista de flancos con temporizador propio y\n    contador explicito. Genera exactamente FLANCOS_EXTRA flancos ascendentes\n    con independencia del ciclo de tarea. El temporizador de asentamiento del\n    paso queda retenido mientras la generacion esta en curso, de modo que la\n    evaluacion solo ocurre cuando ya se emitieron todos los flancos.\n\n    3. (detectado por la validacion) Comprobar solo el estado final (cuenta=12,\n       loteListo=TRUE) NO distingue un preset incorrecto: una implementacion que\n       active el lote a las 10 piezas tambien llega a 12 con el lote activo. El\n       umbral se verifica ahora en DOS LOTES: primero 10 flancos (cuenta=11, el\n       lote debe seguir APAGADO) y despues 1 flanco mas (cuenta=12, lote ENCENDIDO).\n\n    Cuentas esperadas: 1 (paso 1) + 10 (paso 4) + 1 (paso 5) = 12.\n\n--- Pasos (CASE paso OF) ---\n\n        0:  (* Reset inicial *)\n            btnReset := TRUE;  sensorPieza := FALSE;\n            tEspera := T#200MS; esperadoCuenta := 0; esperadoLote := FALSE;\n        1:  (* Primer flanco ascendente *)\n            btnReset := FALSE; sensorPieza := TRUE;\n            tEspera := T#200MS; esperadoCuenta := 1; esperadoLote := FALSE;\n        2:  (* Sensor sostenido en alto: NO debe seguir contando *)\n            sensorPieza := TRUE;\n            tEspera := T#500MS; esperadoCuenta := 1; esperadoLote := FALSE;\n        3:  (* Vuelta a bajo para preparar la generacion *)\n            sensorPieza := FALSE;\n            tEspera := T#200MS; esperadoCuenta := 1; esperadoLote := FALSE;\n        4:  (* 10 flancos -> 11 cuentas: el lote AUN NO debe activarse.\n               Este paso es el que detecta un preset menor que 12. *)\n            tEspera := T#200MS; esperadoCuenta := 11; esperadoLote := FALSE;\n        5:  (* 1 flanco mas -> 12 cuentas: el lote SI debe activarse.\n               Este paso detecta un preset mayor que 12. *)\n            tEspera := T#200MS; esperadoCuenta := 12; esperadoLote := TRUE;\n        6:  (* Reset final *)\n            btnReset := TRUE;  sensorPieza := FALSE;\n            tEspera := T#200MS; esperadoCuenta := 0; esperadoLote := FALSE;",
+ "respuestas": [
+  {
+   "codigo": "B3-6721",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoelectrico de piezas *)\n    btnReset : BOOL; (* Boton de reinicio de cuenta *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Indicador de lote completo *)\n    cuenta : INT; (* Cantidad actual de piezas *)\nEND_VAR\nVAR\n    contador : CTU; (* Bloque contador ascendente *)\nEND_VAR\n\n(* El contador incrementa con el flanco de subida del sensor y se reinicia con el boton *)\ncontador(CU := sensorPieza, RESET := btnReset, PV := 12);\n\n(* Asignacion de salidas *)\nloteListo := contador.Q;\ncuenta := contador.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-4690",
+   "resultado_codesys": "Compila. Falla 5 de 7 pasos del harness (pasos 1,2,3,4,5; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Sensor fotoeléctrico que detecta la pieza\n    btnReset : BOOL;    // Botón de reset para reiniciar el contador\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; // Salida que indica que se ha completado un lote\n    cuenta : INT;      // Contador de piezas\nEND_VAR\n\nVAR\n    sensorAnterior : BOOL; // Variable para almacenar el estado anterior del sensor\nEND_VAR\n\n// Inicialización del sensorAnterior con el valor actual del sensorPieza\nIF sensorPieza THEN\n    sensorAnterior := TRUE;\nELSE\n    sensorAnterior := FALSE;\nEND_IF\n\n// Lógica de conteo\nIF sensorPieza AND NOT sensorAnterior THEN\n    cuenta := cuenta + 1;\nEND_IF\n\n// Actualización del sensorAnterior\nsensorAnterior := sensorPieza;\n\n// Lógica para detectar el lote completo\nIF cuenta >= 12 THEN\n    loteListo := TRUE;\nELSE\n    loteListo := FALSE;\nEND_IF\n\n// Lógica de reset\nIF btnReset THEN\n    cuenta := 0;\n    loteListo := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-5495",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Sensor fotoeléctrico (TRUE al detectar pieza)\n    btnReset    : BOOL; // Botón para reiniciar el contador\nEND_VAR\n\nVAR_OUTPUT\n    loteListo   : BOOL; // Se activa al llegar a 12 piezas\n    cuenta      : INT;  // Número de piezas contadas\nEND_VAR\n\nVAR\n    flancoSensor : R_TRIG; // Bloque estándar para detectar flanco de subida\nEND_VAR\n\n// Detectar transición de FALSE a TRUE en el sensor\nflancoSensor(CLK := sensorPieza);\n\n// Lógica de reinicio y conteo\nIF btnReset THEN\n    cuenta := 0; // Reiniciar cuenta\nELSIF flancoSensor.Q THEN\n    cuenta := cuenta + 1; // Incrementar cuenta con cada nueva pieza\nEND_IF;\n\n// Evaluar si el lote está completo (12 piezas)\n// Al reiniciar la cuenta a 0, esta condición automáticamente desactiva loteListo\nloteListo := (cuenta >= 12);\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-6597",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\n\nVAR_INPUT\n    sensorPieza : BOOL; // Entrada del sensor fotoeléctrico\n    btnReset : BOOL;    // Botón para reiniciar el conteo y el lote\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;   // Se activa al llegar a 12 piezas\n    cuenta : INT;       // Cantidad actual de piezas contadas\nEND_VAR\n\nVAR\n    flancoSensor : R_TRIG; // Instancia para detectar el flanco de subida\nEND_VAR\n\n// Evaluar la transición de FALSE a TRUE del sensor\nflancoSensor(CLK := sensorPieza);\n\n// Lógica de reinicio y conteo\nIF btnReset THEN\n    cuenta := 0;\n    loteListo := FALSE;\nELSIF flancoSensor.Q THEN\n    cuenta := cuenta + 1;\nEND_IF;\n\n// Lógica para activar la salida de lote completo\nIF cuenta >= 12 THEN\n    loteListo := TRUE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-8516",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Señal del sensor fotoeléctrico *)\n    btnReset    : BOOL; (* Botón de reset de cuenta y lote *)\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; (* TRUE cuando se alcanzan 12 piezas *)\n    cuenta    : INT;  (* Número de piezas contadas *)\nEND_VAR\n\nVAR\n    sensorPiezaAnterior : BOOL; (* Estado previo del sensor para detección de flanco *)\nEND_VAR\n\n(* ─────────────────────────────────────────────\n   Lógica principal\n   ───────────────────────────────────────────── *)\n\n(* 1. Reset: tiene prioridad sobre el conteo *)\nIF btnReset THEN\n    cuenta    := 0;\n    loteListo := FALSE;\n\nELSE\n    (* 2. Detección de flanco ascendente del sensor (FALSE → TRUE) *)\n    IF sensorPieza AND NOT sensorPiezaAnterior THEN\n        cuenta := cuenta + 1;\n    END_IF;\n\n    (* 3. Activar salida de lote al alcanzar 12 piezas *)\n    IF cuenta >= 12 THEN\n        loteListo := TRUE;\n    END_IF;\n\nEND_IF;\n\n(* 4. Guardar estado actual del sensor para el siguiente ciclo *)\nsensorPiezaAnterior := sensorPieza;"
+  },
+  {
+   "codigo": "B3-4736",
+   "resultado_codesys": "Compila. Falla 5 de 7 pasos del harness (pasos 1,2,3,4,5; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoeléctrico de pieza *)\n    btnReset : BOOL; (* Botón de reset *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Salida de lote completo *)\n    cuenta : INT; (* Contador de piezas *)\nEND_VAR\nVAR\n    sensorAnterior : BOOL; (* Estado anterior del sensor *)\nEND_VAR\n\n(* Almacenar el estado anterior del sensor *)\nsensorAnterior := sensorPieza;\n\n(* Incrementar la cuenta cuando el sensor detecta una pieza *)\nIF sensorPieza AND NOT sensorAnterior THEN\n    cuenta := cuenta + 1;\nEND_IF;\n\n(* Resetear el contador y la salida de lote *)\nIF btnReset THEN\n    cuenta := 0;\n    loteListo := FALSE;\nEND_IF;\n\n(* Activar la salida de lote completo cuando se llega a 12 piezas *)\nIF cuenta >= 12 THEN\n    loteListo := TRUE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-6421",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoeléctrico para detección de piezas *)\n    btnReset : BOOL;    (* Botón para resetear el contador *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL;   (* Indica si el lote está completo *)\n    cuenta : INT;       (* Cuenta de piezas detectadas *)\nEND_VAR\nVAR\n    sensorPiezaAnt : BOOL; (* Estado anterior del sensor de pieza *)\nEND_VAR\n\n(* Inicialización del estado anterior del sensor *)\nIF btnReset THEN\n    cuenta := 0;        (* Resetear la cuenta a cero *)\n    loteListo := FALSE; (* Desactivar la salida de lote completo *)\nELSE\n    (* Detectar transición de FALSE a TRUE en el sensor de pieza *)\n    IF NOT sensorPiezaAnt AND sensorPieza THEN\n        cuenta := cuenta + 1; (* Incrementar la cuenta *)\n    END_IF;\n    \n    (* Verificar si se ha alcanzado el conteo de 12 piezas *)\n    IF cuenta >= 12 THEN\n        loteListo := TRUE; (* Activar la salida de lote completo *)\n    ELSE\n        loteListo := FALSE; (* Desactivar la salida de lote completo *)\n    END_IF;\nEND_IF;\n\n(* Actualizar el estado anterior del sensor *)\nsensorPiezaAnt := sensorPieza;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-8845",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Sensor fotoeléctrico que detecta la pieza\n    btnReset : BOOL;    // Botón de reset para reiniciar el contador\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;  // Salida que indica que se ha completado un lote\n    cuenta : INT;       // Contador de piezas\nEND_VAR\n\nVAR\n    sensorAnterior : BOOL; // Variable para almacenar el estado anterior del sensor\nEND_VAR\n\n// Inicialización de variables\nIF sensorAnterior = FALSE AND sensorPieza = TRUE THEN\n    cuenta := cuenta + 1; // Incrementar el contador al detectar una pieza\nEND_IF;\n\n// Control del botón de reset\nIF btnReset THEN\n    cuenta := 0; // Reiniciar el contador\n    loteListo := FALSE; // Desactivar la salida de lote completo\nEND_IF;\n\n// Control de la salida de lote completo\nIF cuenta >= 12 THEN\n    loteListo := TRUE; // Activar la salida de lote completo\nELSE\n    loteListo := FALSE; // Desactivar la salida de lote completo si no se han completado 12 piezas\nEND_IF;\n\n// Actualizar el estado anterior del sensor\nsensorAnterior := sensorPieza;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-9202",
+   "resultado_codesys": "No compila (6 errores).",
+   "mensajes_compilador": "L?nea 1, columna 1 (Impl) Se esperaba ';' en lugar de ',' || L?nea 1, columna 1 (Impl) Se esperaba expresi?n en vez de 'R' || L?nea 1, columna 1 (Impl) Encontrado token inesperado ',' || L?nea 1, columna 1 (Impl) Se esperaba ';' en lugar de 'PV' || L?nea 1, columna 1 (Impl) Se esperaba ';' en lugar de ')' || L?nea 1, columna 1 (Impl) Encontrado token inesperado ')'",
+   "funcional_fijo": 0,
+   "iec_fijo": 0,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor de deteccion de pieza *)\n    btnReset : BOOL; (* Boton de reinicio *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Salida de lote completo *)\n    cuenta : INT; (* Cantidad de piezas contadas *)\nEND_VAR\nVAR\n    ctPiezas : CTU; (* Bloque contador ascendente *)\nEND_VAR\n\n(* El contador incrementa con el flanco de subida del sensor *)\nctPiezas(CU := sensorPieza, R := btnReset, PV := 12);\n\n(* Asignacion de salidas *)\nloteListo := ctPiezas.Q;\ncuenta := ctPiezas.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-5228",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Sensor fotoeléctrico (TRUE al detectar pieza)\n    btnReset    : BOOL; // Botón para reiniciar la cuenta a cero\nEND_VAR\n\nVAR_OUTPUT\n    loteListo   : BOOL; // Se activa al llegar a 12 piezas\n    cuenta      : INT;  // Número de piezas contadas\nEND_VAR\n\nVAR\n    flancoSensor : R_TRIG; // Detector de flanco de subida estándar IEC\nEND_VAR\n\n// Detección del flanco de subida (transición de FALSE a TRUE) del sensor\nflancoSensor(CLK := sensorPieza);\n\n// Lógica de reinicio y conteo\nIF btnReset THEN\n    cuenta := 0; // Reinicia el contador\nELSIF flancoSensor.Q THEN\n    cuenta := cuenta + 1; // Incrementa la cuenta por cada nueva pieza\nEND_IF;\n\n// Evaluación del estado del lote (se desactiva automáticamente si cuenta < 12)\nloteListo := (cuenta >= 12);\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-2786",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoelectrico de pieza *)\n    btnReset    : BOOL; (* Boton de reset de cuenta *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Lote de 12 piezas completo *)\n    cuenta    : INT;  (* Cantidad de piezas contadas *)\nEND_VAR\nVAR\n    rTrigPieza : R_TRIG; (* Detector de flanco ascendente del sensor *)\nEND_VAR\n\n(* Detectar flanco ascendente del sensor fotoelectrico *)\nrTrigPieza(CLK := sensorPieza);\n\n(* Reset prioritario: pone la cuenta en cero *)\nIF btnReset THEN\n    cuenta := 0;\n\n(* Incrementar cuenta en cada pieza detectada, solo si el lote no esta completo *)\nELSIF rTrigPieza.Q AND NOT loteListo THEN\n    cuenta := cuenta + 1;\nEND_IF;\n\n(* Activar salida de lote al alcanzar 12 piezas *)\nloteListo := (cuenta >= 12);\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-5689",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL;   // Entrada del sensor fotoeléctrico\n    btnReset : BOOL;      // Botón de reset\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;     // Indica si el lote está completo\n    cuenta : INT;         // Cuenta de piezas detectadas\nEND_VAR\n\nVAR\n    prevSensorPieza : BOOL; // Estado previo del sensor\nEND_VAR\n\n// Inicialización de variables\nIF btnReset THEN\n    cuenta := 0;          // Reinicia la cuenta si se presiona el botón de reset\n    loteListo := FALSE;   // Desactiva la salida de lote completo\nEND_IF\n\n// Detección de flanco ascendente del sensor\nIF (NOT prevSensorPieza) AND sensorPieza THEN\n    cuenta := cuenta + 1; // Incrementa la cuenta al detectar una pieza\nEND_IF\n\n// Comprobación de lote completo\nIF cuenta >= 12 THEN\n    loteListo := TRUE;    // Activa la salida de lote completo si se alcanzan 12 piezas\nELSE\n    loteListo := FALSE;   // Asegura que la salida esté desactivada si no se alcanza el lote\nEND_IF\n\n// Actualización del estado previo del sensor\nprevSensorPieza := sensorPieza;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-3133",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoeléctrico de pieza *)\n    btnReset : BOOL; (* Botón de reset *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Salida de lote completo *)\n    cuenta : INT; (* Contador de piezas *)\nEND_VAR\nVAR\n    sensorAnterior : BOOL; (* Estado anterior del sensor *)\nEND_VAR\n\n(* Reinicio del contador *)\nIF btnReset THEN\n    cuenta := 0;\n    loteListo := FALSE;\nEND_IF\n\n(* Detección de transición del sensor *)\nIF sensorPieza AND NOT sensorAnterior THEN\n    cuenta := cuenta + 1;\nEND_IF\n\n(* Actualización del estado del sensor *)\nsensorAnterior := sensorPieza;\n\n(* Control de la salida de lote completo *)\nIF cuenta >= 12 THEN\n    loteListo := TRUE;\nELSE\n    loteListo := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-3078",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoelectrico de pieza *)\n    btnReset    : BOOL; (* Boton de reset de cuenta *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Lote de 12 piezas completo *)\n    cuenta    : INT;  (* Contador de piezas *)\nEND_VAR\nVAR\n    rTrigPieza : R_TRIG; (* Detector de flanco ascendente del sensor *)\nEND_VAR\n\n(* Detectar flanco ascendente del sensor fotoelectrico *)\nrTrigPieza(CLK := sensorPieza);\n\n(* Incrementar cuenta en cada pieza detectada *)\nIF rTrigPieza.Q THEN\n    cuenta := cuenta + 1;\nEND_IF;\n\n(* Reset: pone la cuenta en cero y desactiva el lote *)\nIF btnReset THEN\n    cuenta    := 0;\n    loteListo := FALSE;\nEND_IF;\n\n(* Activar salida de lote al alcanzar 12 piezas *)\nIF cuenta >= 12 THEN\n    loteListo := TRUE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-8293",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL;   // Entrada del sensor fotoeléctrico\n    btnReset : BOOL;      // Botón de reset\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;     // Indica si el lote está completo\n    cuenta : INT;         // Cuenta de piezas\nEND_VAR\n\nVAR\n    lastSensorState : BOOL; // Estado anterior del sensor\nEND_VAR\n\n// Inicialización de variables\nIF btnReset THEN\n    cuenta := 0;\n    loteListo := FALSE;\nEND_IF\n\n// Detección de flanco ascendente del sensor\nIF (sensorPieza AND NOT lastSensorState) THEN\n    cuenta := cuenta + 1;\nEND_IF\n\n// Comprobación si el lote está completo\nIF cuenta >= 12 THEN\n    loteListo := TRUE;\nELSE\n    loteListo := FALSE;\nEND_IF\n\n// Actualización del estado anterior del sensor\nlastSensorState := sensorPieza;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-2446",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoeléctrico de pieza *)\n    btnReset : BOOL; (* Botón de reset *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Salida de lote completo *)\n    cuenta : INT; (* Contador de piezas *)\nEND_VAR\nVAR\n    sensorAnterior : BOOL; (* Estado anterior del sensor *)\nEND_VAR\n\n(* Reseteo del contador y la salida de lote *)\nIF btnReset THEN\n    cuenta := 0;\n    loteListo := FALSE;\nELSE\n    (* Incremento del contador *)\n    IF sensorPieza AND NOT sensorAnterior THEN\n        cuenta := cuenta + 1;\n    END_IF\n\n    (* Activación de la salida de lote completo *)\n    IF cuenta >= 12 THEN\n        loteListo := TRUE;\n    END_IF\nEND_IF\n\n(* Actualización del estado anterior del sensor *)\nsensorAnterior := sensorPieza;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-6547",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Señal del sensor fotoeléctrico *)\n    btnReset    : BOOL; (* Botón de reset de la cuenta *)\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; (* Activa cuando se completan 12 piezas *)\n    cuenta    : INT;  (* Número de piezas contadas *)\nEND_VAR\n\nVAR\n    sensorPiezaPrev : BOOL; (* Estado anterior del sensor para detección de flanco *)\nEND_VAR\n\n(*\n    Constante de tamaño de lote.\n    Ajustar según requerimiento de producción.\n*)\nVAR CONSTANT\n    TAMANO_LOTE : INT := 12;\nEND_VAR\n\n(* ─────────────────────────────────────────────\n   LÓGICA PRINCIPAL\n   ───────────────────────────────────────────── *)\n\n(* 1. Reset: tiene prioridad sobre el conteo *)\nIF btnReset THEN\n    cuenta        := 0;\n    loteListo     := FALSE;\n    sensorPiezaPrev := FALSE;\n\nELSE\n    (* 2. Detección de flanco ascendente del sensor (FALSE → TRUE) *)\n    IF sensorPieza AND NOT sensorPiezaPrev THEN\n        (* Incrementar solo si el lote aún no está completo *)\n        IF cuenta < TAMANO_LOTE THEN\n            cuenta := cuenta + 1;\n        END_IF;\n    END_IF;\n\n    (* 3. Activar salida de lote completo *)\n    IF cuenta >= TAMANO_LOTE THEN\n        loteListo := TRUE;\n    END_IF;\n\nEND_IF;\n\n(* 4. Guardar estado actual del sensor para el siguiente ciclo *)\nsensorPiezaPrev := sensorPieza;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-3429",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; // Entrada del sensor fotoeléctrico\n    btnReset : BOOL; // Botón de reset\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; // Salida de lote completo\n    cuenta : INT; // Contador de piezas\nEND_VAR\n\nVAR\n    sensorAnterior : BOOL; // Estado anterior del sensor\nEND_VAR\n\n// Inicialización\nIF sensorAnterior = FALSE AND sensorPieza = TRUE THEN\n    cuenta := cuenta + 1; // Incrementar el contador\nEND_IF;\n\n// Reset\nIF btnReset THEN\n    cuenta := 0; // Poner el contador en cero\n    loteListo := FALSE; // Desactivar la salida de lote\nEND_IF;\n\n// Control de lote completo\nIF cuenta >= 12 THEN\n    loteListo := TRUE; // Activar la salida de lote completo\nELSE\n    loteListo := FALSE; // Desactivar la salida de lote completo\nEND_IF;\n\n// Actualizar el estado anterior del sensor\nsensorAnterior := sensorPieza;"
+  },
+  {
+   "codigo": "B3-6741",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Señal del sensor fotoeléctrico *)\n    btnReset    : BOOL; (* Botón de reset de la cuenta *)\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL; (* Activa cuando se completan 12 piezas *)\n    cuenta    : INT;  (* Contador de piezas detectadas *)\nEND_VAR\n\nVAR\n    sensorPiezaPrev : BOOL; (* Estado anterior del sensor para detección de flanco *)\nEND_VAR\n\nVAR CONSTANT\n    LIMITE_LOTE : INT := 12; (* Número de piezas por lote *)\nEND_VAR\n\n(* ─────────────────────────────────────────────\n   Lógica principal del contador de piezas\n   ───────────────────────────────────────────── *)\n\n(* 1. Reset: tiene prioridad sobre el conteo *)\nIF btnReset THEN\n    cuenta    := 0;\n    loteListo := FALSE;\n\n(* 2. Conteo: detecta flanco ascendente del sensor (FALSE → TRUE) *)\nELSIF (sensorPieza = TRUE) AND (sensorPiezaPrev = FALSE) THEN\n\n    (* Incrementar solo si el lote aún no está completo *)\n    IF cuenta < LIMITE_LOTE THEN\n        cuenta := cuenta + 1;\n    END_IF;\n\n    (* Activar salida de lote al alcanzar el límite *)\n    IF cuenta >= LIMITE_LOTE THEN\n        loteListo := TRUE;\n    END_IF;\n\nEND_IF;\n\n(* 3. Guardar estado actual del sensor para el próximo ciclo *)\nsensorPiezaPrev := sensorPieza;"
+  },
+  {
+   "codigo": "B3-3465",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor de pieza *)\n    btnReset : BOOL; (* Boton de reset *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Salida de lote completo *)\n    cuenta : INT; (* Cuenta de piezas *)\nEND_VAR\nVAR\n    cPiezas : CTU; (* Contador ascendente *)\nEND_VAR\n\n(* Incrementa con cada pieza, activa salida al llegar a 12 y permite reset *)\ncPiezas(CU := sensorPieza, RESET := btnReset, PV := 12);\nloteListo := cPiezas.Q;\ncuenta := cPiezas.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-4741",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoeléctrico para detectar piezas *)\n    btnReset : BOOL;    (* Botón para resetear el contador *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL;   (* Indica si el lote está completo *)\n    cuenta : INT;       (* Cuenta de piezas detectadas *)\nEND_VAR\nVAR\n    sensorPiezaAnt : BOOL; (* Estado anterior del sensor de pieza *)\nEND_VAR\n\n(* Inicialización de variables *)\nIF btnReset THEN\n    cuenta := 0;\n    loteListo := FALSE;\nELSE\n    (* Detectar flanco ascendente del sensor de pieza *)\n    IF (sensorPieza AND NOT sensorPiezaAnt) THEN\n        cuenta := cuenta + 1;\n    END_IF;\n\n    (* Verificar si el lote está completo *)\n    IF cuenta >= 12 THEN\n        loteListo := TRUE;\n    ELSE\n        loteListo := FALSE;\n    END_IF;\nEND_IF;\n\n(* Actualizar el estado anterior del sensor de pieza *)\nsensorPiezaAnt := sensorPieza;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-1730",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoeléctrico para detección de piezas *)\n    btnReset : BOOL;    (* Botón de reset para reiniciar el contador *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL;   (* Indica si el lote está completo *)\n    cuenta : INT;       (* Contador de piezas *)\nEND_VAR\nVAR\n    sensorPiezaAnt : BOOL; (* Estado anterior del sensor de pieza *)\nEND_VAR\n\n(* Inicialización de variables *)\nIF btnReset THEN\n    cuenta := 0;\n    loteListo := FALSE;\nELSE\n    (* Detectar flanco ascendente del sensor de pieza *)\n    IF (sensorPieza AND NOT sensorPiezaAnt) THEN\n        cuenta := cuenta + 1;\n    END_IF;\n    \n    (* Verificar si el lote está completo *)\n    IF cuenta >= 12 THEN\n        loteListo := TRUE;\n    ELSE\n        loteListo := FALSE;\n    END_IF;\nEND_IF;\n\n(* Actualizar el estado anterior del sensor de pieza *)\nsensorPiezaAnt := sensorPieza;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-6937",
+   "resultado_codesys": "Compila. Falla 3 de 7 pasos del harness (pasos 3,4,5; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL;   // Entrada del sensor fotoeléctrico\n    btnReset : BOOL;      // Botón de reset\nEND_VAR\n\nVAR_OUTPUT\n    loteListo : BOOL;     // Salida que indica si el lote está completo\n    cuenta : INT;         // Contador de piezas\nEND_VAR\n\nVAR\n    sensorPiezaAnt : BOOL; // Estado anterior del sensor\nEND_VAR\n\n// Inicialización de variables\nsensorPiezaAnt := FALSE;\ncuenta := 0;\nloteListo := FALSE;\n\n// Cuerpo del bloque de función\nIF btnReset THEN\n    // Si se presiona el botón de reset, reiniciar el contador y la salida de lote\n    cuenta := 0;\n    loteListo := FALSE;\nELSE\n    // Detectar flanco ascendente del sensor\n    IF (sensorPieza AND NOT sensorPiezaAnt) THEN\n        // Incrementar el contador al detectar una pieza\n        cuenta := cuenta + 1;\n    END_IF;\n    \n    // Verificar si se ha completado el lote\n    IF cuenta >= 12 THEN\n        loteListo := TRUE;\n    ELSE\n        loteListo := FALSE;\n    END_IF;\nEND_IF;\n\n// Actualizar el estado anterior del sensor\nsensorPiezaAnt := sensorPieza;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B3-2730",
+   "resultado_codesys": "Compila. Pasa los 7 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Contador\nVAR_INPUT\n    sensorPieza : BOOL; (* Sensor fotoelectrico de pieza *)\n    btnReset    : BOOL; (* Boton de reset de cuenta *)\nEND_VAR\nVAR_OUTPUT\n    loteListo : BOOL; (* Lote de 12 piezas completo *)\n    cuenta    : INT;  (* Numero de piezas contadas *)\nEND_VAR\nVAR\n    rTrigPieza : R_TRIG; (* Detector de flanco ascendente del sensor *)\nEND_VAR\n\n(* Detectar flanco ascendente del sensor fotoelectrico *)\nrTrigPieza(CLK := sensorPieza);\n\n(* Reset prioritario: pone la cuenta en cero y desactiva el lote *)\nIF btnReset THEN\n    cuenta    := 0;\n    loteListo := FALSE;\n\n(* Incrementar cuenta en cada pieza detectada, solo si el lote no esta completo *)\nELSIF rTrigPieza.Q AND NOT loteListo THEN\n    cuenta := cuenta + 1;\nEND_IF;\n\n(* Activar salida de lote al alcanzar 12 piezas *)\nIF cuenta >= 12 THEN\n    loteListo := TRUE;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}

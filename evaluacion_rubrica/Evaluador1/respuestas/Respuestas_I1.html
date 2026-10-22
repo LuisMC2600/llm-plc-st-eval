@@ -1,0 +1,1831 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>I1 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>I1 — Semáforo con secuencia temporizada (Intermedio)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja I1 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa un semáforo vehicular cíclico: verde 20 segundos, amarillo 4 segundos, rojo 15 segundos, repitiendo la secuencia indefinidamente mientras la entrada habilitado esté activa. Si habilitado se desactiva, el semáforo debe pasar a amarillo intermitente (1 segundo encendido, 1 segundo apagado) con las demás luces apagadas; al habilitarse de nuevo, la secuencia reinicia en verde. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Semaforo con variable de entrada habilitado (BOOL) y salidas luzV, luzA, luzR (BOOL). Usa los tiempos T#20S, T#4S, T#15S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_I1.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea I1 (semaforo con secuencia temporizada)
+    ---------------------------------------------------------------------------
+    Verde 20 s, amarillo 4 s, rojo 15 s, ciclico mientras &#x27;habilitado&#x27;. Al
+    deshabilitar, amarillo intermitente de 1 s / 1 s con las demas luces
+    apagadas. Al rehabilitar, la secuencia REINICIA EN VERDE.
+
+    El modo intermitente se verifica midiendo la duracion de los intervalos
+    completos, no muestreando (enmienda 1). La condicion &quot;las demas luces
+    apagadas&quot; se vigila en cada scan y queda enclavada (enmienda 6).
+
+    Ciclo de MainTask: 4 a 10 ms (enmienda 3).
+
+    USO: crear este PROGRAM junto al FUNCTION_BLOCK de la respuesta a evaluar y
+    ejecutar en modo Simulacion. Al terminar, leer &#x27;veredicto&#x27;: 1 = supera,
+    2 = falla. &#x27;resultado&#x27; indica el paso.
+
+    ---------------------------------------------------------------------------
+    CORRECCION DEL 2026-09-09 (enmienda 8). Validado con validar_harness_I1.py.
+    La version anterior daba veredicto 1 a dos implementaciones defectuosas:
+
+    FALLO 1 — &quot;las demas luces apagadas&quot; se comprobaba en un unico instante al
+    final del paso intermitente. Una implementacion que resuelve el
+    intermitente alternando AMARILLO y ROJO (error plausible: parpadear entre
+    el amarillo y la ultima luz activa) deja el rojo en antifase con el
+    amarillo, de modo que en el instante muestreado las demas estan apagadas.
+    Verificado: con el parpadeo arrancando en amarillo encendido, el defecto
+    obtiene veredicto 1 en los tres ciclos de tarea; con la fase contraria solo
+    se detecta de rebote en el paso 0, es decir por suerte de fase y no por
+    merito del banco. Es el mismo error de muestreo de la enmienda 6.
+
+    FALLO 2 — el reinicio en verde no se estaba probando. La secuencia
+    deshabilitaba el semaforo mientras estaba EN VERDE, asi que al rehabilitar
+    una implementacion que reinicia y una que continua donde se quedo muestran
+    exactamente lo mismo. Verificado: el defecto &quot;no reinicia&quot; obtenia
+    veredicto 1 en los tres ciclos. Para probarlo hay que interrumpir en una
+    fase que NO sea verde.
+
+    Correcciones: la vigilancia de V y R en los pasos deshabilitados pasa a ser
+    continua y enclavada; y la secuencia recorre un segundo ciclo hasta el ROJO
+    antes de deshabilitar, de modo que el reinicio en verde sea observable. La
+    medida de intervalos se unifica con el metodo de la enmienda 5 (diferencia
+    de dos lecturas de un cronometro libre). La secuencia pasa de 46,6 s a
+    70,6 s, dentro de la estimacion de ~90 s de la correccion de tiempos.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reposo deshabilitado: V y R deben permanecer apagadas *)
+            habilitado := FALSE; tEspera := T#200MS;
+        1:  (* Al habilitar arranca en verde *)
+            habilitado := TRUE;  tEspera := T#200MS;
+            espV := TRUE;  espA := FALSE; espR := FALSE;
+
+        (* --- Primer ciclo completo --- *)
+        2:  (* 20 s de verde -&gt; amarillo *)
+            tEspera := T#20S;  espV := FALSE; espA := TRUE;  espR := FALSE;
+        3:  (* 4 s de amarillo -&gt; rojo *)
+            tEspera := T#4S;   espV := FALSE; espA := FALSE; espR := TRUE;
+        4:  (* 15 s de rojo -&gt; verde *)
+            tEspera := T#15S;  espV := TRUE;  espA := FALSE; espR := FALSE;
+
+        (* --- Segundo ciclo: confirma que es ciclico y deja el semaforo en
+               ROJO, que es la fase desde la que hay que interrumpir para que
+               el reinicio en verde sea observable (enmienda 8) --- *)
+        5:  (* 20 s de verde -&gt; amarillo *)
+            tEspera := T#20S;  espV := FALSE; espA := TRUE;  espR := FALSE;
+        6:  (* 4 s de amarillo -&gt; rojo *)
+            tEspera := T#4S;   espV := FALSE; espA := FALSE; espR := TRUE;
+
+        (* --- Intermitente e inhibicion --- *)
+        7:  (* Se deshabilita ESTANDO EN ROJO: amarillo intermitente medido,
+               con V y R vigiladas de forma continua *)
+            habilitado := FALSE; tEspera := T#7S;
+        8:  (* Al rehabilitar debe reiniciar EN VERDE, no continuar en rojo *)
+            habilitado := TRUE;  tEspera := T#200MS;
+            espV := TRUE;  espA := FALSE; espR := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#I1-2135">I1-2135</a><a href="#I1-7364">I1-7364</a><a href="#I1-5111">I1-5111</a><a href="#I1-7969">I1-7969</a><a href="#I1-5434">I1-5434</a><a href="#I1-7084">I1-7084</a><a href="#I1-2168">I1-2168</a><a href="#I1-3359">I1-3359</a><a href="#I1-8741">I1-8741</a><a href="#I1-4990">I1-4990</a><a href="#I1-8830">I1-8830</a><a href="#I1-7322">I1-7322</a><a href="#I1-3250">I1-3250</a><a href="#I1-3464">I1-3464</a><a href="#I1-8420">I1-8420</a><a href="#I1-5295">I1-5295</a><a href="#I1-8541">I1-8541</a><a href="#I1-4916">I1-4916</a><a href="#I1-5056">I1-5056</a><a href="#I1-1955">I1-1955</a><a href="#I1-8761">I1-8761</a><a href="#I1-4511">I1-4511</a><a href="#I1-4945">I1-4945</a><a href="#I1-3124">I1-3124</a></div>
+<div class="caja resp" id="I1-2135"><div class="cod"><h3>I1-2135</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilitacion del semaforo *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    estado : INT := 0; (* 0: Verde, 1: Amarillo, 2: Rojo *)
+    tFase : TON; (* Temporizador para las fases del semaforo *)
+    tParpadeo : TON; (* Temporizador para el parpadeo *)
+    estadoBlink : BOOL := TRUE; (* Estado de la luz intermitente *)
+END_VAR
+
+IF habilitado THEN
+    (* Secuencia normal del semaforo *)
+    CASE estado OF
+        0: tFase(IN := TRUE, PT := T#20S); (* Verde *)
+        1: tFase(IN := TRUE, PT := T#4S);  (* Amarillo *)
+        2: tFase(IN := TRUE, PT := T#15S); (* Rojo *)
+    END_CASE;
+
+    (* Cambio de fase al terminar el tiempo *)
+    IF tFase.Q THEN
+        estado := (estado + 1) MOD 3;
+        tFase(IN := FALSE); (* Reiniciar temporizador para la siguiente fase *)
+    END_IF;
+
+    (* Asignacion de salidas *)
+    luzV := (estado = 0);
+    luzA := (estado = 1);
+    luzR := (estado = 2);
+
+    (* Reiniciar variables del modo intermitente *)
+    tParpadeo(IN := FALSE);
+    estadoBlink := TRUE;
+ELSE
+    (* Modo deshabilitado: Amarillo intermitente *)
+    estado := 0; (* Preparar reinicio en verde *)
+    tFase(IN := FALSE); (* Reiniciar temporizador de secuencia *)
+
+    (* Generador de pulsos de 1 segundo *)
+    tParpadeo(IN := TRUE, PT := T#1S);
+    IF tParpadeo.Q THEN
+        estadoBlink := NOT estadoBlink;
+        tParpadeo(IN := FALSE); (* Reiniciar temporizador de parpadeo *)
+    END_IF;
+
+    (* Asignacion de salidas *)
+    luzV := FALSE;
+    luzR := FALSE;
+    luzA := estadoBlink;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-7364"><div class="cod"><h3>I1-7364</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 9 pasos del harness (pasos 0,2,3,6,7,8; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; // Variable de entrada que indica si el semáforo está habilitado
+END_VAR
+
+VAR_OUTPUT
+    luzV : BOOL; // Variable de salida para la luz verde
+    luzA : BOOL; // Variable de salida para la luz amarilla
+    luzR : BOOL; // Variable de salida para la luz roja
+END_VAR
+
+VAR
+    estado : INT := 0; // Variable de estado para controlar la secuencia del semáforo
+    timer : TON; // Timer para controlar los tiempos de cada estado
+    intermitente : BOOL := FALSE; // Variable para controlar el estado intermitente de la luz amarilla
+END_VAR
+
+// Inicialización del timer
+timer(IN := TRUE, PT := T#20S);
+
+// Máquina de estados
+CASE estado OF
+    0: // Estado verde
+        luzV := TRUE;
+        luzA := FALSE;
+        luzR := FALSE;
+        IF habilitado THEN
+            IF timer.Q THEN
+                timer(PT := T#4S); // Cambiar a amarillo después de 20 segundos
+                estado := 1;
+            END_IF
+        ELSE
+            estado := 3; // Cambiar a estado intermitente si habilitado se desactiva
+        END_IF
+
+    1: // Estado amarillo
+        luzV := FALSE;
+        luzA := TRUE;
+        luzR := FALSE;
+        IF habilitado THEN
+            IF timer.Q THEN
+                timer(PT := T#15S); // Cambiar a rojo después de 4 segundos
+                estado := 2;
+            END_IF
+        ELSE
+            estado := 3; // Cambiar a estado intermitente si habilitado se desactiva
+        END_IF
+
+    2: // Estado rojo
+        luzV := FALSE;
+        luzA := FALSE;
+        luzR := TRUE;
+        IF habilitado THEN
+            IF timer.Q THEN
+                timer(PT := T#20S); // Cambiar a verde después de 15 segundos
+                estado := 0;
+            END_IF
+        ELSE
+            estado := 3; // Cambiar a estado intermitente si habilitado se desactiva
+        END_IF
+
+    3: // Estado intermitente
+        luzV := FALSE;
+        luzA := intermitente;
+        luzR := FALSE;
+        IF habilitado THEN
+            estado := 0; // Reiniciar la secuencia si habilitado se activa
+        ELSE
+            intermitente := NOT intermitente; // Cambiar el estado de intermitencia cada segundo
+            timer(PT := T#1S); // Reiniciar el timer para el siguiente cambio de estado
+        END_IF
+END_CASE</pre></div>
+<div class="caja resp" id="I1-5111"><div class="cod"><h3>I1-5111</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 9 pasos del harness (pasos 7; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilita la secuencia normal del semaforo *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    estado     : INT;  (* Estado de la secuencia: 0=verde, 1=amarillo, 2=rojo *)
+    tFase      : TON; (* Temporizador de cada fase normal *)
+    tBlink     : TP;  (* Temporizador de pulso para amarillo intermitente *)
+    bBlinkTrig : BOOL; (* Flanco para relanzar el pulso intermitente *)
+END_VAR
+
+IF habilitado THEN
+    (* --- Secuencia normal: verde -&gt; amarillo -&gt; rojo -&gt; verde --- *)
+
+    CASE estado OF
+
+        0: (* VERDE 20 s *)
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            tFase(IN := TRUE, PT := T#20S);
+            IF tFase.Q THEN
+                tFase(IN := FALSE, PT := T#20S); (* Resetea temporizador *)
+                estado := 1;
+            END_IF;
+
+        1: (* AMARILLO 4 s *)
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            tFase(IN := TRUE, PT := T#4S);
+            IF tFase.Q THEN
+                tFase(IN := FALSE, PT := T#4S);
+                estado := 2;
+            END_IF;
+
+        2: (* ROJO 15 s *)
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            tFase(IN := TRUE, PT := T#15S);
+            IF tFase.Q THEN
+                tFase(IN := FALSE, PT := T#15S);
+                estado := 0; (* Reinicia ciclo *)
+            END_IF;
+
+        ELSE
+            estado := 0; (* Estado invalido: vuelve a verde *)
+
+    END_CASE;
+
+    (* Asegura que el temporizador de blink quede inactivo *)
+    bBlinkTrig := FALSE;
+    tBlink(IN := FALSE, PT := T#1S);
+
+ELSE
+    (* --- Modo inhabilitado: amarillo intermitente 1 s ON / 1 s OFF --- *)
+    luzV := FALSE;
+    luzR := FALSE;
+
+    (* Relanza el pulso cada vez que expira *)
+    tBlink(IN := bBlinkTrig, PT := T#1S);
+
+    IF NOT tBlink.Q AND NOT bBlinkTrig THEN
+        (* Pulso inactivo y no disparado: lanzar nuevo pulso *)
+        bBlinkTrig := TRUE;
+    END_IF;
+
+    IF tBlink.Q THEN
+        (* Pulso expirado: apagar disparo para permitir nuevo ciclo *)
+        bBlinkTrig := FALSE;
+    END_IF;
+
+    luzA := tBlink.Q; (* Amarillo encendido durante el pulso activo *)
+
+    (* Al rehabilitar, reinicia la secuencia en verde *)
+    tFase(IN := FALSE, PT := T#20S);
+    estado := 0;
+
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-7969"><div class="cod"><h3>I1-7969</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 7 de 9 pasos del harness (pasos 2,3,4,5,6,7,8; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Semaforo habilitado *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    tVerde : TP; (* Temporizador para luz verde *)
+    tAmarillo : TP; (* Temporizador para luz amarilla *)
+    tRojo : TP; (* Temporizador para luz roja *)
+    tIntermitente : TP; (* Temporizador para luz amarilla intermitente *)
+    estado : INT := 0; (* Estado actual del semáforo *)
+END_VAR
+
+(* Secuencia normal del semáforo *)
+IF habilitado THEN
+    CASE estado OF
+        0: (* Verde *)
+            tVerde(IN := TRUE, PT := T#20S);
+            luzV := tVerde.Q;
+            luzA := FALSE;
+            luzR := FALSE;
+            IF tVerde.Q THEN
+                estado := 1;
+            END_IF
+        1: (* Amarillo *)
+            tAmarillo(IN := TRUE, PT := T#4S);
+            luzV := FALSE;
+            luzA := tAmarillo.Q;
+            luzR := FALSE;
+            IF tAmarillo.Q THEN
+                estado := 2;
+            END_IF
+        2: (* Rojo *)
+            tRojo(IN := TRUE, PT := T#15S);
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := tRojo.Q;
+            IF tRojo.Q THEN
+                estado := 0;
+            END_IF
+    END_CASE
+ELSE
+    (* Modo intermitente *)
+    tIntermitente(IN := TRUE, PT := T#1S);
+    luzV := FALSE;
+    luzA := tIntermitente.Q;
+    luzR := FALSE;
+    IF tIntermitente.Q THEN
+        tIntermitente(IN := FALSE);
+    END_IF
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-5434"><div class="cod"><h3>I1-5434</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Señal para habilitar la secuencia normal *)
+END_VAR
+
+VAR_OUTPUT
+    luzV : BOOL; (* Luz Verde *)
+    luzA : BOOL; (* Luz Amarilla *)
+    luzR : BOOL; (* Luz Roja *)
+END_VAR
+
+VAR
+    estado : INT := 0; (* 0: Intermitente, 1: Verde, 2: Amarillo, 3: Rojo *)
+    timerSecuencia : TON; (* Temporizador para la secuencia normal *)
+    timerIntermitente : TON; (* Temporizador para el parpadeo *)
+    estadoBlink : BOOL := FALSE; (* Estado auxiliar para la luz intermitente *)
+    flancoHabilitado : R_TRIG; (* Detector de flanco de subida *)
+END_VAR
+
+(* Detectar cuando se activa la entrada para reiniciar la secuencia en verde *)
+flancoHabilitado(CLK := habilitado);
+IF flancoHabilitado.Q THEN
+    estado := 1;
+    timerSecuencia(IN := FALSE); (* Reset del temporizador principal *)
+ELSIF NOT habilitado THEN
+    estado := 0; (* Si se deshabilita, pasa a modo intermitente *)
+END_IF;
+
+(* Máquina de estados del semáforo *)
+CASE estado OF
+    0: (* Modo Deshabilitado: Amarillo intermitente *)
+        luzV := FALSE;
+        luzR := FALSE;
+        timerSecuencia(IN := FALSE); (* Mantener apagado el timer principal *)
+        
+        (* Generador de pulsos: 1s encendido, 1s apagado *)
+        timerIntermitente(IN := NOT timerIntermitente.Q, PT := T#1S);
+        IF timerIntermitente.Q THEN
+            estadoBlink := NOT estadoBlink;
+        END_IF;
+        luzA := estadoBlink;
+
+    1: (* Modo Normal: Verde (20 segundos) *)
+        luzV := TRUE;
+        luzA := FALSE;
+        luzR := FALSE;
+        timerIntermitente(IN := FALSE); (* Reset del timer intermitente *)
+        
+        timerSecuencia(IN := TRUE, PT := T#20S);
+        IF timerSecuencia.Q THEN
+            estado := 2;
+            timerSecuencia(IN := FALSE);
+        END_IF;
+
+    2: (* Modo Normal: Amarillo (4 segundos) *)
+        luzV := FALSE;
+        luzA := TRUE;
+        luzR := FALSE;
+        
+        timerSecuencia(IN := TRUE, PT := T#4S);
+        IF timerSecuencia.Q THEN
+            estado := 3;
+            timerSecuencia(IN := FALSE);
+        END_IF;
+
+    3: (* Modo Normal: Rojo (15 segundos) *)
+        luzV := FALSE;
+        luzA := FALSE;
+        luzR := TRUE;
+        
+        timerSecuencia(IN := TRUE, PT := T#15S);
+        IF timerSecuencia.Q THEN
+            estado := 1;
+            timerSecuencia(IN := FALSE);
+        END_IF;
+END_CASE;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-7084"><div class="cod"><h3>I1-7084</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL;
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL;
+    luzA : BOOL;
+    luzR : BOOL;
+END_VAR
+VAR
+    estado : INT := 0; (* 0: Intermitente, 1: Verde, 2: Amarillo, 3: Rojo *)
+    timerSecuencia : TON;
+    timerParpadeo : TON;
+    estadoParpadeo : BOOL;
+    rTrigHabilitado : R_TRIG;
+    tiempoFase : TIME;
+END_VAR
+
+(* Detectar flanco de subida para reiniciar la secuencia en verde *)
+rTrigHabilitado(CLK := habilitado);
+IF rTrigHabilitado.Q THEN
+    estado := 1;
+    estadoParpadeo := FALSE; (* Reiniciar estado del parpadeo *)
+ELSIF NOT habilitado THEN
+    estado := 0;
+END_IF;
+
+(* Asignar el tiempo correspondiente a la fase actual *)
+CASE estado OF
+    1: tiempoFase := T#20S;
+    2: tiempoFase := T#4S;
+    3: tiempoFase := T#15S;
+END_CASE;
+
+(* Temporizador principal de la secuencia (se auto-reinicia al terminar) *)
+timerSecuencia(IN := habilitado AND NOT timerSecuencia.Q, PT := tiempoFase);
+
+(* Cambio de estado al completarse el tiempo de la fase *)
+IF timerSecuencia.Q THEN
+    CASE estado OF
+        1: estado := 2;
+        2: estado := 3;
+        3: estado := 1;
+    END_CASE;
+END_IF;
+
+(* Temporizador para el parpadeo en modo deshabilitado (1s ON, 1s OFF) *)
+timerParpadeo(IN := NOT habilitado AND NOT timerParpadeo.Q, PT := T#1S);
+IF timerParpadeo.Q THEN
+    estadoParpadeo := NOT estadoParpadeo;
+END_IF;
+
+(* Control de las salidas físicas según el estado activo *)
+CASE estado OF
+    0: (* Deshabilitado: Amarillo intermitente, demás apagadas *)
+        luzV := FALSE;
+        luzA := estadoParpadeo;
+        luzR := FALSE;
+    1: (* Secuencia: Verde *)
+        luzV := TRUE;
+        luzA := FALSE;
+        luzR := FALSE;
+    2: (* Secuencia: Amarillo *)
+        luzV := FALSE;
+        luzA := TRUE;
+        luzR := FALSE;
+    3: (* Secuencia: Rojo *)
+        luzV := FALSE;
+        luzA := FALSE;
+        luzR := TRUE;
+END_CASE;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-2168"><div class="cod"><h3>I1-2168</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilitacion del semaforo *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    tCiclo : TON; (* Temporizador para el ciclo del semaforo *)
+    tIntermitente : TON; (* Temporizador para el amarillo intermitente *)
+    estado : INT; (* Estado del semaforo *)
+    intermitente : BOOL; (* Estado de la luz amarilla intermitente *)
+END_VAR
+
+(* Logica del semaforo *)
+IF habilitado THEN
+    (* Control del ciclo del semaforo *)
+    CASE estado OF
+        0: (* Luz verde *)
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            tCiclo(IN := TRUE, PT := T#20S);
+            IF tCiclo.Q THEN
+                estado := 1;
+                tCiclo(IN := FALSE);
+            END_IF;
+        1: (* Luz amarilla *)
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            tCiclo(IN := TRUE, PT := T#4S);
+            IF tCiclo.Q THEN
+                estado := 2;
+                tCiclo(IN := FALSE);
+            END_IF;
+        2: (* Luz roja *)
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            tCiclo(IN := TRUE, PT := T#15S);
+            IF tCiclo.Q THEN
+                estado := 0;
+                tCiclo(IN := FALSE);
+            END_IF;
+    END_CASE;
+ELSE
+    (* Control del amarillo intermitente *)
+    luzV := FALSE;
+    luzR := FALSE;
+    tIntermitente(IN := TRUE, PT := T#1S);
+    IF tIntermitente.Q THEN
+        intermitente := NOT intermitente;
+        tIntermitente(IN := FALSE);
+    END_IF;
+    luzA := intermitente;
+    estado := 0; (* Reiniciar ciclo al habilitar *)
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-3359"><div class="cod"><h3>I1-3359</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilitacion del semaforo *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    estado : INT := 0; (* 0: Intermitente, 1: Verde, 2: Amarillo, 3: Rojo *)
+    tSecuencia : TON;  (* Temporizador para la secuencia normal *)
+    tBlink1 : TON;     (* Temporizador 1 para parpadeo (tiempo encendido) *)
+    tBlink2 : TON;     (* Temporizador 2 para parpadeo (tiempo apagado) *)
+    tiempoActual : TIME;
+    transicion : BOOL;
+END_VAR
+
+(* Control de estado principal *)
+IF NOT habilitado THEN
+    estado := 0;
+ELSIF estado = 0 THEN
+    estado := 1; (* Reinicia en verde al habilitarse *)
+END_IF;
+
+(* Asignacion de tiempos y luces segun el estado *)
+CASE estado OF
+    0: (* Amarillo intermitente *)
+        luzV := FALSE;
+        luzA := NOT tBlink1.Q;
+        luzR := FALSE;
+    1: (* Verde *)
+        tiempoActual := T#20S;
+        luzV := TRUE;
+        luzA := FALSE;
+        luzR := FALSE;
+    2: (* Amarillo *)
+        tiempoActual := T#4S;
+        luzV := FALSE;
+        luzA := TRUE;
+        luzR := FALSE;
+    3: (* Rojo *)
+        tiempoActual := T#15S;
+        luzV := FALSE;
+        luzA := FALSE;
+        luzR := TRUE;
+END_CASE;
+
+(* Actualizacion de temporizadores *)
+tSecuencia(IN := habilitado AND NOT transicion, PT := tiempoActual);
+transicion := tSecuencia.Q;
+
+tBlink1(IN := (estado = 0) AND NOT tBlink2.Q, PT := T#1S);
+tBlink2(IN := tBlink1.Q, PT := T#1S);
+
+(* Transiciones de la secuencia normal *)
+IF transicion THEN
+    CASE estado OF
+        1: estado := 2;
+        2: estado := 3;
+        3: estado := 1;
+    END_CASE;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-8741"><div class="cod"><h3>I1-8741</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas (&#x27;habilitado&#x27; no es ninguna entrada de &#x27;FB_SEMAFORO&#x27;).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR
+    // Variables de entrada
+    habilitado : BOOL; // Entrada para habilitar o deshabilitar el semáforo
+
+    // Variables de salida
+    luzV : BOOL; // Luz verde
+    luzA : BOOL; // Luz amarilla
+    luzR : BOOL; // Luz roja
+
+    // Variables internas
+    estado : INT := 0; // Estado del semáforo
+    temporizador : TON; // Temporizador para controlar los tiempos de las luces
+    tiempoParpadeo : TON; // Temporizador para el parpadeo del amarillo
+END_VAR
+
+// Inicialización del temporizador
+temporizador(IN := FALSE, PT := T#0S);
+tiempoParpadeo(IN := FALSE, PT := T#0S);
+
+// Lógica del semáforo
+IF habilitado THEN
+    // Secuencia cíclica del semáforo
+    CASE estado OF
+        0: // Luz verde
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            temporizador(IN := TRUE, PT := T#20S);
+            IF temporizador.Q THEN
+                temporizador(IN := FALSE);
+                estado := 1;
+            END_IF;
+        1: // Luz amarilla
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            temporizador(IN := TRUE, PT := T#4S);
+            IF temporizador.Q THEN
+                temporizador(IN := FALSE);
+                estado := 2;
+            END_IF;
+        2: // Luz roja
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            temporizador(IN := TRUE, PT := T#15S);
+            IF temporizador.Q THEN
+                temporizador(IN := FALSE);
+                estado := 0;
+            END_IF;
+    END_CASE;
+ELSE
+    // Modo amarillo intermitente
+    luzV := FALSE;
+    luzR := FALSE;
+    tiempoParpadeo(IN := TRUE, PT := T#1S);
+    IF tiempoParpadeo.Q THEN
+        luzA := NOT luzA; // Alterna el estado de la luz amarilla
+        tiempoParpadeo(IN := FALSE);
+    END_IF;
+    estado := 0; // Reinicia el estado para comenzar en verde cuando se habilite
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-4990"><div class="cod"><h3>I1-4990</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 9 pasos del harness (pasos 7; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilitacion del semaforo *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    estado      : INT;  (* Estado de la secuencia: 0=Verde, 1=Amarillo, 2=Rojo *)
+    tFase       : TON;  (* Temporizador de fase normal *)
+    tParpadeo   : TP;   (* Temporizador de pulso para amarillo intermitente *)
+    bParpadeoOn : BOOL; (* Bandera de ciclo de parpadeo activo *)
+END_VAR
+
+IF NOT habilitado THEN
+    (* --- Modo inhabilitado: amarillo intermitente 1s ON / 1s OFF --- *)
+    estado := 0;        (* Reinicio de estado para cuando se habilite de nuevo *)
+    tFase(IN := FALSE, PT := T#20S); (* Resetea temporizador de fase *)
+
+    (* Genera el parpadeo usando TP: cada vez que Q baja, relanza el pulso *)
+    tParpadeo(IN := NOT tParpadeo.Q AND NOT bParpadeoOn, PT := T#1S);
+
+    (* Alterna entre encendido y apagado cada segundo *)
+    IF tParpadeo.Q THEN
+        bParpadeoOn := NOT bParpadeoOn;
+    END_IF;
+
+    luzV := FALSE;
+    luzA := bParpadeoOn; (* Amarillo parpadea *)
+    luzR := FALSE;
+
+ELSE
+    (* --- Modo habilitado: secuencia Verde -&gt; Amarillo -&gt; Rojo --- *)
+    tParpadeo(IN := FALSE, PT := T#1S); (* Resetea temporizador de parpadeo *)
+    bParpadeoOn := FALSE;
+
+    CASE estado OF
+
+        0: (* Verde durante 20 segundos *)
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            tFase(IN := TRUE, PT := T#20S);
+            IF tFase.Q THEN
+                tFase(IN := FALSE, PT := T#20S); (* Resetea temporizador *)
+                estado := 1;
+            END_IF;
+
+        1: (* Amarillo durante 4 segundos *)
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            tFase(IN := TRUE, PT := T#4S);
+            IF tFase.Q THEN
+                tFase(IN := FALSE, PT := T#4S); (* Resetea temporizador *)
+                estado := 2;
+            END_IF;
+
+        2: (* Rojo durante 15 segundos *)
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            tFase(IN := TRUE, PT := T#15S);
+            IF tFase.Q THEN
+                tFase(IN := FALSE, PT := T#15S); (* Resetea temporizador *)
+                estado := 0; (* Reinicia la secuencia en verde *)
+            END_IF;
+
+        ELSE
+            estado := 0; (* Estado invalido: vuelve a verde *)
+
+    END_CASE;
+
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-8830"><div class="cod"><h3>I1-8830</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilita la secuencia normal del semáforo *)
+END_VAR
+
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+
+VAR
+    (* Temporizadores para cada fase *)
+    tVerde     : TON; (* Temporizador fase verde  - 20 s *)
+    tAmarillo  : TON; (* Temporizador fase amarilla - 4 s *)
+    tRojo      : TON; (* Temporizador fase roja   - 15 s *)
+    tBlink     : TON; (* Temporizador parpadeo amarillo - 1 s *)
+
+    (* Estado de la secuencia normal *)
+    (* 0 = Verde, 1 = Amarillo, 2 = Rojo *)
+    estado     : INT := 0;
+
+    (* Estado interno del parpadeo (TRUE = encendido, FALSE = apagado) *)
+    blinkOn    : BOOL := FALSE;
+END_VAR
+
+(* ─────────────────────────────────────────────────────────────────────────── *)
+
+IF NOT habilitado THEN
+    (* ── Modo amarillo intermitente ─────────────────────────────────────── *)
+
+    (* Reiniciar temporizadores de secuencia normal *)
+    tVerde(IN := FALSE);
+    tAmarillo(IN := FALSE);
+    tRojo(IN := FALSE);
+
+    (* Reiniciar estado para que al habilitar arranque en verde *)
+    estado := 0;
+
+    (* Temporizador de parpadeo: ciclo de 1 s *)
+    tBlink(IN := TRUE, PT := T#1S);
+
+    IF tBlink.Q THEN
+        (* Conmutar estado del parpadeo y reiniciar temporizador *)
+        blinkOn := NOT blinkOn;
+        tBlink(IN := FALSE); (* Reset del temporizador *)
+    END_IF;
+
+    (* Asignar salidas: solo amarillo parpadea *)
+    luzV := FALSE;
+    luzA := blinkOn;
+    luzR := FALSE;
+
+ELSE
+    (* ── Modo secuencia normal ───────────────────────────────────────────── *)
+
+    (* Detener y resetear temporizador de parpadeo *)
+    tBlink(IN := FALSE);
+    blinkOn := FALSE;
+
+    CASE estado OF
+
+        0: (* ── Fase VERDE ── *)
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+
+            tVerde(IN := TRUE, PT := T#20S);
+
+            IF tVerde.Q THEN
+                tVerde(IN := FALSE); (* Reset temporizador *)
+                estado := 1;         (* Pasar a amarillo *)
+            END_IF;
+
+        1: (* ── Fase AMARILLA ── *)
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+
+            tAmarillo(IN := TRUE, PT := T#4S);
+
+            IF tAmarillo.Q THEN
+                tAmarillo(IN := FALSE); (* Reset temporizador *)
+                estado := 2;            (* Pasar a rojo *)
+            END_IF;
+
+        2: (* ── Fase ROJA ── *)
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+
+            tRojo(IN := TRUE, PT := T#15S);
+
+            IF tRojo.Q THEN
+                tRojo(IN := FALSE); (* Reset temporizador *)
+                estado := 0;        (* Volver a verde *)
+            END_IF;
+
+        ELSE
+            (* Estado inválido: reiniciar en verde *)
+            estado := 0;
+
+    END_CASE;
+
+END_IF;</pre></div>
+<div class="caja resp" id="I1-7322"><div class="cod"><h3>I1-7322</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilita la secuencia normal del semáforo *)
+END_VAR
+
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+
+VAR
+    (* Temporizadores para cada fase de la secuencia normal *)
+    tVerde    : TON; (* Temporiza la fase verde  - 20 s *)
+    tAmarillo : TON; (* Temporiza la fase amarilla - 4 s *)
+    tRojo     : TON; (* Temporiza la fase roja   - 15 s *)
+
+    (* Temporizador para el amarillo intermitente *)
+    tIntermitente : TON; (* Temporiza cada semiciclo de 1 s *)
+
+    (* Estado interno de la secuencia normal *)
+    (* 0 = Verde, 1 = Amarillo, 2 = Rojo *)
+    estado : INT := 0;
+
+    (* Bit de parpadeo para el amarillo intermitente *)
+    parpadeo : BOOL := FALSE;
+END_VAR
+
+(* ─────────────────────────────────────────────────────────────
+   Lógica principal
+   ───────────────────────────────────────────────────────────── *)
+
+IF NOT habilitado THEN
+    (* ── Modo amarillo intermitente ─────────────────────────── *)
+
+    (* Reiniciar temporizadores de secuencia normal *)
+    tVerde(IN    := FALSE, PT := T#20S);
+    tAmarillo(IN := FALSE, PT := T#4S);
+    tRojo(IN     := FALSE, PT := T#15S);
+
+    (* Reiniciar estado para que al habilitar arranque en verde *)
+    estado := 0;
+
+    (* Temporizador de 1 s para el parpadeo *)
+    tIntermitente(IN := TRUE, PT := T#1S);
+
+    IF tIntermitente.Q THEN
+        (* Conmutar el bit de parpadeo y reiniciar el temporizador *)
+        parpadeo          := NOT parpadeo;
+        tIntermitente(IN  := FALSE, PT := T#1S); (* Reset *)
+        tIntermitente(IN  := TRUE,  PT := T#1S); (* Rearranque *)
+    END_IF;
+
+    (* Salidas: solo amarillo parpadea *)
+    luzV := FALSE;
+    luzA := parpadeo;
+    luzR := FALSE;
+
+ELSE
+    (* ── Modo secuencia normal ───────────────────────────────── *)
+
+    (* Detener y resetear el temporizador de intermitente *)
+    tIntermitente(IN := FALSE, PT := T#1S);
+    parpadeo := FALSE;
+
+    CASE estado OF
+
+        0: (* ── Verde ── *)
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+
+            tVerde(IN := TRUE, PT := T#20S);
+
+            IF tVerde.Q THEN
+                tVerde(IN := FALSE, PT := T#20S); (* Reset *)
+                estado := 1;                       (* Pasar a amarillo *)
+            END_IF;
+
+        1: (* ── Amarillo ── *)
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+
+            tAmarillo(IN := TRUE, PT := T#4S);
+
+            IF tAmarillo.Q THEN
+                tAmarillo(IN := FALSE, PT := T#4S); (* Reset *)
+                estado := 2;                         (* Pasar a rojo *)
+            END_IF;
+
+        2: (* ── Rojo ── *)
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+
+            tRojo(IN := TRUE, PT := T#15S);
+
+            IF tRojo.Q THEN
+                tRojo(IN := FALSE, PT := T#15S); (* Reset *)
+                estado := 0;                      (* Volver a verde *)
+            END_IF;
+
+        ELSE
+            (* Estado inválido: reiniciar en verde *)
+            estado := 0;
+
+    END_CASE;
+
+END_IF;</pre></div>
+<div class="caja resp" id="I1-3250"><div class="cod"><h3>I1-3250</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilita la secuencia normal *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    estado : INT := 0; (* 0: Verde, 1: Amarillo, 2: Rojo *)
+    tVerde : TON;      (* Temporizador luz verde *)
+    tAmarillo : TON;   (* Temporizador luz amarilla *)
+    tRojo : TON;       (* Temporizador luz roja *)
+    tBlink1 : TON;     (* Temporizador intermitencia ON *)
+    tBlink2 : TON;     (* Temporizador intermitencia OFF *)
+END_VAR
+
+(* Control de estados y reinicio *)
+IF NOT habilitado THEN
+    estado := 0; (* Reinicia la secuencia a verde si se deshabilita *)
+ELSIF estado = 0 AND tVerde.Q THEN
+    estado := 1;
+ELSIF estado = 1 AND tAmarillo.Q THEN
+    estado := 2;
+ELSIF estado = 2 AND tRojo.Q THEN
+    estado := 0;
+END_IF;
+
+(* Temporizadores de la secuencia normal *)
+tVerde(IN := habilitado AND (estado = 0), PT := T#20S);
+tAmarillo(IN := habilitado AND (estado = 1), PT := T#4S);
+tRojo(IN := habilitado AND (estado = 2), PT := T#15S);
+
+(* Temporizadores del modo intermitente (1s ON / 1s OFF) *)
+tBlink1(IN := NOT habilitado AND NOT tBlink2.Q, PT := T#1S);
+tBlink2(IN := tBlink1.Q, PT := T#1S);
+
+(* Asignacion de salidas *)
+luzV := habilitado AND (estado = 0);
+luzR := habilitado AND (estado = 2);
+luzA := (habilitado AND (estado = 1)) OR (NOT habilitado AND NOT tBlink1.Q);
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-3464"><div class="cod"><h3>I1-3464</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL;
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL;
+    luzA : BOOL;
+    luzR : BOOL;
+END_VAR
+VAR
+    estado : INT := 0; (* 0: Intermitente, 1: Verde, 2: Amarillo, 3: Rojo *)
+    timerSecuencia : TON;
+    timerIntermitente : TON;
+    trigHabilitado : R_TRIG;
+    estadoAmarillo : BOOL;
+    tiempoActual : TIME;
+    resetTimer : BOOL;
+END_VAR
+
+(* Detectar flanco de subida para reiniciar la secuencia en verde *)
+trigHabilitado(CLK := habilitado);
+IF trigHabilitado.Q THEN
+    estado := 1;
+    resetTimer := TRUE;
+    estadoAmarillo := FALSE; (* Reiniciar estado del intermitente *)
+END_IF;
+
+(* Si se desactiva la entrada, pasar a modo intermitente *)
+IF NOT habilitado THEN
+    estado := 0;
+END_IF;
+
+(* Lógica de salidas y selección de tiempos según el estado *)
+CASE estado OF
+    0: (* Modo deshabilitado: Amarillo intermitente (1s ON, 1s OFF) *)
+        luzV := FALSE;
+        luzR := FALSE;
+        tiempoActual := T#0S;
+        
+        (* Temporizador para alternar la luz amarilla cada 1 segundo *)
+        timerIntermitente(IN := NOT timerIntermitente.Q, PT := T#1S);
+        IF timerIntermitente.Q THEN
+            estadoAmarillo := NOT estadoAmarillo;
+        END_IF;
+        luzA := estadoAmarillo;
+
+    1: (* Secuencia: Verde (20s) *)
+        luzV := TRUE;
+        luzA := FALSE;
+        luzR := FALSE;
+        tiempoActual := T#20S;
+
+    2: (* Secuencia: Amarillo (4s) *)
+        luzV := FALSE;
+        luzA := TRUE;
+        luzR := FALSE;
+        tiempoActual := T#4S;
+
+    3: (* Secuencia: Rojo (15s) *)
+        luzV := FALSE;
+        luzA := FALSE;
+        luzR := TRUE;
+        tiempoActual := T#15S;
+END_CASE;
+
+(* Ejecución del temporizador principal de la secuencia *)
+timerSecuencia(IN := (estado &gt; 0) AND NOT resetTimer, PT := tiempoActual);
+
+(* Limpiar la señal de reset para que el temporizador inicie en el siguiente ciclo *)
+IF resetTimer THEN
+    resetTimer := FALSE;
+END_IF;
+
+(* Transición al siguiente estado cuando se cumple el tiempo *)
+IF timerSecuencia.Q THEN
+    resetTimer := TRUE; (* Forzar el reinicio del temporizador *)
+    CASE estado OF
+        1: estado := 2;
+        2: estado := 3;
+        3: estado := 1;
+    END_CASE;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-8420"><div class="cod"><h3>I1-8420</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 8 de 9 pasos del harness (pasos 1,2,3,4,5,6,7,8; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; // Variable de entrada que indica si el semáforo está habilitado
+END_VAR
+
+VAR_OUTPUT
+    luzV : BOOL; // Salida para la luz verde
+    luzA : BOOL; // Salida para la luz amarilla
+    luzR : BOOL; // Salida para la luz roja
+END_VAR
+
+VAR
+    estado : INT := 0; // Variable de estado para controlar la secuencia
+    contador : TON; // Contador de tiempo
+    intermitente : BOOL := FALSE; // Variable para controlar el estado intermitente
+END_VAR
+
+// Inicialización del contador de tiempo
+contador(IN := FALSE, PT := T#1S);
+
+// Lógica del semáforo
+CASE estado OF
+    0: // Estado verde
+        IF habilitado THEN
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            contador(IN := TRUE, PT := T#20S);
+            IF contador.Q THEN
+                estado := 1;
+            END_IF;
+        ELSE
+            estado := 3; // Cambia a estado intermitente
+        END_IF;
+        
+    1: // Estado amarillo
+        IF habilitado THEN
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            contador(IN := TRUE, PT := T#4S);
+            IF contador.Q THEN
+                estado := 2;
+            END_IF;
+        ELSE
+            estado := 3; // Cambia a estado intermitente
+        END_IF;
+        
+    2: // Estado rojo
+        IF habilitado THEN
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            contador(IN := TRUE, PT := T#15S);
+            IF contador.Q THEN
+                estado := 0;
+            END_IF;
+        ELSE
+            estado := 3; // Cambia a estado intermitente
+        END_IF;
+        
+    3: // Estado intermitente
+        luzV := FALSE;
+        luzA := intermitente;
+        luzR := FALSE;
+        contador(IN := TRUE, PT := T#1S);
+        IF contador.Q THEN
+            intermitente := NOT intermitente; // Cambia el estado intermitente
+            contador(IN := FALSE); // Reinicia el contador
+            IF habilitado THEN
+                estado := 0; // Vuelve al estado verde si se habilita nuevamente
+            END_IF;
+        END_IF;
+        
+END_CASE</pre></div>
+<div class="caja resp" id="I1-5295"><div class="cod"><h3>I1-5295</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 7 de 9 pasos del harness (pasos 2,3,4,5,6,7,8; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Entrada para habilitar el semáforo *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    tVerde : TP; (* Temporizador para luz verde *)
+    tAmarillo : TP; (* Temporizador para luz amarilla *)
+    tRojo : TP; (* Temporizador para luz roja *)
+    tIntermitente : TP; (* Temporizador para luz amarilla intermitente *)
+    estado : INT := 0; (* Estado actual del semáforo *)
+END_VAR
+
+(* Secuencia normal del semáforo *)
+IF habilitado THEN
+    CASE estado OF
+        0: (* Verde *)
+            tVerde(IN := TRUE, PT := T#20S);
+            luzV := tVerde.Q;
+            luzA := FALSE;
+            luzR := FALSE;
+            IF tVerde.Q THEN
+                estado := 1;
+            END_IF
+        1: (* Amarillo *)
+            tAmarillo(IN := TRUE, PT := T#4S);
+            luzV := FALSE;
+            luzA := tAmarillo.Q;
+            luzR := FALSE;
+            IF tAmarillo.Q THEN
+                estado := 2;
+            END_IF
+        2: (* Rojo *)
+            tRojo(IN := TRUE, PT := T#15S);
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := tRojo.Q;
+            IF tRojo.Q THEN
+                estado := 0;
+            END_IF
+    END_CASE
+ELSE
+    (* Modo intermitente cuando no está habilitado *)
+    tIntermitente(IN := TRUE, PT := T#1S);
+    luzV := FALSE;
+    luzA := tIntermitente.Q;
+    luzR := FALSE;
+    IF tIntermitente.Q THEN
+        tIntermitente(IN := FALSE);
+    END_IF
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-8541"><div class="cod"><h3>I1-8541</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilitacion del semaforo *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    tCiclo : TON; (* Temporizador para el ciclo del semaforo *)
+    tIntermitente : TON; (* Temporizador para el amarillo intermitente *)
+    estado : INT; (* Estado del semaforo *)
+    intermitente : BOOL; (* Estado del intermitente *)
+END_VAR
+
+(* Logica del semaforo ciclico *)
+IF habilitado THEN
+    (* Control del ciclo del semaforo *)
+    CASE estado OF
+        0: (* Verde 20 segundos *)
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            tCiclo(IN := TRUE, PT := T#20S);
+            IF tCiclo.Q THEN
+                estado := 1;
+                tCiclo(IN := FALSE);
+            END_IF;
+        1: (* Amarillo 4 segundos *)
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            tCiclo(IN := TRUE, PT := T#4S);
+            IF tCiclo.Q THEN
+                estado := 2;
+                tCiclo(IN := FALSE);
+            END_IF;
+        2: (* Rojo 15 segundos *)
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            tCiclo(IN := TRUE, PT := T#15S);
+            IF tCiclo.Q THEN
+                estado := 0;
+                tCiclo(IN := FALSE);
+            END_IF;
+    END_CASE;
+ELSE
+    (* Amarillo intermitente *)
+    luzV := FALSE;
+    luzR := FALSE;
+    tIntermitente(IN := TRUE, PT := T#1S);
+    IF tIntermitente.Q THEN
+        intermitente := NOT intermitente;
+        tIntermitente(IN := FALSE);
+    END_IF;
+    luzA := intermitente;
+    estado := 0; (* Reinicia el ciclo al habilitar *)
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-4916"><div class="cod"><h3>I1-4916</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (20 errores).<div class="err">Mensajes del compilador: L?nea 4 (Decl) Se esperaba ,, AT o :&#x27; en lugar de &#x27;VAR_OUTPUT&#x27; || L?nea 10 (Decl) Se esperaba ,, AT o :&#x27; en lugar de &#x27;VAR&#x27; || L?nea 5, columna 1 (Impl) Identificador &#x27;estado&#x27; sin definir || L?nea 5, columna 1 (Impl) El tipo &#x27;Tipo desconocido: &#x27;estado&#x27;&#x27; no puede convertirse en el tipo &#x27;ANY_INT&#x27; || L?nea 7, columna 1 (Impl) Identificador &#x27;luzV&#x27; sin definir || L?nea 7, columna 1 (Impl) &#x27;luzV&#x27; no es un destino de asignaci?n v?lido || L?nea 12, columna 1 (Impl) Identificador &#x27;estado&#x27; sin definir || L?nea 12, columna 1 (Impl) &#x27;estado&#x27; no es un destino de asignaci?n v?lido || L?nea 16, columna 1 (Impl) Identificador &#x27;luzV&#x27; sin definir || L?nea 16, columna 1 (Impl) &#x27;luzV&#x27; no es un destino de asignaci?n v?lido || L?nea 21, columna 1 (Impl) Identificador &#x27;estado&#x27; sin definir || L?nea 21, columna 1 (Impl) &#x27;estado&#x27; no es un destino de asignaci?n v?lido</div></div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; // Entrada para habilitar o deshabilitar el semáforo
+END_VAR_INPUT
+
+VAR_OUTPUT
+    luzV : BOOL; // Salida para la luz verde
+    luzA : BOOL; // Salida para la luz amarilla
+    luzR : BOOL; // Salida para la luz roja
+END_VAR_OUTPUT
+
+VAR
+    estado : INT := 0; // Estado del semáforo
+    temporizador : TON; // Temporizador para manejar los tiempos
+    parpadeo : BOOL := FALSE; // Estado del parpadeo amarillo
+END_VAR
+
+// Inicialización del temporizador
+temporizador(IN := FALSE, PT := T#0S);
+
+IF habilitado THEN
+    // Secuencia cíclica del semáforo
+    CASE estado OF
+        0: // Luz verde
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            temporizador(IN := TRUE, PT := T#20S);
+            IF temporizador.Q THEN
+                estado := 1;
+                temporizador(IN := FALSE);
+            END_IF;
+        1: // Luz amarilla
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            temporizador(IN := TRUE, PT := T#4S);
+            IF temporizador.Q THEN
+                estado := 2;
+                temporizador(IN := FALSE);
+            END_IF;
+        2: // Luz roja
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            temporizador(IN := TRUE, PT := T#15S);
+            IF temporizador.Q THEN
+                estado := 0;
+                temporizador(IN := FALSE);
+            END_IF;
+    END_CASE;
+ELSE
+    // Modo amarillo intermitente
+    luzV := FALSE;
+    luzR := FALSE;
+    temporizador(IN := TRUE, PT := T#1S);
+    IF temporizador.Q THEN
+        parpadeo := NOT parpadeo;
+        temporizador(IN := FALSE);
+    END_IF;
+    luzA := parpadeo;
+    estado := 0; // Reiniciar secuencia al habilitar
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-5056"><div class="cod"><h3>I1-5056</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 9 pasos del harness (pasos 7; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilitacion del semaforo *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    tCiclo : TON; (* Temporizador para el ciclo del semaforo *)
+    tIntermitente : TON; (* Temporizador para el amarillo intermitente *)
+    estado : INT; (* Estado del semaforo *)
+END_VAR
+
+(* Inicializacion de variables *)
+IF NOT habilitado THEN
+    (* Modo amarillo intermitente *)
+    tIntermitente(IN := TRUE, PT := T#1S);
+    luzV := FALSE;
+    luzR := FALSE;
+    luzA := tIntermitente.Q;
+    tCiclo(IN := FALSE);
+    estado := 0; (* Reiniciar estado al habilitar de nuevo *)
+ELSE
+    (* Modo ciclo normal del semaforo *)
+    tIntermitente(IN := FALSE);
+    CASE estado OF
+        0: (* Luz verde *)
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            tCiclo(IN := TRUE, PT := T#20S);
+            IF tCiclo.Q THEN
+                estado := 1;
+                tCiclo(IN := FALSE);
+            END_IF
+        1: (* Luz amarilla *)
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            tCiclo(IN := TRUE, PT := T#4S);
+            IF tCiclo.Q THEN
+                estado := 2;
+                tCiclo(IN := FALSE);
+            END_IF
+        2: (* Luz roja *)
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            tCiclo(IN := TRUE, PT := T#15S);
+            IF tCiclo.Q THEN
+                estado := 0;
+                tCiclo(IN := FALSE);
+            END_IF
+    END_CASE
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-1955"><div class="cod"><h3>I1-1955</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 7 de 9 pasos del harness (pasos 2,3,4,5,6,7,8; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Entrada para habilitar el semáforo *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    tVerde : TP; (* Temporizador para luz verde *)
+    tAmarillo : TP; (* Temporizador para luz amarilla *)
+    tRojo : TP; (* Temporizador para luz roja *)
+    tIntermitente : TP; (* Temporizador para luz amarilla intermitente *)
+    estado : INT := 0; (* Variable de estado para la secuencia del semáforo *)
+END_VAR
+
+(* Secuencia del semáforo cuando está habilitado *)
+IF habilitado THEN
+    CASE estado OF
+        0: (* Estado verde *)
+            tVerde(IN := TRUE, PT := T#20S);
+            luzV := tVerde.Q;
+            luzA := FALSE;
+            luzR := FALSE;
+            IF tVerde.Q THEN
+                estado := 1;
+            END_IF
+        1: (* Estado amarillo *)
+            tAmarillo(IN := TRUE, PT := T#4S);
+            luzV := FALSE;
+            luzA := tAmarillo.Q;
+            luzR := FALSE;
+            IF tAmarillo.Q THEN
+                estado := 2;
+            END_IF
+        2: (* Estado rojo *)
+            tRojo(IN := TRUE, PT := T#15S);
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := tRojo.Q;
+            IF tRojo.Q THEN
+                estado := 0;
+            END_IF
+    END_CASE
+ELSE
+    (* Secuencia del semáforo cuando no está habilitado *)
+    tIntermitente(IN := TRUE, PT := T#1S);
+    luzV := FALSE;
+    luzR := FALSE;
+    luzA := tIntermitente.Q;
+    IF tIntermitente.Q THEN
+        tIntermitente(IN := FALSE);
+    ELSE
+        tIntermitente(IN := TRUE);
+    END_IF
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-8761"><div class="cod"><h3>I1-8761</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 9 pasos del harness (pasos 0,2,3,5,6,7; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; // Entrada que habilita o deshabilita el semáforo
+END_VAR
+
+VAR_OUTPUT
+    luzV : BOOL; // Salida para la luz verde
+    luzA : BOOL; // Salida para la luz amarilla
+    luzR : BOOL; // Salida para la luz roja
+END_VAR
+
+VAR
+    estado : INT := 0; // Variable de estado para el semáforo
+    timer : TON; // Timer para controlar los tiempos
+    tiempoVerde : TIME := T#20S; // Tiempo verde
+    tiempoAmarillo : TIME := T#4S; // Tiempo amarillo
+    tiempoRojo : TIME := T#15S; // Tiempo rojo
+    tiempoAmarilloIntermitente : TIME := T#1S; // Tiempo amarillo intermitente
+    contadorAmarilloIntermitente : INT := 0; // Contador para el amarillo intermitente
+END_VAR
+
+// Inicialización del timer
+timer(IN := FALSE, PT := tiempoVerde);
+
+// Máquina de estados
+CASE estado OF
+    0: // Estado verde
+        luzV := TRUE;
+        luzA := FALSE;
+        luzR := FALSE;
+        IF habilitado THEN
+            timer(IN := TRUE);
+            IF timer.Q THEN
+                timer(IN := FALSE);
+                estado := 1; // Cambiar a estado amarillo
+            END_IF
+        ELSE
+            estado := 3; // Cambiar a estado amarillo intermitente
+        END_IF
+
+    1: // Estado amarillo
+        luzV := FALSE;
+        luzA := TRUE;
+        luzR := FALSE;
+        IF habilitado THEN
+            timer(IN := TRUE, PT := tiempoAmarillo);
+            IF timer.Q THEN
+                timer(IN := FALSE);
+                estado := 2; // Cambiar a estado rojo
+            END_IF
+        ELSE
+            estado := 3; // Cambiar a estado amarillo intermitente
+        END_IF
+
+    2: // Estado rojo
+        luzV := FALSE;
+        luzA := FALSE;
+        luzR := TRUE;
+        IF habilitado THEN
+            timer(IN := TRUE, PT := tiempoRojo);
+            IF timer.Q THEN
+                timer(IN := FALSE);
+                estado := 0; // Cambiar a estado verde
+            END_IF
+        ELSE
+            estado := 3; // Cambiar a estado amarillo intermitente
+        END_IF
+
+    3: // Estado amarillo intermitente
+        luzV := FALSE;
+        luzA := contadorAmarilloIntermitente MOD 2 = 0;
+        luzR := FALSE;
+        IF habilitado THEN
+            estado := 0; // Reiniciar a estado verde
+        ELSE
+            contadorAmarilloIntermitente := contadorAmarilloIntermitente + 1;
+            timer(IN := TRUE, PT := tiempoAmarilloIntermitente);
+        END_IF
+END_CASE</pre></div>
+<div class="caja resp" id="I1-4511"><div class="cod"><h3>I1-4511</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilita la secuencia normal del semáforo *)
+END_VAR
+
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+
+VAR
+    (* Temporizadores TON estándar IEC 61131-3 *)
+    tVerde      : TON; (* Temporizador fase verde:   20 s *)
+    tAmarillo   : TON; (* Temporizador fase amarilla: 4 s *)
+    tRojo       : TON; (* Temporizador fase roja:    15 s *)
+    tParpadeo   : TON; (* Temporizador parpadeo:      1 s *)
+
+    (* Estado de la máquina de estados *)
+    (* 0 = Verde, 1 = Amarillo, 2 = Rojo, 3 = Amarillo intermitente *)
+    estado      : INT := 0;
+
+    (* Bit auxiliar para el parpadeo del amarillo intermitente *)
+    parpadeoOn  : BOOL := FALSE;
+END_VAR
+
+(* ─────────────────────────────────────────────────────────────────────────── *)
+(*  Lógica principal                                                           *)
+(* ─────────────────────────────────────────────────────────────────────────── *)
+
+IF NOT habilitado THEN
+    (* ── Modo amarillo intermitente ─────────────────────────────────────── *)
+
+    (* Si veníamos de la secuencia normal, reiniciamos al estado intermitente *)
+    IF estado &lt;&gt; 3 THEN
+        estado     := 3;
+        parpadeoOn := FALSE;
+        (* Apagar temporizadores de secuencia normal *)
+        tVerde(IN := FALSE, PT := T#20S);
+        tAmarillo(IN := FALSE, PT := T#4S);
+        tRojo(IN := FALSE, PT := T#15S);
+        (* Arrancar temporizador de parpadeo *)
+        tParpadeo(IN := FALSE, PT := T#1S);
+    END_IF;
+
+    (* Temporizador de parpadeo: alterna cada 1 s *)
+    tParpadeo(IN := TRUE, PT := T#1S);
+    IF tParpadeo.Q THEN
+        parpadeoOn := NOT parpadeoOn; (* Invertir estado del parpadeo *)
+        tParpadeo(IN := FALSE, PT := T#1S); (* Reiniciar temporizador *)
+    END_IF;
+
+    (* Salidas: solo amarillo parpadea, verde y rojo apagados *)
+    luzV := FALSE;
+    luzA := parpadeoOn;
+    luzR := FALSE;
+
+ELSE
+    (* ── Secuencia normal cíclica ────────────────────────────────────────── *)
+
+    (* Si veníamos del modo intermitente, reiniciar en verde *)
+    IF estado = 3 THEN
+        estado := 0;
+        parpadeoOn := FALSE;
+        tParpadeo(IN := FALSE, PT := T#1S); (* Detener parpadeo *)
+    END_IF;
+
+    CASE estado OF
+
+        0: (* ── VERDE 20 s ─────────────────────────────────────────────── *)
+            tVerde(IN := TRUE, PT := T#20S);
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            IF tVerde.Q THEN
+                tVerde(IN := FALSE, PT := T#20S); (* Reiniciar temporizador *)
+                estado := 1;                       (* Pasar a amarillo *)
+            END_IF;
+
+        1: (* ── AMARILLO 4 s ────────────────────────────────────────────── *)
+            tAmarillo(IN := TRUE, PT := T#4S);
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            IF tAmarillo.Q THEN
+                tAmarillo(IN := FALSE, PT := T#4S); (* Reiniciar temporizador *)
+                estado := 2;                         (* Pasar a rojo *)
+            END_IF;
+
+        2: (* ── ROJO 15 s ───────────────────────────────────────────────── *)
+            tRojo(IN := TRUE, PT := T#15S);
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            IF tRojo.Q THEN
+                tRojo(IN := FALSE, PT := T#15S); (* Reiniciar temporizador *)
+                estado := 0;                      (* Volver a verde *)
+            END_IF;
+
+        ELSE
+            (* Estado inesperado: forzar reinicio en verde *)
+            estado := 0;
+
+    END_CASE;
+
+END_IF;</pre></div>
+<div class="caja resp" id="I1-4945"><div class="cod"><h3>I1-4945</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (20 errores).<div class="err">Mensajes del compilador: L?nea 4 (Decl) Se esperaba ,, AT o :&#x27; en lugar de &#x27;VAR_OUTPUT&#x27; || L?nea 10 (Decl) Se esperaba ,, AT o :&#x27; en lugar de &#x27;VAR&#x27; || L?nea 3, columna 1 (Impl) Identificador &#x27;luzV&#x27; sin definir || L?nea 3, columna 1 (Impl) &#x27;luzV&#x27; no es un destino de asignaci?n v?lido || L?nea 11, columna 1 (Impl) Identificador &#x27;estado&#x27; sin definir || L?nea 11, columna 1 (Impl) El tipo &#x27;Tipo desconocido: &#x27;estado&#x27;&#x27; no puede convertirse en el tipo &#x27;ANY_INT&#x27; || L?nea 13, columna 1 (Impl) Identificador &#x27;luzV&#x27; sin definir || L?nea 13, columna 1 (Impl) &#x27;luzV&#x27; no es un destino de asignaci?n v?lido || L?nea 18, columna 1 (Impl) Identificador &#x27;estado&#x27; sin definir || L?nea 18, columna 1 (Impl) &#x27;estado&#x27; no es un destino de asignaci?n v?lido || L?nea 22, columna 1 (Impl) Identificador &#x27;luzV&#x27; sin definir || L?nea 22, columna 1 (Impl) &#x27;luzV&#x27; no es un destino de asignaci?n v?lido</div></div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; // Entrada para habilitar o deshabilitar el semáforo
+END_VAR_INPUT
+
+VAR_OUTPUT
+    luzV : BOOL; // Salida para la luz verde
+    luzA : BOOL; // Salida para la luz amarilla
+    luzR : BOOL; // Salida para la luz roja
+END_VAR_OUTPUT
+
+VAR
+    estado : INT; // Estado actual del semáforo
+    temporizador : TON; // Temporizador para controlar los tiempos de las luces
+    parpadeo : BOOL; // Estado del parpadeo amarillo
+END_VAR
+
+// Inicialización del bloque de función
+IF NOT habilitado THEN
+    // Si no está habilitado, activar parpadeo amarillo
+    luzV := FALSE;
+    luzR := FALSE;
+    temporizador(IN := TRUE, PT := T#1S);
+    parpadeo := temporizador.Q;
+    luzA := parpadeo;
+ELSE
+    // Si está habilitado, seguir la secuencia normal del semáforo
+    temporizador(IN := TRUE);
+    CASE estado OF
+        0: // Luz verde
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            temporizador(PT := T#20S);
+            IF temporizador.Q THEN
+                estado := 1;
+                temporizador(IN := FALSE);
+            END_IF;
+        1: // Luz amarilla
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            temporizador(PT := T#4S);
+            IF temporizador.Q THEN
+                estado := 2;
+                temporizador(IN := FALSE);
+            END_IF;
+        2: // Luz roja
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            temporizador(PT := T#15S);
+            IF temporizador.Q THEN
+                estado := 0;
+                temporizador(IN := FALSE);
+            END_IF;
+    ELSE
+        // Reiniciar al estado inicial si el estado es desconocido
+        estado := 0;
+    END_CASE;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I1-3124"><div class="cod"><h3>I1-3124</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 9 pasos del harness (pasos 7; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Semaforo
+VAR_INPUT
+    habilitado : BOOL; (* Habilita la secuencia normal del semaforo *)
+END_VAR
+VAR_OUTPUT
+    luzV : BOOL; (* Luz verde *)
+    luzA : BOOL; (* Luz amarilla *)
+    luzR : BOOL; (* Luz roja *)
+END_VAR
+VAR
+    estado     : INT;  (* Estado de la secuencia: 0=Verde, 1=Amarillo, 2=Rojo *)
+    tFase      : TON; (* Temporizador de cada fase de la secuencia normal *)
+    tBlink     : TP;  (* Temporizador de pulso para amarillo intermitente *)
+    blink      : BOOL; (* Estado actual del parpadeo amarillo *)
+    prevHab    : BOOL; (* Valor anterior de habilitado para detectar flancos *)
+END_VAR
+
+IF habilitado THEN
+    (* --- Secuencia normal: Verde -&gt; Amarillo -&gt; Rojo -&gt; (repite) --- *)
+
+    (* Al detectar flanco ascendente de habilitado, reiniciar en verde *)
+    IF NOT prevHab THEN
+        estado := 0;
+        tFase(IN := FALSE, PT := T#20S); (* Reset del temporizador *)
+    END_IF;
+
+    CASE estado OF
+
+        0: (* VERDE: 20 segundos *)
+            tFase(IN := TRUE, PT := T#20S);
+            luzV := TRUE;
+            luzA := FALSE;
+            luzR := FALSE;
+            IF tFase.Q THEN
+                tFase(IN := FALSE, PT := T#20S); (* Reset *)
+                estado := 1;
+            END_IF;
+
+        1: (* AMARILLO: 4 segundos *)
+            tFase(IN := TRUE, PT := T#4S);
+            luzV := FALSE;
+            luzA := TRUE;
+            luzR := FALSE;
+            IF tFase.Q THEN
+                tFase(IN := FALSE, PT := T#4S); (* Reset *)
+                estado := 2;
+            END_IF;
+
+        2: (* ROJO: 15 segundos *)
+            tFase(IN := TRUE, PT := T#15S);
+            luzV := FALSE;
+            luzA := FALSE;
+            luzR := TRUE;
+            IF tFase.Q THEN
+                tFase(IN := FALSE, PT := T#15S); (* Reset *)
+                estado := 0; (* Reinicia ciclo en verde *)
+            END_IF;
+
+        ELSE
+            estado := 0; (* Estado invalido: volver a verde *)
+
+    END_CASE;
+
+    (* Asegurar que el temporizador de parpadeo quede inactivo *)
+    tBlink(IN := FALSE, PT := T#1S);
+    blink := FALSE;
+
+ELSE
+    (* --- Modo inhabilitado: amarillo intermitente 1s ON / 1s OFF --- *)
+
+    (* Apagar verde y rojo *)
+    luzV := FALSE;
+    luzR := FALSE;
+
+    (* Asegurar que el temporizador de secuencia quede inactivo *)
+    tFase(IN := FALSE, PT := T#20S);
+
+    (* Generar pulso de 1 segundo repetitivo para el parpadeo *)
+    tBlink(IN := NOT tBlink.Q, PT := T#1S);
+
+    (* El pulso activo indica amarillo encendido *)
+    luzA := tBlink.Q;
+
+END_IF;
+
+(* Guardar estado actual de habilitado para deteccion de flanco en proximo ciclo *)
+prevHab := habilitado;
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

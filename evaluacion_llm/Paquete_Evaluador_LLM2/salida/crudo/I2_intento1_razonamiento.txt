@@ -1,0 +1,1047 @@
+We need answer with JSON list of 24 objects. Need evaluate each response. Need be careful. We need read entire task and protocol. Need score each dimension 0-3 following rubric. Need output only JSON.
+
+We need as expert evaluator. We have 24 responses. Need assign funcional, iec, coherencia, claridad, mantenibilidad, and just lines. Fixed funcional and iec if not null. For compiles and passes all steps: funcional=3 fixed. For no compila: funcional=0 iec=0 fixed. For compiles but fails steps: funcional 0,1,2 based on failed steps. Let's analyze each.
+
+We need determine functional scores for failing programs and IEC etc. Let's parse program behavior vs harness.
+
+Harness steps:
+0 repo: all false.
+1: btnInicio TRUE 200ms -> expect evL true (vLlenado active).
+2: btnInicio false, nivelAlto true 1s -> expect evM true (motorMezcla active) (enters mezcla).
+3: tEspera 58500ms evM true: at ~59.5s accumulated from start mezcla (started at step2, ~1s step2 + maybe 200ms step1? Actually counting mezcla starts when block sees nivelAlto at step2 maybe after 200ms? Wait harness: step2 tEspera 1s; inputs nivelAlto true during entire step. Block in llenado sees nivelAlto -> transitions to mezcla and starts timer. evM true. At end of step2, elapsed time in mezcla ~1s? Then step3 tEspera 58500ms, evM true, at total mezcla ~59.5s or maybe 60.5? They claimed margin. Expect motor still on and not completed. Step4 tEspera 1s, evD true -> after about 60.5s accumulated, timer done, descarga active. Step5 nivelBajo true 200ms -> repo false. Steps 6-11 paro scenarios.
+
+Failures indicate specifics. Need evaluate.
+
+Let's list responses.
+
+We need assign scores consistently.
+
+Let's think rubric.
+
+For IEC: compile pass. If uses standard types TON/TP/R_TRIG etc and declarations correct. For programs that compile with standard ST, likely iec 2 or 3. If uses TP perhaps standard but not ideal because TP pulse timer not right for this task? Actually TP used in some failing programs, compiles. Is TP a standard IEC timer? Yes, TP is pulse timer standard. But for 60s mixing, TON is correct; TP behavior is wrong: TP.Q true for PT after rising IN, then false regardless IN; if IN remains TRUE, after Q false it never re-triggers unless rising edge again. In state 2 with TP, if IN := TRUE only on entering state 2, Q goes true then after 60s false, and condition IF tMezcla.Q THEN state:=3 won't ever catch? Actually when entering state 2, they set tMezcla(IN:=TRUE,PT:=T#60S); motor true. At that cycle TP.Q maybe false on first invocation? Need understand TP: if IN rising, Q true and ET elapsed; after PT, Q false. They check tMezcla.Q in same state. At transition? If they enter state 2 and set IN TRUE, then at that same program scan they maybe don't check until next cycle? But regardless, TP.Q becomes true for duration PT, then false; IF tMezcla.Q THEN state:=3 would occur the first scan after entering state 2 if Q true? Actually if IN was false previously, TP with IN true starts Q true. In state 2, next scan, IF tMezcla.Q then immediately transitions to state 3 too early, not waiting 60s. But some using TP may fail step2/3 because motor/descarga behavior? We'll see. Use TP as extension outside standard? It's standard. But using TP instead of TON is wrong for the function. IEC criterion is about compliance, not correctness. If compiles and types correct, iec at least 2. Idiomatic? Use TON appropriate is 3. Use TP maybe standard but not appropriate; could still be 2? Need rubric: "3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." So use TP (standard block but wrongly selected for timing) maybe not idiomático because should use TON. But we can assign iec 1? No, rubric says 1 if uses extensiones fuera del estándar. TP is standard. 2 if declarations and types correct. Thus iec 2 maybe. If use comments // vs (* *)? IEC ST standard? Both // comments? IEC 61131-3 accepts // maybe not all but CODESYS accepts. Need not penalize? The rubric specifically IEC. Some use //, but CODESYS accepts. We'll treat standard enough. Some use non-standard? None.
+
+For no compila (I2-3102) fixed func 0 iec 0. Need still score coherencia claridad mantenibilidad based code.
+
+We need compute.
+
+Let's analyze each program.
+
+I will go through each response in order.
+
+Need maybe create table.
+
+Input JSON order:
+1 I2-2212
+2 I2-8131
+3 I2-4370
+4 I2-4324
+5 I2-4540
+6 I2-3499
+7 I2-9002
+8 I2-4041
+9 I2-9360
+10 I2-4337
+11 I2-3432
+12 I2-3102
+13 I2-7023
+14 I2-4582
+15 I2-9998
+16 I2-3377
+17 I2-1039
+18 I2-2195
+19 I2-5294
+20 I2-5330
+21 I2-9686
+22 I2-7180
+23 I2-8425
+24 I2-6794
+
+Let's verify counts.
+
+We'll analyze functional failures.
+
+Let's understand each failing program.
+
+### General harness expectations
+
+Correct state machine:
+- State 0 repo outputs false; if btnInicio goto 1.
+- State 1 fill: vLlenado true; if nivelAlto close, goto 2, start timer.
+- State 2 mix: motor true; run timer; when 60s done goto 3.
+- State 3 discharge: vDescarga true; if nivelBajo close, goto 0.
+- btnParo at any time: state=0, all outputs false, reset timer. Must remain repo and not restart until btnInicio again.
+
+Need subtle: In step 7 paro during fill: after step6 starts fill, then step7 btnParo true; block should all outputs false and go repo. Step8 rearranca: btnParo false btnInicio true -> should start fill. Step9 nivelAlto true -> enter mix. Step10 btnParo true -> all outputs false repo. Step11 btnParo false, all inputs false -> remain repo.
+
+Failures:
+- Program failing step2,3 implies it fails entering mezcla after nivelAlto? Let's analyze.
+- Failing step4,5,6 implies maybe completes mix too early or not start? Need parse.
+
+Let's simulate some programs mentally.
+
+But likely many failing due to timer not reset or ELSIF gating, TP etc.
+
+We can read result in each.
+
+Need assign functional scores for each failing:
+Functional rubric:
+0: no implementa lógica pedida o falla en el caso nominal.
+1: funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia).
+2: correcto en nominal y mayoría límites; fallas menores sin riesgo.
+3: all.
+
+If fails step2/3 nominal? Those are llenado->mezcla transition and timing. Step0-5 is nominal. If fails step2,3, that's nominal, likely 0? But maybe still works partially? Rule: If compiles but falla pasos: functional 0,1,2. Failing step2,3 means fails nominal sequence. Need maybe functional 0 or 1? It says "0: no implementa la lógica pedida o falla en el caso nominal." So any fail in nominal => 0. Step2,3 are nominal. So those failing nominal steps get 0 maybe. But maybe some fail only later due to timing borderline? Need inspect. Some fail step4,5,6? Need see if nominal? Step4/5 nominal as well; step6 is paro llenado. So if fails nominal steps 4/5 -> functional 0? Or maybe "caso nominal" refers main path. So any fail in nominal sequence (0-5) = 0. But rubric has 1: funciona en nominal pero falla en límite. If fails after nominal only paro etc => 1/2. So we'll assign according.
+
+Let's parse each failure.
+
+### I2-2212
+
+Result: Compila. Falla 4 de 12 pasos (pasos 4,5,6,9).
+
+Code uses TON tMezcla. Let's see: state 0. In state 2: motorMezcla true; IF tMezcla.Q then motor false; estado:=3. It starts timer in state 1 when nivelAlto: tMezcla(IN:=TRUE, PT:=T#60S). Wait it calls timer only once when transitioning state1->2. In state2 it does NOT call tMezcla(IN:=TRUE) each cycle. Thus TON is not updated? In CODESYS, TON function block must be called each cycle with IN to update. If called only once in state 1, it remains with IN true internally? Actually TON is a function block instance; when you call tMezcla(IN:=TRUE) once, it sets internal state. If not called subsequently, Q won't update. In subsequent scans, tMezcla.Q holds last value (probably false at the first call because PT not elapsed). Thus it never becomes true. So state 2 stuck with motor on forever. That would fail step4 (expect descarga), step5 (nivelBajo) because still mezcla. But result includes fails 4,5,6,9; not 2,3. Step2 expects motorMezcla true; program enters state2 and motor true, passes step2/3. Step4 after ~60.5s: timer not updated, still not Q, so no descarga, fail evD false (motor true). Step5: nivelBajo true while in state2, no effect, fail. Step6? Paro in llenado: Actually step6 starts new cycle (after step5 fail? Harness continues independent; step6 sets btnInicio true. State remains 2? Wait after step5 levelBajo true but state still 2; no transition. Then step6: nivelAlto false nivelBajo false btnInicio true. State still 2, so it won't start llenado. evL true expected, fail step6). Step9: step8 rearranca; state still 2? Let's see if paro step7: btnParo true -> code IF btnParo then state=0, outputs false. This works from stuck state2. Step8 btnInicio true -> state 1 (fill), passes? Actually step8 expected evL true; code likely passes? But result doesn't list step8, so passes. Step9: btnInicio false nivelAlto true -> transitions to state2 and starts timer once; motor true. expected evM true; why fail step9? It may fail because tMezcla.Q? No. Step9 expects evM true, motor true. Should pass if state1 -> state2. But maybe prior timer state? Let's simulate: After step7 paro set state 0 but didn't reset tMezcla. The tMezcla internal state still IN true from previous stuck? But no call. Step8 state1 vLlenado true, no timer call. Step9 enters state2: tMezcla(IN:=TRUE). At that call, since tMezcla IN was true before? Actually TON instance last called at initial step2 long ago with IN true; because not called, internal IN remains true, ET elapsed >60s. When called again in step9 with IN true, TON Q is already true (maybe). Then code in state2? Wait transition occurs within state1 cycle: in state1 IF nivelAlto THEN vLlenado false; estado:=2; tMezcla(IN:=TRUE). In same scan, CASE state already considered? It's within state1 branch, so state2 branch not executed this cycle. Next scan state2 motor true; IF tMezcla.Q THEN maybe Q true (since timer elapsed already) -> transitions to state3 and motor false. Then harness step9 lasts 500ms with evM true. It may observe motorMezcla maybe false after first cycle? Harness checks evM? Need likely per step? The harness checks at end of step? We don't see. It expected evM true during step9. If tMezcla.Q true immediately, motorMezcla false so fail evM. Thus step9 fail. So functional? It fails nominal step4,5 and later. So functional 0 because nominal incorrect.
+
+IEC: compiles; declarations correct; uses TON but not called idiomatic. I'd give iec 2? It compiles, TON declared correctly. The issue is use of timer not idiomatic but still standard. Rubric says 3 if idiomatic. Since timer not correctly instanciated per cycle? It's called incorrectly but standard. Could be 2. We'll assign.
+
+Coherencia: The timer call missing in state2 yields state dead? Actually state2 stuck because Q never updates. That is a condition/transition dead? Wait motor remains true forever; transition impossible because tMezcla.Q false due to not updated. So state2 dead due to missing timer call. Also tMezcla started once. Could be coherencia 1 (logic mostly coherent but dead condition). Or 0 (estados muertos impiden operar). Rubric: 0 condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar. This state2 dead due to timer not updated prevents operation. So coherencia 0 maybe. But maybe initial Q false and never update so dead. Yes. I'd assign 0 or 1? It does implement states but dead transition. 0 is appropriate.
+
+Claridad: uses comments, variable names, states. Clear enough. Structural: no ELSE. Comments brief. Maybe 2. But no comments on why? "Lógica del proceso" etc. Names good. Could be 2.
+
+Mantenibilidad: state constants numeric, PT T#60S magic but okay; timer not parameterized. 1 or 2. The rule: 1 if constantes parcialmente parametrizadas. Here no constants for states; numbers used. So 1. But maybe changes localized. I'd assign 1.
+
+Need ensure scores not too harsh? As careful docent.
+
+### I2-8131
+
+Compila. Pasa all 12. funcional fixed 3. Need iec, coherencia, claridad, mantenibilidad.
+
+Code: well structured with CASE, TON uses IN each cycle in state2, resets timer in state0/repo/paro. State 0 ensures outputs false. Paro priority. ELSE safe. Comments. Inputs/out good. 
+IEC: perfect standard. TON idiomático. Use INT state. 3.
+Coherencia: robust, no dead states. But note `tonMezcla(IN:=FALSE)` in state 0 and `tonMezcla(IN:=FALSE, PT:=T#60S)` in paro; good. State2 `tonMezcla(IN:=TRUE, PT:=T#60S); IF tonMezcla.Q THEN motorMezcla:=FALSE; tonMezcla(IN:=FALSE); eEtapa:=3;` potential issue: In the same scan they set `tonMezcla(IN:=TRUE)` then check Q. TON Q updates at call; if exactly elapsed, Q true. Then they call `tonMezcla(IN:=FALSE)` to reset, good. Fine. Coherencia 3.
+Claridad: Good section comments, names. Could be 3? It has modular? Not separate FB but single FB required. Comments explaining why some not why. 2 or 3. Since task asks simple FB; we can give 3 for clear structure. But rubric 3 says modularization adecuada (FB reutilizable, separación entre lógica y E/S). This single FB is required; not much modularization. But structural clarity can still be 3 if elegant. As teacher, maybe 2. Let's not overinflate. It uses many comments and layout. I'll assign 2 or 3? Need consistent. Many good ones get 3. This one has all outputs in each state, safe ELSE. I'd give claridad 2? Hmm.
+
+Mantenibilidad: state constants as comments but no named constants; timer PT literal but used in paro/reset. Could be 2; not extensible to other times, but parameterized? T#60S appears multiple places. But PT not a parameter. So 2? Rubric: 1 if parcialmente parametrizada; 2 parámetros como variables/constants. Here no constant `TIME_MEZCLA`. So 1 maybe. But many good responses using PT literal. Need decide consistently. If no parameter, maybe 1. But if localized changes? Timer PT appears in two places (state0 and paro resets and state2) so duplicated. But they need PT reset. Could be duplicated. So mantenibilidad 1/2. The rubric says "2: parámetros como variables o constantes declaradas; cambios localizados." This code doesn't declare constant. So should be 1. However many solutions use T#60S directly. I can assign 1 for those lacking constant, 2 for those with constant. But need not be too strict. Let's be consistent.
+
+We need produce 24 objects with just lines.
+
+Need maybe compare all passing programs.
+
+I2-8131, I2-3499, I2-9002, I2-4041, I2-9360, I2-7023, I2-4582, I2-9998, I2-5294, I2-5330, I2-8425 all pass all. Some are very similar. We need assign varying or consistent? Could score same for similar code.
+
+Let's analyze each.
+
+### I2-4370
+
+Compila. Falla 2 de 12 (pasos 2,3).
+
+Code uses TP timer tMezcla. Let's simulate.
+
+State0 -> if btnInicio state=1, vLlenado:=TRUE. Good.
+State1: vLlenado? It doesn't set vLlenado true each cycle? In state1, IF nivelAlto THEN state=2; vLlenado:=FALSE; tMezcla(IN:=TRUE, PT:=T#60S); motorMezcla:=TRUE. But if not nivelAlto, vLlenado remains TRUE from initial transition? It set true when entering state1, so okay held.
+State2: no assignment motorMezcla? It only IF tMezcla.Q THEN state=3; motorMezcla:=FALSE; vDescarga:=TRUE. It set motorMezcla:=TRUE at transition. So motor true initially. TP Q? Let's understand TP behavior when called once at transition. It is called `tMezcla(IN:=TRUE)` only at transition. Since TP is edge-triggered pulse: on rising edge, Q becomes TRUE and ET starts. But if the FB is not called again in subsequent cycles, Q remains as whatever it was at last call. At entering state2, call returns Q TRUE (likely). Then no update. In state2 next scan, `IF tMezcla.Q THEN` reads Q TRUE, so immediately transitions to state3, motor:=FALSE, vDescarga:=TRUE. This means at step2 after nivelAlto true, it may pass evM? In harness, step2 applies nivelAlto true for 1s. At first scan of step2, state1 sees nivelAlto and transitions to state2 and starts TP, motor TRUE. It may output motor true for one scan. But by end of step2 after 1s, already state3? Since scan cycle fast, it may have moved to state3 and motor false, vDescarga true. The harness expects evM true at step2 (motor true) during step2, not evD. It might sample at end? It likely checks outputs over step? Need infer. Step2 failed means it observed vDescarga or motor false at step2. Step3 expected evM true but likely fails because descarga? So yes passes only maybe step1? Result fails 2,3. This is nominal failure -> funcional 0.
+
+IEC: compiles; TP standard but incorrectly used. I'd give 2. Coherencia: state2 dead? Actually transitions immediately, not dead. Logic uses TP instead of TON causing wrong behavior. Conditions no dead. But variable tMezcla.Q behavior maybe contradictory? Could be 1. Claridad: comments and states; 2. Mantenibilidad: no constant; 1.
+
+### I2-4324
+
+Compila. Falla 7 (pasos 2,3,4,5,6,9,11).
+
+Code uses TP tMezcla. It writes outputs with IF statements not CASE. Let's analyze.
+State 0: IF btnInicio AND NOT btnParo AND estado=0 THEN estado:=1; vLlenado:=TRUE; END_IF.
+State 1: IF nivelAlto THEN estado:=2; vLlenado:=FALSE; motorMezcla:=TRUE; tMezcla(IN:=TRUE, PT:=T#60S); END_IF. Note this IF is not conditioned on estado=1; any time nivelAlto becomes true, it triggers state2. But state0 maybe if levelAlto true? In repo maybe if sensors true? harness step0 levelAlto false. Step2 applies nivelAlto true after state1; it triggers state2. Good.
+State 2: IF tMezcla.Q THEN estado:=3; motor:=FALSE; vDescarga:=TRUE; END_IF. As TP Q maybe true immediately, transition early. Also tMezcla Q if called at levelAlto transition only.
+State 3: IF nivelBajo THEN estado:=0; vDescarga:=FALSE; END_IF.
+Paro: IF btnParo THEN estado:=0; vLlenado:=FALSE; motor:=FALSE; vDescarga:=FALSE; tMezcla(IN:=FALSE); END_IF.
+
+This likely fails many. But need not simulate all.
+
+Functional fatal nominal -> 0.
+
+IEC: 2 (TP standard but wrong). Coherencia: logic mostly coherent but wrong timer type causes premature; also state1/2 not gated by state var causing potential retrigger if sensors true in any state. Actually state1 IF nivelAlto not conditioned on estado=1; state2 IF tMezcla.Q not conditioned on estado=2; state3 IF nivelBajo not conditioned on estado=3. However outputs set maybe. This can lead to conflicts. Could be 0 or 1? There are conditions not dead but can misfire. Variables initialized. Since it compiles but logic not robust; dead? No. I'd assign coherencia 1. 
+Claridad: comments but no CASE, maybe less structure. 1/2. 
+Mantenibilidad: same 1.
+
+### I2-4540
+
+Compila. Falla 4 (pasos 2,3,4,9).
+
+Code: `estado : INT;` uninitialized! Important. It uses `IF NOT btnInicio THEN estado := 0;` at beginning. So if btnInicio not active (including at power-up) state=0. But when btnInicio active in step1, condition false, so state retains 0? In step0 state 0. Step1 btnInicio true, no initialization, state remains 0; CASE state0 sees btnInicio true -> estado:=1. Good. Then state1 etc. However possible state uninitialized first scan? `IF NOT btnInicio THEN estado := 0;` ensures if btnInicio false. In harness step0 btnInicio false, so state=0. Good.
+
+Uses TON timer. State1: vLlenado true; if nivelAlto -> state2; timerMezcla(IN:=TRUE,PT:=T#60S). State2: motor true; timerMezcla(IN:=TRUE); IF timerMezcla.Q THEN motor false; estado:=3. This calls timer each cycle in state2, so TON works. Why fails step2,3,4,9? Let's see.
+
+Potential issue: At transition from state1 to state2, they call `timerMezcla(IN:=TRUE)` once during state1. In state2, call `timerMezcla(IN:=TRUE)` each cycle. That seems okay. TON Q becomes true after 60s. At step2, expect motor true. Should pass. Why failures 2,3,4? Maybe because timerMezcla is not reset between cycles and due to harness step5? Let's simulate nominal: 
+Step0 false: state0, outputs false.
+Step1 btnInicio true 200ms: state0 sees btnInicio -> estado:=1. In state0 branch, it sets outputs false. Next scan state1? Yes. At end step1, state1 sets vLlenado true. Pass evL.
+Step2 btnInicio false, nivelAlto true 1s: At beginning, state1? At scan 1, `IF NOT btnInicio THEN estado := 0;` executes! Wait btnInicio false, so this **sets state := 0 every scan** regardless of btnInicio. Oh! That is huge. It resets state to 0 whenever btnInicio is false. So at step2 when btnInicio false, it forces state := 0 before CASE. Then CASE state0: outputs false; IF btnInicio false no transition. Thus process remains repo, never enters state2. It never uses nivelAlto. So fails step2,3,4 (no motor, no mix, no descarga). Step5 maybe nivelBajo? Still state0? But result not fails step5? Step5 expects evD false etc after nominal? It may pass because all outputs false. Actually step5 expects after descarga, outputs false. Since code never exits repo, in step5 outputs false; harness step5 expects evL false evM false evD false, so passes. Fail step6? Step6 expects evL true after btnInicio true. Code step6: btnInicio true, so not reset, state? At step5 state0. Step6 btnInicio true: state0 sees btnInicio -> estado1, evL true. Pass? Result doesn't include step6, so yes passes. Step9 fails? Step9 btnInicio false, nivelAlto true: after step8, state1? Step8 btnInicio true started fill, state1. Step9 btnInicio false, so first `IF NOT btnInicio THEN estado := 0;` resets to repo, so never enters mezcla; fail evM. Thus failures as listed. So it fails nominal step2,3,4. Functional 0.
+
+IEC: compiles, TON declared; no issue. But code uses `TON` correctly? Timer called. But there's a logic error outside timer. Still IEC 2. Coherencia: the `IF NOT btnInicio THEN estado := 0;` is contradictory with intended reset; it resets state on every non-inicio, making sustained states impossible. That's a severe logic contradiction/dead. Coherencia 0 or 1. I'd assign 0: conditions contradictory, states dead (states 1/2/3 unreachable because btnInicio false returns to 0). Actually state1 can be reached on a scan when btnInicio true; but to act on nivelAlto requires btnInicio false, which immediately resets. So state1/2/3 dead. So coherencia 0.
+Claridad: It has some comments, names, but comments not explaining reset bug. 2 maybe.
+Mantenibilidad: no constants. 1.
+
+### I2-3499
+
+Pass all. Code similar to I2-8131, well structured. Need score: funcional fixed 3. IEC 3. Coherencia 3. Claridad 2/3. Mantenibilidad 1/2. Let's hold.
+
+### I2-9002
+
+Pass all. Code uses `tonMezcla(IN := (estado = 2), PT := T#60S);` after CASE. State1 doesn't set vLlenado false? In state0 all outputs false; state1 `vLlenado := TRUE; motorMezcla := FALSE; vDescarga := FALSE;` good. State2 no reset? It sets outputs. timer active. If btnParo then estado:=0; But outputs are set based on state in CASE? Wait state0 executes after btnParo? Code: IF btnParo THEN estado:=0; END_IF; CASE estado... That means if paro while in state1, sets estado=0, then CASE state0 executes in same scan, sets outputs false, good. If paro in state2, sets estado0, CASE state0 sets outputs false, timer IN false because `(estado=2)` now false, called after? Actually timer call after CASE. Good. 
+Potential issue: When btnParo sets estado :=0, but if state was 0 and btnParo false? fine. 
+IEC 3? Uses TON standard. 
+Coherencia: 3. 
+Claridad: Good. 
+Mantenibilidad: no constant. Maybe 1 or 2. State numbers not named. Could be 1.
+
+### I2-4041
+
+Pass all. Very similar to I2-8131. Score likely same. 
+IEC 3. Coherencia 3. Claridad 2/3. Mant 1/2.
+
+### I2-9360
+
+Pass all. Code simplified: IF btnParo sets estado:=0. CASE transitions only. Then timer called after case. Outputs set via state comparisons after case. 
+Potential quirk: In state0 after paro, CASE state0 executes and if btnInicio AND NOT btnParo then state:=1. But when btnParo is TRUE, state0 might then check `btnInicio AND NOT btnParo` false; good. Outputs set after case: in state0 false. Good.
+When transitioning state1->2, there is no immediate start of timer? Timer called after CASE with IN=(estado=2). When in state1 and nivelAlto true, CASE sets estado:=2; then after case timer IN becomes TRUE in same scan because estado=2. Good. TON starts. Outputs set after case based on state 1? Wait after case, outputs are set using estado. So in same scan estado=2, vLlenado:= (estado=1) false, motorMezcla:= (estado=2) true, vDescarga false. Good. 
+Ton updated each scan. For step2 evM true. Good.
+
+IEC: 3 (TON standard). 
+Coherencia: 3. 
+Claridad: clear, concise. But lacks state outputs within CASE; comments. 2? 
+Maintenance: no constant; 1.
+
+### I2-4337
+
+Compila. Falla 2 (pasos 2,3). Similar to I2-4370 but maybe same TP. Code uses TP. State1 to 2 sets tMezcla IN true, motor true. State2 IF tMezcla.Q transitions. Since TP Q immediately true at first call, likely early. Fails nominal step2,3. Functional 0.
+
+IEC: 2. Coherencia: maybe 1. Claridad: 2. Mant: 1.
+
+### I2-3432
+
+Compila sola, but no se pudo simular: declarations not conforming. It declares all variables in VAR, not VAR_INPUT/VAR_OUTPUT. So interface non-conforming. funcional not fixed; must score reading code. According to rules: "Si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3."
+Code logic actually similar to correct TON but inputs in VAR. Logic: 
+- timerMezcla(IN:=FALSE,PT:=T#60S) before IF each cycle? It does at top: `timerMezcla(IN := FALSE, PT := T#60S);` then later in IF else CASE, in state1/2 etc. Actually it resets timer every cycle at top, then may call timerMezcla(IN:=TRUE) in state1 when nivelAlto. Wait top call every scan resets IN false, then in state1 if nivelAlto sets IN true. In state2 it does not call IN true. Let's see code: 
+```
+timerMezcla(IN:=FALSE, PT:=T#60S);
+IF btnParo THEN ...
+ELSE
+ CASE estado OF
+  0: IF btnInicio THEN estado:=1; END_IF
+  1: vLlenado:=TRUE;
+      IF nivelAlto THEN
+        vLlenado:=FALSE;
+        estado:=2;
+        timerMezcla(IN:=TRUE);
+      END_IF
+  2: motorMezcla:=TRUE;
+      IF timerMezcla.Q THEN ...
+  3: ...
+ END_CASE
+END_IF
+```
+Because timer is reset to false at top every scan, and in state2 no call with IN true, but the last call in the cycle in state2? The top call uses IN false, so tMezcla.Q false. In state2, it doesn't call timer with IN true, so Q false always; transition dead. But maybe at state transition, they called timer IN true after top reset, but that only holds for one cycle? In state2 next cycle top resets Q false, so never completes. So logic faulty. However due to interface non-conforming harness cannot simulate. Functionally reading code: it would not complete mixing; similar to I2-2212. So funcional maybe 0 or 1? It implements nominal llenado start, but fails at mixing due timer. The main path fails. So functional 0. But rule says if no sim, never 3; 0,1,2. I'd assign 0 for nominal failure.
+
+IEC: compiles? It compiles but interface wrong: not using VAR_INPUT/OUTPUT. Is that IEC compliance? The task asked FB with variables of input/output. Declaring all in VAR is not proper interface. But it compiles. If considering IEC 61131-3, input/output sections required. So iec perhaps 1 (compiles solo tras correcciones menores, o no conforms). It compiles alone, but interfaz no conforme; likely iec 1. Rubric: 0 no compila. 1 compila solo tras correcciones menores, o usa extensiones. Here no modifications to compile, but interface doesn't match. However compliance with standard: using VAR for inputs/outputs in an FB is legal but doesn't expose interface; it's not standard? You can have VAR public? In CODESYS, VAR in FB is internal not interface; not input/output. The requirement was interface. I'd give iec 1 due to interfaz no conforme. 
+Coherencia: timer reset at top and no state2 call means dead transition; also `timerMezcla(IN:=FALSE)` every scan conflicts with state1 setting IN true; maybe still transitions but timer never true? Let's see: in state2, because top resets each scan, Q clears. So dead. Coherencia 0.
+Claridad: comments but all variables in VAR with input/output comments; names okay. 2.
+Mantenibilidad: 1.
+
+### I2-3102
+
+No compila fixed funcional 0, iec 0. Need score coherencia/claridad/mantenibilidad from code.
+Code uses R_TRIG, TON, but has syntax error: `ELSE:` in CASE instead of ELSE. Functionally logic if corrected would be good. 
+Coherencia: If ignoring syntax, logic is coherent with paro priority, R_TRIG for inicio, state machine. Use RETURN after paro. No dead states, safe ELSE. So coherencia 3? Since code doesn't compile but logic robust. We can score coherencia 2 or 3. But rubrics coherencia logical: despite syntax, it is coherent. Maybe 2? Need not penalize for syntax errors (already iec/function). The logic has a subtle: it calls `tonMezcla(IN := FALSE, PT := T#60S)` in repo and paro; in state1 no timer; state2 starts. R_TRIG on btnInicio. Good. It uses RETURN after paro, so CASE not executed. There is no separate outputs assignment in state0? Yes. Could be 3. But since it doesn't compile, maybe can't run; but scoring logic code. I'll give coherencia 2 or 3. It's coherent. I'll give 3? Wait syntax error in CASE ELSE: but that's syntax, not logical. In terms of conditions no contradictions. Yes 3.
+
+Claridad: Good section comments, names, explanatory. 3 maybe. 
+Mantenibilidad: Has T#60S literal repeated, no constants. 1 or 2. Could give 2 because TIMER PRE maybe not parameterized. It uses states as numbers and comments. I'd give 1 due no named constants. But maybe not too harsh. R_TRIG extra.
+
+### I2-7023
+
+Pass all. Similar to I2-9002 but variable order. 
+IEC 3. Coherencia 3. Claridad 2. Mant 1.
+
+### I2-4582
+
+Pass all. Similar to I2-8131. 
+IEC 3, coher 3, clar 2/3, mant 1/2.
+
+### I2-9998
+
+Pass all. Similar to I2-9360/7023. 
+IEC 3, coher 3, clar 2/3, mant 1/2.
+
+### I2-3377
+
+Compila but no sim due interface non-conforming. Logic:
+```
+VAR (all in VAR)
+...
+IF btnParo THEN ...
+ELSE CASE estadoProceso OF
+0: if btnInicio then estadoProceso:=1; END_IF
+1: vLlenado:=TRUE;
+   IF nivelAlto THEN ... state2; timerMezcla(IN:=TRUE, PT:=T#60S); END_IF
+2: motorMezcla:=TRUE;
+   timerMezcla(IN:=TRUE);
+   IF timerMezcla.Q THEN ...
+3: ...
+END_CASE
+END_IF
+```
+Unlike I2-3432, no top reset. It calls timer IN true in state2 each cycle, so timer works. Seems logic correct except outputs maybe not set false in all states? In state2, vLlenado? It was set false at transition, held. In state3, motorMezcla set false at transition, vDescarga true; held. Repo state0 does not explicitly set outputs false each scan but after power-up initial outputs maybe false? Variables declared no init, but outputs VAR? Actually vLlenado etc are VAR internal, no init. At startup, they may be FALSE? In CODESYS, BOOL defaults false? Typically yes. But in state0 if btnParo false and no btnInicio, outputs may retain previous values! After returning to state0 from descarga, vDescarga is set false at transition. After paro, btnParo branch sets all false. So okay. But if state0 re-entry from descarga, outputs false. If state0 at power-up default false. Fine.
+However interface wrong. Functional reading code: likely would pass harness if interface were corrected. It compiles alone but cannot simulate. So funcional maybe 2 (correct but interface non-conforming? Rule: no sim, never 3; allow 0-2). Since logic appears correct, could give 2. But the task required function block with proper input/output. If we test by code, likely correct. Rules: "Si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3." So we give 2 for correct logic but interface not conforming. But maybe nominal? It implements all. So funcional 2.
+
+IEC: due VAR instead of VAR_INPUT/OUTPUT, non-conforming interface, but compiles. I'd give iec 1. 
+Coherencia: It calls timer in state2; but maybe missing explicit timer IN false reset on paro? In btnParo branch, it sets outputs false and estadoProceso:=0 but does not reset timer. If paro during mezcla, timer internal IN may remain high; when later re-enter mezcla, timer starts anew? Actually TON holds elapsed. When entering state2 later with `timerMezcla(IN:=TRUE, PT:=T#60S);` calling TRUE after being false? If timer was left IN true at paro, then internally IN remains true, ET continues? It doesn't call during paro, so when later call IN true maybe it might have already Q true and immediately transition. In I2-3377, paro branch doesn’t call timerMezcla(IN:=FALSE). That could cause issue after paro during mezcla. Harness steps 9-11? Let's see: If paro during mezcla at step10, its code sets state0 outputs false, but doesn't reset timer. Timer last called in step9? During step9 state2, it called timerMezcla(IN:=TRUE) each cycle. At step10 btnParo true: it doesn't call timer, just sets state0 outputs false. Then step11 btnParo false, state0, outputs false. In repo, timer not called. Later if start new process, state1->2 after levelAlto, calls timerMezcla(IN:=TRUE) again. The TON instance had IN true and maybe ET >60? Actually in step9 duration 500ms, not Q. At step10, because timer not called for 200ms, ET does not advance (wall time? TON only updates when called; internal ET stops). When later called TRUE, it resumes and after 59.5s more, Q. So maybe not immediate. But no reset still okay because TON holds ET, but if it had elapsed during? It didn't. 
+Also missing timerMezcla(IN:=FALSE) in repo maybe if left true, but not called, so no.
+Thus coherencia mostly coherent. Could be 2. 
+Claridad: Comments, names. 2.
+Mantenibilidad: no constant, interface issue but code. 1.
+
+Compare I2-3432 similar interface but logic dead. I2-3377 logic correct. We'll assign accordingly.
+
+### I2-1039
+
+Compila. Falla 5 (pasos 2,3,4,5,9).
+
+Code uses TON. But has `ELSIF btnInicio THEN` wrapping CASE. Let's read:
+```
+IF btnParo THEN
+ ...
+ELSIF btnInicio THEN
+    CASE estado OF
+        0: IF btnInicio THEN estado := 1; END_IF
+        1: vLlenado := TRUE;
+           IF nivelAlto THEN ... estado:=2; tMezcla(IN:=TRUE,PT:=T#60S);
+        2: motorMezcla := tMezcla.Q;
+           IF NOT tMezcla.Q THEN estado:=3;
+        3: vDescarga := TRUE;
+           IF nivelBajo THEN ... estado:=0;
+    END_CASE;
+END_IF;
+```
+Timer? In state2, they set `motorMezcla := tMezcla.Q;` but they never call tMezcla(IN:=TRUE) in state2 or update. They only call at transition state1->2 once. Thus TON Q never updates, stays false. State2 then `motorMezcla := tMezcla.Q` = false, not true. At step2 expected motor true but fails. Also `IF NOT tMezcla.Q THEN estado := 3;` immediately transitions to state3 when in state2 because Q false. So step2 fail. Step3 maybe descarga? Let's see after state2 transitions to state3 immediately, vDescarga true at state3. Step2 harness expected evM true but maybe observed vDescarga? Fails step2. Step3 expected evM true, but state3, fail. Step4 expected evD true, state3 has vDescarga true so maybe pass? But result fails 2,3,4,5,9. Why fail step4? Because state2 transitioned to state3 immediately, so vDescarga true for all subsequent time. Step4 1s later still vDescarga true, expected evD true. It might pass step4? But result says fail step4. Maybe because in same cycle state2 `motorMezcla := tMezcla.Q` false; `IF NOT tMezcla.Q THEN estado := 3;` then next cycle state3 `vDescarga := TRUE;` so step4 should pass. Wait maybe harness step2 and step3 are failed; step4 maybe also because level? Let's simulate carefully.
+
+Step2 applies nivelAlto true for 1s. At first scan of step2, state1, nivelAlto true: sets estado:=2, vLlenado false, tMezcla IN true. The CASE in that scan stays state1 branch so vLlenado false? Actually state1 sets vLlenado true before; then sets false when transition. motorMezcla maybe default false. End of scan outputs false. Next scan, `ELSIF btnInicio` — btnInicio is FALSE during step2. The outer ELSIF btnInicio requires btnParo false and btnInicio TRUE to execute CASE. Since btnInicio is FALSE, the CASE **does not execute at all**. Ah! So after state1, when harness sets btnInicio false in step2, code does nothing. State remains 2, outputs remain as last: vLlenado false, motor false. Thus step2 fail evM false. In step3 btnInicio still false, no CASE, so no motor. Step4 btnInicio false, no CASE, so no vDescarga. Step5 btnInicio false, no CASE. Step6 btnInicio true: step6 sets btnInicio true. At start, state is still 2? Actually state remained 2 from step2? Wait in step2 transition happened in first scan while btnInicio maybe false? Let's recount: Step1 btnInicio true; at end state1. Step2: at very beginning of step2, harness sets btnInicio FALSE, nivelAlto TRUE. The code IF btnParo false; ELSIF btnInicio -> false, so no CASE. It never processes state1 because CASE didn't run. State remains 1 (not 2) because it didn't execute state1. Wait at step1, state became 1 and vLlenado true. Step2 no CASE, so state stays 1, outputs vLlenado remains true. Expected evM true? Step2 expects evL false evM true. vLlenado remains true, motor false. So fail step2. Step3 still no CASE, vLlenado true, fail. Step4 no CASE, vLlenado true, fail evD. Step5 same, vLlenado true, fail? Step5 expects all false, vLlenado true so fail. Step6 btnInicio true, now CASE executes. State is 1 (still). State1 branch: vLlenado true; if nivelAlto (false) no transition. Expected evL true, that's correct! Step6 pass. Step7 btnParo true sets all false state0. Step8 btnInicio true rearranca: state0 branch sets vLlenado? state0 doesn't set vLlenado true before? It if btnInicio then estado:=1. State0 branch vLlenado? It doesn't assign vLlenado true. So in same scan, state set to1, but vLlenado remains false from paro. Outputs expected evL TRUE in step8. Wait harness step8 maybe expects evL TRUE. If code doesn't set vLlenado true until next scan in state1? Next scan btnInicio maybe? Step8 lasts 200ms with btnInicio true, state1 branch will execute on next scans and set vLlenado true. So maybe passes step8. Step9: btnInicio false, nivelAlto true; outer ELSIF btnInicio false, no CASE; state remains 1, vLlenado true. Expected evM true; fail. So result matches 2,3,4,5,9. Good. So major issue: outer ELSIF btnInicio gates CASE, preventing non-inicio states from executing. This contradicts intended state machine. Functional 0.
+
+IEC: compiles, TON declared but not called in state2; standard. 2. 
+Coherencia: The `ELSIF btnInicio` makes CASE unreachable unless btnInicio true, so states 1-3 stuck; dead. 0. 
+Claridad: Structure maybe less clear; comments. 2. 
+Mantenibilidad: 1.
+
+### I2-2195
+
+Compila. Falla 3 (pasos 4,5,6).
+
+Code uses multiple IF statements, not gated by btnInicio. Let's read:
+```
+IF btnParo THEN estado:=0; outputs false; timerMezcla(IN:=FALSE);
+ELSIF btnInicio AND estado=0 THEN estado:=1; vLlenado:=TRUE;
+END_IF
+
+IF estado=1 THEN
+  IF nivelAlto THEN estado:=2; vLlenado:=FALSE; motorMezcla:=TRUE; timerMezcla(IN:=TRUE, PT:=T#60S); END_IF
+END_IF
+
+IF estado=2 THEN
+  IF timerMezcla.Q THEN estado:=3; motorMezcla:=FALSE; vDescarga:=TRUE; END_IF
+END_IF
+
+IF estado=3 THEN
+  IF nivelBajo THEN estado:=0; vDescarga:=FALSE; END_IF
+END_IF
+```
+Timer in state2? It only calls timer at transition state1->2, not each cycle. So TON Q won't update. But wait state2 branch is executed each cycle, and IF timerMezcla.Q then... Timer is not called in state2, but TON Q stays false from last call (at transition). So transition never happens. Thus state2 stuck, motor true forever. At nominal step4 expected descarga after 60s, but stuck mix; fail step4, evD false. Step5 expected repo, still mix; fail evM false? Actually step5 expected all false; motor true, fail. Step6 expected evL true; stuck mix state2, btnInicio true? Step6 sets btnInicio true; `ELSIF btnInicio AND estado=0` false because estado=2. State2 branch still no timer; motor true; fail evL false. So failures match. Step2/3 pass because motor true. Step9 maybe passes? Step9 expected evM true after rearranque; state2 from step9? Let's simulate: step7 paro sets state0 outputs false timer false. Step8 btnInicio true estado0 -> estado1 vLlenado true. Pass. Step9 btnInicio false, nivelAlto true -> estado1 sees nivelAlto -> estado2, motor true, timer IN true. Expected evM true; passes maybe due to motor true. Step10 paro: code IF btnParo at top sets state0 outputs false timer false. Pass. Step11 repo. So result only 4,5,6. Functional nominal fails -> 0.
+
+IEC: 2. 
+Coherencia: State2 dead due timer not called; yes. Also outputs not explicitly assigned false in all states but okay. Coherencia 0/1. I'd say 0 due dead transition. But maybe not full because it reaches state2. The dead state prevents completion. Rubric 0 includes estados muertos que impiden operar. Yes 0.
+Claridad: Structured but comments absent entirely. Actually code has `// Estado de reposo` etc comments? Yes comments at top of each state. Names okay. 2.
+Mantenibilidad: no constants. 1.
+
+### I2-5294
+
+Pass all. Similar to I2-9360. Outputs assigned via state comparisons. Score.
+
+### I2-5330
+
+Pass all. Similar to I2-5294 but has ELSE invalid state. Score.
+
+### I2-9686
+
+Compila. Falla 3 (pasos 4,5,6).
+
+Code:
+```
+timerMezcla(IN:=FALSE, PT:=T#60S);
+CASE estado OF
+0: IF btnInicio THEN estado:=1; END_IF
+1: vLlenado:=TRUE;
+   IF nivelAlto THEN estado:=2;
+2: vLlenado:=FALSE;
+   motorMezcla:=TRUE;
+   timerMezcla(IN:=TRUE);
+   IF timerMezcla.Q THEN estado:=3;
+3: motorMezcla:=FALSE;
+   vDescarga:=TRUE;
+   IF nivelBajo THEN estado:=0;
+END_CASE;
+
+IF btnParo THEN estado:=0; outputs false; timerMezcla(IN:=FALSE);
+END_IF;
+```
+At top calls timer false every scan, then in state2 calls timer true. Good for TON. But in state2, it starts timer true; on first entry? Let's simulate. Step2 estado1, nivelAlto true -> estado:=2, but it does not set vLlenado false or motor true at transition. Next scan estado2: vLlenado:=FALSE, motorMezcla:=TRUE, timer IN true. So state2 begins. TON works. At 60s Q true, IF timerMezcla.Q then estado:=3. But state3 next scan sets motor false vDescarga true. This should work nominal. Why fails 4,5,6? Maybe timer reset top with `timerMezcla(IN:=FALSE, PT:=T#60S)` every scan before state2 call `timerMezcla(IN:=TRUE)` might cause TON sees IN rising each scan? Let's think: TON input is evaluated each cycle. At top, timerMezcla(IN:=FALSE) called, sets IN false and updates internal. Then in state2 branch, timerMezcla(IN:=TRUE) called. In CODESYS, if the same FB instance is called twice in same cycle, what happens? It is allowed? Actually calling a TON instance twice in one task cycle is allowed but its internal state updates on each call. First call with IN FALSE resets Q if ET? TON standard: If IN false, Q false, ET=0. Then second call with IN true starts from 0. Next cycle again first call with IN false resets ET=0, then second call with IN true starts from 0. Thus ET is reset to 0 every cycle, never accumulates. Result: tMezcla.Q never becomes true. So state2 stuck forever. Fails step4,5,6 (similar). Indeed. 
+Functional 0.
+
+IEC: TON used but called twice per scan with contradictory inputs; compiles. Is that standard? Calling same FB multiple times in same cycle may be problematic but compiles. IEC 2. Coherencia: Contradictory timer calls (first false, then true) reset timer each cycle, causing dead transition. That's severe; 0. Claridad: has `// Inicialización del timer` but actually every scan; confusing. Could be 1 or 2. Names okay. I'd give 2? It's structured with comments. But comment misleading. Maybe 1. 
+Mantenibilidad: no constant. 1.
+
+### I2-7180
+
+Compila. Falla 3 (pasos 4,5,6).
+
+Code:
+```
+timerMezcla(IN:=FALSE, PT:=timerMezclaPT);
+CASE estado OF
+0: ... if btnInicio estado1; if btnParo estado0
+1: ...
+   IF nivelAlto THEN estado:=2; END_IF
+   IF btnParo THEN estado:=0; END_IF
+2: ...
+   timerMezcla(IN:=TRUE);
+   IF timerMezcla.Q THEN estado:=3; END_IF
+   IF btnParo THEN estado:=0; END_IF
+3: ...
+```
+Similar to I2-9686: top resets timer false each scan, state2 calls true. Thus timer never accumulates; stuck state2. Fails same. Functional 0.
+IEC 2. Coherencia 0. Claridad? It has comments and state outputs, parametrized timer constant. So mantenibilidad maybe 2 because `timerMezclaPT` constant declared. Ah yes `timerMezclaPT : TIME := T#60S;` gives parameterization. So mantenibilidad 2. Coherencia 0. Claridad 2. IEC 2.
+
+### I2-8425
+
+Pass all. Similar to I2-8131, well structured. Score.
+
+### I2-6794
+
+Compila. Falla 3 (pasos 2,3,9).
+
+Code uses TON but similar to I2-1039? Let's read:
+```
+CASE estado OF
+0: outputs false; IF btnInicio THEN estado:=1;
+1: vLlenado:=TRUE;
+   IF nivelAlto THEN ... estado:=2; tMezcla(IN:=TRUE,PT:=T#60S);
+2: motorMezcla := tMezcla.Q;
+   IF NOT tMezcla.Q THEN estado:=3;
+3: vDescarga:=TRUE;
+   IF nivelBajo THEN ... estado:=0;
+END_CASE;
+
+IF btnParo THEN outputs false; estado:=0; tMezcla(IN:=FALSE);
+END_IF;
+```
+This is similar to I2-1039 but no outer ELSIF, so CASE executes each cycle. Timer issue: In state2, they do not call tMezcla(IN:=TRUE) each cycle; only at transition. They set `motorMezcla := tMezcla.Q`. Since TON not called in state2, Q remains false (from initial call). So state2 sets motor false and `IF NOT tMezcla.Q THEN estado:=3;` immediately transitions to state3 on first scan in state2. Thus it never waits 60s. At step2: First scan state1 sees nivelAlto true, transitions to state2, calls tMezcla(IN:=TRUE) but motorMezcla maybe remains false from repo? Actually state1 set vLlenado true; motor false. It does not set motor true at transition. Next scan state2: motorMezcla := tMezcla.Q; tMezcla.Q likely false? Wait TON was called at transition with IN true; on first call, TON standard begins with IN true, Q false until elapsed >= PT. Therefore next scan Q false; motor false; `IF NOT tMezcla.Q THEN estado := 3;` sets state3. So step2 expects evM true; code gives motor false, fail. Step3 expects evM true; state3 gives vDescarga? actually state3 sets vDescarga true. Fail. Step9 (paro en mezcla) expects motor true after levelAlto; code again enters mezcla and immediately goes to descarga, motor false; fail. Result matches 2,3,9. Functional nominal fails -> 0.
+
+IEC: compiles; TON declared but not updated in state2. IEC 2. Coherencia: Transition in state2 based on NOT Q immediate is contradictory because Q false until elapsed, causing never waits. This is a logical flaw. Maybe 0 or 1. State2 effectively skipped. No dead states, but wrong. Could be 1? It uses wrong condition `NOT tMezcla.Q` should be `IF tMezcla.Q` and call timer. It's a clear bug. But not necessarily "estados muertos" because state3 reachable. But behavior wrong. Coherencia: 1 (logic mostly coherent but flaw). However output `motorMezcla := tMezcla.Q` is false immediately so motor never true; contradictory to requirement. I'd give 0 or 1. Rubric 0 says condiciones contradictorias. The condition `IF NOT tMezcla.Q THEN estado := 3` is contradictory to wait until Q. And motor assigned tMezcla.Q false. Could be 0. But maybe better 0 because it makes mixer stage never active. Yet it doesn't prevent operation entirely. Hmm.
+
+Need be consistent across similar timer issues. I2-2212 had state2 dead because no timer update, Q never true; assigned coherencia 0. I2-2195 same dead, 0. I2-6794 immediately transitions due no Q update, not dead, but uses NOT Q. I'd assign 0 if coherencia flawed. 
+Claridad: code simple with comments. 2. 
+Mantenibilidad: no constant. 1.
+
+Now need assign IEC scores for all. Let's design criteria.
+
+For compiles:
+- If proper FB interface, standard TON used correctly? 3 else 2.
+- If interface non-conforming, iec 1.
+- If TP used but standard, 2.
+- If timer called incorrectly but still standard declarations, 2.
+- If comments // maybe not penalize.
+- If uses RETURN in no-compile? no iec already 0.
+- For passing all good solutions, likely iec 3. Need choose.
+
+Let's assign IEC:
+I2-2212: 2
+I2-8131: 3
+I2-4370: 2
+I2-4324: 2
+I2-4540: 2 (timer called but logic reset). 
+I2-3499: 3
+I2-9002: 3
+I2-4041: 3
+I2-9360: 3
+I2-4337: 2
+I2-3432: 1 (no conform interface)
+I2-3102: 0 fixed
+I2-7023: 3
+I2-4582: 3
+I2-9998: 3
+I2-3377: 1 (interface)
+I2-1039: 2
+I2-2195: 2
+I2-5294: 3
+I2-5330: 3
+I2-9686: 2 (calls timer twice; standard? Actually multiple calls questionable but compiles. Maybe 2)
+I2-7180: 2
+I2-8425: 3
+I2-6794: 2
+
+Could any compiles with TP get iec 1? The rubric "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." TP is standard, so not 1. If `//` comments are non-standard? IEC 61131-3 standard doesn't specify //? Actually IEC 61131-3 allows single-line comments with (* ... *) only. But CODESYS accepts // as extension. Many code uses //. Would that be "usa extensiones fuera del estándar"? If strict, then any with // should iec 1. But many use //; and the task says Structured Text conforme to IEC 61131-3. Hmm. The rubric: 1 if usa extensiones fuera del estándar. `//` comments could be considered extension outside IEC standard (strictly IEC ST comments are (* *) and /* */ maybe? Let's recall IEC 61131-3 ST comments use (* *). `//` is accepted by many but not standard. Should we penalize? In CODESYS, `//` is an extension. If we apply strict, then responses using `//` would be iec 1 or maybe 2? Let's think.
+
+The question wants evaluator for IEC 61131-3 and CODESYS. They may accept //? They mention "entre declaración e implementación no penaliza." They didn't mention comments. The rubric: 1 if usa extensiones fuera del estándar. 2 if declaraciones y tipos correctos. 3 if idiomático. If code uses // comments, technically non-standard comment syntax, but CODESYS supports it. Is that enough to lower to 1? Let's see many pass all with //. But the task explicitly asks "conforme a IEC 61131-3". A careful teacher might penalize `//` comments as non-standard. But the existing `iec_fijo` null; we need decide. The rubric says 1: "usa extensiones fuera del estándar." `//` is an extension. So should we assign iec 1 instead of 3 for all using //? But many also use (* *). Need weigh.
+
+Let's inspect which use //:
+- I2-9002 uses `// Lógica...` and `// Instancia...` and `// Protección`. Also input comments absent.
+- I2-7023 uses // comments.
+- I2-9360 uses (* *) comments, no //.
+- I2-5294 uses (* *)
+- I2-5330 uses // comments.
+- I2-7180 uses // comments and (*? actually //.)
+- I2-9686 uses //.
+- I2-2195 uses // comments.
+- I2-4324 uses (* *) comments.
+- I2-4540 uses //.
+- I2-4337 (* *)
+- I2-4370 (* *)
+- I2-6794 (* *)
+- I2-2212 (* *)
+- I2-3432 // and *? It uses // for comments but var comments maybe //.
+- I2-3377 // comments.
+- I2-1039 (* *) comments.
+- I2-3102 (* *) no compile.
+
+IEC 61131-3 standard: `//` may not be standard in 2nd edition? Let's recall IEC 61131-3 allows both `(* *)` and `//`? Actually I think IEC 61131-3 second edition includes `//` as single line comment? Hmm. Let's verify from memory: IEC 61131-3 ST has comments: `(* ... *)` allowed; single line `//` is a common extension. IEC 61131-3 2nd ed maybe added `/* */` and `//`? I'm not certain. Actually CODESYS supports `//` as comment extension. The task mentions CODESYS; maybe acceptable. The rubric says "usa extensiones fuera del estándar". Many evaluators don't penalize comment syntax. I likely should not over-penalize // as non-standard because CODESYS does allow it and task says CODESYS. But strictly IEC, maybe. Given the existing pass/fail, I'd focus on code constructs, not comments. Use // probably acceptable in CODESYS. I'll not lower for //.
+
+IEC 3 for well-instanced TON, good.
+
+Now coherencia scores.
+
+We need assign coherencia for each.
+
+Let's create a table with coherencia suggestions:
+1 I2-2212: 0 (timer not called in state2, dead)
+2 I2-8131: 3
+3 I2-4370: 1? TP Q immediate transition maybe code does transition, not dead, but utilises wrong timer. Let's assign 1.
+4 I2-4324: 1 (states not gated by state, premature)
+5 I2-4540: 0 (`IF NOT btnInicio THEN estado:=0` resets on every non-inicio; states dead)
+6 I2-3499: 3
+7 I2-9002: 3
+8 I2-4041: 3
+9 I2-9360: 3
+10 I2-4337: 1 (same TP immediate)
+11 I2-3432: 0 (top reset timer then no state2 update, dead)
+12 I2-3102: 3? or 2? no compiles. Logic coherent. Let's decide maybe 2 because syntax error. Actually coherencia criterion independent. It has robust logic. Could give 3. But might be surprising for no-compile to get 3 in coherence. The rubric allows. I'd give 2 maybe for syntax ambiguity? Hmm. We need one line. The code uses `RETURN` after paro, and R_TRIG. It's logically complete. I'd give 3 to be fair. But let's not overinflate: It has a syntax error `ELSE:` in CASE; but that is syntax. Logic still has an `ELSE` with colon but presumably intended CASE ELSE. No contradictions. So 3.
+13 I2-7023: 3
+14 I2-4582: 3
+15 I2-9998: 3
+16 I2-3377: 2 (lack timer reset on paro maybe minor; logic correct)
+17 I2-1039: 0 (outer ELSIF btnInicio makes states dead)
+18 I2-2195: 0 (timer not updated, state2 stuck)
+19 I2-5294: 3
+20 I2-5330: 3
+21 I2-9686: 0 (timer reset every scan before true call, dead)
+22 I2-7180: 0 (same)
+23 I2-8425: 3
+24 I2-6794: 0 (NOT Q immediate skip)
+
+Maybe I2-2212 score 0. Good.
+
+Need clarify coherencia for no-compile. We'll give 2 or 3. Let's evaluate code logic: It has states 1/2/3, paro priority. In state2, it calls `tonMezcla(IN:=TRUE,PT:=T#60S)` each cycle then if Q. Good. In state0 it calls `tonMezcla(IN:=FALSE,PT:=T#60S)`. Those are coherent. It uses R_TRIG for btnInicio; good. State1/3 outputs well. ELSE safe. It is indeed robust. I'd give 3. Even though unable to compile due syntax, the logical structure is excellent. So coherencia 3.
+
+Now claridad scores.
+
+Need assign 0-3. Most have descriptive names and comments. Some use poor structure but still readable. Let's assign.
+
+Need be careful: Claridad structural: "0 sin estructura, nombres crípticos, sin comentarios. 1 estructura básica, nombres pobres o comentarios ausentes/incorrectos. 2 nombres descriptivos, secciones ordenadas, comentarios útiles. 3 además modularización adecuada... comentarios por qué."
+
+Most solutions are not modular beyond FB. But they are clear. We can assign 2 for most. Some with excellent section comments may be 3. Some with no comments? I2-2195 has some comments but not much; maybe 2. I2-4337 has comments, basic. Could be 1 if fewer. Let's decide.
+
+Let's go through:
+1 I2-2212: It has comments for variables and states, one block comment. Names okay. State numbers not named. Could be 2.
+2 I2-8131: Very clear sections, comments. Could be 3. It has header comments and stage explanations, section separators. But no real modularization. Yet singular FB required. I'd give 3. 
+3 I2-4370: Basic comments, state machine with CASE, names. 2.
+4 I2-4324: Uses IF not CASE; comments minimal. 1? It has comments "Estado 0: Reposo" etc but logic scattered. Names okay. I'd give 2 maybe. But it doesn't have variable comments? It has some. I'll give 2.
+5 I2-4540: Comments in states, names. 2.
+6 I2-3499: Very clear, like 8131. 3 maybe.
+7 I2-9002: Comments few, but clear state labels, outputs. 2. It uses `//` and no variable comments. Could be 2.
+8 I2-4041: Good comments and sections. 3.
+9 I2-9360: Comments for states, concise. 2 or 3? It is concise but lacks output assignment comments? It has comments. 2/3. 
+10 I2-4337: Basic comments, CASE. 2.
+11 I2-3432: Comments but interface messy, variable comments input. 2.
+12 I2-3102: Very clear section headers; comments. 3. Despite syntax error, clarity is high. 
+13 I2-7023: Sparse comments but logical sequence; names. 2.
+14 I2-4582: Good comments. 3.
+15 I2-9998: Comments minimal but clear. 2.
+16 I2-3377: Comments for states. 2.
+17 I2-1039: Comments, ELSIF CASE. 2.
+18 I2-2195: Comment per state, no variable comments maybe. 2.
+19 I2-5294: Concise with comments. 2/3.
+20 I2-5330: Good comments, explanatory. 3? It has "1. Condición de paro prioritario" etc. Could be 3.
+21 I2-9686: Comments, but misleading top. 2.
+22 I2-7180: Comments, parameters. 2/3? It's structured, uses constant. 2.
+23 I2-8425: Very clear, sections. 3.
+24 I2-6794: Comments, CASE. 2.
+
+Maybe too many 3; fine. Need differentiate "modularization" might be not required. We can give 3 to those with detailed section separation and explanatory comments: I2-8131, I2-3499, I2-4041, I2-4582, I2-8425, I2-3102 (even no compile), I2-5330. Others 2.
+
+Now mantenibilidad scores.
+
+Rubric:
+0: valores mágicos everywhere.
+1: modificable con esfuerzo; constantes parcialmente parametrizadas.
+2: parámetros como variables/constantes declaradas; cambios localizados.
+3: diseño extensible (parámetros de entrada del FB, sin duplicación).
+
+Most have state numbers as literal and T#60S direct. So they are 1. Some with `timerMezclaPT` constant get 2. Some with no const and repeated timer PT get maybe 1. Could any get 3? Task fixed FB interface no extra parameters; no one defines input parameters or constants fully. Could maybe I2-7180 has `timerMezclaPT` constant, good. Let's inspect others if they define constants or variables:
+- I2-7180: `timerMezclaPT : TIME := T#60S;` 2.
+- Others maybe none.
+- Could use `PT := T#60S` in multiple places. Not parameterized. So 1.
+- Some might have no repeated T#60S? e.g I2-9002 only one T#60S after case. That is localized but still literal. Is that 1 or 2? Rubric 2: "parámetros como variables o constantes declaradas; cambios localizados". There is only one occurrence of T#60S, so changes localized. But no declared constant. I'd give 2? It says parameters as variables/constants; so literal does not qualify. But "cambios localizados" could also. Hmm.
+
+Let's define: If timer time appears exactly once in active logic (not repeated in reset) maybe localized. But many repeat in reset. Passing all code with output equations has one T#60S. However they don't reset timer in state0 with PT; no duplicate. E.g I2-9002: `tonMezcla(IN := (estado = 2), PT := T#60S);` occurs once. That's localized. I might give 2 because changes localized. But PT still magic. The rubric says "2: parámetros como variables o constantes declaradas; cambios localizados." Since both parts? It says "parámetros como variables o constantes declaradas; cambios localizados" could be read as both needed. But might be too strict. As careful teacher, we can assign 1 for literal T#60S. But many such responses could get 1/2.
+
+Let's look at possible mant for all passing:
+- Good structured with T#60S repeated in state0/paro/state2: that is duplication, no constant -> 1.
+- Simplified with one T#60S only: maybe 2 because changes localized. 
+- I2-7180 with constant -> 2.
+- I2-3102 with T#60S repeated but no const -> 1.
+- I2-3432/3377 interface wrong but T#60S repeated maybe 1.
+Could any get 3? 3 requires extensible design with FB input parameters, no duplication. None define `tiempoMezcla` as input or variant constant? I2-7180 declares internal TIME constant; not input. So no 3.
+
+Need assign maintenance reasonably.
+
+Let's inspect duplication:
+I2-2212: only `tMezcla(IN:=TRUE, PT:=T#60S)` and no reset? It doesn't call PT in reset. T#60S occurs once. But timer not reset. Magic state numbers. Could be 1 or 2. I'll give 1 since no named states nor timer constant. 
+I2-8131: T#60S appears in paro, state0, state2 (three). Duplication. 1.
+I2-4370: T#60S once. no constant. 1.
+I2-4324: T#60S once. 1.
+I2-4540: T#60S once at state1; no reset with PT. 1.
+I2-3499: T#60S appears paro, state2, reset? In state2, `tMezcla(IN := TRUE, PT := T#60S);` then when Q `tMezcla(IN := FALSE, PT := T#60S);`; and paro `tMezcla(IN := FALSE, PT := T#60S)`. Repeated. 1.
+I2-9002: T#60S once. 2? It's clean state comparison. Could give 2. But state numbers literal. Still changes localized. I'd give 2.
+I2-4041: T#60S repeated. 1.
+I2-9360: T#60S once. 2.
+I2-4337: T#60S once. 1.
+I2-3432: T#60S once at top plus maybe state1. No constant. 1.
+I2-3102: T#60S repeated many. 1.
+I2-7023: T#60S once. 2.
+I2-4582: T#60S repeated. 1.
+I2-9998: T#60S once. 2.
+I2-3377: T#60S once. 1.
+I2-1039: T#60S once at transition. 1.
+I2-2195: T#60S once. 1.
+I2-5294: T#60S once. 2.
+I2-5330: T#60S once. 2.
+I2-9686: T#60S at top and state1; maybe top timer false with PT; repeated but not issue. 1.
+I2-7180: `timerMezclaPT` constant declared, used. 2.
+I2-8425: T#60S repeated. 1.
+I2-6794: T#60S once? At state1 transition tMezcla(IN:=TRUE,PT:=T#60S); and if paro tMezcla(IN:=FALSE) no PT. So one. But no constant. 1.
+
+Hmm.
+
+Need maybe be consistent: passing all simplified outputs get 2, structured repeated get 1. Is that okay? The rubric says 1 "constantes parcialmente parametrizadas." They use T#60S literal but maybe not parameterized. Having one occurrence is partially parameterized? Actually no. Could assign 1 to all without named constant. But then almost all 1. The passing ones with clear logic may still be 1; not unfair. Some with `timerMezclaPT` get 2. But if we give 2 for single occurrence, then maintenance 2 despite magic number. The rubric "2: parámetros como variables o constantes declaradas; cambios localizados." To justify 2, we can say PT appears una vez; but no named constant. Hmm.
+
+Let's decide final mantenibilidad:
+- I2-9002: 2 (timer centralizado en una línea)
+- I2-9360: 2 (centralizado)
+- I2-7023: 2
+- I2-9998: 2
+- I2-5294: 2
+- I2-5330: 2
+- I2-7180: 2 (constante)
+Maybe I2-3377 has one T#60S in state1 transition and state2 no timer PT use? Actually `timerMezcla(IN := TRUE);` in state2, and transition `timerMezcla(IN := TRUE, PT := T#60S);`. T#60S once. Could be 2? But interface wrong. I'd give 1.
+I2-2212: T#60S once but timer not updated. 1.
+I2-4370, 4324, 4337, 4540, etc 1.
+
+All passing with central timer one line are arguably maintainable. But there is no constant. I'd maybe settle at 1 for all without named constants to avoid arbitrary. But then 2 only for I2-7180 (has constant). Let's scan if others declare constant:
+- I2-3102? No.
+- I2-3377? No.
+- I2-5330? No.
+- I2-5294? No.
+- I2-9002? No.
+- I2-9998? No.
+- I2-9360? No.
+- I2-7023? No.
+
+The rubric says "2: parámetros como variables o constantes declaradas; cambios localizados." If no constant, no 2. So maybe all no constant get 1. I2-7180 has `timerMezclaPT : TIME := T#60S;` -> 2. Are there others with constants? I2-1039 no. I2-2195 no. I2-9686 no. I2-3102 no. I2-8425 no. I2-3499 no. I2-8131 no. So maintenance 1 for all except maybe I2-7180 get 2. This is simpler and consistent. But is it too harsh? The scale 1 says "modificable con esfuerzo; constantes parcialmente parametrizadas." That fits: process times direct but simple. We'll use 1 for all except I2-7180 2. I2-3377 also might have no constant; 1.
+
+Wait I2-7180 code has `timerMezclaPT : TIME := T#60S;` but also calls `timerMezcla(IN := FALSE, PT := timerMezclaPT);` at top and `timerMezcla(IN := TRUE);` in state2. That's localized. Good.
+
+Could any have `tMezcla : TON;` etc no. So final.
+
+Need also assign claridad for I2-3102 maybe 3. Okay.
+
+Now functional scores for each failing/non-sim.
+
+Let's formalize functional:
+1 I2-2212 fails nominal steps 4,5,6; not step2/3? But fails nominal 4/5. => 0.
+2 I2-8131 fixed 3.
+3 I2-4370 fails steps 2,3 nominal => 0.
+4 I2-4324 fails 2,3 etc => 0.
+5 I2-4540 fails 2,3,4 nominal => 0.
+6 I2-3499 fixed 3.
+7 I2-9002 fixed 3.
+8 I2-4041 fixed 3.
+9 I2-9360 fixed 3.
+10 I2-4337 fails 2,3 => 0.
+11 I2-3432 no sim, code nominal fail due timer: 0? We need maybe funcional 0 (fails nominal). Yes.
+12 I2-3102 fixed 0.
+13 I2-7023 fixed 3.
+14 I2-4582 fixed 3.
+15 I2-9998 fixed 3.
+16 I2-3377 no sim, code logic correct. Could be funcional 2. Need consider if any issue with outputs in state0 etc. Does it set vLlenado false every state? Let's simulate fully.
+
+I2-3377:
+```
+VAR (not interface)
+    estadoProceso : INT;  (no init!)
+    timerMezcla : TON;
+END_VAR
+IF btnParo THEN
+    estadoProceso := 0;
+    vLlenado := FALSE;
+    motorMezcla := FALSE;
+    vDescarga := FALSE;
+ELSE
+    CASE estadoProceso OF
+        0:
+            IF btnInicio THEN
+                estadoProceso := 1;
+            END_IF;
+        1:
+            vLlenado := TRUE;
+            IF nivelAlto THEN
+                vLlenado := FALSE;
+                estadoProceso := 2;
+                timerMezcla(IN := TRUE, PT := T#60S);
+            END_IF;
+        2:
+            motorMezcla := TRUE;
+            timerMezcla(IN := TRUE);
+            IF timerMezcla.Q THEN
+                motorMezcla := FALSE;
+                estadoProceso := 3;
+            END_IF;
+        3:
+            vDescarga := TRUE;
+            IF nivelBajo THEN
+                vDescarga := FALSE;
+                estadoProceso := 0;
+            END_IF;
+    END_CASE;
+END_IF;
+```
+`estadoProceso` is not initialized. In CODESYS, VAR default? INT default 0. But standard? Variables without initialization may be undefined, but many systems default to 0. However in CODESYS, uninitialized variables retain? In simulation, they often start at 0. The rubric for coherencia says variables sin inicializar con efecto. This is a concern. But for functional reading, if it starts 0, okay. Interface wrong. 
+Now outputs: state0 does not explicitly set outputs false. But at power-up, BOOL defaults false. State1 sets vLlenado true. When transitioning state1->2, vLlenado false set. State2 sets motor true. On transition to state3, motor false, vDescarga? Not set at transition; next scan state3 sets vDescarga true. At transition to state0, vDescarga false. At paro, all false.
+Potential issue with btnParo during mixing: paro branch sets state0 outputs false but doesn't reset timer. However note timer is not called during paro, and when later in repo not called. When new cycle enters state2, timer called `timerMezcla(IN := TRUE, PT := T#60S)` at transition and then `timerMezcla(IN := TRUE)` in state2. If timer had been left with IN true and ET maybe ~500ms, it resumes and will finish after remaining 59.5s. That is okay; not immediate. But if paro used after timer elapsed but before check? Maybe no. 
+State0 not set outputs false each scan; if outputs were false due previous, okay. If power-up with outputs maybe false. So logic likely functional. Hence functional 2 due interface non-conforming. Good.
+
+I2-3432: interface wrong and timer reset at top causes dead. Functional 0. We'll assign 0.
+
+Maybe I2-3377 should be 1? The rule says no sim, never 3; if logic correct, 2. So 2.
+
+Functional for I2-3432: fail nominal -> 0.
+
+Now functional for I2-1039 etc all 0. 
+Potential failing with only steps 4,5,6 (I2-2195, 9686, 7180) might be considered working partial nominal? They enter mix but never finish, so nominal sequence fails at descarga. Rubric 0: falla en caso nominal. So 0.
+
+Functional for I2-4324 fails 7 includes many; 0.
+
+Now IEC for no-sim I2-3432/3377: we set 1. Need just_func_iec one line. Since funcional/iec some fixed maybe we can mention.
+
+Now need final JSON with fields: codigo, funcional, iec, coherencia, claridad, mantenibilidad, just_func_iec, just_coherencia, just_claridad, just_mantenibilidad.
+
+Need produce in same order.
+
+Need ensure values integers.
+
+Let's craft just lines concise one line. If funcional/iec fixed, just_func_iec maybe empty? Rule: "una línea, o \"\" si las dos estaban fijadas". Wait "si las dos estaban fijadas" means if both funcional_fijo and iec_fijo non-null. That only applies I2-3102 both fixed 0. For others one fixed (funcional=3) not iec, so need just_func_iec explaining IEC maybe? Actually field is `just_func_iec`: justification for funcional and iec if not fixed. If one or both not fixed, provide. If both fixed, empty string. 
+If only funcional fixed and iec not, need one line covering iec primarily. If both not fixed, one line covering both. We'll do.
+
+Need no markdown code block. Final answer should be raw JSON list.
+
+Let's double-check all codes and order.
+
+Need maybe include "just_func_iec" for fixed funcional 3: "Pasa todos los pasos; usa TON estándar correctamente." That covers fixed funcional. For no-sim: "Interfaz no conforme; no simulable" etc.
+
+Need ensure "funcional_fijo" values copied exactly: I2-8131 func 3; I2-3102 func 0 iec 0; all pass func 3. For others funcional maybe 0/2.
+
+Let's decide final values per object.
+
+Let's create table:
+
+1 I2-2212
+funcional: 0
+iec: 2
+coherencia: 0
+claridad: 2
+mantenibilidad: 1
+just_func_iec: "Falla en secuencia nominal (mezcla no termina: TON no se actualiza en estado 2); compila con TON y tipos correctos." 
+just_coherencia: "Temporizador nunca se evalúa en estado 2, transición muerta y proceso queda atascado."
+just_claridad: "Nombres descriptivos y comentarios básicos, CASE ordenado."
+just_mantenibilidad: "Sin constantes para estados/tiempo; T#60S literal."
+
+2 I2-8131
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 1
+just_func_iec: "Pasa banco completo; FSM con TON idiomático y reinicio correcto."
+just_coherencia: "Paro prioritario, salidas seguras en cada etapa y reinicio del temporizador; sin contradicciones."
+just_claridad: "Secciones y comentarios claros, nombres descriptivos."
+just_mantenibilidad: "Bien localizado, pero T#60S y estados como números literales, sin constantes."
+
+3 I2-4370
+funcional 0
+iec 2
+coherencia 1
+claridad 2
+mant 1
+just_func_iec: "Falla en pasos nominales al usar TP como temporizador de pulso; compila con temporizador estándar."
+just_coherencia: "TP provoca transición prematura/inmediata; estructura básica sin redundancias pero comportamiento incorrecto."
+just_claridad: "Comentarios escuetos pero legible."
+just_mant: "T#60S y estados literales."
+
+4 I2-4324
+funcional 0
+iec 2
+coherencia 1
+claridad 2
+mant 1
+just_func_iec: "Falla nominal por TP y condiciones no ligadas al estado; compila."
+just_coherencia: "Lógica sin CASE y condiciones no acotadas al estado producen transiciones espurias."
+just_claridad: "Comentarios mínimos; estructura básica."
+just_mant: "Valores literales; lógica repetida."
+
+5 I2-4540
+funcional 0
+iec 2
+coherencia 0
+claridad 2
+mant 1
+just_func_iec: "Falla en pasos nominales por reinicio a reposo con btnInicio=0; compila con TON."
+just_coherencia: "IF NOT btnInicio fuerza estado 0 y anula estados 1-3."
+just_claridad: "Comentarios y nombres aceptables."
+just_mant: "T#60S literal y estado no inicializado en declaración."
+
+Actually state not initialized maybe coherencia? It initializes via IF NOT btnInicio; but can be okay. Maybe mention.
+
+6 I2-3499
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mant 1
+just_func_iec: "Pasa banco completo; TON estándar correctamente instanciado."
+just_coherencia: "Paro prioritario, reinicio de temporizador y ELSE seguro; sin estados muertos."
+just_claridad: "CASE con comentarios por etapa y separadores claros."
+just_mant: "T#60S y etapas literales."
+
+7 I2-9002
+func 3
+iec 3
+coher 3
+clar 2
+mant 2 (we decided maybe 2? Let's final: It centralizes timer one line. I'll set mant 2.)
+just_func_iec: "Pasa banco completo; TON activo solo en mezcla y salidas por estado."
+just_coherencia: "Paro prioritario, salidas derivadas del estado y ELSE seguro."
+just_claridad: "Estructura clara aunque menos comentarios de sección."
+just_mant: "Timer y E/S centralizados; sin constantes para estados."
+
+Need if I assign mant 2 for I2-9002 but earlier decided all no constants get 1. Hmm. Let's settle now. I think centralization is good. The rubric mentions "cambios localizados". So I can assign 2 for those with one timer line. Let's apply consistently:
+- I2-9002: mant 2
+- I2-9360: mant 2
+- I2-7023: mant 2
+- I2-9998: mant 2
+- I2-5294: mant 2
+- I2-5330: mant 2
+- Maybe I2-3377: one T#60S but interface wrong, I'd give 1.
+- I2-3432: redundant timer resets, 1.
+- Good structured with repeated T#60S: 1.
+
+Check I2-9002: T#60S only one line after CASE. State numbers not constants. But changes to timer period only one place. Good. 
+I2-9360: same.
+I2-7023: same.
+I2-9998: same.
+I2-5294: same.
+I2-5330: same.
+Maybe I2-522? okay.
+
+Set mant:
+1 2212:1
+2 8131:1
+3 4370:1
+4 4324:1
+5 4540:1
+6 3499:1
+7 9002:2
+8 4041:1
+9 9360:2
+10 4337:1
+11 3432:1
+12 3102:1
+13 7023:2
+14 4582:1
+15 9998:2
+16 3377:1
+17 1039:1
+18 2195:1
+19 5294:2
+20 5330:2
+21 9686:1
+22 7180:2 (constant)
+23 8425:1
+24 6794:1
+
+Need maybe I2-3499 repeated timer PT -> 1. Good.
+
+Now clar:
+1 2212:2
+2 8131:3
+3 4370:2
+4 4324:2? Maybe 1. Let's assign 2, it has state comments but structure IF scattered. 
+5 4540:2
+6 3499:3
+7 9002:2
+8 4041:3
+9 9360:2
+10 4337:2
+11 3432:2
+12 3102:3
+13 7023:2
+14 4582:3
+15 9998:2
+16 3377:2
+17 1039:2
+18 2195:2
+19 5294:2
+20 5330:3
+21 9686:2
+22 7180:2
+23 8425:3
+24 6794:2
+
+Need I2-4324 maybe 1? It's less structured. It has comments "Estado 0", etc. But uses sequential IF not CASE. I'll assign 2? The names descriptive. But lack structured CASE; still clear. Could be 2. 
+For I2-2195, comments exist but no variable comments and code sequential. 2.
+
+Now coherencia final:
+1 0
+2 3
+3 1
+4 1
+5 0
+6 3
+7 3
+8 3
+9 3
+10 1
+11 0 (I2-3432)
+12 3 (no compile)
+13 3
+14 3
+15 3
+16 2 (interface, missing timer reset minor)
+17 0
+18 0
+19 3
+20 3
+21 0
+22 0
+23 3
+24 0
+
+Need maybe I2-4370/4324/4337 coherencia 1 because logic flows but wrong. Good.
+
+Now IEC final:
+1 2
+2 3
+3 2
+4 2
+5 2
+6 3
+7 3
+8 3
+9 3
+10 2
+11 1
+12 0 fixed
+13 3
+14 3
+15 3
+16 1
+17 2
+18 2
+19 3
+20 3
+21 2
+22 2
+23 3
+24 2
+
+Now just lines for each.
+
+Need for fixed funcional=3 and iec not fixed, just_func_iec can mention "Pasa banco completo; TON estándar." For those where funcional_fijo=3? that covers functional. If iec we assign, one line can say "Pasa banco; TON estándar idiomático." That covers both.
+
+For non-fixed both, e.g I2-2212, mention functional fail and IEC.
+
+For I2-3102 both fixed, just_func_iec = "".
+
+Need ensure "just_func_iec" one line for I2-3102 empty.
+
+Now craft final JSON exactly.
+
+Let's write each object with proper strings, escape? No special issues. Use quotes. Ensure no trailing commas. 
+
+Let's prepare final in order.
+
+Double-check count 24.
+
+Let's create final list.
+
+Need maybe include code "I2-2212" etc.
+
+Let's write:
+
+1:
+{
+"codigo": "I2-2212",
+"funcional": 0,
+"iec": 2,
+"coherencia": 0,
+"claridad": 2,
+"mantenibilidad": 1,
+"just_func_iec": "Falla en la secuencia nominal porque TON no se actualiza en el estado 2; compila con TON y tipos correctos.",
+"just_coherencia": "Temporizador nunca se evalúa en la etapa de mezcla, por lo que la transición queda muerta.",
+"just_claridad": "Nombres descriptivos y comentarios básicos, CASE ordenado.",
+"just_mantenibilidad": "T#60S y estados como números literales, sin constantes."
+}
+
+2:
+"just_func_iec": "Pasa banco completo y usa TON estándar correctamente instanciado.",
+...
+"just_mantenibilidad": "T#60S repetido y estados numéricos sin constantes; lógica localizada." Actually repeated. 
+
+Need maybe keep one line.
+
+Now final response. But let's ensure no analysis. We'll output raw JSON.
+
+Before final, let's reconsider some questionable scores.
+
+Potential issue: I2-4324 uses TP and output assignments in separate IFs. It fails step2,3,4,5,6,9,11. Functional 0. IEC 2. Coherencia maybe 1. Claridad maybe 2. Good.
+
+I2-4540: There is `estado : INT;` uninitialized but reset if not btnInicio. Coherencia 0 due reset. Good.
+
+I2-3102 no compiles: coherencia 3, claridad 3, mantenibilidad 1. That might look odd but okay. Need just_coherencia mention "Aunque no compila, la lógica es coherente..." maybe one line. We'll say "Lógica FSM coherente y robusta a pesar del error de sintaxis." Good.
+
+Let's ensure all fixed copied:
+I2-3102 funcional_fijo 0, iec_fijo 0. We'll set funcional 0, iec 0.
+
+Now final.
+
+Could I2-3432 funcional 0. It has interface no conforme and logic dead. But it compiles; result says "Compila sola, pero no se pudo simular: declara las entradas donde el harness no puede escribirlas ('nivelAlto' no es ninguna entrada de 'FB_LLENADO')." Functional reading code: top timer false each scan causes state2 never ends. So fail nominal. functional 0. Good.
+
+I2-3377 funcional 2. We should justify: "Lectura del código: secuencia correcta, pero interfaz no conforme impide simulación." But if funcional 2, the just_func_iec line should mention. 
+IEC 1: "Compila pero declara entradas/salidas en VAR, no en secciones de interfaz." 
+Coherencia 2: "Secuencia coherente; falta reset explícito del temporizador en paro, pero sin contradicción grave." 
+Claridad 2. Mant 1.
+
+Now final.
+
+Let's craft all JSON objects in one list. Need not wrap markdown.
+
+Let's produce.

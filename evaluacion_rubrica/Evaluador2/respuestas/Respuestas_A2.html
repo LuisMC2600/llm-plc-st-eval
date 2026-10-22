@@ -1,0 +1,425 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A2 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>A2 — Control por lotes multifase (Avanzado)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja A2 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa el control por lotes de un reactor con la siguiente receta secuencial: (fase 1) dosificar el componente A abriendo vA hasta que se active nivelA; (fase 2) dosificar el componente B abriendo vB hasta que se active nivelB; (fase 3) calentar activando calentador hasta que temp alcance 60.0 grados o más; (fase 4) mezclar activando mezclador durante 120 segundos; (fase 5) descargar abriendo vDescarga hasta que se active nivelVacio; después, reposo (fase 0). btnInicio arranca la receta solo desde reposo; durante una receta en curso se ignora. btnAbort aborta en cualquier fase de 1 a 5: cierra vA, vB, calentador y mezclador de inmediato; si nivelVacio está inactivo (hay producto en el reactor), pasa a la fase 5 y descarga hasta que se active nivelVacio antes de volver a reposo; si nivelVacio ya está activo, vuelve directamente a reposo. Un abort durante la fase 5 continúa la descarga. En reposo, btnAbort no tiene efecto. La salida fase reporta en todo momento la fase activa (0 a 5), incluida la descarga provocada por un abort. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Batch con variables de entrada nivelA, nivelB, nivelVacio, btnInicio, btnAbort (BOOL) y temp (REAL), y salidas vA, vB, calentador, mezclador, vDescarga (BOOL) y fase (INT). Usa el tiempo T#120S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_A2.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea A2 (FB_Batch: receta por lotes de 5 fases)
+    ---------------------------------------------------------------------------
+    Validado en codesys/validar_harness_A2.py: 9 implementaciones (1 correcta y
+    8 defectuosas), ciclos de 4, 10 y 20 ms. Tabla generada desde el validador.
+    Al final de cada paso se exige la fase esperada y que este activa exactamente
+    la salida de esa fase (fase 0: ninguna).
+
+    Paso: (nA,nB,nVac,ini,abo,temp) duracion -&gt; fase esperada
+  0 (F,F,F,F,F,20)   0.2 s -&gt; 0   reposo CON producto
+  1 (F,F,F,F,T,20)   0.2 s -&gt; 0   abort en reposo: sin efecto
+  2 (F,F,F,T,F,20)   0.2 s -&gt; 1   inicio
+  3 (F,F,F,F,F,20)   0.2 s -&gt; 1   espera nivelA
+  4 (T,F,F,F,F,20)   0.2 s -&gt; 2
+  5 (T,F,F,T,F,20)   0.2 s -&gt; 2   inicio durante la receta: se ignora
+  6 (T,T,F,F,F,20)   0.2 s -&gt; 3
+  7 (T,T,F,F,F,59.9) 0.2 s -&gt; 3   59.9 no basta
+  8 (T,T,F,F,F,60.0) 0.2 s -&gt; 4   60.0 o mas
+  9 (T,T,F,F,F,60.0) 118  s -&gt; 4   mezcla: aun no cumple 120 s
+ 10 (T,T,F,F,F,60.0) 3.0 s -&gt; 5   ya cumplio
+ 11 (T,T,T,F,F,60.0) 0.2 s -&gt; 0   vacio: reposo
+ 12 (F,F,F,T,F,20)   0.2 s -&gt; 1   nueva receta (con producto)
+ 13 (F,F,F,F,T,20)   0.2 s -&gt; 5   abort con producto: descarga
+ 14 (F,F,F,F,F,20)   0.2 s -&gt; 5   sigue descargando
+ 15 (F,F,T,F,F,20)   0.2 s -&gt; 0
+ 16 (F,F,T,T,F,20)   0.2 s -&gt; 1   receta con reactor vacio
+ 17 (F,F,T,F,T,20)   0.2 s -&gt; 0   abort sin producto: directo a reposo
+ 18 (F,F,F,T,F,20)   0.2 s -&gt; 1
+ 19 (T,F,F,F,F,20)   0.2 s -&gt; 2
+ 20 (T,T,F,F,F,20)   0.2 s -&gt; 3   calentando
+ 21 (T,T,F,F,T,20)   0.2 s -&gt; 5   abort en fase 3: calentador cerrado, descarga
+ 22 (T,T,F,F,F,20)   0.2 s -&gt; 5
+ 23 (T,T,F,F,T,20)   0.2 s -&gt; 5   abort durante la descarga: continua
+ 24 (T,T,T,F,F,20)   0.2 s -&gt; 0
+
+--- Pasos (CASE paso OF) ---
+
+        0: nivelA := FALSE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 0;
+        1: nivelA := FALSE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := TRUE;
+            temp := 20.0; tEspera := T#200MS; eFase := 0;
+        2: nivelA := FALSE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := TRUE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 1;
+        3: nivelA := FALSE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 1;
+        4: nivelA := TRUE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 2;
+        5: nivelA := TRUE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := TRUE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 2;
+        6: nivelA := TRUE; nivelB := TRUE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 3;
+        7: nivelA := TRUE; nivelB := TRUE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 59.9; tEspera := T#200MS; eFase := 3;
+        8: nivelA := TRUE; nivelB := TRUE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 60.0; tEspera := T#200MS; eFase := 4;
+        9: nivelA := TRUE; nivelB := TRUE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 60.0; tEspera := T#118000MS; eFase := 4;
+        10: nivelA := TRUE; nivelB := TRUE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 60.0; tEspera := T#3000MS; eFase := 5;
+        11: nivelA := TRUE; nivelB := TRUE; nivelVacio := TRUE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 60.0; tEspera := T#200MS; eFase := 0;
+        12: nivelA := FALSE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := TRUE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 1;
+        13: nivelA := FALSE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := TRUE;
+            temp := 20.0; tEspera := T#200MS; eFase := 5;
+        14: nivelA := FALSE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 5;
+        15: nivelA := FALSE; nivelB := FALSE; nivelVacio := TRUE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 0;
+        16: nivelA := FALSE; nivelB := FALSE; nivelVacio := TRUE; btnInicio := TRUE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 1;
+        17: nivelA := FALSE; nivelB := FALSE; nivelVacio := TRUE; btnInicio := FALSE; btnAbort := TRUE;
+            temp := 20.0; tEspera := T#200MS; eFase := 0;
+        18: nivelA := FALSE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := TRUE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 1;
+        19: nivelA := TRUE; nivelB := FALSE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 2;
+        20: nivelA := TRUE; nivelB := TRUE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 3;
+        21: nivelA := TRUE; nivelB := TRUE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := TRUE;
+            temp := 20.0; tEspera := T#200MS; eFase := 5;
+        22: nivelA := TRUE; nivelB := TRUE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 5;
+        23: nivelA := TRUE; nivelB := TRUE; nivelVacio := FALSE; btnInicio := FALSE; btnAbort := TRUE;
+            temp := 20.0; tEspera := T#200MS; eFase := 5;
+        24: nivelA := TRUE; nivelB := TRUE; nivelVacio := TRUE; btnInicio := FALSE; btnAbort := FALSE;
+            temp := 20.0; tEspera := T#200MS; eFase := 0;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#A2-3859">A2-3859</a><a href="#A2-5579">A2-5579</a><a href="#A2-4087">A2-4087</a></div>
+<div class="caja resp" id="A2-3859"><div class="cod"><h3>A2-3859</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 25 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Batch
+VAR_INPUT
+    nivelA    : BOOL; (* Sensor nivel componente A alcanzado *)
+    nivelB    : BOOL; (* Sensor nivel componente B alcanzado *)
+    nivelVacio : BOOL; (* Sensor reactor vacio *)
+    btnInicio : BOOL; (* Boton inicio receta *)
+    btnAbort  : BOOL; (* Boton abortar receta *)
+    temp      : REAL; (* Temperatura actual del reactor *)
+END_VAR
+VAR_OUTPUT
+    vA        : BOOL; (* Valvula componente A *)
+    vB        : BOOL; (* Valvula componente B *)
+    calentador : BOOL; (* Calentador *)
+    mezclador : BOOL; (* Mezclador *)
+    vDescarga : BOOL; (* Valvula de descarga *)
+    fase      : INT;  (* Fase activa: 0=reposo, 1-5=receta *)
+END_VAR
+VAR
+    tMezcla   : TON;  (* Temporizador mezcla 120 s *)
+    abortado  : BOOL; (* Indica que se esta ejecutando un abort *)
+END_VAR
+
+(* ------------------------------------------------------------------ *)
+(* Logica de abort: actua en fases 1 a 5                              *)
+(* ------------------------------------------------------------------ *)
+IF btnAbort AND (fase &gt;= 1) AND (fase &lt;= 5) THEN
+    (* Apagar actuadores de proceso inmediatamente *)
+    vA        := FALSE;
+    vB        := FALSE;
+    calentador := FALSE;
+    mezclador := FALSE;
+
+    IF fase &lt;&gt; 5 THEN
+        (* Si hay producto en el reactor, ir a descarga *)
+        IF NOT nivelVacio THEN
+            abortado := TRUE;
+            fase     := 5;
+        ELSE
+            (* Reactor ya vacio, volver a reposo *)
+            abortado := FALSE;
+            fase     := 0;
+        END_IF;
+    END_IF;
+    (* Si ya estabamos en fase 5, continuar descarga normalmente *)
+END_IF;
+
+(* ------------------------------------------------------------------ *)
+(* Maquina de estados secuencial                                       *)
+(* ------------------------------------------------------------------ *)
+CASE fase OF
+
+    (* ---- FASE 0: Reposo ------------------------------------------ *)
+    0:
+        (* Asegurar todas las salidas apagadas *)
+        vA        := FALSE;
+        vB        := FALSE;
+        calentador := FALSE;
+        mezclador := FALSE;
+        vDescarga := FALSE;
+        abortado  := FALSE;
+
+        (* Arranque solo desde reposo *)
+        IF btnInicio THEN
+            fase := 1;
+        END_IF;
+
+    (* ---- FASE 1: Dosificar componente A --------------------------- *)
+    1:
+        vA        := TRUE;
+        vB        := FALSE;
+        calentador := FALSE;
+        mezclador := FALSE;
+        vDescarga := FALSE;
+
+        IF nivelA THEN
+            vA   := FALSE;
+            fase := 2;
+        END_IF;
+
+    (* ---- FASE 2: Dosificar componente B --------------------------- *)
+    2:
+        vA        := FALSE;
+        vB        := TRUE;
+        calentador := FALSE;
+        mezclador := FALSE;
+        vDescarga := FALSE;
+
+        IF nivelB THEN
+            vB   := FALSE;
+            fase := 3;
+        END_IF;
+
+    (* ---- FASE 3: Calentar hasta 60 grados ------------------------- *)
+    3:
+        vA        := FALSE;
+        vB        := FALSE;
+        calentador := TRUE;
+        mezclador := FALSE;
+        vDescarga := FALSE;
+
+        IF temp &gt;= 60.0 THEN
+            calentador := FALSE;
+            fase       := 4;
+        END_IF;
+
+    (* ---- FASE 4: Mezclar 120 segundos ----------------------------- *)
+    4:
+        vA        := FALSE;
+        vB        := FALSE;
+        calentador := FALSE;
+        mezclador := TRUE;
+        vDescarga := FALSE;
+
+        (* Temporizador activo mientras estemos en fase 4 *)
+        tMezcla(IN := (fase = 4), PT := T#120S);
+
+        IF tMezcla.Q THEN
+            mezclador := FALSE;
+            fase      := 5;
+        END_IF;
+
+    (* ---- FASE 5: Descargar hasta reactor vacio -------------------- *)
+    5:
+        vA        := FALSE;
+        vB        := FALSE;
+        calentador := FALSE;
+        mezclador := FALSE;
+        vDescarga := TRUE;
+
+        IF nivelVacio THEN
+            vDescarga := FALSE;
+            abortado  := FALSE;
+            fase      := 0;
+        END_IF;
+
+    (* ---- Estado no definido: volver a reposo ---------------------- *)
+    ELSE
+        fase := 0;
+
+END_CASE;
+
+(* Asegurar que el temporizador no quede activo fuera de fase 4 *)
+IF fase &lt;&gt; 4 THEN
+    tMezcla(IN := FALSE, PT := T#120S);
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A2-5579"><div class="cod"><h3>A2-5579</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (4 errores).<div class="err">Mensajes del compilador: L?nea 1, columna 1 (Impl) Instrucci?n inesperada || L?nea 7, columna 1 (Impl) Instrucci?n inesperada || L?nea 22, columna 1 (Impl) Instrucci?n inesperada || L?nea 76, columna 1 (Impl) Instrucci?n inesperada</div></div><pre>FUNCTION_BLOCK FB_Batch
+VAR_INPUT
+    nivelA, nivelB, nivelVacio, btnInicio, btnAbort : BOOL;
+    temp : REAL;
+END_VAR
+
+VAR_OUTPUT
+    vA, vB, calentador, mezclador, vDescarga : BOOL;
+    fase : INT;
+END_VAR
+
+VAR
+    timerMezclador : TON;
+    estado : INT := 0; // 0: reposo, 1: fase 1, 2: fase 2, 3: fase 3, 4: fase 4, 5: fase 5
+END_VAR
+
+METHOD StartBatch : VOID
+    IF btnInicio AND estado = 0 THEN
+        estado := 1;
+    END_IF;
+END_METHOD
+
+METHOD AbortBatch : VOID
+    IF btnAbort THEN
+        vA := FALSE;
+        vB := FALSE;
+        calentador := FALSE;
+        mezclador := FALSE;
+        
+        IF nivelVacio THEN
+            estado := 0;
+        ELSE
+            estado := 5;
+        END_IF;
+    END_IF;
+END_METHOD
+
+METHOD UpdateBatch : VOID
+    CASE estado OF
+        0: // Reposo
+            fase := 0;
+            vA := FALSE;
+            vB := FALSE;
+            calentador := FALSE;
+            mezclador := FALSE;
+            vDescarga := FALSE;
+            
+        1: // Fase 1: Dosificar componente A
+            fase := 1;
+            vA := TRUE;
+            IF nivelA THEN
+                vA := FALSE;
+                estado := 2;
+            END_IF;
+            
+        2: // Fase 2: Dosificar componente B
+            fase := 2;
+            vB := TRUE;
+            IF nivelB THEN
+                vB := FALSE;
+                estado := 3;
+            END_IF;
+            
+        3: // Fase 3: Calentar
+            fase := 3;
+            calentador := TRUE;
+            IF temp &gt;= 60.0 THEN
+                calentador := FALSE;
+                estado := 4;
+            END_IF;
+            
+        4: // Fase 4: Mezclar
+            fase := 4;
+            mezclador := TRUE;
+            timerMezclador(IN := TRUE, PT := T#120S);
+            IF timerMezclador.Q THEN
+                mezclador := FALSE;
+                timerMezclador(IN := FALSE);
+                estado := 5;
+            END_IF;
+            
+        5: // Fase 5: Descargar
+            fase := 5;
+            vDescarga := TRUE;
+            IF nivelVacio THEN
+                vDescarga := FALSE;
+                estado := 0;
+            END_IF;
+    END_CASE;
+END_METHOD
+
+METHOD Execute : VOID
+    StartBatch();
+    AbortBatch();
+    UpdateBatch();
+END_METHOD</pre></div>
+<div class="caja resp" id="A2-4087"><div class="cod"><h3>A2-4087</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 25 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Batch
+VAR_INPUT
+    nivelA : BOOL;      (* Sensor de nivel del componente A *)
+    nivelB : BOOL;      (* Sensor de nivel del componente B *)
+    nivelVacio : BOOL;  (* Sensor de reactor vacío *)
+    btnInicio : BOOL;   (* Botón para iniciar la receta *)
+    btnAbort : BOOL;    (* Botón para abortar la receta *)
+    temp : REAL;        (* Temperatura actual del reactor *)
+END_VAR
+
+VAR_OUTPUT
+    vA : BOOL;          (* Válvula del componente A *)
+    vB : BOOL;          (* Válvula del componente B *)
+    calentador : BOOL;  (* Actuador del calentador *)
+    mezclador : BOOL;   (* Actuador del mezclador *)
+    vDescarga : BOOL;   (* Válvula de descarga *)
+    fase : INT := 0;    (* Fase actual de la receta (0 a 5) *)
+END_VAR
+
+VAR
+    timerMezcla : TON;  (* Temporizador para la fase de mezcla *)
+END_VAR
+
+(* Actualización del temporizador: se activa solo durante la fase 4 *)
+timerMezcla(IN := (fase = 4), PT := T#120S);
+
+(* Lógica de Aborto: activa en cualquier fase de 1 a 5 *)
+IF btnAbort AND (fase &gt;= 1) AND (fase &lt;= 5) THEN
+    IF NOT nivelVacio THEN
+        fase := 5; (* Si hay producto, pasa a descargar *)
+    ELSE
+        fase := 0; (* Si ya está vacío, pasa a reposo directo *)
+    END_IF;
+END_IF;
+
+(* Máquina de estados de la receta secuencial *)
+CASE fase OF
+    0: (* Fase 0: Reposo *)
+        IF btnInicio THEN
+            fase := 1;
+        END_IF;
+        
+    1: (* Fase 1: Dosificar A *)
+        IF nivelA THEN
+            fase := 2;
+        END_IF;
+        
+    2: (* Fase 2: Dosificar B *)
+        IF nivelB THEN
+            fase := 3;
+        END_IF;
+        
+    3: (* Fase 3: Calentar *)
+        IF temp &gt;= 60.0 THEN
+            fase := 4;
+        END_IF;
+        
+    4: (* Fase 4: Mezclar *)
+        IF timerMezcla.Q THEN
+            fase := 5;
+        END_IF;
+        
+    5: (* Fase 5: Descargar *)
+        IF nivelVacio THEN
+            fase := 0;
+        END_IF;
+ELSE
+    (* Estado seguro en caso de valor fuera de rango *)
+    fase := 0; 
+END_CASE;
+
+(* Control de salidas físicas basado en la fase activa *)
+(* Al evaluar al final, un aborto cierra las válvulas y actuadores de inmediato *)
+vA := (fase = 1);
+vB := (fase = 2);
+calentador := (fase = 3);
+mezclador := (fase = 4);
+vDescarga := (fase = 5);
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

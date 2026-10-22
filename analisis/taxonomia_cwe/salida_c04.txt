@@ -1,0 +1,11 @@
+Fallos sintacticos del piloto: 20 (esperado 20)
+modelo                                                            claude-sonnet-4-6  gpt-4o  All
+subtipo                                                                                         
+POU sin cerrar (falta END_FUNCTION_BLOCK)                                        12       3   15
+construccion inexistente (seccion INIT, segun el articulo)                        0       1    1
+seccion de declaracion ausente (artefacto de extraccion, INC-12)                  2       0    2
+terminador inexistente END_VAR_INPUT/END_VAR_OUTPUT                               0       2    2
+All                                                                              14       6   20
+
+Estrategia de los 20 fallos: {'zero_shot': 20}
+Categoria y CWE: {('CONSTRUCCION', 'CWE-710'): 20}

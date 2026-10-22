@@ -1,0 +1,137 @@
+SONDA v2 ScriptEngine CODESYS - 2026-09-29 23:59:21
+OK: 57   FALLA: 3
+
+[INFO ] entorno  ( s)
+        python=CODESYS.exe | plantilla existe=True
+[INFO ] D. parametros  ( s)
+        sys.argv=['C:\\Users\\LUIS C\\Downloads\\1 Trabajo de Grado\\llm-plc-st-eval\\codesys\\sonda_scripting_sp22_v2.py'] | env SONDA_PARAM=None | archivo params.json existe=False
+[OK   ] projects.open(plantilla)  (3.0 s)
+        <_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptProject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006C [Project(Project=0, stPath=C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\codesys\Plantilla_Simulacion.project)]>
+[OK   ] proyecto.active_application  (0.04 s)
+        <_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006D [ScriptObject{ScriptRecipeManContainer, NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, ScriptApplicationSymbolConfigExtension, NoLibManObject, LibManObjectContainer, ScriptNoProjectInfoMarker, ScriptApplication, ScriptNonTextualObject, ScriptIecLanguageObjectContainerObject, ScriptExternalFileOb
+[OK   ] find MainTask  (0.06 s)
+        <_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006E [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptNonTextualObject, ScriptExternalFileObjectMarker`1, NoTaskConfigObject, ScriptTaskObject, ScriptNoTransientObjectMarker, NoImagePoolObject, NoTextListObject, N
+[OK   ] MainTask.interval = 't#10ms'  (0.13 s)
+        None
+[OK   ] A. create_pou(FUNCTION, return_type='BOOL')  (0.24 s)
+        <_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000006F [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptTextualDeclarationImplementationObject, ScriptIecLanguageMemberContainer, ScriptExternalFileObjectMarker`1, NoTaskConfigObject, NoTaskObject, ScriptNoTransient
+[OK   ] A. FUNCTION declaracion  (0.2 s)
+        None
+[OK   ] A. FUNCTION implementacion  (0.03 s)
+        None
+[INFO ] B. categorias de mensajes  ( s)
+        05581bd1-66d3-4251-aff2-047cc8e9adf7=Offline Help
+[OK   ] B. create_pou(FB_ConError)  (0.01 s)
+        <_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x0000000000000070 [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptTextualDeclarationImplementationObject, ScriptIecLanguageMemberContainer, ScriptExternalFileObjectMarker`1, NoTaskConfigObject, NoTaskObject, ScriptNoTransient
+[OK   ] B. FB_ConError declaracion  (0.02 s)
+        None
+[OK   ] B. FB_ConError implementacion  (0.02 s)
+        None
+[FALLA] B. clear_messages  (0.19 s)
+        TypeError: clear_messages() takes exactly 1 argument (0 given)
+[OK   ] B. app.build() con error  (1.63 s)
+        None
+[OK   ] B. mensajes tras build con error  (0.04 s)
+        [('Offline Help', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000071 [No hay ayuda sin conexi?n instalada]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000072 [------ Proceso de compilaci?n iniciado: Aplicaci?n: Device.Application -------]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000073 [Tipificar c?digo...]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000074 [Compilaci?n terminada -- 0 errores, 0 advertencias]>'), ('Comprobaciones adicionales 
+[INFO ] B. primeros mensajes  ( s)
+        [Offline Help] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000071 [No hay ayuda sin conexi?n instalada]> || [Compilar] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000072 [------ Proceso de compilaci?n iniciado: Aplicaci?n: Device.Application -------]> || [Compilar] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000073 [Tipificar c?digo...]> || [Compilar] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000074 [Compilaci?n terminada -- 0 errores, 0 advertencias]> || [Comprobaciones adicionales de c?digo] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000075 [Comprobaciones adicionales de c?digo ...]> || [Comprobaciones adicionales de c?digo] <_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000076 [Comprobaciones adicionales de c?digo completadas -- 0 error(es)]>
+[INFO ] dir(objeto_mensaje)  ( s)
+        FontColor, ToString, call_details_handler, has_details_handler, icon, length, number, object, position, position_offset, position_text, prefix, project, severity, text
+[OK   ] B. mensaje.severity  (0.0 s)
+        _3S.CoDeSys.Core.Messages.Severity.Information
+[OK   ] B. mensaje.text  (0.0 s)
+        No hay ayuda sin conexi?n instalada
+[FALLA] B. mensaje.description  (0.0 s)
+        AttributeError: 'ScriptMessage' object has no attribute 'description'
+[OK   ] B. mensaje.position  (0.0 s)
+        0L
+[OK   ] B. mensaje.object  (0.0 s)
+        None
+[OK   ] B. borrar FB_ConError  (0.07 s)
+        None
+[FALLA] B. clear_messages  (0.0 s)
+        TypeError: clear_messages() takes exactly 1 argument (0 given)
+[OK   ] B. app.build() limpio  (0.26 s)
+        None
+[OK   ] B. mensajes tras build limpio  (0.0 s)
+        [('Offline Help', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000077 [No hay ayuda sin conexi?n instalada]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000078 [------ Proceso de compilaci?n iniciado: Aplicaci?n: Device.Application -------]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000079 [Tipificar c?digo...]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x000000000000007A [Compilaci?n terminada -- 0 errores, 0 advertencias]>'), ('Comprobaciones adicionales 
+[OK   ] create FB_Sonda  (0.01 s)
+        <_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000007D [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptTextualDeclarationImplementationObject, ScriptIecLanguageMemberContainer, ScriptExternalFileObjectMarker`1, NoTaskConfigObject, NoTaskObject, ScriptNoTransient
+[OK   ] FB decl  (0.02 s)
+        None
+[OK   ] FB impl  (0.02 s)
+        None
+[OK   ] create PRG_Sonda  (0.01 s)
+        <_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x000000000000007E [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, NoDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptTextualDeclarationImplementationObject, ScriptIecLanguageMemberContainer, ScriptExternalFileObjectMarker`1, NoTaskConfigObject, NoTaskObject, ScriptNoTransient
+[OK   ] PRG decl  (0.02 s)
+        None
+[OK   ] PRG impl  (0.03 s)
+        None
+[OK   ] MainTask.pous.add('PRG_Sonda')  (0.04 s)
+        None
+[OK   ] build final  (0.23 s)
+        None
+[OK   ] mensajes build final  (0.01 s)
+        [('Offline Help', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x000000000000007F [No hay ayuda sin conexi?n instalada]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000080 [------ Proceso de compilaci?n iniciado: Aplicaci?n: Device.Application -------]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000081 [Tipificar c?digo...]>'), ('Compilar', '<_3S.CoDeSys.ScriptDriverSystem.ScriptMessage object at 0x0000000000000082 [Compilaci?n terminada -- 0 errores, 0 advertencias]>'), ('Comprobaciones adicionales 
+[OK   ] find Device  (0.0 s)
+        <_3S.CoDeSys.ScriptEngine.ExtendedObject`1[[_3S.CoDeSys.ScriptEngine.BasicFunctionality.IScriptObject, ScriptEngine3, Version=4.2.0.0, Culture=neutral, PublicKeyToken=null]] object at 0x0000000000000085 [ScriptObject{NoRecipeManObject, NoRecipeDefinitionObject, ScriptCamObject, NoScriptTraceObject, ScriptDeviceObject, NoExplicitConnectorObject, NoSymbolConfigObject, NoLibManObject, ScriptNoProjectInfoMarker, NoScriptApplicationObject, ScriptNonTextualObject, ScriptExternalFileObjectMarker`1, ScriptExternalFileObjectContainer, NoTaskConfigObject, NoTaskObject, ScriptNoTransientObjectMarker, NoI
+[OK   ] set_simulation_mode(True)  (0.09 s)
+        None
+[OK   ] C1. create_online_application  (0.01 s)
+        <_3S.CoDeSys.ScriptDriverOnline.OnlineApplication object at 0x0000000000000086 [_3S.CoDeSys.ScriptDriverOnline.OnlineApplication]>
+[OK   ] C1. login  (2.06 s)
+        None
+[OK   ] C1. reset(ResetOption.Cold)  (0.03 s)
+        None
+[OK   ] C1. start  (0.03 s)
+        None
+[OK   ] C1. delay 1000  (1.01 s)
+        None
+[OK   ] C1. read_value ciclos  (0.16 s)
+        DINT#110
+[OK   ] C1. read_values [veredicto, fb.cuenta]  (0.2 s)
+        ['INT#1', 'DINT#129']
+[OK   ] C1. set_prepared_value hab=FALSE  (0.01 s)
+        None
+[OK   ] C1. write_prepared_values  (0.03 s)
+        None
+[OK   ] C1. delay 500  (0.5 s)
+        None
+[OK   ] C1. fb.cuenta congelada?  (0.27 s)
+        ['DINT#132', 'DINT#206']
+[OK   ] C1. stop  (0.21 s)
+        None
+[OK   ] C1. logout  (1.05 s)
+        None
+[INFO ] C1. duracion iteracion  ( s)
+        5.58 s
+[OK   ] C2. create_online_application  (0.0 s)
+        <_3S.CoDeSys.ScriptDriverOnline.OnlineApplication object at 0x0000000000000087 [_3S.CoDeSys.ScriptDriverOnline.OnlineApplication]>
+[OK   ] C2. login  (0.44 s)
+        None
+[OK   ] C2. reset(ResetOption.Cold)  (0.02 s)
+        None
+[OK   ] C2. start  (0.03 s)
+        None
+[OK   ] C2. delay 1000  (1.0 s)
+        None
+[OK   ] C2. read_value ciclos  (0.17 s)
+        DINT#110
+[OK   ] C2. read_values [veredicto, fb.cuenta]  (0.21 s)
+        ['INT#1', 'DINT#130']
+[OK   ] C2. set_prepared_value hab=FALSE  (0.0 s)
+        None
+[OK   ] C2. write_prepared_values  (0.02 s)
+        None
+[OK   ] C2. delay 500  (0.51 s)
+        None
+[OK   ] C2. fb.cuenta congelada?  (0.29 s)
+        ['DINT#130', 'DINT#206']
+[OK   ] C2. stop  (0.21 s)
+        None
+[OK   ] C2. logout  (0.92 s)
+        None
+[INFO ] C2. duracion iteracion  ( s)
+        3.80 s
+[OK   ] proyecto.close() sin guardar  (0.09 s)
+        None

@@ -1,0 +1,826 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B8 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>B8 — Conteo de eventos por flanco (Basico)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja B8 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa el registro de aperturas de una puerta de seguridad. Cada apertura (transición de FALSE a TRUE de la señal puertaAbierta) debe incrementar el número de aperturas en uno; mantener la puerta abierta no debe seguir contando. Al acumular 5 o más aperturas debe activarse la salida de aviso. La entrada reset pone el registro en cero y desactiva el aviso. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Puerta con variables de entrada puertaAbierta, reset (BOOL) y salidas aviso (BOOL) y nAperturas (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_B8.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea B8 (FB_Puerta: aperturas por flanco)
+    ---------------------------------------------------------------------------
+    Validado por simulacion en codesys/validar_harness_B8.py (traduccion fiel):
+    9 implementaciones (1 correcta, 8 defectuosas), ciclos de 4, 10 y 20 ms.
+
+    Pasos (cuentas acumuladas):
+      0 reset, puerta cerrada ............................ n=0  aviso=F
+      1 se suelta reset y se abre la puerta (1 flanco) ... n=1  aviso=F
+      2 puerta sostenida abierta 500 ms .................. n=1  aviso=F
+      3 puerta cerrada ................................... n=1  aviso=F
+      4 3 flancos generados .............................. n=4  aviso=F  (umbral 4)
+      5 1 flanco ......................................... n=5  aviso=T  (umbral &#x27;&gt;5&#x27;)
+      6 1 flanco ......................................... n=6  aviso=T  (&#x27;=5&#x27;, saturacion)
+      7 reset, puerta cerrada ............................ n=0  aviso=F  (reset incompleto)
+      8 se suelta reset, 1 flanco ........................ n=1  aviso=F  (bloqueo tras reset)
+    Las transiciones de reset se hacen con la puerta cerrada: el enunciado no
+    define que pasa con un flanco durante el reset, asi que no se prueba.
+
+    Generador determinista de flancos (patron de B3): el numero de flancos no
+    depende del ciclo de la MainTask; el asentamiento del paso queda retenido
+    mientras se generan.
+
+--- Pasos (CASE paso OF) ---
+
+        0: reset := TRUE;  puertaAbierta := FALSE; tEspera := T#200MS; esperadoN := 0; esperadoAv := FALSE;
+        1: reset := FALSE; puertaAbierta := TRUE;  tEspera := T#200MS; esperadoN := 1; esperadoAv := FALSE;
+        2: puertaAbierta := TRUE;                  tEspera := T#500MS; esperadoN := 1; esperadoAv := FALSE;
+        3: puertaAbierta := FALSE;                 tEspera := T#200MS; esperadoN := 1; esperadoAv := FALSE;
+        4:                                         tEspera := T#200MS; esperadoN := 4; esperadoAv := FALSE;
+        5:                                         tEspera := T#200MS; esperadoN := 5; esperadoAv := TRUE;
+        6:                                         tEspera := T#200MS; esperadoN := 6; esperadoAv := TRUE;
+        7: reset := TRUE;  puertaAbierta := FALSE; tEspera := T#200MS; esperadoN := 0; esperadoAv := FALSE;
+        8: reset := FALSE;                         tEspera := T#200MS; esperadoN := 1; esperadoAv := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#B8-2855">B8-2855</a><a href="#B8-2057">B8-2057</a><a href="#B8-3959">B8-3959</a><a href="#B8-6962">B8-6962</a><a href="#B8-4908">B8-4908</a><a href="#B8-3439">B8-3439</a><a href="#B8-1092">B8-1092</a><a href="#B8-3080">B8-3080</a><a href="#B8-6589">B8-6589</a><a href="#B8-2238">B8-2238</a><a href="#B8-4457">B8-4457</a><a href="#B8-7031">B8-7031</a><a href="#B8-9508">B8-9508</a><a href="#B8-3862">B8-3862</a><a href="#B8-6907">B8-6907</a><a href="#B8-1323">B8-1323</a><a href="#B8-4753">B8-4753</a><a href="#B8-5019">B8-5019</a><a href="#B8-3064">B8-3064</a><a href="#B8-8512">B8-8512</a><a href="#B8-6800">B8-6800</a><a href="#B8-9528">B8-9528</a><a href="#B8-3270">B8-3270</a><a href="#B8-2626">B8-2626</a></div>
+<div class="caja resp" id="B8-2855"><div class="cod"><h3>B8-2855</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; // Entrada que indica si la puerta está abierta
+    reset : BOOL; // Entrada para resetear el contador de aperturas
+END_VAR
+
+VAR_OUTPUT
+    aviso : BOOL; // Salida que indica si se han acumulado 5 o más aperturas
+    nAperturas : INT; // Salida que muestra el número de aperturas
+END_VAR
+
+VAR
+    puertaAbiertaAnterior : BOOL := FALSE; // Variable para almacenar el estado anterior de la puerta
+END_VAR
+
+// Comprueba si se ha reseteado el sistema
+IF reset THEN
+    nAperturas := 0; // Reinicia el contador de aperturas
+    aviso := FALSE; // Desactiva el aviso
+ELSE
+    // Comprueba si la puerta ha pasado de cerrada a abierta
+    IF NOT puertaAbiertaAnterior AND puertaAbierta THEN
+        nAperturas := nAperturas + 1; // Incrementa el contador de aperturas
+    END_IF
+
+    // Actualiza el estado anterior de la puerta
+    puertaAbiertaAnterior := puertaAbierta;
+
+    // Comprueba si se han acumulado 5 o más aperturas
+    IF nAperturas &gt;= 5 THEN
+        aviso := TRUE; // Activa el aviso
+    ELSE
+        aviso := FALSE; // Desactiva el aviso
+    END_IF
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-2057"><div class="cod"><h3>B8-2057</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 7 de 9 pasos del harness (pasos 1,2,3,4,5,6,8; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; // Entrada que indica si la puerta está abierta
+    reset : BOOL; // Entrada para resetear el contador de aperturas
+END_VAR
+
+VAR_OUTPUT
+    aviso : BOOL; // Salida que indica si se han acumulado 5 o más aperturas
+    nAperturas : INT; // Salida que muestra el número de aperturas
+END_VAR
+
+VAR
+    puertaAbiertaAnterior : BOOL; // Variable para almacenar el estado anterior de puertaAbierta
+END_VAR
+
+// Inicialización de variables
+IF NOT puertaAbiertaAnterior THEN
+    puertaAbiertaAnterior := puertaAbierta;
+END_IF
+
+// Lógica de reset
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+END_IF
+
+// Contador de aperturas
+IF puertaAbierta AND NOT puertaAbiertaAnterior THEN
+    nAperturas := nAperturas + 1;
+END_IF
+
+// Actualización del estado anterior de puertaAbierta
+puertaAbiertaAnterior := puertaAbierta;
+
+// Lógica de aviso
+IF nAperturas &gt;= 5 THEN
+    aviso := TRUE;
+ELSE
+    aviso := FALSE;
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-3959"><div class="cod"><h3>B8-3959</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Senal de puerta abierta *)
+    reset : BOOL; (* Resetea el contador y el aviso *)
+END_VAR
+VAR_OUTPUT
+    aviso : BOOL; (* Aviso de 5 o mas aperturas *)
+    nAperturas : INT; (* Numero de aperturas registradas *)
+END_VAR
+VAR
+    flancoApertura : R_TRIG; (* Detector de flanco ascendente *)
+END_VAR
+
+(* Deteccion de transicion de FALSE a TRUE *)
+flancoApertura(CLK := puertaAbierta);
+
+(* Logica de reseteo e incremento del contador *)
+IF reset THEN
+    nAperturas := 0;
+ELSIF flancoApertura.Q THEN
+    nAperturas := nAperturas + 1;
+END_IF;
+
+(* Activacion del aviso al acumular 5 o mas aperturas *)
+aviso := (nAperturas &gt;= 5);
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-6962"><div class="cod"><h3>B8-6962</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; // Señal de la puerta, TRUE si está abierta
+    reset : BOOL;         // Señal de reset, TRUE para reiniciar el contador
+END_VAR
+
+VAR_OUTPUT
+    aviso : BOOL;         // Señal de aviso, TRUE si se han acumulado 5 o más aperturas
+    nAperturas : INT;     // Contador de aperturas de la puerta
+END_VAR
+
+VAR
+    puertaAbiertaAnt : BOOL; // Estado anterior de la señal puertaAbierta
+END_VAR
+
+// Inicialización de variables
+IF reset THEN
+    nAperturas := 0;      // Reinicia el contador de aperturas
+    aviso := FALSE;       // Desactiva la señal de aviso
+ELSE
+    // Detecta el flanco ascendente de la señal puertaAbierta
+    IF NOT puertaAbiertaAnt AND puertaAbierta THEN
+        nAperturas := nAperturas + 1; // Incrementa el contador de aperturas
+    END_IF
+
+    // Activa la señal de aviso si se han acumulado 5 o más aperturas
+    IF nAperturas &gt;= 5 THEN
+        aviso := TRUE;
+    ELSE
+        aviso := FALSE;
+    END_IF
+END_IF
+
+// Actualiza el estado anterior de la señal puertaAbierta
+puertaAbiertaAnt := puertaAbierta;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-4908"><div class="cod"><h3>B8-4908</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset         : BOOL; (* Reset del registro *)
+END_VAR
+VAR_OUTPUT
+    aviso      : BOOL; (* Aviso por 5 o mas aperturas *)
+    nAperturas : INT;  (* Contador de aperturas *)
+END_VAR
+VAR
+    rTrigPuerta : R_TRIG; (* Detector de flanco ascendente *)
+END_VAR
+
+(* Detectar flanco ascendente de puertaAbierta *)
+rTrigPuerta(CLK := puertaAbierta);
+
+(* Reset tiene prioridad sobre el conteo *)
+IF reset THEN
+    nAperturas := 0;
+ELSIF rTrigPuerta.Q THEN
+    (* Incrementar solo en cada nueva apertura *)
+    nAperturas := nAperturas + 1;
+END_IF;
+
+(* Activar aviso al alcanzar 5 o mas aperturas *)
+aviso := nAperturas &gt;= 5;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-3439"><div class="cod"><h3>B8-3439</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; // Entrada que indica si la puerta está abierta
+    reset : BOOL; // Entrada para resetear el contador de aperturas
+END_VAR
+
+VAR_OUTPUT
+    aviso : BOOL; // Salida que indica si se han acumulado 5 o más aperturas
+    nAperturas : INT; // Salida que muestra el número de aperturas
+END_VAR
+
+VAR
+    puertaAbiertaAnterior : BOOL; // Variable para almacenar el estado anterior de puertaAbierta
+END_VAR
+
+// Inicialización de variables
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+    puertaAbiertaAnterior := FALSE;
+END_IF
+
+// Detectar transición de FALSE a TRUE en puertaAbierta
+IF NOT puertaAbiertaAnterior AND puertaAbierta THEN
+    nAperturas := nAperturas + 1;
+END_IF
+
+// Actualizar el estado anterior de puertaAbierta
+puertaAbiertaAnterior := puertaAbierta;
+
+// Activar la salida de aviso si se han acumulado 5 o más aperturas
+IF nAperturas &gt;= 5 THEN
+    aviso := TRUE;
+ELSE
+    aviso := FALSE;
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-1092"><div class="cod"><h3>B8-1092</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset : BOOL;         (* Señal de reset *)
+END_VAR
+VAR_OUTPUT
+    aviso : BOOL;         (* Señal de aviso *)
+    nAperturas : INT;     (* Número de aperturas *)
+END_VAR
+VAR
+    puertaAbiertaAnt : BOOL; (* Estado anterior de la puerta *)
+END_VAR
+
+(* Si se activa el reset, reiniciar el contador y desactivar el aviso *)
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+ELSE
+    (* Detectar transición de FALSE a TRUE en puertaAbierta *)
+    IF NOT puertaAbiertaAnt AND puertaAbierta THEN
+        nAperturas := nAperturas + 1;
+    END_IF;
+    
+    (* Activar aviso si el número de aperturas es 5 o más *)
+    IF nAperturas &gt;= 5 THEN
+        aviso := TRUE;
+    ELSE
+        aviso := FALSE;
+    END_IF;
+END_IF;
+
+(* Actualizar el estado anterior de la puerta *)
+puertaAbiertaAnt := puertaAbierta;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-3080"><div class="cod"><h3>B8-3080</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; // Señal de la puerta, TRUE si está abierta
+    reset : BOOL;         // Señal para resetear el contador de aperturas
+END_VAR
+
+VAR_OUTPUT
+    aviso : BOOL;         // Señal de aviso, TRUE si se alcanzan 5 o más aperturas
+    nAperturas : INT;     // Contador de aperturas de la puerta
+END_VAR
+
+VAR
+    puertaAbiertaAnt : BOOL; // Estado anterior de la señal puertaAbierta
+END_VAR
+
+// Inicialización de variables
+IF reset THEN
+    nAperturas := 0;      // Reinicia el contador de aperturas
+    aviso := FALSE;       // Desactiva la señal de aviso
+ELSE
+    // Detecta la transición de FALSE a TRUE de puertaAbierta
+    IF NOT puertaAbiertaAnt AND puertaAbierta THEN
+        nAperturas := nAperturas + 1; // Incrementa el contador de aperturas
+    END_IF
+    
+    // Activa la señal de aviso si se alcanzan 5 o más aperturas
+    IF nAperturas &gt;= 5 THEN
+        aviso := TRUE;
+    ELSE
+        aviso := FALSE;
+    END_IF
+END_IF
+
+// Actualiza el estado anterior de la puerta
+puertaAbiertaAnt := puertaAbierta;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-6589"><div class="cod"><h3>B8-6589</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de estado de la puerta de seguridad *)
+    reset : BOOL;         (* Pone a cero el contador y apaga el aviso *)
+END_VAR
+
+VAR_OUTPUT
+    aviso : BOOL;         (* TRUE si se acumulan 5 o más aperturas *)
+    nAperturas : INT;     (* Número acumulado de aperturas *)
+END_VAR
+
+VAR
+    flancoApertura : R_TRIG; (* Detector de flanco de subida estándar IEC *)
+END_VAR
+
+(* Detectar transición de FALSE a TRUE en la señal de la puerta *)
+flancoApertura(CLK := puertaAbierta);
+
+(* Lógica de reinicio o incremento del contador *)
+IF reset THEN
+    nAperturas := 0;
+ELSIF flancoApertura.Q THEN
+    nAperturas := nAperturas + 1;
+END_IF;
+
+(* Evaluación de la salida de aviso (se desactiva automáticamente al resetear nAperturas) *)
+aviso := (nAperturas &gt;= 5);
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-2238"><div class="cod"><h3>B8-2238</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de la puerta: TRUE = abierta *)
+    reset         : BOOL; (* Reset del contador y aviso *)
+END_VAR
+
+VAR_OUTPUT
+    aviso      : BOOL; (* TRUE cuando se alcanzan 5 o más aperturas *)
+    nAperturas : INT;  (* Número de aperturas registradas *)
+END_VAR
+
+VAR
+    puertaAbierta_prev : BOOL; (* Estado anterior para detección de flanco *)
+END_VAR
+
+(* ── Lógica principal ── *)
+
+(* Reset tiene prioridad sobre el conteo *)
+IF reset THEN
+    nAperturas         := 0;
+    aviso              := FALSE;
+    puertaAbierta_prev := FALSE;
+
+ELSE
+    (* Detectar flanco ascendente: FALSE → TRUE *)
+    IF puertaAbierta AND NOT puertaAbierta_prev THEN
+        nAperturas := nAperturas + 1;
+    END_IF;
+
+    (* Activar aviso al alcanzar 5 o más aperturas *)
+    aviso := (nAperturas &gt;= 5);
+
+END_IF;
+
+(* Guardar estado actual para el siguiente ciclo *)
+puertaAbierta_prev := puertaAbierta;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-4457"><div class="cod"><h3>B8-4457</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset : BOOL;         (* Señal de reset *)
+END_VAR
+VAR_OUTPUT
+    aviso : BOOL;         (* Señal de aviso *)
+    nAperturas : INT;     (* Número de aperturas *)
+END_VAR
+VAR
+    puertaAbiertaAnt : BOOL; (* Estado anterior de la puerta *)
+END_VAR
+
+(* Si se activa el reset, se reinicia el contador y el aviso *)
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+ELSE
+    (* Detectar transición de FALSE a TRUE en puertaAbierta *)
+    IF NOT puertaAbiertaAnt AND puertaAbierta THEN
+        nAperturas := nAperturas + 1;
+    END_IF;
+
+    (* Activar aviso si el número de aperturas es 5 o más *)
+    IF nAperturas &gt;= 5 THEN
+        aviso := TRUE;
+    ELSE
+        aviso := FALSE;
+    END_IF;
+END_IF;
+
+(* Actualizar el estado anterior de la puerta *)
+puertaAbiertaAnt := puertaAbierta;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-7031"><div class="cod"><h3>B8-7031</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; // Señal de la puerta, TRUE si está abierta
+    reset : BOOL;         // Señal de reset, TRUE para reiniciar el contador
+END_VAR
+
+VAR_OUTPUT
+    aviso : BOOL;         // Señal de aviso, TRUE si se han alcanzado 5 aperturas
+    nAperturas : INT;     // Contador de aperturas de la puerta
+END_VAR
+
+VAR
+    puertaAbiertaAnt : BOOL; // Estado anterior de la señal puertaAbierta
+END_VAR
+
+// Inicialización
+IF reset THEN
+    nAperturas := 0;      // Reinicia el contador de aperturas
+    aviso := FALSE;       // Desactiva el aviso
+ELSE
+    // Detecta la transición de FALSE a TRUE de puertaAbierta
+    IF NOT puertaAbiertaAnt AND puertaAbierta THEN
+        nAperturas := nAperturas + 1; // Incrementa el contador
+    END_IF
+
+    // Activa el aviso si se alcanzan 5 o más aperturas
+    IF nAperturas &gt;= 5 THEN
+        aviso := TRUE;
+    ELSE
+        aviso := FALSE;
+    END_IF
+END_IF
+
+// Actualiza el estado anterior de puertaAbierta
+puertaAbiertaAnt := puertaAbierta;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-9508"><div class="cod"><h3>B8-9508</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset : BOOL; (* Botón de reset *)
+END_VAR
+VAR_OUTPUT
+    aviso : BOOL; (* Salida de aviso *)
+    nAperturas : INT; (* Número de aperturas *)
+END_VAR
+VAR
+    puertaAbiertaAnterior : BOOL; (* Estado anterior de la puerta *)
+END_VAR
+
+(* Reinicio del registro *)
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+END_IF
+
+(* Detección de transición de FALSE a TRUE *)
+IF puertaAbierta AND NOT puertaAbiertaAnterior THEN
+    nAperturas := nAperturas + 1;
+END_IF
+
+(* Actualización del estado anterior *)
+puertaAbiertaAnterior := puertaAbierta;
+
+(* Activación del aviso si se alcanzan 5 aperturas *)
+IF nAperturas &gt;= 5 THEN
+    aviso := TRUE;
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-3862"><div class="cod"><h3>B8-3862</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset : BOOL; (* Reinicia el registro y el aviso *)
+END_VAR
+VAR_OUTPUT
+    aviso : BOOL; (* Activo al alcanzar 5 o mas aperturas *)
+    nAperturas : INT; (* Contador de aperturas *)
+END_VAR
+VAR
+    flancoApertura : R_TRIG; (* Detector de flanco de subida *)
+END_VAR
+
+(* Deteccion de la transicion de FALSE a TRUE *)
+flancoApertura(CLK := puertaAbierta);
+
+(* Logica de reinicio y conteo *)
+IF reset THEN
+    nAperturas := 0;
+ELSIF flancoApertura.Q THEN
+    nAperturas := nAperturas + 1;
+END_IF;
+
+(* Evaluacion del aviso *)
+aviso := (nAperturas &gt;= 5);
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-6907"><div class="cod"><h3>B8-6907</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset : BOOL; (* Reset del registro *)
+END_VAR
+VAR_OUTPUT
+    aviso : BOOL; (* Aviso por 5 o mas aperturas *)
+    nAperturas : INT; (* Contador de aperturas *)
+END_VAR
+VAR
+    contador : CTU; (* Contador ascendente *)
+END_VAR
+
+(* Cuenta los flancos de subida y activa el aviso al llegar a 5 *)
+contador(CU := puertaAbierta, RESET := reset, PV := 5);
+aviso := contador.Q;
+nAperturas := contador.CV;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-1323"><div class="cod"><h3>B8-1323</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset : BOOL; (* Botón de reset *)
+END_VAR
+VAR_OUTPUT
+    aviso : BOOL; (* Salida de aviso *)
+    nAperturas : INT; (* Número de aperturas *)
+END_VAR
+VAR
+    puertaAbiertaAnterior : BOOL; (* Estado anterior de la puerta abierta *)
+END_VAR
+
+(* Reinicio del registro *)
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+ELSE
+    (* Detección de transición de FALSE a TRUE *)
+    IF NOT puertaAbiertaAnterior AND puertaAbierta THEN
+        nAperturas := nAperturas + 1;
+    END_IF
+
+    (* Activación del aviso si se alcanzan 5 aperturas *)
+    aviso := nAperturas &gt;= 5;
+END_IF
+
+(* Actualización del estado anterior de la puerta *)
+puertaAbiertaAnterior := puertaAbierta;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-4753"><div class="cod"><h3>B8-4753</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de la puerta: TRUE = abierta *)
+    reset         : BOOL; (* Reset del contador y aviso *)
+END_VAR
+
+VAR_OUTPUT
+    aviso      : BOOL; (* TRUE cuando nAperturas &gt;= 5 *)
+    nAperturas : INT;  (* Número de aperturas registradas *)
+END_VAR
+
+VAR
+    puertaAbierta_prev : BOOL; (* Estado anterior para detección de flanco *)
+END_VAR
+
+(* ------------------------------------------------------------------ *)
+(* Lógica principal                                                     *)
+(* ------------------------------------------------------------------ *)
+
+(* Reset tiene prioridad sobre cualquier otra acción *)
+IF reset THEN
+    nAperturas         := 0;
+    aviso              := FALSE;
+    puertaAbierta_prev := FALSE;
+
+ELSE
+    (* Detección de flanco ascendente: FALSE -&gt; TRUE *)
+    IF puertaAbierta AND NOT puertaAbierta_prev THEN
+        nAperturas := nAperturas + 1; (* Incrementar solo en la transición *)
+    END_IF;
+
+    (* Activar aviso al alcanzar 5 o más aperturas *)
+    aviso := (nAperturas &gt;= 5);
+
+END_IF;
+
+(* Guardar estado actual para el próximo ciclo *)
+puertaAbierta_prev := puertaAbierta;</pre></div>
+<div class="caja resp" id="B8-5019"><div class="cod"><h3>B8-5019</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; // Señal de estado de la puerta (TRUE = abierta)
+    reset : BOOL;         // Señal para reiniciar el contador y apagar el aviso
+END_VAR
+
+VAR_OUTPUT
+    aviso : BOOL;         // Indicador de 5 o más aperturas
+    nAperturas : INT;     // Registro del número de aperturas
+END_VAR
+
+VAR
+    flancoApertura : R_TRIG; // Instancia para detectar el flanco de subida
+END_VAR
+
+// Detección de la transición de FALSE a TRUE en la entrada puertaAbierta
+flancoApertura(CLK := puertaAbierta);
+
+// Lógica de reinicio y conteo de aperturas
+IF reset THEN
+    nAperturas := 0;
+ELSIF flancoApertura.Q THEN
+    nAperturas := nAperturas + 1;
+END_IF;
+
+// Evaluación de la salida de aviso (se desactiva automáticamente al resetear)
+aviso := (nAperturas &gt;= 5);
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-3064"><div class="cod"><h3>B8-3064</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de estado de la puerta (TRUE = abierta) *)
+    reset : BOOL;         (* Señal para reiniciar el contador y apagar el aviso *)
+END_VAR
+
+VAR_OUTPUT
+    aviso : BOOL;         (* Indicador de alarma por 5 o más aperturas *)
+    nAperturas : INT;     (* Registro del número de aperturas acumuladas *)
+END_VAR
+
+VAR
+    flancoApertura : R_TRIG; (* Instancia para detectar el flanco de subida *)
+END_VAR
+
+(* Detección de la transición de FALSE a TRUE en la señal de la puerta *)
+flancoApertura(CLK := puertaAbierta);
+
+(* Lógica de reinicio y conteo de aperturas *)
+IF reset THEN
+    nAperturas := 0;
+ELSIF flancoApertura.Q THEN
+    nAperturas := nAperturas + 1;
+END_IF;
+
+(* Activación del aviso si se alcanzan 5 o más aperturas *)
+aviso := (nAperturas &gt;= 5);
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-8512"><div class="cod"><h3>B8-8512</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset : BOOL;         (* Señal de reset *)
+END_VAR
+VAR_OUTPUT
+    aviso : BOOL;         (* Señal de aviso *)
+    nAperturas : INT;     (* Número de aperturas *)
+END_VAR
+VAR
+    puertaAbiertaAnt : BOOL; (* Estado anterior de la puerta *)
+END_VAR
+
+(* Si reset está activo, reiniciar el contador y desactivar el aviso *)
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+ELSE
+    (* Detectar transición de FALSE a TRUE en puertaAbierta *)
+    IF NOT puertaAbiertaAnt AND puertaAbierta THEN
+        nAperturas := nAperturas + 1;
+    END_IF;
+    
+    (* Activar aviso si el número de aperturas es 5 o más *)
+    IF nAperturas &gt;= 5 THEN
+        aviso := TRUE;
+    ELSE
+        aviso := FALSE;
+    END_IF;
+END_IF;
+
+(* Actualizar el estado anterior de la puerta *)
+puertaAbiertaAnt := puertaAbierta;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-6800"><div class="cod"><h3>B8-6800</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta: TRUE = abierta *)
+    reset         : BOOL; (* Reset: pone contador a 0 y desactiva aviso *)
+END_VAR
+
+VAR_OUTPUT
+    aviso      : BOOL; (* TRUE cuando nAperturas &gt;= 5 *)
+    nAperturas : INT;  (* Número de aperturas registradas *)
+END_VAR
+
+VAR
+    puertaAbierta_prev : BOOL; (* Valor de puertaAbierta en el ciclo anterior *)
+END_VAR
+
+(* ------------------------------------------------------------------ *)
+(* Lógica principal                                                     *)
+(* ------------------------------------------------------------------ *)
+
+(* Reset tiene prioridad sobre cualquier otra acción *)
+IF reset THEN
+    nAperturas         := 0;
+    aviso              := FALSE;
+    puertaAbierta_prev := FALSE; (* Evita flanco espurio tras el reset *)
+
+ELSE
+    (* Detección de flanco ascendente: FALSE -&gt; TRUE *)
+    IF puertaAbierta AND NOT puertaAbierta_prev THEN
+        nAperturas := nAperturas + 1;
+    END_IF;
+
+    (* Activar aviso al alcanzar o superar 5 aperturas *)
+    IF nAperturas &gt;= 5 THEN
+        aviso := TRUE;
+    END_IF;
+
+END_IF;
+
+(* Guardar estado actual para el próximo ciclo *)
+puertaAbierta_prev := puertaAbierta;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-9528"><div class="cod"><h3>B8-9528</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset         : BOOL; (* Pone el registro en cero *)
+END_VAR
+VAR_OUTPUT
+    aviso      : BOOL; (* Aviso al acumular 5 o mas aperturas *)
+    nAperturas : INT;  (* Contador de aperturas *)
+END_VAR
+VAR
+    rTrigPuerta : R_TRIG; (* Detector de flanco ascendente de la puerta *)
+END_VAR
+
+(* Detectar flanco ascendente: solo cuenta la transicion FALSE-&gt;TRUE *)
+rTrigPuerta(CLK := puertaAbierta);
+
+IF reset THEN
+    (* Reset: pone el contador en cero y desactiva el aviso *)
+    nAperturas := 0;
+ELSIF rTrigPuerta.Q THEN
+    (* Nueva apertura detectada: incrementar contador *)
+    nAperturas := nAperturas + 1;
+END_IF;
+
+(* Activar aviso si se han acumulado 5 o mas aperturas *)
+aviso := nAperturas &gt;= 5;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-3270"><div class="cod"><h3>B8-3270</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset : BOOL; (* Botón de reinicio *)
+END_VAR
+VAR_OUTPUT
+    aviso : BOOL; (* Salida de aviso *)
+    nAperturas : INT; (* Contador de aperturas *)
+END_VAR
+VAR
+    puertaAbiertaAnterior : BOOL; (* Estado anterior de la puerta *)
+END_VAR
+
+(* Reinicio del contador y aviso *)
+IF reset THEN
+    nAperturas := 0;
+    aviso := FALSE;
+ELSE
+    (* Detección de transición de FALSE a TRUE *)
+    IF NOT puertaAbiertaAnterior AND puertaAbierta THEN
+        nAperturas := nAperturas + 1;
+    END_IF
+
+    (* Activación del aviso si se alcanzan 5 aperturas *)
+    aviso := nAperturas &gt;= 5;
+END_IF
+
+(* Actualización del estado anterior de la puerta *)
+puertaAbiertaAnterior := puertaAbierta;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B8-2626"><div class="cod"><h3>B8-2626</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 9 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Puerta
+VAR_INPUT
+    puertaAbierta : BOOL; (* Señal de puerta abierta *)
+    reset         : BOOL; (* Reset del registro *)
+END_VAR
+VAR_OUTPUT
+    aviso      : BOOL; (* Aviso por 5 o mas aperturas *)
+    nAperturas : INT;  (* Contador de aperturas *)
+END_VAR
+VAR
+    rTrigPuerta : R_TRIG; (* Detector de flanco ascendente *)
+END_VAR
+
+(* Detectar flanco ascendente de puertaAbierta *)
+rTrigPuerta(CLK := puertaAbierta);
+
+(* Reset tiene prioridad sobre el conteo *)
+IF reset THEN
+    nAperturas := 0;
+ELSIF rTrigPuerta.Q THEN
+    (* Incrementar solo en cada nueva apertura *)
+    nAperturas := nAperturas + 1;
+END_IF;
+
+(* Activar aviso al alcanzar 5 o mas aperturas *)
+aviso := nAperturas &gt;= 5;
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

@@ -1,0 +1,322 @@
+Necesito responder con lista JSON en español, categorizando cada caso. Debo analizar cada código y fallos. Categorías exactas. Necesito ser preciso.
+
+Debo clasificar cada caso. Vamos uno por uno.
+
+Lista casos:
+J08 tarea I4 estrella-triángulo. Fallos paso1 fase estrella antes 8s kM kY activos kD apagado, paso3 tiempo muerto entre caída kY y subida kD. Código usa TP para tEstrella y tMuerto, estructura IF btnParo ELSIF btnMarcha. Estado 0 al recibir marcha activa kM,kY y tEstrella(IN:=TRUE). TP es temporizador de pulso: Q verdadero durante PT después del flanco ascendente IN. En estado1 IF tEstrella.Q THEN ... con TP, Q solo está activo durante 8s. O sea si se evalúa estado1 continuamente, cuando tEstrella.Q se activa inmediatamente en flanco (válido durante 8s), la transición ocurre al siguiente ciclo después de iniciar, no después de 8s? Espera, TP: al detectar flanco ascendente IN, ET=0, Q=TRUE, y se mantiene TRUE hasta transcurrir PT, luego Q=FALSE. En estado0: tEstrella(IN:=TRUE,PT:=8s) en ciclo, al siguiente ciclo estado1 e IF tEstrella.Q: TP.Q es TRUE desde el primer ciclo? En TP, Q se activa en el flanco ascendente y permanece TRUE mientras esté temporizando. Por lo tanto estado1 transiciona inmediatamente (primer ciclo) o al menos mucho antes de 8s? En el primer ciclo tras estado0, tEstrella.Q está TRUE, kY se desactiva, tMuerto inicia, estado2. Entonces falla fase estrella antes de 8s. También tempo muerto? tMuerto TP, estado2 IF tMuerto.Q TRUE en cuanto inicia, transiciona inmediatamente. Eso viola tiempo muerto. Categoría: TEMPORIZACION. Justificación: usa TP en lugar de TON para temporizar esperas; tEstrella.Q es cierto durante el pulso, no al completarse, por lo que transiciona de inmediato.
+
+J47 similar: código usa TP, con estado máquina. En estado0: IF btnMarcha AND estado=0 THEN estado1; kM/Y true; tEstrella(IN:=TRUE, PT:=8s). Estado1: IF estado=1 AND tEstrella.Q THEN estado2... De nuevo TP.Q es TRUE inmediatamente tras flanco; en el primer ciclo tras estado0, transiciona. Fallo paso1. Categoría TEMPORIZACION. Justificación: temporizador TP usado como si fuera TON.
+
+J01 tarea I5 clasificadora. Fallos paso3 pieza alta cuenta como alta sin activar aún pistón; paso4 0.3s antes inicio pulso piston apagado; paso5 dentro pulso activo; paso6 después fin apagado. Código usa TON timerRetraso, timerDuracion. Problemas:
+- Detección flanco sensorPresencia con presenciaDetectada. Inicia timerRetraso si piezaAlta, sino nBajas++. 
+- Manejo timerRetraso.Q: inicia timerDuracion, piston:=TRUE.
+- Manejo timerDuracion.Q: piston:=FALSE, nAltas++.
+- Reiniciar detección si NOT sensorPresencia.
+Parece que pieza alta: al detectar presencia alta, no cuenta nAltas hasta que termina timerDuracion (después del pistón), mientras requisito paso3 dice cuenta como alta sin activar aún pistón: debe contar al detectar. Aquí nAltas se incrementa al final del pulso (timerDuracion.Q). Código no incrementa nAltas en detección. Por tanto paso3 falla. Categoría? ¿SECUENCIA? El conteo se hace en momento equivocado. Podría ser SECUENCIA (acción ejecutada en momento equivocado) o FLANCO? El primer fallo es paso3, "cuenta como alta sin activar aun el piston": no cuenta en detección, lo hace al final. Eso es secuencia/lógica de acciones. Categoría SECUENCIA. Veamos pasos fallidos: primer fallido paso3, luego temporización. Posible también la activación de piston? Analicemos: Al detectar sensorPresencia TRUE y piezaAlta, inicia tRetraso. En ciclos con timerRetraso.Q? TON: después de 2s, Q TRUE. En ese ciclo IF timerRetraso.Q THEN timerRetraso(IN:=FALSE); timerDuracion(IN:=TRUE,PT:=1s); piston:=TRUE; END_IF. Después en mismo ciclo IF timerDuracion.Q THEN ... (aún no). Próximo ciclo timerRetraso.Q FALSE, timerDuracion temporizando. piston queda TRUE por asignación? Variables salida no retenida? En ST, piston se asigna TRUE solo en ciclo cuando tRetraso.Q. Luego no se asigna en otros ciclos, por lo que en CODESYS conserva su valor? Sí, las variables retienen su valor (no se reasignan cada ciclo) a menos que se escriban. Por lo tanto piston permanece TRUE hasta que timerDuracion.Q lo apague. Eso parece correcto. Luego nAltas al final. Entonces fallo principal: nAltas se incrementa al final en lugar de al detectar. ¿Por qué no falla paso4? Paso3 falla antes, entonces el banco reporta fallo en paso3 y siguientes. La categoría principal según primer paso fallido: SECUENCIA (momento de conteo). Justificación: línea "IF timerDuracion.Q THEN ... nAltas := nAltas + 1;" cuenta al final del pulso en vez de al detectar la pieza alta. Podría clasificarse también como SECUENCIA.
+
+J02 tarea I5. Fallos paso0 reposo banda en marcha piston y contadores en cero; paso1 primera pieza baja con presencia sostenida cuenta una vez; etc. Código:
+- banda := TRUE al final.
+- tEspera TP.
+- IF sensorPresencia AND NOT piezaDetectada THEN tEspera(IN:=TRUE, PT:=2S); piezaDetectada:=TRUE; END_IF.
+- IF tEspera.Q AND sensorAltura THEN tPiston(IN:=TRUE, PT:=1S); nAltas++; ELSE nBajas++; END_IF.
+- piston := tPiston.Q.
+- IF tEspera.Q THEN piezaDetectada:=FALSE; END_IF.
+Observación: Primera pieza baja con presencia sostenida: al detectar flanco, tEspera inicia. tEspera.Q es TRUE inmediatamente (TP), sensorAltura FALSE. Entra ELSE nBajas++ en el primer ciclo. Después tEspera.Q sigue TRUE por 2s, ELIF/ELSE? La estructura IF tEspera.Q AND sensorAltura THEN ... ELSE nBajas++ END_IF. Si tEspera.Q TRUE y sensorAltura FALSE, se ejecuta ELSE nBajas++ cada ciclo durante 2s. Por tanto nBajas se incrementa múltiples veces. Paso1 falla "cuenta una vez". Categoría FLANCO o TEMPORIZACION? El problema es contar por nivel durante el tiempo de tEspera.Q en lugar de flanco. También tEspera TP. Para el paso fallido 0? Espera, paso0 falló: "Reposo: banda en marcha y piston y contadores en cero". Este código: al inicio, banda := TRUE. nAltas/nBajas son INT sin inicializar en VAR, en CODESYS las variables retienen? Inicialización? No, en CODESYS las variables no inicializadas arrancan en 0 por defecto? En general se inicializan a 0. Piston? tPiston.Q en reposo con sensorPresencia FALSE: tEspera inactivo? tEspera(IN:=piezaDetectada? no, tEspera no invocado? 
+En código, tEspera(IN:=TRUE) solo en flanco. tPiston.Q? TP no invocado? piston := tPiston.Q. En reposo tPiston.Q inicial FALSE. Entonces paso0 debería pasar. Pero el banco incluye paso0 fallido para J02. Tal vez nAltas/nBajas no se inicializan en VAR; no hay :=0, pero CODESYS inicializa INT a 0. No falla. ¿Por qué falla paso0? Vamos a analizar primera ejecución (reposo). Código:
+banda := TRUE;
+IF sensorPresencia AND NOT piezaDetectada THEN ... (falso)
+IF tEspera.Q AND sensorAltura THEN ... ELSE nBajas := nBajas + 1; END_IF
+Como tEspera.Q es FALSE en ciclo inicial, ELSE se ejecuta: nBajas := nBajas + 1, es decir nBajas = 1 en reposo. ¡Ah! El ELSE se ejecuta cuando tEspera.Q es FALSE y sensorAltura FALSE. Por lo tanto en reposo incrementa nBajas cada ciclo. Entonces paso0 falla. Categoría? INITIALIZACION o SECUENCIA? El contador se incrementa en reposo por un ELSE mal colocado (condición no restringida a pieza detectada). El primer fallido es reposo. Categoría SECUENCIA? Es una acción ejecutada en momento equivocado (conteo en reposo). Podría ser INICIALIZACION? No, estado arranque incorrecto? Los contadores arrancan incrementándose, pero no por valor inicial. No es initial. Es lógica de secuencia/conteo. Sin embargo el caso de J02: paso0 falla porque en reposo incrementa nBajas. La categoría principal debería ser SECUENCIA (o FLANCO) tal vez. El requisito "verifica salidas en reposo" falla: contador nBajas no en cero. La causa raíz no es exactamente flanco, es falta de condición de detección; conteo por nivel en ELSE. Creo SECUENCIA.
+
+J12 tarea I5. Fallos paso3 pieza alta cuenta como alta sin activar aún pistón; paso4 0.3 s antes inicio pulso apagado; paso5 dentro pulso activo. Código:
+- banda TRUE.
+- rPresencia(CLK:=sensorPresencia).
+- IF rPresencia.Q THEN bPiezaAlta := sensorAltura; bContado := FALSE; IF bPiezaAlta THEN tRetardo.IN := FALSE; (* Reset previo *) END_IF; END_IF.
+- tRetardo(IN := bPiezaAlta AND NOT tPiston.Q, PT:=2s);
+- tPiston(IN := tRetardo.Q, PT:=1s);
+- piston := tPiston.IN AND NOT tPiston.Q;
+- IF tPiston.Q AND NOT bContado THEN nAltas++; bContado:=TRUE; bPiezaAlta:=FALSE; tRetardo.IN:=FALSE; tPiston.IN:=FALSE; END_IF;
+- IF rPresencia.Q AND NOT sensorAltura THEN nBajas++.
+Analicemos: Pieza alta detectada: bPiezaAlta TRUE, tRetardo(IN:=TRUE) empieza TON con PT 2s. Después del retardo, tRetardo.Q TRUE, tPiston(IN:=TRUE) empieza TON. tPiston.Q se hace FALSE? TON con IN TRUE temporiza durante 1s. piston := tPiston.IN AND NOT tPiston.Q => tPiston.IN es TRUE durante la temporización y mientras IN TRUE y Q FALSE; piston TRUE durante el tiempo antes de completar? Al completar tPiston.Q TRUE, piston FALSE. Parece correcto. nAltas se incrementa al terminar tPiston.Q, o sea al final del pulso, no al detectar. Paso3 dice cuenta como alta sin activar aún pistón (debe contar al detectar); aquí cuenta al final. Por tanto falla. Categoría SECUENCIA (momento de conteo). Paso4 y 5? Pistón activo durante pulso, quizás correcto. Paso3 falla primero.
+Además nBajas: rPresencia.Q y sensorAltura false, ok al flanco. nAltas no al flanco. Entonces primera falla paso3.
+
+J13 tarea I5. Fallos paso1 baja sostenida cuenta una vez; paso2 se retira no cambia; paso3 alta cuenta sin activar aún pistón; etc. Código:
+- banda TRUE.
+- IF sensorPresencia AND NOT piezaDetectada THEN piezaDetectada:=TRUE; piezaAlta:=sensorAltura; timerRetraso(IN:=TRUE,PT:=2s); END_IF.
+- IF timerRetraso.Q THEN timerRetraso(IN:=FALSE); IF piezaAlta THEN timerPiston(IN:=TRUE,PT:=1s); nAltas++; ELSE nBajas++; END_IF; piezaDetectada:=FALSE; END_IF.
+- IF timerPiston.Q THEN piston:=FALSE; timerPiston(IN:=FALSE); ELSE piston := timerPiston.Q; END_IF.
+Primera pieza baja: al detectar, timerRetraso inicia. Después de 2s, timerRetraso.Q TRUE, piezaAlta FALSE, nBajas++ y piezaDetectada FALSE. Eso cuenta una vez, no al detectar sino a los 2s. Paso1 (pieza baja con presencia sostenida: cuenta una vez) podría pasar? Si sensorPresencia sigue TRUE, nBajas incrementa una vez a los 2s. El paso1 quizás evalúa en t=0 o antes de 2s? No sé. En banco, paso1 "primera pieza baja con presencia sostenida: cuenta una vez" probablemente establece sensorPresencia TRUE, avanza un corto tiempo, verifica nBajas=1. Si el código cuenta a los 2s, en t=0 nBajas sigue 0, falla. Luego paso2 al retirar pieza, nBajas no cambia si la cuenta ya se realizó? Pero falló antes. Categoría SECUENCIA o TEMPORIZACION? El conteo no es en detección, está retardado 2s. Similar a J01, J12: cuenta en momento equivocado. SECUENCIA.
+
+J14 tarea I5. Fallos paso1... Código: máquina de estados CASE.
+- Declara nAltas,nBajas en VAR interno, no salidas? En VAR_OUTPUT falta nAltas/nBajas; se declaran como VAR local. Eso es error de inicialización? El banco probablemente no las ve como salidas, aunque en CODESYS si no son salidas no se validan? Pero en ST, el bloque no tiene salidas nAltas/nBajas. El paso1 verifica nBajas? Si no existen como salidas, no se comparten? En CODESYS, las variables de salida deben ser VAR_OUTPUT. Aquí nAltas/nBajas son VAR local, por lo que las salidas declaradas no incluyen contadores. En el banco, al llamar FB_Clasificadora, nAltas/nBajas no son accesibles, por lo que probablemente falla todos los pasos de conteo. Sin embargo el enunciado dice variables de salida nAltas, nBajas. El código no las declara como salida. La categoría: INICIALIZACION? No, es declaración incorrecta. Pero no está en categorías. Categoría permitida: INICIALIZACION? Se trata de salida no expuesta; no es estado inicial. Podría ser SECUENCIA? No. ¿CALCULO? No. Analicemos primer fallo paso1: "Primera pieza baja con presencia sostenida: cuenta una vez". El código detecta sensorPresencia en estado0, va a estado1. Estado1 espera timer1.Q, luego IF sensorAltura. Nota: sensorAltura se evalúa después de 2s, no en la detección. Para pieza baja sostenida, sensorAltura FALSE; timer1.Q se activa a los 2s, nBajas++ y estado0. Si el banco espera que cuente una vez al detectar, en un corto tiempo nBajas no habrá cambiado. O quizás la variable local no accesible. El primer fallo puede ser por nBajas local. Además la máquina de estados no asigna banda? Solo en estado0 banda := TRUE, en otros estados banda no se asigna, pero en CODESYS la variable mantiene TRUE. ok. 
+No declara piston en VAR_OUTPUT? En código VAR_OUTPUT banda, piston; nAltas/nBajas son VAR local. La salida piston correcta. 
+La causa del primer fallido: las salidas nAltas/nBajas no están declaradas como VAR_OUTPUT, y el conteo se retrasa/estado. ¿Cómo categorizar? Tal vez SECUENCIA dado que el conteo se hace tras el retardo en lugar de en la detección. Podría ser SECUENCIA.
+
+J16 tarea I5. Fallos paso1 baja sostenida cuenta una vez, etc. Código:
+- banda TRUE.
+- IF sensorPresencia THEN IF sensorAltura THEN nAltas++; piezaAltaDetectada:=TRUE; tRetraso(IN:=TRUE,PT:=2s); ELSE nBajas++; END_IF; END_IF.
+No hay flanco; si presencia sostenida, nBajas incrementa cada ciclo. Paso1 falla. Categoría FLANCO o SECUENCIA? Cuenta por nivel en lugar de flanco. Categoría FLANCO. El primer fallo es paso1 "cuenta una vez" con presencia sostenida; causa: conteo por nivel, no flanco. FLANCO. Justificación línea IF sensorPresencia THEN IF sensorAltura THEN ... nBajas++ cada ciclo.
+
+J18 tarea I5. Fallos paso0 reposo banda en marcha piston y contadores en cero; paso1 baja sostenida cuenta una vez... Código similar a J02. 
+- banda TRUE.
+- IF sensorPresencia AND NOT piezaDetectada THEN tEspera(IN:=TRUE, PT:=2S); piezaDetectada:=TRUE; END_IF.
+- IF tEspera.Q AND sensorAltura THEN tPiston(IN:=TRUE,PT:=1S); nAltas++; ELSE nBajas++; END_IF.
+- piston := tPiston.Q.
+- IF tPiston.Q THEN piezaDetectada:=FALSE; END_IF.
+En reposo: tEspera.Q FALSE, sensorAltura FALSE => ELSE nBajas++ cada ciclo. Paso0 falla. Categoría SECUENCIA (acción en reposo). 
+Paso1 baja: además tEspera TP Q activo durante 2s, el ELSE incrementa nBajas cada ciclo, falla conteo. SECUENCIA/FLANCO. Primer fallo reposo, SECUENCIA.
+
+J24 tarea I5. Fallos paso1 baja sostenida cuenta una vez, etc. Código similar J16:
+- IF sensorPresencia THEN IF sensorAltura THEN nAltas++; tRetraso... ELSE nBajas++; END_IF.
+No flanco. Paso1 falla. Categoría FLANCO.
+Justificación: incrementa contadores por nivel, no por flanco.
+
+J27 tarea I5. Fallos paso1 baja sostenida cuenta una vez, etc. Código:
+- banda TRUE.
+- IF sensorPresencia AND NOT piezaDetectada THEN piezaDetectada:=TRUE; IF sensorAltura THEN nAltas++ ELSE nBajas++ END_IF; END_IF.
+- tEspera(IN := piezaDetectada, PT := T#2S); (TP)
+- IF tEspera.Q THEN piston:=TRUE; tPiston(IN:=TRUE, PT:=1S); ELSE piston:=FALSE; END_IF.
+- IF tPiston.Q THEN piezaDetectada:=FALSE; END_IF.
+Primera pieza baja: en el flanco, nBajas++ (una vez) ok. Paso1 pasa quizás. Paso2 se retira: piezaDetectada TRUE, sensorPresencia FALSE, no new. tEspera? Con TP, al poner IN := TRUE en flanco, Q TRUE por 2s. Después de 2s, tEspera.Q se activó? TP.Q es TRUE durante 2s. Cuando tEspera.Q se desactiva a los 2s, no hay flanco descendente? El IF tEspera.Q THEN piston... durante los 2 segundos está TRUE; activa piston :=TRUE y tPiston(IN:=TRUE, PT:=1S) cada ciclo? Veamos:
+IF tEspera.Q THEN piston:=TRUE; tPiston(IN:=TRUE, PT:=1S); ELSE piston:=FALSE; END_IF.
+Durante tEspera.Q TRUE (2s), se inicia tPiston cada ciclo con IN TRUE y PT 1S. TP: al mantener IN TRUE, no importa; Q TRUE desde flanco inicial durante 1s. Después de 1s, Q FALSE aunque IN TRUE. En el mismo ciclo, tPiston(IN:=TRUE) no genera flanco porque IN ya TRUE, no reinicia. Entonces tPiston.Q es TRUE durante 1s a partir del inicio de tEspera. piston se asigna TRUE mientras tEspera.Q TRUE (por 2s), es decir piston TRUE de 0 a 2s, no de 2 a 3s. Además al final de tEspera.Q (después de 2s), ELSE piston FALSE. Luego IF tPiston.Q THEN piezaDetectada:=FALSE; pero tPiston.Q ya es FALSE. La piezaDetectada solo se resetea? No: IF tPiston.Q THEN ... no se cumple? En TP, tPiston.Q es TRUE durante 1s; durante ese tiempo, si tPiston.Q TRUE, piezaDetectada:=FALSE. Esto ocurre aproximadamente en el primer ciclo después de iniciar tPiston? En TP, Q se activa en el flanco IN, en el mismo ciclo tPiston(IN:=TRUE) y luego IF tPiston.Q THEN es TRUE, pone piezaDetectada FALSE. Entonces tEspera deja de recibir IN TRUE al siguiente ciclo? Ojo dentro del mismo ciclo, se invoca tPiston(IN:=TRUE) y luego IF tPiston.Q THEN piezaDetectada:=FALSE. Para TP, al llamar tPiston con IN TRUE y Q de ciclo anterior? En el primer ciclo de flanco, Q se pone TRUE. Entonces IF tPiston.Q TRUE, piezaDetectada FALSE al final del ciclo. Siguiente ciclo tEspera(IN:=piezaDetectada FALSE) => tEspera Q? TP con IN FALSE no activa, Q depende: si ya estaba en pulso, Q continua hasta que expire PT, independiente de IN? En TP, Q permanece TRUE durante PT desde el flanco, incluso si IN se desactiva. Por tanto tEspera.Q sigue TRUE durante 2s. Piston? En siguientes ciclos, tEspera.Q TRUE, se ejecuta piston:=TRUE y tPiston(IN:=TRUE). Pero tPiston IN puede ser TRUE continuo, Q desde primer flanco dura 1s. Entonces piston TRUE durante 2s (desde t0 a t2). Los requisitos: pulso de 1s comenzando 2s después. Aquí está mal. Primer fallo: paso1? nBajas++ ocurre al detectar, por lo que probablemente paso1 pasa. Paso2 se retira la pieza baja: la cuenta no cambia, ok. Paso3 pieza alta: "cuenta como alta sin activar aún el piston": al detectar pieza alta, código nAltas++ al detectar, ok. ¿Piston? En el ciclo de detección, tEspera(IN:=TRUE), tPiston? tEspera.Q es TRUE en flanco TP, entonces entra IF tEspera.Q, piston TRUE y tPiston IN TRUE. Por tanto piston se activa inmediatamente, falla paso3. Espera, paso3 incluido en fallos. Para primera pieza baja el pistón se activa inmediatamente aunque no es alta? En código, IF tEspera.Q THEN piston TRUE sin considerar altura. Entonces al detectar pieza baja, piston se activa. El paso1 solo verifica cuenta? Quizás no verifica piston. Paso3 verifica pieza alta: cuenta como alta sin activar aún el piston. El pistón ya está activo inmediatamente desde la detección, falla. Categoría TEMPORIZACION: usa TP para tEspera y activa pistón basado en tEspera.Q (que es TRUE durante el pulso desde el inicio) en lugar de esperar 2s. Justificación: tEspera TP produce Q inmediato y activa pistón prematuramente. TEMPORIZACION.
+
+J28 tarea I5. Fallos paso3 alta cuenta sin activar aún pistón, paso4,5,6. Código:
+- Inicializa outputs banda TRUE, piston FALSE, nAltas/nBajas 0.
+- temporizadorRetraso(IN:=FALSE, PT:=2S) y temporizadorPiston(IN:=FALSE, PT:=1S) cada ciclo, ¡esto reinicia los temporizadores? TON con IN FALSE: no temporiza, PT se asigna. Llamado cada ciclo con IN FALSE; luego al detectar flanco:
+IF sensorPresencia AND NOT estadoAnteriorPresencia THEN IF sensorAltura THEN temporizadorRetraso(IN := TRUE); activarPiston:=TRUE; ELSE nBajas++ END_IF; END_IF;
+- Actualiza estadoAnteriorPresencia.
+- IF activarPiston THEN IF temporizadorRetraso.Q THEN temporizadorPiston(IN:=TRUE); temporizadorRetraso(IN:=FALSE); END_IF; IF temporizadorPiston.Q THEN piston:=FALSE; ... ELSE piston:=TRUE; END_IF; ELSE piston:=FALSE; END_IF.
+- banda:=TRUE.
+Problemas: Al inicio de cada ciclo, temporizadorRetraso(IN:=FALSE) y temporizadorPiston(IN:=FALSE) se llaman. Luego en el flanco se llama temporizadorRetraso(IN:=TRUE) en el mismo ciclo. TON: al invocar con IN TRUE desde FALSE, inicia temporización. En siguiente ciclo, al inicio se llama temporizadorRetraso(IN:=FALSE) de nuevo, lo que reinicia/detiene? TON con IN FALSE pone Q FALSE y ET=0. Luego en ese ciclo, activarPiston TRUE, IF temporizadorRetraso.Q FALSE, no inicia piston. Después? La variable activarPiston TRUE; pero temporizadorRetraso se invoca IN FALSE al inicio y no se vuelve a invocar IN TRUE porque el flanco ya pasó. Por tanto tRetraso.Q nunca se activa, pistón nunca se activa? O invade: en el ciclo del flanco se llama IN FALSE al inicio, luego IN TRUE -> arranca. En el siguiente ciclo, la primera llamada IN FALSE detiene el temporizador (TON resetea al recibir IN FALSE si estaba temporizando). Luego no se vuelve a activar. Resultado: tRetraso.Q nunca alcanza 2s. Además hay IF activarPiston: ELSE piston:=TRUE? Revisemos: IF activarPiston THEN ... IF temporizadorPiston.Q THEN piston:=FALSE ELSE piston:=TRUE END_IF; ELSE piston:=FALSE; END_IF. Como activarPiston TRUE, temporizadorPiston.Q FALSE, asigna piston:=TRUE, incluso desde la detección hasta siempre, no se apaga nunca? tPiston nunca temporiza, tPiston.Q FALSE, piston TRUE continuo. nAltas nunca incrementa (solo al final del tPiston.Q). Por tanto paso3 falla: nAltas no cuenta y piston activo inmediatamente. Categoría TEMPORIZACION: temporizadores reiniciados/detenidos por llamada IN:=FALSE cada ciclo, o mala temporización. Justificación: se invoca temporizadorRetraso(IN:=FALSE) cada ciclo antes de arrancar, impidiendo que complete los 2s; el pistón se activa por ELSE sin temporizar. TEMPORIZACION.
+
+J46 tarea I5. Fallos paso1 baja sostenida cuenta una vez, etc. Código:
+- banda TRUE.
+- IF sensorPresencia THEN IF sensorAltura THEN nAltas++; piezaAltaDetectada:=TRUE; tRetraso(IN:=TRUE,PT:=2S); ELSE nBajas++; END_IF; END_IF.
+- IF tRetraso.Q THEN tPulso(IN:=piezaAltaDetectada, PT:=1S); piezaAltaDetectada:=FALSE; END_IF.
+- piston := tPulso.Q.
+No flanco. Paso1 falla. FLANCO. Justificación conteo por nivel sin R_TRIG.
+
+J42 tarea I7 dúplex. Fallos pasos: 2 sin demanda ambas paradas; 4 sin demanda; 5 nueva demanda alterna de nuevo a bomba1; 6 falla principal arranca respaldo y almFalla; 7 desaparece falla vuelve principal; 8 falla solo respaldo sin alarma; 9 ambas falla ninguna y almFalla; 11 cuarta demanda alterna a bomba2; 12 falla principal bomba2; 13 sin demanda. Código:
+VAR estado INT :=0; demandaAnterior BOOL := FALSE.
+IF demanda AND NOT demandaAnterior THEN estado := (estado + 1) MOD 3; END_IF
+CASE estado OF
+0: bomba1:=FALSE; bomba2:=FALSE;
+1: bomba1:=NOT falla1; bomba2:=falla1 AND NOT falla2;
+2: bomba1:=falla2 AND NOT falla1; bomba2:=NOT falla2;
+END_CASE
+almFalla := (estado=1 AND falla1) OR (estado=2 AND falla2);
+demandaAnterior := demanda;
+
+Analicemos. La máquina de estados alterna principal en cada flanco ascendente de demanda. Primera demanda tras arranque: estado inicial 0, IF flanco TRUE entonces estado := (0+1) MOD 3 = 1. Correcto, bomba1 principal si no falla. Al desactivar demanda, no cambia estado, queda 1. CASE estado 1 con demanda? Espera, no se condiciona CASE a demanda. Estados 1 y 2 activan bombas según fallas aunque demanda esté FALSE. ¡Ah! Si demanda está FALSE, estado puede ser 1 o 2 de ciclos anteriores, y CASE asigna bomba1:=NOT falla1, etc. Por lo tanto sin demanda, las bombas pueden estar activas si estado=1/2. El requisito paso2/4 sin demanda ambas paradas falla. Porque no consideran demanda en la activación. La lógica de activación no incluye "demanda". Eso es SECUENCIA/TEMPORIZACION? Es SEGURIDAD? "Sin demanda ambas paradas" es seguridad. Categoría SEGURIDAD? La causa es ausencia de enclavamiento/permisivo de demanda. Las salidas se activan por estado incluso sin demanda. Eso podría ser SECUENCIA (transiciones/estados?) o SEGURIDAD (respuesta incorrecta ante falta de demanda, permisivos). El primer fallo es paso2 sin demanda ambas paradas. La categoría SECUENCIA podría encajar: la lógica de estados no incluye demanda, acción ejecutada en momento equivocado. SEGURIDAD: enclavamientos entre salidas, permisivos. Pero la tarea no menciona emergencia. El requisito "sin demanda ambas paradas" es un permiso. Categoría SEGURIDAD es "permisivos" según descripción: "respuesta incorrecta ante paro... enclavamientos entre salidas, permisivos, fallas de equipo..." Aquí la activación no está condicionada a demanda; es un permisivo. SEGURIDAD podría ser más apropiada. Sin embargo el fallo también afecta alternancia? Veamos.
+
+Además, la alternancia: estado := (estado+1) MOD 3. Desde 0->1 (bomba1), 1->2 (bomba2), 2->0 (detenido) en la tercera demanda, en lugar de alternar entre 1 y 2. Eso causa que en tercera demanda estado=0 y no arranque ninguna, y cuarta demanda estado=1, no bomba2. El requisito paso11 cuarta demanda alterna a bomba2 falla. ¿Primero fallido es paso2, sin demanda? Podría ser SECUENCIA por la máquina de estados (alternancia incorrecta, transiciones). El código tiene varios errores: activación sin demanda, secuencia mal alternada. Categoría principal según primer paso: paso2 sin demanda. La causa directa es que en CASE no se evalúa demanda. Eso es lógica de secuencia/permisivo. SEGURIDAD: permisivos. En clasificación permitida, SEGURIDAD incluye "permisivos". Prefiero SEGURIDAD, porque sin demanda ambas paradas es un permiso básico; no es falla de equipo? También fallas de equipo: el manejo de fallas está condicionado? 
+Veamos manejo de fallas:
+- En estado1: bomba1 := NOT falla1; bomba2 := falla1 AND NOT falla2. Si falla1 y falla2: bomba1 FALSE, bomba2 FALSE, almFalla TRUE (estado1 falla1). Correcto.
+- En estado2: bomba1 := falla2 AND NOT falla1; bomba2 := NOT falla2. Si falla2: bomba1 respaldo si no falla1, bomba2 FALSE, almFalla TRUE. Si ambas falla: bomba1 FALSE, bomba2 FALSE, almFalla TRUE. Correcto.
+- Falla solo respaldo sin alarma: estado1 falla2? estado1 bomba1:=NOT falla1 TRUE, bomba2:=falla1 AND NOT falla2 FALSE, almFalla := (estado1 AND falla1) FALSE. Ok.
+- Desaparece falla con demanda presente: estado1 falla1 FALSE, bomba1 TRUE, bomba2 FALSE. Ok.
+- Sin demanda: si estado=1 falla1 FALSE, bomba1 TRUE y bomba2 FALSE, viola.
+El primer fallo es paso2 sin demanda. Categoría: SEGURIDAD? Creo que sí, porque salida activa sin demanda. Justificación: CASE no incluye condición de demanda, por lo que estado 1/2 activa bombas aunque demanda sea FALSE. 
+
+Debo decidir. Las categorías permitidas no incluyen "LÓGICA" general. Entre SECUENCIA y SEGURIDAD. SECUENCIA: "transiciones de la secuencia o de la máquina de estados ausentes o erróneas, pérdida de la autorretención o de la retención, alternancia incorrecta o acción ejecutada en un momento equivocado." Esto encaja perfectamente: la máquina de estados no tiene transición a detenido cuando demanda se desactiva; las acciones se ejecutan sin considerar demanda. El primer fallo es salidas activas en sin demanda por transición ausente. Entonces SECUENCIA. También la alternancia incorrecta (MOD 3) es secuencia. Por tanto SECUENCIA. Aunque seguridad podría ser, pero es más específico de secuencia/estados. La categoría SEGURIDAD se reserva para paro/emergencia/enclavamientos. Aquí es máquina de estados. Elegiré SECUENCIA.
+
+J42 justificación: "El CASE activa bombas en estados 1/2 sin evaluar demanda; además la alternancia con MOD 3 pasa a 0 en la tercera demanda." Debe ser una o dos frases señalando línea/causa. Primer fallo es sin demanda. Justificación: "En el CASE estado 1/2 asigna bomba1/bomba2 sin condición 'demanda', por lo que siguen activas tras desactivarse la demanda." Eso es causa raíz primer fallo.
+
+Revisemos J08 y J47: En J08 el código tiene IF btnParo THEN ... ELSIF btnMarcha THEN CASE estado. Si btnMarcha está TRUE, en cada ciclo ejecuta CASE estado. En estado 0, tEstrella(IN:=TRUE) cada ciclo? Observación: estado0 solo se ejecuta si btnMarcha TRUE y estado=0. Al primer ciclo, state=0: asigna kM,kY, llama tEstrella, estado:=1. En siguiente ciclo, estado=1, ya no llama tEstrella. TP: tEstrella.Q TRUE inmediatamente en el flanco de IN. Entonces en siguiente ciclo estado1 IF tEstrella.Q TRUE -> transiciona. ¿Cuándo exactamente? En el primer ciclo en estado0, tEstrella(IN:=TRUE) hace flanco, Q TRUE dentro de ese ciclo. Luego estado:=1. Siguiente ciclo, estado1, IF tEstrella.Q TRUE, transiciona. Por tanto kY se desactiva después de un ciclo, no 8s. Falla. Sí.
+
+J47: Similar. En código, IF btnMarcha AND estado=0 THEN ... tEstrella(IN:=TRUE...); estado1. Luego IF estado=1 AND tEstrella.Q THEN estado2. TP.Q TRUE, transición al siguiente ciclo. Correcto.
+
+Categoría J47 TEMPORIZACION.
+
+Ahora debo producir JSON con todos. Necesito inferir categoría para cada caso. Reviso los casos uno por uno y me aseguro de que la causa raíz justifique el primer fallo.
+
+Lista casos en orden:
+1 J08
+2 J47
+3 J01
+4 J02
+5 J12
+6 J13
+7 J14
+8 J16
+9 J18
+10 J24
+11 J27
+12 J28
+13 J46
+14 J42
+
+Debo incluir un objeto por caso, con codigo, categoria, justificacion.
+
+Revisemos J01 más a fondo: ¿primer fallo paso3 "Pieza alta: cuenta como alta sin activar aun el piston (funcion nominal)". El código J01:
+Al detectar pieza alta, no incrementa nAltas, inicia tRetraso. Luego a los 2s, tRetraso.Q, inicia tDuracion, piston TRUE. Al terminar tDuracion, incrementa nAltas. Entonces en el momento de pieza alta, nAltas no cuenta. Correcto. ¿Piston activo? En t=0 no. Paso3 verifica "cuenta como alta sin activar aun el piston": nAltas=1 y piston FALSE. En código, en detección nAltas=0, falla. Categoría SECUENCIA.
+
+J02: Primer fallo paso0 reposo. En código, al inicio reposo, IF tEspera.Q AND sensorAltura THEN ... ELSE nBajas++. Si el banco pide reposo banda en marcha y contadores en cero. nBajas incrementa. Categoría SECUENCIA. Podría ser FLANCO? En reposo, no hay sensorPresencia; el ELSE se ejecuta por nivel de tEspera.Q FALSE. Es más como acción errónea en reposo, no flanco. SECUENCIA.
+
+J12: Primer fallo paso3. El código nAltas incrementa al terminar pulso, no al detectar. SECUENCIA. Revisar si piston prematuro? En J12, piston := tPiston.IN AND NOT tPiston.Q. tPiston se inicia por tRetraso.Q. tRetraso es TON, se inicia al flanco de presencia alta? Línea tRetardo(IN := bPiezaAlta AND NOT tPiston.Q, PT:=2s). bPiezaAlta TRUE desde detección. TON tRetardo temporiza 2s. Hasta no completar, tRetardo.Q FALSE. Entonces tPiston.IN FALSE, piston FALSE. Luego a 2s, tRetardo.Q TRUE, tPiston(IN:=TRUE). tPiston.IN TRUE y Q FALSE (dentro de 1s) -> piston TRUE. Después tPiston.Q al completar, piston FALSE. Correcto. Solo conteo al final. SECUENCIA.
+
+J13: Primer fallo paso1. En código, nBajas se incrementa al terminar tRetraso (2 segundos), no al detectar. Si paso1 verifica poco después de presencia baja con "presencia sostenida", cuenta? El requisito dice "Primera pieza baja con presencia sostenida: cuenta una vez (funcion nominal y flanco)". Banco puede esperar que cuente una vez al flanco, no dos segundos. En CODESYS Test Manager, puede avanzar tiempo? No sé. Si es presencia sostenida y avanza un ciclo, nBajas=0. Por tanto falla. Categoría: SECUENCIA (momento erróneo de conteo). ¿Podría ser TEMPORIZACION? El temporizador retrasa el conteo, pero la causa es lógica de secuencia. SECUENCIA.
+
+J14: Primer fallo paso1. Código no declara nAltas/nBajas como salidas, lo que es error de declaración. Si el banco verifica las salidas nBajas de la FB_Clasificadora, no existirán. Pero el código en el bloque las declara VAR local, y el banco puede instanciar el FB y acceder a .nBajas? No, no está en VAR_OUTPUT. El compilador no dará error, simplemente no hay salida. El banco al verificar "nBajas" probablemente obtiene 0 siempre. El primer fallo paso1 es cuenta una vez. Categoría: INICIALIZACION? Las salidas no están en VAR_OUTPUT -> no se inicializan? O SECUENCIA. La categoría "INICIALIZACION" incluye estado o valor de arranque incorrecto. No es exacto. "SECUENCIA" podría: no se actualizan las salidas de conteo porque están declaradas como variables locales, no de salida. Es más una declaración incorrecta que no tiene categoría. Debo elegir la mejor. Mirando categorías: FLANCO: "conteo o disparo por nivel en lugar de por flanco..." Aquí hay conteo? El código incrementa nAltas/nBajas como variables locales; si funcionalmente no son salidas, no se reflejan. Pero la causa raíz no es flanco (aunque usa flanco? No usa flanco). En realidad además el conteo se realiza tras 2s, no al detectar, y no hay flanco. 
+ Veamos el código J14:
+```
+CASE estado OF
+0: banda:=TRUE; IF sensorPresencia THEN estado:=1; timer1(IN:=TRUE, PT:=T#2S); END_IF
+1: IF timer1.Q THEN IF sensorAltura THEN estado:=2; timer2(IN:=TRUE,PT:=1S); nAltas++; ELSE estado:=0; nBajas++; END_IF END_IF
+2: piston:=TRUE; IF timer2.Q THEN piston:=FALSE; estado:=0; END_IF
+```
+Para primera pieza baja: sensorPresencia TRUE, estado0 -> estado1 y timer1 inicia. SensorAltura se evalúa en estado1 después de 2s. nBajas++ a los 2s. Por tanto falla paso1 (cuenta una vez al detectar). Así que la causa es secuencia/momento de conteo, además de no declarar salidas. La categoría SECUENCIA es plausible. La justificación debe mencionar que nAltas/nBajas están como VAR local y el conteo se hace tras timer1; pero primer fallo paso1. Podría ser categoría INITIALIZATION? No. Usaré SECUENCIA.
+
+J16: Primer fallo paso1. Cuenta por nivel (IF sensorPresencia THEN IF sensorAltura... ELSE nBajas++). No flanco, por lo que con presencia sostenida incrementa cada ciclo. Categoría FLANCO. Justificación: falta R_TRIG o memoria de flanco.
+
+J18: Primer fallo paso0. Incremento nBajas en reposo por ELSE. Categoría SECUENCIA. 
+J24: Primer fallo paso1. Cuenta por nivel sin flanco. FLANCO.
+J27: Primer fallo paso1? Necesito verificar. Primera pieza baja sostenida: código cuenta en flanco? Usa piezaDetectada con IF sensorPresencia AND NOT piezaDetectada. Al primer ciclo, cuenta nBajas. piezaDetectada TRUE. En ciclos siguientes, no cuenta. Eso es flanco (por memoria). Paso1 quizás pasa. Paso2 retira pieza baja: no cambia. Paso3 pieza alta: al detectar alta, en el flanco IF sensorPresencia AND NOT piezaDetectada? Pero piezaDetectada se resetea cuando tPiston.Q. Para pieza baja, después de la detección, tEspera inicia, tPiston? Revisemos. Después de pieza baja: nBajas++ al detectar. tEspera(IN:=piezaDetectada=TRUE) TP arranca. Al primer ciclo, tPiston(IN:=TRUE) se activa en IF tEspera.Q, tPiston.Q TRUE en ese flanco, luego IF tPiston.Q THEN piezaDetectada:=FALSE. Así que piezaDetectada se resetea casi inmediatamente. Entonces sensorPresencia sigue TRUE, siguiente ciclo IF sensorPresencia AND NOT piezaDetectada TRUE -> detecta de nuevo, nBajas++ otra vez. Por tanto la pieza baja sostenida cuenta múltiples veces. Paso1 falla. La causa: reset de piezaDetectada por tPiston.Q en lugar de por retiro del sensor; o contar por nivel? Categoría FLANCO/ SECUENCIA? En J27 hay un flanco emulado pero el reset se produce prematuramente por temporizador de pistón, no por flanco de sensor. El primer fallo paso1: cuenta una vez, falla (cuenta múltiples). Categoría: FLANCO (memoria de flanco incorrecta/reset prematuro) o SECUENCIA. La categoría FLANCO incluye "memoria del estado anterior actualizada en el orden equivocado, contador no invocado o incrementado sin evento". Aquí la memoria de piezaDetectada se resetea de forma indebida. Podría ser SECUENCIA también. El fallo es de flanco. J27 falla paso1? En pass list: pasos_fallidos incluye paso1. 
+Analicemos exactamente J27:
+```
+IF sensorPresencia AND NOT piezaDetectada THEN
+    piezaDetectada := TRUE;
+    IF sensorAltura THEN nAltas := nAltas + 1; ELSE nBajas := nBajas + 1; END_IF;
+END_IF;
+
+tEspera(IN := piezaDetectada, PT := T#2S); (* TP *)
+
+IF tEspera.Q THEN
+    piston := TRUE;
+    tPiston(IN := TRUE, PT := T#1S);
+ELSE
+    piston := FALSE;
+END_IF;
+
+IF tPiston.Q THEN
+    piezaDetectada := FALSE;
+END_IF;
+```
+En el mismo ciclo del flanco:
+- piezaDetectada TRUE. nBajas++.
+- tEspera(IN:=TRUE) -> TP Q TRUE (flanco).
+- IF tEspera.Q THEN piston:=TRUE; tPiston(IN:=TRUE) -> TP Q TRUE (flanco).
+- IF tPiston.Q THEN piezaDetectada:=FALSE.
+Al final del ciclo, piezaDetectada FALSE. SensorPresencia TRUE. Siguiente ciclo:
+- IF sensorPresencia AND NOT piezaDetectada TRUE -> piezaDetectada TRUE, nBajas++ de nuevo.
+Se repite cada ciclo, contando infinitamente. Así falla paso1. Categoría: FLANCO o SECUENCIA. La causa es reinicio inmediato de piezaDetectada por tPiston.Q (TP) que se activa al instante. Sin embargo también hay problema de temporización con TP. El primer fallo es conteo múltiple; se debe a la memoria de detección reiniciada al instante. FLANCO. 
+
+J28: Primer fallo paso3 (no paso1? pasos fallidos: paso3,4,5,6. No incluye paso1 ni 2. Interesante. Significa que pieza baja sostenida cuenta una vez? En J28, al detectar flanco sensorPresencia, si baja nBajas++ una vez. Correcto. Pieza alta: al flanco, inicia tRetraso? y activarPiston TRUE, pero nAltas no incrementa al detectar. El código solo incrementa nAltas cuando temporizadorPiston.Q termina (pero nunca termina). Entonces paso3 "Pieza alta: cuenta como alta sin activar aún el piston" falla. ¿Piston? Al detectar alta, activarPiston TRUE, temporizadorPiston.Q FALSE, ELSE piston:=TRUE inmediatamente. Entonces falla también. Categoría TEMPORIZACION por temporizadores reiniciados cada ciclo. Es la causa de que no cuente nAltas? nAltas se incrementaría al terminar pulso, pero el temporizador no completa. La causa raíz es reinicio de temporizadores. TEMPORIZACION.
+J28 justificación: "Las llamadas temporizadorRetraso(IN:=FALSE) y temporizadorPiston(IN:=FALSE) al inicio de cada ciclo reinician/detienen los TON, por lo que tRetraso nunca alcanza Q; además piston se activa por nivel mientras activarPiston es TRUE." Es TEMPORIZACION.
+
+J46: Primer fallo paso1. Cuenta por nivel sin flanco. FLANCO.
+
+J42: Primer fallo paso2/4 sin demanda. SECUENCIA.
+
+Ahora debo formular justificaciones una o dos frases.
+
+Revisemos si en J47 el código también tiene outputs no reset por btnParo? No importa.
+
+Necesito responder exactamente al final.
+
+Pensemos en cada categoría de J01-J28.
+Posibles ambigüedades:
+- J02, J18: paso0 reposo con contadores en cero. En ambos, ELSE incrementa nBajas en reposo. Eso podría ser "INICIALIZACION"? No, no es valor inicial, es acción no deseada en reposo. SECUENCIA.
+- J14: nAltas/nBajas no salidas. Categoría SECUENCIA. Podría ser INICIALIZACION si el banco ve valores de salida no expuestos? Pero como no están en VAR_OUTPUT, no son outputs. La categoría "INICIALIZACION" no encaja. SECUENCIA.
+- J01, J12: conteo al final. SECUENCIA.
+- J13: conteo retrasado. SECUENCIA.
+- J16, J24, J46: conteo por nivel. FLANCO.
+- J27: conteo múltiple por reset anticipado. FLANCO.
+- J08, J47, J28: TEMPORIZACION.
+- J42: SECUENCIA.
+
+Sin embargo J01, J12, J13 también presentan temporización? Tal vez el primer fallo no es de temporización, sino de conteo. La categoría debe ser según primer paso fallido. Para J01 paso3 es conteo. Sí.
+
+Hay que considerar que en J02 y J18, primer fallido paso0 "Reposo: banda en marcha y piston y contadores en cero". El código con nBajas incrementa en reposo. Eso es acción ejecutada en momento equivocado. SECUENCIA. OK.
+
+¿J42 categoría SEGURIDAD o SECUENCIA? Estoy debatiendo. La tarea: "programa grupo de dos bombas en configuración dúplex. Cuando demanda se activa, debe arrancar... al desactivarse la demanda, ambas se detienen." El fallo "Sin demanda: ambas paradas" es un incumplimiento de parada por demanda. La categoría SEGURIDAD incluye "respuesta incorrecta ante el paro o el paro de emergencia (incluido el rearranque automático), enclavamientos entre salidas, permisivos, fallas de equipo..." Aquí "sin demanda" no es paro de emergencia pero es permisivo. La categoría SEGURIDAD es "permisivos". SECUENCIA incluye "transiciones de la secuencia o de la máquina de estados ausentes o erróneas... acción ejecutada en un momento equivocado". El código es una máquina de estados y no transiciona a detenido cuando demanda FALSE. Creo que SECUENCIA es más específica para la causa raíz. Usaré SECUENCIA.
+
+Justificación para J42: "El CASE de estados asigna bombas en estados 1/2 sin condicionar la salida a 'demanda', por lo que al desactivar demanda las bombas pueden quedar activas; además la alternancia usa MOD 3, llevando a 0 (detenido) en la tercera demanda." Una o dos frases. Primer fallo: sin demanda.
+
+Verificar si J42 primer fallo realmente es paso2. En el JSON de casos J42 pasos fallidos: paso2 sin demanda ambas paradas; paso4 sin demanda; paso5 nueva demanda alterna de nuevo a bomba1; etc. La causa raíz principal: no evaluar demanda. Podría ser SEGURIDAD. Las categorías no mutuamente excluyentes; pero debo elegir una. Si clasifico SECUENCIA, puede ser aceptada. Si clasifico SEGURIDAD, puede ser también. ¿Cuál es más probable que el evaluador espere? Las categorías: - SEGURIDAD: "respuesta incorrecta ante el paro o el paro de emergencia (incluido el rearranque automático), enclavamientos entre salidas, permisivos, fallas de equipo, aborto de receta o respuestas erróneas de un dispositivo." Este caso tiene "al desactivarse la demanda, ambas se detienen" (parada normal, no emergencia). Es una condición de permiso. Las salidas no deben activarse sin demanda. Eso lo veo como SEGURIDAD (permisivos). En cambio SECUENCIA: "transiciones de la secuencia o de la máquina de estados ausentes o erróneas, pérdida de la autorretención o de la retención, alternancia incorrecta o acción ejecutada en un momento equivocado." La activación sin demanda también es acción en momento equivocado/transición ausente. 
+¿Qué opción es más alineada con el fallo? "Sin demanda" es un estado de reposo, no una falla. La categoría SECUENCIA se enfoca en secuencia/estados. La categoría SEGURIDAD se enfoca en paro, emergencia, enclavamientos, permisivos, fallas. Aquí "sin demanda" es un permiso para arrancar, no exactamente seguridad. Aun así SEGURIDAD incluye permisivos. 
+El código además maneja fallas; y el primero fallido no involucra fallas, solo demanda. Creo que SECUENCIA es más natural: estado no considera demanda. Usaré SECUENCIA, justificación que el CASE no evalúa demanda/alternancia incorrecta. Si la evaluación es estricta, tal vez acepten SEGURIDAD? La instrucción: "Asigna a cada caso UNA categoría principal: la causa raíz que explica el primer paso fallido." Para J42 primer fallo es que sin demanda se activan bombas porque la salida no está condicionada a demanda. Eso es un permiso (SEGURIDAD) al pie de la letra. No sé.
+
+Revisemos "SEGURIDAD: respuesta incorrecta ante el paro o el paro de emergencia (incluido el rearranque automático), enclavamientos entre salidas, permisivos, fallas de equipo, aborto de receta o respuestas erróneas de un dispositivo." "Sin demanda: ambas paradas" no es "paro de emergencia", pero "permisivos" es precisamente condiciones de habilitación. La ausencia de demanda debe inhibir salidas. En muchos PLC, "permisivo" es seguridad. El fallo de J42 es que las bombas arrancan sin demanda (sin permiso). Podría ser SEGURIDAD. Sin embargo la tarea no es principalmente seguridad, es lógica secuencial/alternancia. 
+Categorías primarias: TEMPORIZACION, SECUENCIA, SEGURIDAD, INICIALIZACION, FLANCO, CALCULO. La categoría SECUENCIA incluye "transiciones de la secuencia o de la máquina de estados ausentes o erróneas". El código es una máquina de estados con estado 0,1,2. El error es transición ausente: no se transita a estado 0 cuando demanda FALSE. Eso es exactamente SECUENCIA. Usaré SECUENCIA.
+
+J14: El código no declara nAltas/nBajas como VAR_OUTPUT. ¿Categoría INICIALIZACION? No. SECUENCIA. Justificación: "Los contadores se declaran como VAR interno y no como salidas; el conteo se hace tras 2s, no al detectar". 
+Quizás la causa principal del primer fallo es que no hay salidas nAltas/nBajas, pero el código localmente incrementa. La categoría "INICIALIZACION" no aplica. "SECUENCIA" es lo más cercano.
+
+J02: En J02 los pasos fallidos incluyen paso0. El código:
+```
+IF tEspera.Q AND sensorAltura THEN ... ELSE nBajas := nBajas + 1; END_IF;
+```
+En reposo, tEspera.Q FALSE, así ELSE nBajas++. ¿Es necesario verificar que nBajas es salida? En J02, nBajas es VAR_OUTPUT. Entonces paso0 falla. SECUENCIA.
+
+J18: Similar, paso0 falla. SECUENCIA.
+
+J27: FLANCO. Comprobemos que justificación sea clara: "La variable piezaDetectada se reinicia con tPiston.Q de TP, que se activa en el mismo ciclo que la detección; por eso la presencia sostenida produce flancos repetidos y nBajas/nAltas se incrementan cada ciclo." Es más de temporización TP (tPiston es TP) y memoria de flanco. La categoría FLANCO es adecuada porque falla el conteo por flanco. 
+
+J28: TEMPORIZACION. Justificación: "TON se invoca con IN:=FALSE al inicio de cada ciclo, y luego IN:=TRUE solo en el ciclo del flanco; el reinicio constante impide que complete T#2S, por lo que el pistón no temporiza y nAltas no cuenta." 
+También en J28, piston se activa inmediatamente porque activarPiston TRUE y ELSE piston:=TRUE. Eso es consecuencia. TEMPORIZACION.
+
+J47: En código hay además "IF kY AND kD THEN kY := FALSE; kD := FALSE; END_IF" que podría apagar ambos si coinciden, pero no fallo principal. TP.
+
+J08: Similar.
+
+J01: Código nAltas se incrementa después de tDuracion.Q; el requisito paso3 dice "pieza alta: cuenta como alta sin activar aún el piston". En code, para pieza alta, espera a que termine piston para contar. Esto es secuencia. Justificación: "nAltas se incrementa en IF timerDuracion.Q, es decir al final del pulso, en lugar de al detectar sensorPresencia con sensorAltura". 
+
+J12: similar pero al final del tPiston. Justificación: "nAltas se incrementa en IF tPiston.Q AND NOT bContado, al terminar el pulso, no en el flanco de detección." 
+
+J13: nBajas se incrementa en IF timerRetraso.Q, con retardo; no al detectar. SECUENCIA. Justificación: "El conteo de piezas se realiza al cumplirse timerRetraso.Q (2s después), no en el flanco de detección; por eso la pieza baja no cuenta en el momento esperado." Quizás categoría SECUENCIA. 
+J14: "El CASE retrasa el conteo al final de timer1.Q y no al flanco de presencia; además los contadores son variables locales, no salidas." SECUENCIA. 
+J16: "IF sensorPresencia THEN ... nBajas := nBajas + 1; sin R_TRIG; con presencia sostenida incrementa cada ciclo." FLANCO.
+J18: similar a J02: "ELSE nBajas++ se ejecuta cuando tEspera.Q es FALSE, incluso en reposo; falta condición de pieza detectada." SECUENCIA.
+J24: "Cuenta por nivel (IF sensorPresencia THEN...) sin flanco, incrementa nBajas/nAltas cada ciclo." FLANCO.
+J46: "Cuenta por nivel (IF sensorPresencia THEN...) sin flanco, incrementa cada ciclo." FLANCO.
+J42: "El CASE no condiciona las salidas a demanda; en estado 1/2 las bombas se activan con demanda FALSE. Además alterna con MOD 3, pasando por estado 0." SECUENCIA.
+
+Verificar J08/J47 con TP: para TP (pulse timer), Q es TRUE durante el tiempo de pulso tras flanco de IN. Pero ¿la transición se produce inmediatamente? En el ciclo en que se llama tEstrella(IN:=TRUE), la salida Q se hace TRUE. Luego el IF en el estado 1 se evalúa en el siguiente ciclo. Entonces kY dura un ciclo. Correcto. TEMPORIZACION.
+
+Ahora debo generar el JSON final. Asegurarme de incluir exactamente un objeto por caso, no más. Usar doble comillas.
+
+Voy a redactar justificaciones breves.
+
+Posibles justificaciones:
+J08: "Usa temporizadores TP (tEstrella y tMuerto) como si fueran TON; TP.Q se activa en el flanco y, por tanto, el estado 1/2 transiciona casi de inmediato, sin esperar 8s ni 100ms."
+J47: "Usa TP para tEstrella y tMuerto; tEstrella.Q ya está TRUE en el flanco, por lo que kY cae en el siguiente ciclo en lugar de a los 8s."
+J01: "El contador nAltas se incrementa al terminar timerDuracion.Q, no al detectar la pieza alta; por eso la pieza alta no se cuenta en el momento requerido."
+J02: "El ELSE incrementa nBajas cada ciclo en reposo porque solo depende de tEspera.Q y sensorAltura, sin exigir piezaDetectada; así el reposo no tiene contadores en cero."
+J12: "nAltas se cuenta al final del pulso (IF tPiston.Q) y no en el flanco de detección; la pieza alta no queda contada antes del pistón."
+J13: "El conteo de piezas se realiza al expirar timerRetraso.Q (2 s después) en lugar de en el flanco de sensorPresencia; la cuenta no está disponible en el momento esperado."
+J14: "Los contadores nAltas/nBajas se declaran como VAR local y no como salidas del FB; además el CASE cuenta tras temporizar, no en la detección."
+J16: "Falta flanco: IF sensorPresencia THEN ... nBajas++/nAltas++ incrementa cada ciclo mientras el sensor esté presente."
+J18: "El ELSE nBajas++ se ejecuta cuando tEspera.Q es FALSE, incluso en reposo; el contador no se mantiene en cero antes de detectar pieza."
+J24: "Falta flanco: IF sensorPresencia THEN cuenta cada ciclo; la presencia sostenida incrementa múltiples veces."
+J27: "El TP tPiston.Q reinicia piezaDetectada en el mismo ciclo de la detección, por lo que una presencia sostenida se vuelve a detectar cada ciclo y los contadores se incrementan repetidamente." 
+J28: "Los TON se invocan con IN:=FALSE al inicio de cada ciclo, reiniciándolos antes de que puedan completar T#2S/T#1S; el pistón y el conteo no temporizan correctamente."
+J46: "Falta flanco: IF sensorPresencia THEN ... nAltas/nBajas incrementan por nivel, cada ciclo con sensor presente."
+J42: "El CASE de estados activa bomba1/bomba2 en estados 1/2 sin evaluar 'demanda', por lo que al quitar demanda siguen activas; la alternancia con MOD 3 tampoco alterna correctamente entre bomba1 y bomba2."
+
+Reviso J13 si el conteo de piezas se hace al expirar timerRetraso.Q, pero para piezas altas inicia timerPiston y nAltas++ ahí; para bajas nBajas++ ahí. El requisito paso1 "Primera pieza baja con presencia sostenida: cuenta una vez" probablemente se espera cuenta en flanco. Sí.
+
+J14: Si los contadores no son VAR_OUTPUT, el banco no puede verificar nBajas/nAltas. En la lista de outputs del FB no están. El código compila con variables internas. El banco al acceder a las salidas, no existen. Pero el compilador CODESYS no permite. No importa. Una justificación: "los contadores no se declaran como VAR_OUTPUT y, además, el CASE los incrementa tras 2s, no al detectar". 
+
+J01 y J12: la categoría podría ser SECUENCIA (acción en momento equivocado). Bien.
+J13: secuencia. 
+J02/J18: secuencia. 
+J16/J24/J46: FLANCO. 
+J27: FLANCO. 
+J28: TEMPORIZACION. 
+J42: SECUENCIA.
+
+¿Algún caso podría ser INICIALIZACION? J14? No. 
+J02/J18: nBajas en reposo incrementa por ELSE; no es initialización.
+J42: no.
+
+Ahora debo respetar la "forma exacta" de JSON: lista de objetos. No incluir arrays anidados. Debo ser conciso.
+
+Let's craft final JSON.
+
+Quiero asegurar si las categorías son exactas en mayúsculas. Sí.
+
+Posible problema: justificación "linea/conexión" no debe ser muy larga. Una o dos frases.
+
+Voy a generar.

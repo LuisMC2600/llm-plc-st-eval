@@ -1,0 +1,270 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>I7 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>I7 — Bombas dúplex con alternancia (Intermedio)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja I7 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa un grupo de dos bombas en configuración dúplex. Cuando la entrada demanda se activa, debe arrancar una sola bomba, la principal de ese ciclo; al desactivarse la demanda, ambas se detienen. En cada nueva demanda (transición de FALSE a TRUE de demanda) el rol de principal se alterna entre bomba1 y bomba2 para igualar el desgaste; en la primera demanda tras el arranque del bloque, la principal es bomba1. Si la bomba principal tiene su falla activa (falla1 o falla2, respectivamente), debe funcionar en su lugar la otra bomba, siempre que esta no tenga falla, y debe activarse almFalla; si la falla desaparece con la demanda aún presente, vuelve a funcionar la principal y se detiene la de respaldo. almFalla solo indica falla de la bomba principal con demanda presente: la falla de la bomba de respaldo, por sí sola, no la activa. Si ambas bombas tienen falla, ninguna funciona y almFalla se activa. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Duplex con variables de entrada demanda, falla1, falla2 (BOOL) y salidas bomba1, bomba2, almFalla (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_I7.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea I7 (FB_Duplex: bombas duplex con alternancia)
+    ---------------------------------------------------------------------------
+    Validado en codesys/validar_harness_I7.py: 10 implementaciones (la correcta,
+    el FB de referencia del prompt de C4 y 8 defectuosas), ciclos de 4, 10 y 20 ms.
+    La tabla de pasos se genera desde el validador para que ambos coincidan.
+
+    Paso (demanda, falla1, falla2) -&gt; (bomba1, bomba2, almFalla)   principal
+  0  (F,F,F) -&gt; (F,F,F)                                          -
+  1  (T,F,F) -&gt; (T,F,F)   primera demanda                        b1
+  2  (F,F,F) -&gt; (F,F,F)
+  3  (T,F,F) -&gt; (F,T,F)   alterna                                b2
+  4  (F,F,F) -&gt; (F,F,F)
+  5  (T,F,F) -&gt; (T,F,F)   alterna de nuevo                       b1
+  6  (T,T,F) -&gt; (F,T,T)   falla de la principal: respaldo        b1
+  7  (T,F,F) -&gt; (T,F,F)   vuelve la principal                    b1
+  8  (T,F,T) -&gt; (T,F,F)   falla SOLO del respaldo: sin alarma    b1
+  9  (T,T,T) -&gt; (F,F,T)   ambas con falla                        b1
+ 10  (F,T,T) -&gt; (F,F,F)   sin demanda: sin alarma aunque haya fallas
+ 11  (T,F,F) -&gt; (F,T,F)   cuarta demanda                         b2
+ 12  (T,F,T) -&gt; (T,F,T)   falla de la principal b2: respaldo b1  b2
+ 13  (F,F,F) -&gt; (F,F,F)
+
+--- Pasos (CASE paso OF) ---
+
+        0: demanda := FALSE; falla1 := FALSE; falla2 := FALSE;
+            e1 := FALSE; e2 := FALSE; eAlm := FALSE;
+        1: demanda := TRUE; falla1 := FALSE; falla2 := FALSE;
+            e1 := TRUE; e2 := FALSE; eAlm := FALSE;
+        2: demanda := FALSE; falla1 := FALSE; falla2 := FALSE;
+            e1 := FALSE; e2 := FALSE; eAlm := FALSE;
+        3: demanda := TRUE; falla1 := FALSE; falla2 := FALSE;
+            e1 := FALSE; e2 := TRUE; eAlm := FALSE;
+        4: demanda := FALSE; falla1 := FALSE; falla2 := FALSE;
+            e1 := FALSE; e2 := FALSE; eAlm := FALSE;
+        5: demanda := TRUE; falla1 := FALSE; falla2 := FALSE;
+            e1 := TRUE; e2 := FALSE; eAlm := FALSE;
+        6: demanda := TRUE; falla1 := TRUE; falla2 := FALSE;
+            e1 := FALSE; e2 := TRUE; eAlm := TRUE;
+        7: demanda := TRUE; falla1 := FALSE; falla2 := FALSE;
+            e1 := TRUE; e2 := FALSE; eAlm := FALSE;
+        8: demanda := TRUE; falla1 := FALSE; falla2 := TRUE;
+            e1 := TRUE; e2 := FALSE; eAlm := FALSE;
+        9: demanda := TRUE; falla1 := TRUE; falla2 := TRUE;
+            e1 := FALSE; e2 := FALSE; eAlm := TRUE;
+        10: demanda := FALSE; falla1 := TRUE; falla2 := TRUE;
+            e1 := FALSE; e2 := FALSE; eAlm := FALSE;
+        11: demanda := TRUE; falla1 := FALSE; falla2 := FALSE;
+            e1 := FALSE; e2 := TRUE; eAlm := FALSE;
+        12: demanda := TRUE; falla1 := FALSE; falla2 := TRUE;
+            e1 := TRUE; e2 := FALSE; eAlm := TRUE;
+        13: demanda := FALSE; falla1 := FALSE; falla2 := FALSE;
+            e1 := FALSE; e2 := FALSE; eAlm := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#I7-2045">I7-2045</a><a href="#I7-2100">I7-2100</a><a href="#I7-8887">I7-8887</a></div>
+<div class="caja resp" id="I7-2045"><div class="cod"><h3>I7-2045</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 14 pasos del harness (pasos 9; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Duplex
+VAR_INPUT
+    demanda : BOOL; (* Demanda de arranque *)
+    falla1 : BOOL; (* Falla de la bomba 1 *)
+    falla2 : BOOL; (* Falla de la bomba 2 *)
+END_VAR
+VAR_OUTPUT
+    bomba1 : BOOL; (* Bomba principal *)
+    bomba2 : BOOL; (* Bomba de respaldo *)
+    almFalla : BOOL; (* Alarma de falla de la bomba principal *)
+END_VAR
+VAR
+    estado : INT := 0; (* Estado actual: 0 = detenido, 1 = bomba1 principal, 2 = bomba2 principal *)
+    demandaAnterior : BOOL := FALSE; (* Estado anterior de la demanda *)
+END_VAR
+
+(* Control de la alternancia de bombas y manejo de fallas *)
+IF demanda THEN
+    IF NOT demandaAnterior THEN
+        (* Transición de FALSE a TRUE en demanda *)
+        estado := (estado + 1) MOD 3;
+        IF estado = 0 THEN
+            estado := 1; (* Asegura que la primera demanda arranque bomba1 *)
+        END_IF
+    END_IF
+
+    CASE estado OF
+        1:
+            IF falla1 THEN
+                bomba1 := FALSE;
+                bomba2 := NOT falla2;
+                almFalla := NOT falla2;
+            ELSE
+                bomba1 := TRUE;
+                bomba2 := FALSE;
+                almFalla := FALSE;
+            END_IF
+        2:
+            IF falla2 THEN
+                bomba2 := FALSE;
+                bomba1 := NOT falla1;
+                almFalla := NOT falla1;
+            ELSE
+                bomba2 := TRUE;
+                bomba1 := FALSE;
+                almFalla := FALSE;
+            END_IF
+    END_CASE
+ELSE
+    bomba1 := FALSE;
+    bomba2 := FALSE;
+    almFalla := FALSE;
+END_IF
+
+(* Actualización del estado anterior de la demanda *)
+demandaAnterior := demanda;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I7-2100"><div class="cod"><h3>I7-2100</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 5 de 14 pasos del harness (pasos 1,5,6,7,8; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Duplex
+VAR_INPUT
+    demanda : BOOL;    // Entrada de demanda
+    falla1  : BOOL;    // Falla de la bomba 1
+    falla2  : BOOL;    // Falla de la bomba 2
+END_VAR
+
+VAR_OUTPUT
+    bomba1  : BOOL;    // Salida para controlar la bomba 1
+    bomba2  : BOOL;    // Salida para controlar la bomba 2
+    almFalla: BOOL;    // Alarma de falla
+END_VAR
+
+VAR
+    principal : BOOL;  // Indica si la bomba 1 es la principal (TRUE) o la bomba 2 (FALSE)
+    lastDemanda : BOOL; // Estado anterior de la demanda
+END_VAR
+
+// Inicialización
+IF NOT demanda AND NOT lastDemanda THEN
+    principal := TRUE; // Inicialmente, la bomba 1 es la principal
+END_IF
+
+// Alternancia de bombas
+IF demanda AND NOT lastDemanda THEN
+    principal := NOT principal; // Alternar la bomba principal en cada nueva demanda
+END_IF
+
+// Control de bombas y alarma
+IF demanda THEN
+    IF principal THEN
+        IF NOT falla1 THEN
+            bomba1 := TRUE;
+            bomba2 := FALSE;
+            almFalla := FALSE;
+        ELSIF NOT falla2 THEN
+            bomba1 := FALSE;
+            bomba2 := TRUE;
+            almFalla := TRUE;
+        ELSE
+            bomba1 := FALSE;
+            bomba2 := FALSE;
+            almFalla := TRUE;
+        END_IF
+    ELSE
+        IF NOT falla2 THEN
+            bomba1 := FALSE;
+            bomba2 := TRUE;
+            almFalla := FALSE;
+        ELSIF NOT falla1 THEN
+            bomba1 := TRUE;
+            bomba2 := FALSE;
+            almFalla := TRUE;
+        ELSE
+            bomba1 := FALSE;
+            bomba2 := FALSE;
+            almFalla := TRUE;
+        END_IF
+    END_IF
+ELSE
+    bomba1 := FALSE;
+    bomba2 := FALSE;
+    almFalla := FALSE;
+END_IF
+
+// Actualizar el estado anterior de la demanda
+lastDemanda := demanda;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I7-8887"><div class="cod"><h3>I7-8887</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 8 de 14 pasos del harness (pasos 1,3,5,6,7,8,11,12; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Duplex
+VAR_INPUT
+    demanda : BOOL; (* Señal de demanda de bombeo *)
+    falla1  : BOOL; (* Falla de bomba 1 *)
+    falla2  : BOOL; (* Falla de bomba 2 *)
+END_VAR
+VAR_OUTPUT
+    bomba1  : BOOL; (* Salida de bomba 1 *)
+    bomba2  : BOOL; (* Salida de bomba 2 *)
+    almFalla : BOOL; (* Alarma de falla en bomba principal *)
+END_VAR
+VAR
+    principal1   : BOOL := TRUE;  (* TRUE = bomba1 es principal, FALSE = bomba2 es principal *)
+    demandaAnterior : BOOL := FALSE; (* Estado previo de demanda para detectar flanco ascendente *)
+    flanco       : BOOL; (* Flanco ascendente de demanda *)
+END_VAR
+
+(* Detectar flanco ascendente de demanda *)
+flanco := demanda AND NOT demandaAnterior;
+
+(* En cada nuevo flanco de demanda, alternar el rol de principal *)
+IF flanco THEN
+    principal1 := NOT principal1;
+END_IF;
+
+(* Guardar estado actual de demanda para el siguiente ciclo *)
+demandaAnterior := demanda;
+
+(* Lógica de arranque y alarma *)
+IF NOT demanda THEN
+    (* Sin demanda: ambas bombas detenidas, sin alarma *)
+    bomba1   := FALSE;
+    bomba2   := FALSE;
+    almFalla := FALSE;
+
+ELSIF principal1 THEN
+    (* Bomba 1 es la principal *)
+    IF NOT falla1 THEN
+        (* Principal sin falla: funciona bomba1 *)
+        bomba1   := TRUE;
+        bomba2   := FALSE;
+        almFalla := FALSE;
+    ELSIF NOT falla2 THEN
+        (* Principal con falla, respaldo sin falla: funciona bomba2 *)
+        bomba1   := FALSE;
+        bomba2   := TRUE;
+        almFalla := TRUE;
+    ELSE
+        (* Ambas con falla: ninguna funciona, alarma activa *)
+        bomba1   := FALSE;
+        bomba2   := FALSE;
+        almFalla := TRUE;
+    END_IF;
+
+ELSE
+    (* Bomba 2 es la principal *)
+    IF NOT falla2 THEN
+        (* Principal sin falla: funciona bomba2 *)
+        bomba1   := FALSE;
+        bomba2   := TRUE;
+        almFalla := FALSE;
+    ELSIF NOT falla1 THEN
+        (* Principal con falla, respaldo sin falla: funciona bomba1 *)
+        bomba1   := TRUE;
+        bomba2   := FALSE;
+        almFalla := TRUE;
+    ELSE
+        (* Ambas con falla: ninguna funciona, alarma activa *)
+        bomba1   := FALSE;
+        bomba2   := FALSE;
+        almFalla := TRUE;
+    END_IF;
+
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

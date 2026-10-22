@@ -1,0 +1,227 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20261003005708
+Nombre de usuario: DESKTOP-2K8TKD6\LUIS C
+Usuario RunAs: DESKTOP-2K8TKD6\LUIS C
+Nombre de la configuración: 
+Máquina: DESKTOP-2K8TKD6 (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\herramientas\ejecutar_con_evidencia.ps1 -Modelo claude-sonnet-4-6 -Confirmar
+Id. de proceso: 37644
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+===== 1. Integridad del banco frente al piloto =====
+
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_005708_claude-sonnet-4-6\20261003_005708_01_integridad_hashes.png  (1920x1080)  sha256=ea78bcd90ec4da56
+
+===== 2. Configuracion del lote =====
+
+
+===== 3. Dry-run =====
+[dry-run] claude-sonnet-4-6 | C8 | few_shot | ejec 3
+
+Resumen: 0 ya existÝan, 180 pendientes.
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_005708_claude-sonnet-4-6\20261003_005709_02_dryrun.png  (1920x1080)  sha256=ff00cd3be5d3d5a2
+
+===== 4. Ejecucion (llamadas reales) =====
+[ok] claude-sonnet-4-6 | B1 | zero_shot | ejec 1 (11.87s)
+[ok] claude-sonnet-4-6 | B1 | zero_shot | ejec 2 (8.05s)
+[ok] claude-sonnet-4-6 | B1 | zero_shot | ejec 3 (13.31s)
+[ok] claude-sonnet-4-6 | B1 | few_shot | ejec 1 (5.81s)
+[ok] claude-sonnet-4-6 | B1 | few_shot | ejec 2 (5.4s)
+[ok] claude-sonnet-4-6 | B1 | few_shot | ejec 3 (6.18s)
+[ok] claude-sonnet-4-6 | B2 | zero_shot | ejec 1 (5.58s)
+[ok] claude-sonnet-4-6 | B2 | zero_shot | ejec 2 (5.79s)
+[ok] claude-sonnet-4-6 | B2 | zero_shot | ejec 3 (7.29s)
+[ok] claude-sonnet-4-6 | B2 | few_shot | ejec 1 (3.31s)
+[ok] claude-sonnet-4-6 | B2 | few_shot | ejec 2 (3.32s)
+[ok] claude-sonnet-4-6 | B2 | few_shot | ejec 3 (3.3s)
+[ok] claude-sonnet-4-6 | B3 | zero_shot | ejec 1 (6.33s)
+[ok] claude-sonnet-4-6 | B3 | zero_shot | ejec 2 (7.82s)
+[ok] claude-sonnet-4-6 | B3 | zero_shot | ejec 3 (13.11s)
+[ok] claude-sonnet-4-6 | B3 | few_shot | ejec 1 (5.2s)
+[ok] claude-sonnet-4-6 | B3 | few_shot | ejec 2 (5.13s)
+[ok] claude-sonnet-4-6 | B3 | few_shot | ejec 3 (4.85s)
+[ok] claude-sonnet-4-6 | B4 | zero_shot | ejec 1 (9.85s)
+[ok] claude-sonnet-4-6 | B4 | zero_shot | ejec 2 (9.27s)
+[ok] claude-sonnet-4-6 | B4 | zero_shot | ejec 3 (11.35s)
+[ok] claude-sonnet-4-6 | B4 | few_shot | ejec 1 (5.44s)
+[ok] claude-sonnet-4-6 | B4 | few_shot | ejec 2 (4.91s)
+[ok] claude-sonnet-4-6 | B4 | few_shot | ejec 3 (4.73s)
+[ok] claude-sonnet-4-6 | B5 | zero_shot | ejec 1 (5.91s)
+[ok] claude-sonnet-4-6 | B5 | zero_shot | ejec 2 (6.68s)
+[ok] claude-sonnet-4-6 | B5 | zero_shot | ejec 3 (6.55s)
+[ok] claude-sonnet-4-6 | B5 | few_shot | ejec 1 (3.4s)
+[ok] claude-sonnet-4-6 | B5 | few_shot | ejec 2 (4.4s)
+[ok] claude-sonnet-4-6 | B5 | few_shot | ejec 3 (3.42s)
+[ok] claude-sonnet-4-6 | B6 | zero_shot | ejec 1 (9.76s)
+[ok] claude-sonnet-4-6 | B6 | zero_shot | ejec 2 (10.08s)
+[ok] claude-sonnet-4-6 | B6 | zero_shot | ejec 3 (10.18s)
+[ok] claude-sonnet-4-6 | B6 | few_shot | ejec 1 (7.37s)
+[ok] claude-sonnet-4-6 | B6 | few_shot | ejec 2 (7.19s)
+[ok] claude-sonnet-4-6 | B6 | few_shot | ejec 3 (7.13s)
+[ok] claude-sonnet-4-6 | B7 | zero_shot | ejec 1 (3.79s)
+[ok] claude-sonnet-4-6 | B7 | zero_shot | ejec 2 (4.34s)
+[ok] claude-sonnet-4-6 | B7 | zero_shot | ejec 3 (4.18s)
+[ok] claude-sonnet-4-6 | B7 | few_shot | ejec 1 (3.09s)
+[ok] claude-sonnet-4-6 | B7 | few_shot | ejec 2 (3.21s)
+[ok] claude-sonnet-4-6 | B7 | few_shot | ejec 3 (3.26s)
+[ok] claude-sonnet-4-6 | B8 | zero_shot | ejec 1 (6.15s)
+[ok] claude-sonnet-4-6 | B8 | zero_shot | ejec 2 (6.7s)
+[ok] claude-sonnet-4-6 | B8 | zero_shot | ejec 3 (6.92s)
+[ok] claude-sonnet-4-6 | B8 | few_shot | ejec 1 (4.96s)
+[ok] claude-sonnet-4-6 | B8 | few_shot | ejec 2 (5.08s)
+[ok] claude-sonnet-4-6 | B8 | few_shot | ejec 3 (5.17s)
+[ok] claude-sonnet-4-6 | I1 | zero_shot | ejec 1 (17.52s)
+[ok] claude-sonnet-4-6 | I1 | zero_shot | ejec 2 (15.66s)
+[ok] claude-sonnet-4-6 | I1 | zero_shot | ejec 3 (14.26s)
+[ok] claude-sonnet-4-6 | I1 | few_shot | ejec 1 (12.05s)
+[ok] claude-sonnet-4-6 | I1 | few_shot | ejec 2 (13.36s)
+[ok] claude-sonnet-4-6 | I1 | few_shot | ejec 3 (12.28s)
+[ok] claude-sonnet-4-6 | I2 | zero_shot | ejec 1 (14.05s)
+[ok] claude-sonnet-4-6 | I2 | zero_shot | ejec 2 (13.37s)
+[ok] claude-sonnet-4-6 | I2 | zero_shot | ejec 3 (12.06s)
+[ok] claude-sonnet-4-6 | I2 | few_shot | ejec 1 (10.06s)
+[ok] claude-sonnet-4-6 | I2 | few_shot | ejec 2 (10.0s)
+[ok] claude-sonnet-4-6 | I2 | few_shot | ejec 3 (10.03s)
+[ok] claude-sonnet-4-6 | I3 | zero_shot | ejec 1 (9.07s)
+[ok] claude-sonnet-4-6 | I3 | zero_shot | ejec 2 (9.18s)
+[ok] claude-sonnet-4-6 | I3 | zero_shot | ejec 3 (10.48s)
+[ok] claude-sonnet-4-6 | I3 | few_shot | ejec 1 (9.42s)
+[ok] claude-sonnet-4-6 | I3 | few_shot | ejec 2 (8.17s)
+[ok] claude-sonnet-4-6 | I3 | few_shot | ejec 3 (8.02s)
+[ok] claude-sonnet-4-6 | I4 | zero_shot | ejec 1 (16.23s)
+[ok] claude-sonnet-4-6 | I4 | zero_shot | ejec 2 (16.52s)
+[ok] claude-sonnet-4-6 | I4 | zero_shot | ejec 3 (13.94s)
+[ok] claude-sonnet-4-6 | I4 | few_shot | ejec 1 (6.68s)
+[ok] claude-sonnet-4-6 | I4 | few_shot | ejec 2 (8.54s)
+[ok] claude-sonnet-4-6 | I4 | few_shot | ejec 3 (8.91s)
+[ok] claude-sonnet-4-6 | I5 | zero_shot | ejec 1 (16.89s)
+[ok] claude-sonnet-4-6 | I5 | zero_shot | ejec 2 (14.58s)
+[ok] claude-sonnet-4-6 | I5 | zero_shot | ejec 3 (13.11s)
+[ok] claude-sonnet-4-6 | I5 | few_shot | ejec 1 (13.31s)
+[ok] claude-sonnet-4-6 | I5 | few_shot | ejec 2 (9.22s)
+[ok] claude-sonnet-4-6 | I5 | few_shot | ejec 3 (14.98s)
+[ok] claude-sonnet-4-6 | I6 | zero_shot | ejec 1 (10.67s)
+[ok] claude-sonnet-4-6 | I6 | zero_shot | ejec 2 (12.64s)
+[ok] claude-sonnet-4-6 | I6 | zero_shot | ejec 3 (11.37s)
+[ok] claude-sonnet-4-6 | I6 | few_shot | ejec 1 (8.81s)
+[ok] claude-sonnet-4-6 | I6 | few_shot | ejec 2 (6.37s)
+[ok] claude-sonnet-4-6 | I6 | few_shot | ejec 3 (5.98s)
+[ok] claude-sonnet-4-6 | I7 | zero_shot | ejec 1 (22.88s)
+[ok] claude-sonnet-4-6 | I7 | zero_shot | ejec 2 (21.23s)
+[ok] claude-sonnet-4-6 | I7 | zero_shot | ejec 3 (11.52s)
+[ok] claude-sonnet-4-6 | I7 | few_shot | ejec 1 (10.99s)
+[ok] claude-sonnet-4-6 | I7 | few_shot | ejec 2 (10.21s)
+[ok] claude-sonnet-4-6 | I7 | few_shot | ejec 3 (9.72s)
+[ok] claude-sonnet-4-6 | I8 | zero_shot | ejec 1 (15.01s)
+[ok] claude-sonnet-4-6 | I8 | zero_shot | ejec 2 (15.42s)
+[ok] claude-sonnet-4-6 | I8 | zero_shot | ejec 3 (14.43s)
+[ok] claude-sonnet-4-6 | I8 | few_shot | ejec 1 (11.37s)
+[ok] claude-sonnet-4-6 | I8 | few_shot | ejec 2 (10.85s)
+[ok] claude-sonnet-4-6 | I8 | few_shot | ejec 3 (10.88s)
+[ok] claude-sonnet-4-6 | A1 | zero_shot | ejec 1 (15.46s)
+[ok] claude-sonnet-4-6 | A1 | zero_shot | ejec 2 (17.9s)
+[ok] claude-sonnet-4-6 | A1 | zero_shot | ejec 3 (16.17s)
+[ok] claude-sonnet-4-6 | A1 | few_shot | ejec 1 (11.56s)
+[ok] claude-sonnet-4-6 | A1 | few_shot | ejec 2 (10.89s)
+[ok] claude-sonnet-4-6 | A1 | few_shot | ejec 3 (10.87s)
+[ok] claude-sonnet-4-6 | A2 | zero_shot | ejec 1 (20.64s)
+[ok] claude-sonnet-4-6 | A2 | zero_shot | ejec 2 (25.36s)
+[ok] claude-sonnet-4-6 | A2 | zero_shot | ejec 3 (22.45s)
+[ok] claude-sonnet-4-6 | A2 | few_shot | ejec 1 (16.16s)
+[ok] claude-sonnet-4-6 | A2 | few_shot | ejec 2 (16.64s)
+[ok] claude-sonnet-4-6 | A2 | few_shot | ejec 3 (17.93s)
+[ok] claude-sonnet-4-6 | A3 | zero_shot | ejec 1 (13.03s)
+[ok] claude-sonnet-4-6 | A3 | zero_shot | ejec 2 (14.83s)
+[ok] claude-sonnet-4-6 | A3 | zero_shot | ejec 3 (12.71s)
+[ok] claude-sonnet-4-6 | A3 | few_shot | ejec 1 (13.0s)
+[ok] claude-sonnet-4-6 | A3 | few_shot | ejec 2 (12.68s)
+[ok] claude-sonnet-4-6 | A3 | few_shot | ejec 3 (11.08s)
+[ok] claude-sonnet-4-6 | A4 | zero_shot | ejec 1 (12.96s)
+[ok] claude-sonnet-4-6 | A4 | zero_shot | ejec 2 (12.03s)
+[ok] claude-sonnet-4-6 | A4 | zero_shot | ejec 3 (13.7s)
+[ok] claude-sonnet-4-6 | A4 | few_shot | ejec 1 (11.45s)
+[ok] claude-sonnet-4-6 | A4 | few_shot | ejec 2 (11.42s)
+[ok] claude-sonnet-4-6 | A4 | few_shot | ejec 3 (11.66s)
+[ok] claude-sonnet-4-6 | A5 | zero_shot | ejec 1 (19.65s)
+[ok] claude-sonnet-4-6 | A5 | zero_shot | ejec 2 (17.54s)
+[ok] claude-sonnet-4-6 | A5 | zero_shot | ejec 3 (14.68s)
+[ok] claude-sonnet-4-6 | A5 | few_shot | ejec 1 (8.41s)
+[ok] claude-sonnet-4-6 | A5 | few_shot | ejec 2 (8.49s)
+[ok] claude-sonnet-4-6 | A5 | few_shot | ejec 3 (8.5s)
+[ok] claude-sonnet-4-6 | A6 | zero_shot | ejec 1 (23.37s)
+[ok] claude-sonnet-4-6 | A6 | zero_shot | ejec 2 (17.12s)
+[ok] claude-sonnet-4-6 | A6 | zero_shot | ejec 3 (20.01s)
+[ok] claude-sonnet-4-6 | A6 | few_shot | ejec 1 (14.82s)
+[ok] claude-sonnet-4-6 | A6 | few_shot | ejec 2 (16.09s)
+[ok] claude-sonnet-4-6 | A6 | few_shot | ejec 3 (16.67s)
+[ok] claude-sonnet-4-6 | C1 | zero_shot | ejec 1 (20.33s)
+[ok] claude-sonnet-4-6 | C1 | zero_shot | ejec 2 (20.79s)
+[ok] claude-sonnet-4-6 | C1 | zero_shot | ejec 3 (23.63s)
+[ok] claude-sonnet-4-6 | C1 | few_shot | ejec 1 (16.88s)
+[ok] claude-sonnet-4-6 | C1 | few_shot | ejec 2 (14.92s)
+[ok] claude-sonnet-4-6 | C1 | few_shot | ejec 3 (14.27s)
+[ok] claude-sonnet-4-6 | C2 | zero_shot | ejec 1 (25.29s)
+[ok] claude-sonnet-4-6 | C2 | zero_shot | ejec 2 (20.85s)
+[ok] claude-sonnet-4-6 | C2 | zero_shot | ejec 3 (22.58s)
+[ok] claude-sonnet-4-6 | C2 | few_shot | ejec 1 (21.19s)
+[ok] claude-sonnet-4-6 | C2 | few_shot | ejec 2 (19.2s)
+[ok] claude-sonnet-4-6 | C2 | few_shot | ejec 3 (19.53s)
+[ok] claude-sonnet-4-6 | C3 | zero_shot | ejec 1 (6.22s)
+[ok] claude-sonnet-4-6 | C3 | zero_shot | ejec 2 (6.79s)
+[ok] claude-sonnet-4-6 | C3 | zero_shot | ejec 3 (6.51s)
+[ok] claude-sonnet-4-6 | C3 | few_shot | ejec 1 (5.26s)
+[ok] claude-sonnet-4-6 | C3 | few_shot | ejec 2 (5.54s)
+[ok] claude-sonnet-4-6 | C3 | few_shot | ejec 3 (4.71s)
+[ok] claude-sonnet-4-6 | C4 | zero_shot | ejec 1 (21.92s)
+[ok] claude-sonnet-4-6 | C4 | zero_shot | ejec 2 (20.98s)
+[ok] claude-sonnet-4-6 | C4 | zero_shot | ejec 3 (26.54s)
+[ok] claude-sonnet-4-6 | C4 | few_shot | ejec 1 (17.2s)
+[ok] claude-sonnet-4-6 | C4 | few_shot | ejec 2 (16.28s)
+[ok] claude-sonnet-4-6 | C4 | few_shot | ejec 3 (18.69s)
+[ok] claude-sonnet-4-6 | C5 | zero_shot | ejec 1 (22.99s)
+[ok] claude-sonnet-4-6 | C5 | zero_shot | ejec 2 (23.03s)
+[ok] claude-sonnet-4-6 | C5 | zero_shot | ejec 3 (23.22s)
+[ok] claude-sonnet-4-6 | C5 | few_shot | ejec 1 (18.88s)
+[ok] claude-sonnet-4-6 | C5 | few_shot | ejec 2 (19.96s)
+[ok] claude-sonnet-4-6 | C5 | few_shot | ejec 3 (16.29s)
+[ok] claude-sonnet-4-6 | C6 | zero_shot | ejec 1 (13.92s)
+[ok] claude-sonnet-4-6 | C6 | zero_shot | ejec 2 (18.0s)
+[ok] claude-sonnet-4-6 | C6 | zero_shot | ejec 3 (18.37s)
+[ok] claude-sonnet-4-6 | C6 | few_shot | ejec 1 (12.19s)
+[ok] claude-sonnet-4-6 | C6 | few_shot | ejec 2 (11.46s)
+[ok] claude-sonnet-4-6 | C6 | few_shot | ejec 3 (12.83s)
+[ok] claude-sonnet-4-6 | C7 | zero_shot | ejec 1 (6.95s)
+[ok] claude-sonnet-4-6 | C7 | zero_shot | ejec 2 (6.51s)
+[ok] claude-sonnet-4-6 | C7 | zero_shot | ejec 3 (6.7s)
+[ok] claude-sonnet-4-6 | C7 | few_shot | ejec 1 (4.07s)
+[ok] claude-sonnet-4-6 | C7 | few_shot | ejec 2 (4.1s)
+[ok] claude-sonnet-4-6 | C7 | few_shot | ejec 3 (4.16s)
+[ok] claude-sonnet-4-6 | C8 | zero_shot | ejec 1 (5.14s)
+[ok] claude-sonnet-4-6 | C8 | zero_shot | ejec 2 (4.51s)
+[ok] claude-sonnet-4-6 | C8 | zero_shot | ejec 3 (4.02s)
+[ok] claude-sonnet-4-6 | C8 | few_shot | ejec 1 (3.74s)
+[ok] claude-sonnet-4-6 | C8 | few_shot | ejec 2 (3.51s)
+[ok] claude-sonnet-4-6 | C8 | few_shot | ejec 3 (3.66s)
+
+Resumen: 0 ya existÝan, 180 procesadas.
+Duracion: 34,9 min
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_005708_claude-sonnet-4-6\20261003_013201_03_fin_ejecucion.png  (1920x1080)  sha256=94421f454c5b2a54
+
+===== 5. Verificacion posterior (pendientes deben ser 0) =====
+Resumen: 180 ya existÝan, 0 pendientes.
+
+===== 6. Resumen =====
+
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20261003013201
+**********************

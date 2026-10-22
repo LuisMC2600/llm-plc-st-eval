@@ -1,0 +1,434 @@
+[
+ {
+  "codigo": "C5-147",
+  "det": [
+   "S",
+   "S",
+   "N",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1/E2/E4; omite E3 y presenta como error el llamado continuo de t1."
+ },
+ {
+  "codigo": "C5-162",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1-E4; añade como defecto que el estado 2 no avance, lo cual no es error."
+ },
+ {
+  "codigo": "C5-131",
+  "det": [
+   "S",
+   "S",
+   "N",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1/E2/E4; omite E3 e inventa que kD debe mantenerse activo en estado 2."
+ },
+ {
+  "codigo": "C5-181",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "N"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   ""
+  ],
+  "adic": 0,
+  "inv": 6,
+  "obs": "Detecta E1/E2/E3; omite kM en paro y añade múltiples faltas de control falsas."
+ },
+ {
+  "codigo": "C5-144",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1-E4; añade inicialización del estado 0 como defecto."
+ },
+ {
+  "codigo": "C5-134",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Detecta E1-E4 correctamente."
+ },
+ {
+  "codigo": "C5-107",
+  "det": [
+   "S",
+   "S",
+   "N",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Detecta E1/E2/E4; omite el reinicio de t1 en paro/rearranque."
+ },
+ {
+  "codigo": "C5-128",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1-E4; añade supuesto bloqueo o motor solo con kM en estado 2."
+ },
+ {
+  "codigo": "C5-108",
+  "det": [
+   "N",
+   "S",
+   "N",
+   "N"
+  ],
+  "cor": [
+   "",
+   "S",
+   "",
+   ""
+  ],
+  "adic": 0,
+  "inv": 3,
+  "obs": "No detecta E1/E3/E4; identifica el tiempo muerto e inventa escenarios de botones erróneos."
+ },
+ {
+  "codigo": "C5-104",
+  "det": [
+   "S",
+   "S",
+   "N",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1/E2/E4; omite E3 e inventa que kD no se mantiene en estado 2."
+ },
+ {
+  "codigo": "C5-185",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Detecta E1-E4 correctamente."
+ },
+ {
+  "codigo": "C5-106",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Detecta E1-E4 correctamente."
+ },
+ {
+  "codigo": "C5-103",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Detecta E1-E4 correctamente."
+ },
+ {
+  "codigo": "C5-102",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 3,
+  "obs": "Detecta E1-E4; añade falsos sobre kY tras kD y manejo de botones durante t1."
+ },
+ {
+  "codigo": "C5-160",
+  "det": [
+   "S",
+   "S",
+   "N",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta E1/E2/E4; omite E3 y son falsos t1 continuo y falta de retorno a estado 0."
+ },
+ {
+  "codigo": "C5-133",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta E1-E4; añade inicialización en estado 0 y motor solo con kM como defectos."
+ },
+ {
+  "codigo": "C5-159",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Detecta E1-E4 correctamente."
+ },
+ {
+  "codigo": "C5-196",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta E1-E4; añade estado 2 sin acción e inicialización en estado 0 como defectos."
+ },
+ {
+  "codigo": "C5-164",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1-E4; añade como defecto que el estado 2 quede estable sin más acción."
+ },
+ {
+  "codigo": "C5-174",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Detecta E1-E4 correctamente."
+ },
+ {
+  "codigo": "C5-119",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Detecta E1-E4 correctamente."
+ },
+ {
+  "codigo": "C5-163",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 2,
+  "obs": "Detecta E1-E4; añade inicialización de t2 y estado inicial como defectos."
+ },
+ {
+  "codigo": "C5-121",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1-E4; añade estado 2 sin transición como defecto."
+ },
+ {
+  "codigo": "C5-153",
+  "det": [
+   "N",
+   "S",
+   "N",
+   "N"
+  ],
+  "cor": [
+   "",
+   "S",
+   "",
+   ""
+  ],
+  "adic": 0,
+  "inv": 3,
+  "obs": "Omite E1/E3/E4; identifica el tiempo muerto e inventa escenarios de botones e inicializaciones."
+ }
+]

@@ -1,0 +1,933 @@
+We need answer only JSON list of 24 objects. Need evaluate each code. We have to understand rubric. We have input JSON. Need produce exactly 24 objects in same order, fields codigo funcional iec coherencia claridad mantenibilidad just lines.
+
+We need reason carefully. Need not reveal. Let's analyze each response.
+
+We need obey fixed rules. Let's parse protocol. Task B2 valve delay TON. Harness steps:
+
+0: nivelAlto FALSE, wait 500 ms, expected FALSE (rest)
+1: nivelAlto TRUE, wait 3s, expected FALSE (not open yet)
+2: nivelAlto TRUE, wait 3s more (accum 6s), expected TRUE (open)
+3: nivelAlto FALSE, wait 200ms, expected FALSE (close immediate)
+4: nivelAlto TRUE, wait 6s, expected TRUE (new full cycle rearm)
+5: nivelAlto FALSE, wait 200ms, expected FALSE (close final)
+
+Need evaluate functional, iec, coherencia, claridad, mantenibilidad. Some fixed: funcional_fijo 3 for all passes. If compiles fails fixed null. For each, copy if not null exactly. If no null, assign.
+
+Let's list 24.
+
+1 B2-9847: Compiles passes. funcional_fijo=3 iec_fijo null. Code:
+FB_Valvula
+VAR_INPUT nivelAlto BOOL
+VAR_OUTPUT valvula BOOL
+VAR timer TON; estado BOOL
+IF timer.Q = FALSE THEN
+    timer(IN := nivelAlto, PT := T#5S);
+END_IF;
+
+IF nivelAlto THEN
+    IF timer.Q THEN
+        estado := TRUE;
+    END_IF;
+ELSE
+    estado := FALSE;
+    timer(IN := FALSE); // Reiniciar
+END_IF;
+
+valvula := estado;
+
+This code weird: Because only calls timer inside IF timer.Q=FALSE. Initial timer.Q FALSE -> calls timer with nivelAlto. Next cycle? In CODESYS, if timer.Q becomes TRUE, never calls timer again until? If nivelAlto goes FALSE, ELSE calls timer(IN:=FALSE) which resets timer, Q false. Then if timer.Q FALSE branch calls timer? There may be order issue: At top IF timer.Q = FALSE THEN timer(IN:=nivelAlto...). If nivelAlto low, timer reset. OK. But potential issue: When nivelAlto TRUE and timer.Q FALSE, calls timer each cycle. Once Q true, skips calling timer, but does it hold Q? TON output may retain? Actually if not called, Q remains previous TRUE? In CODESYS, if TON instance not called, outputs retain previous values. It remains true. Valve stays open. If nivelAlto false, ELSE calls timer(IN:=FALSE), resets Q to FALSE. Then valve false. At top next cycle timer.Q false and calls timer(IN:=FALSE), remains false. Works. But there is subtle: At initial cycle if nivelAlto TRUE, top IF calls timer, after maybe 5s Q true. Top IF prevents the timer from being called while Q true, freezing it. If nivelAlto stays TRUE, fine. If nivelAlto goes false, else resets. So passed harness. IEC: uses TON, but code not idiomatic: conditional calling of TON might be weird but compiles. Need iec assigned if null. It compiles no changes. Types correct. Could be 2 (compila sin cambios; declaraciones y tipos correctos). But there is non-idiomatic conditional call and state variable. Is it extension? no. I'd assign 2. Coherencia: mostly coherent but conditional calling of timer and estado. The condition IF timer.Q=FALSE then timer call before logic may be redundant/odd but works. Initialization? estado not initialized explicitly but default FALSE. timer default maybe uninitialized. But it calls. There is potential if timer.Q false but nivelAlto true, call timer each cycle. if timer.Q true skip call. No contradiction. "variables sin inicializar con efecto"? estado initialized default false; timer.Q default false. No dead states. Could rate 2 maybe. Claridad: structure basic. Names okay? "timer", "estado" somewhat generic but descriptive. Comments brief. Could be 2. But there's a comment "Inicialización del timer" with IF timer.Q = FALSE... it's not just init. Maybe 2. Mantenibilidad: no constants for PT but T#5S magic? The task explicitly uses T#5S. They use timer PT hardcoded. Could be 1 or 2. Since simple, parameters partially? No parameter for time, but local constant? Could be 1. Need be consistent.
+
+Need produce line for just_iec and other.
+
+But need determine ratings across all 24. Many are nearly identical textual variants. Need consistent scoring.
+
+We need preserve fixed functional=3 for passes. For iec null in all except? Some may have iec_fijo null all? The ones that fail too. We assign.
+
+Let's go through each.
+
+2 B2-6674: passes. Code simple:
+FB_Valvula VAR_INPUT nivelAlto VAR_OUTPUT valvula VAR tRetardo TON. tRetardo(IN:=nivelAlto, PT:=T#5S); valvula := tRetardo.Q; END_FUNCTION_BLOCK. This is ideal standard. IEC 3 (idiomatic TON). Coherencia 3? It's robust: direct TON handles reset immediate. No extraneous. Could be 3? The rubric: coherencia 3: además robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas. For simple, direct TON is correct. No redundancy. I'd give 3. Claridad 3? It has names descriptive, comments brief, explains why. Maybe 2 or 3: modularization not needed. For simple FB, separation and comments. Could be 3? We'll consider. Mantenibilidad 2 or 3? No duplicate logic, but PT is hardcoded magic. Task said use T#5S. Could still be maintained by changing code. But since it's simple, maybe 2: "parámetro como variable/constante declarado" maybe not; T#5S is literal. Rubric: 1 valores mágicos por todas partes; 2 parámetros como variables o constantes declaradas; 3 diseño extensible. Here one magic value T#5S. But the task specifically exactly one time. Do we mark 1? "valores mágicos por todas partes" not exactly; "parámetros como variables o constantes declaradas" no. Could be 1 or 2. Many such simple. Need consistent. We can give 2 for maintainability if changes localized (one line assignment). T#5S is magic but local. The rubric says 1 modificable con esfuerzo; constantes parcialmente parametrizadas. 2 parámetros como variables o constantes declaradas; cambios localizados. Because it's localized, maybe 2 despite no constant. Hmm.
+
+3 B2-1651: passes. Code similar to B2-9847 but corrected? 
+VAR timer TON; estado BOOL.
+IF NOT nivelAlto THEN
+    timer(IN := FALSE);
+    estado := FALSE;
+END_IF;
+IF nivelAlto THEN
+    timer(IN := TRUE, PT := T#5S);
+    IF timer.Q THEN estado := TRUE;
+ELSE
+    estado := FALSE;
+    timer(IN := FALSE);
+END_IF;
+valvula := estado.
+
+This calls timer unconditionally when not level? Actually if NOT nivelAlto then timer(IN:=FALSE), estado false. Then second IF nivelAlto false so ELSE estado false timer false. It calls timer twice when not level? First IF NOT nivelAlto and ELSE both call timer(IN:=FALSE). Redundant. When nivelAlto true, only in second IF calls timer(IN:=TRUE, PT:=T#5S). Works. IEC 2 maybe not idiomatic? It compiles. Types correct. Could be 1? It uses TON but has redundant calls and PT repeated. Standard TON, no extension. I'd say iec 2. Coherencia 2: redundant calls but no contradiction; initialization correct. Claridad 2: names okay, comments brief; but redundant control. Mantenibilidad 1 maybe due duplicated PT and timer resets? Hmm.
+
+Need be consistent.
+
+4 B2-3609: same as B2-6674 but with comments slightly: "Retardo de 5 s para abrir... cierra..." Direct TON. Pass. Similar ideal. Rate high.
+
+5 B2-5560: direct TON with extensive comments. Pass. Ideal with good comments. IEC 3. Coherencia 3. Claridad 3 (comments explain why). Mantenibilidad maybe 2 (T#5S inline) or 3? The code has only T#5S as literal; no FB inputs for time. But no duplication. Could be 3? "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)" Could arguably not extensible for time, but logic no duplication. The rubric is ordinal, direct one-timer logic is simple but no need to extensible. I'd maybe give 3 for maintainability to good simple? But if strict, 2 because no parameter constant. However many ideal simple implementations would get 2. Need choose.
+
+6 B2-5675: direct TON with comments. Same.
+
+7 B2-7015: direct TON simple comments.
+
+8 B2-6278: direct TON with clear comments.
+
+9 B2-3727: compiles fails 3 of 6 (pasos 1,2,4). Code uses TP instead of TON. TP is pulse timer: when IN true, Q true for PT duration then false even if IN stays true. It fails step 2: after 6s accum, TP Q false (since pulse done), expected TRUE; step 4 same; step1 maybe? Step 1 after 3s with TP Q is true (pulse active) expected FALSE, so fails step1. Step0? Q false, okay. Step3? maybe Q false, expected false. Step5? false. So functional: compiles but fails. Needs rate 0,1,2 according. It implements logic with wrong timer type. It fails nominal? In protocol, case nominal maybe opening after 5s continuous; with TP opens immediately and closes after 5s while level still high, wrong. Fails nominal opening as required. So funcional 0? The rubric 0: no implementa la lógica pedida o falla en el caso nominal. Here wrong timer type; case nominal (maintain high >5s) fails (after 5s valve false). So functional 0. But compiles. Since functional_fijo null, assign 0. IEC: compiles, uses standard TP but wrong semantics. IEC compliance: 2? Declarations and types correct. It uses standard block. Could be 2 or 3? It compiles without changes, standard TP but not the correct block. "Cumplimiento IEC 61131-3" is about standard conformance, not correct logic. Idiom? It uses standard TP, but not idiomatic for task (incorrect). It is still standard. Could be 2 (compila sin cambios; declaraciones y tipos correctos). Not 3 because inappropriate standard block? Hmm: "usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." TP is standard block, well instanciated, but not POU adecuado? Actually "adecuado" means fits purpose; TP is not for delay continuous. So maybe 2. Coherencia: logic coherent? It uses TP and then IF NOT nivelAlto override. No contradiction but incorrect timer semantics. There is redundancy: valvula := tNivelAlto.Q; then IF NOT nivelAlto valvula:=FALSE; not harmful but redundant since TP Q false when IN false. Could be 2? Wait coherencia: 1 logic mostly coherent with redundancies; 2 no contradictions, initialization correct. The code is coherent in sense no dead states; but logic doesn't meet requirement due wrong timer. Coherencia criteria focuses contradictions, initializations, transitions. Here there is a redundant override but effective. Could be 2. However there is a semantic issue: TP output Q true for 5s after any rising edge regardless of continuous level. Logic if NOT nivelAlto forces close, but if level remains high after pulse Q false, valve closes. They perhaps intended "if level dropped close" but code doesn't open again until next rising edge. There's no additional state. Could call "estado muerto" when level still high after 6s: TP Q false, NOT false, valve false. It remains false until level falls then rises. This is wrong logic but not exactly dead? I'd give coherencia 2? Maybe 1 due wrong timer semantic causing behavior contradictory with comments? Need not over-penalize; but the code is coherent syntax/logic but uses pulse timer that could be considered wrong. We can assign 1 maybe? Need line.
+
+Let's define all?
+
+10 B2-6755: direct TON, passes. Rate high.
+
+11 B2-7829: compiles fails 3 steps 1,2,4. Same as B2-3727 with TP, different variable name. Same ratings.
+
+12 B2-7426: pass direct TON with IF timerNivelAlto.Q THEN valvula TRUE ELSE valvula FALSE. It is basically direct but uses IF. Standard. Rate maybe iec 3? It uses TON idiomatic. Coherencia 3. Claridad 3? Comments. Mantenibilidad 2.
+
+13 B2-8183: direct TON simple.
+
+14 B2-4395: direct TON with IF. Similar to 7426.
+
+15 B2-4528: direct TON.
+
+16 B2-8816: direct TON.
+
+17 B2-9944: direct TON.
+
+18 B2-6018: direct TON.
+
+19 B2-4891: compiles but not simulated: declares nivelAlto and valvula as VAR not input/output. Code:
+FUNCTION_BLOCK FB_Valvula
+VAR
+    nivelAlto : BOOL; // Entrada: ...
+    valvula : BOOL;   // Salida: ...
+    timer : TON;
+END_VAR
+
+timer(IN := nivelAlto, PT := T#5S);
+IF timer.Q THEN valvula:=TRUE ELSE valvula:=FALSE;
+END_FUNCTION_BLOCK
+
+This compiles but harness cannot write inputs because not VAR_INPUT. So functional_fijo null. Need assign 0,1,2 reading code, never 3. The logic itself with a nivelAlto input if connected would work (TON). But interface non-conforming. It fails interface, not simulation. According to rubric, "si compila pero no se pudo simular (interfaz no conforme): funcional 0,1 o 2 leyendo el código; nunca 3." The code would logically function if input/output declarations corrected. But the task explicitly requires var input nivelAlto and output valvula. It fails interface. Functional 1 or 2? It implements logic correctly but not declared as interface. The case nominal if manually assigned internal variable? Could perhaps work, but harness can't write. Because functional evaluation is about implemented logic; it's present, but nonconforming interface means cannot operate from harness. I'd assign functional 1 (falla en la interfaz pero lógica nominal viable; no simulation). Need justify. Or 2? The rubric 2 correct in nominal and most limits; but "no se pudo simular", cannot confirm. We are to read code. I'd give 1 or 2. It has no T#5S? yes. It uses TON correctly. But input/output missing. Functional maybe 1: logic is coherent but I/O nonconform, requiring correction to work. "1: funciona en el caso nominal pero falla en casos límite evidentes" isn't exactly. "0: no implementa la lógica pedida o falla en el caso nominal." It does implement logic but not interface. I'd select 2? But code if integrated internally maybe works. Since it can't be simulated, no guarantee. The instruction says "Si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3." So we can give 2 if code logic correct despite nonconform interface. I'd give 2? Let's think. The code declares nivelAlto as local not input, valvula local not output. Therefore it does not provide the requested POU interface. But the internal and output is not accessible. It does not fulfill functional requirement as a block with input/output. 1 might be more appropriate. We'll need be consistent with single such. I'd assign funcional=2? Hmm.
+
+We should not penalize interface too much? Task said with variable de entrada nivelAlto and salida valvula. It fails. Functional: if harness can't write input and read output, program is useless. But "por código" it's one line TON. I'd assign 1: basic logic present but interface nonconforme, requires correction to use. "1 Básico: funciona en el caso nominal pero falla en casos límite evidentes" not perfect. But maybe 1 for no proper I/O. We'll decide.
+
+IEC compliance: compiles without changes, declarations and types correct? It declares nivelAlto and valvula as VAR not VAR_INPUT/VAR_OUTPUT. Is that IEC? It compiles, but PoU interface doesn't match. Standard syntax okay but semantic intent wrong. IEC compliance maybe 1? The variable declaration section is valid. It does not use extension. But "no compila:0, 1: compila solo tras correcciones menores, o usa extensiones; 2: compila sin cambios; declaraciones y tipos correctos." It compiled without changes. Are declarations and types correct? They are valid but not the requested VAR_INPUT/OUTPUT. But IEC compliance criterion is not about task demands, but standard. It uses standard TON. So iec=2 or 3. Because interface not conforme, maybe 1? Hmm. The rubric says "Cumplimiento IEC 61131-3. 0: no compila; sintaxis o declaraciones inválidas. 1: compila solo tras correcciones menores, o usa extensiones fuera del estándar. 2: compila sin cambios; declaraciones y tipos correctos. 3: compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." Here compila sin cambios, valid declarations. It uses TON well, but POU interface is not idiomatic for I/O. Could be 2. Need not over-penalize interface under IEC; but it declares local vars instead of input/output, which is possible but not appropriate. "declaraciones y tipos correctos" could still be considered types correct. I'd assign 2.
+
+Coherencia: It has no contradictions; timer initializes Q false; valvula assigned false initially. It is coherent. Could be 3? But no reset explicit except TON. Robust. Claridad: comments maybe okay, but variable comments claim Entrada/Salida though declared local; comments misleading. Could be 2 or 1. Mantenibilidad: T#5S hardcoded; simple. Maybe 2.
+
+20 B2-3672: direct TON pass.
+21 B2-5243: compiles fails 1 pass (paso 1 numbered from 0). Code similar to B2-9847 but missing PT in timer call when nivelAlto true? Let's analyze. It says:
+VAR timer TON; estado BOOL
+
+IF NOT nivelAlto THEN
+    timer(IN := FALSE);
+    estado := FALSE;
+END_IF;
+
+IF nivelAlto THEN
+    timer(IN := TRUE);
+    IF timer.Q THEN
+        estado := TRUE;
+    END_IF;
+ELSE
+    estado := FALSE;
+    timer(IN := FALSE);
+END_IF;
+
+valvula := estado;
+
+This uses timer(IN:=TRUE) without PT, and never set PT. Maybe PT default? In CODESYS TON PT is TIME? But if PT not assigned, maybe default T#0ms? Actually input PT if not assigned in call? In ST function block call with named params can omit some inputs? If PT omitted, perhaps retains prior/default (0s), so timer.Q becomes true immediately when IN true? Then at step 1 (nivelAlto true 3s), expected false; but if PT default 0s, valve opens immediately => fails step1. It passes other steps? Step2 true okay; step4 true; step3/5 close. Fails step1 only. This matches. So functional: It fails edge case but also not correct nominal? It opens immediately instead of after 5s, which is core logic. It only fails step1? Actually step1 is at 3s expected false but code opens immediately. That's not just edge; it's nominal: no 5 second delay. So funcional 0? The rubric: 0 no implementa la lógica pedida o falla en caso nominal. Yes, falla requested delay. But it passes many steps. Could be 1? The failure is because PT not set. It opens with zero delay, so not implementing 5s. I'd give functional 1? "1 funciona en el caso nominal pero falla en casos límite" no, it doesn't work nominally. 0 seems. But since compiles but fails step 1 and all passed else? It fails at step1 (not open after 3s) because it opened early. The requirement was 5s delay. It fails nominal. So functional 0. But maybe if PT default unknown; in CODESYS TON PT default perhaps T#0ms; yes. So 0.
+
+IEC: compiles. It omitted PT in one call, which is potentially a syntax error? But compiles because CODESYS allows omitted input. It uses standard TON but not fully instantiated with PT. Is it an extension? no. It compiles. Declarations correct. Could be 2? But it omits PT entirely; PT probably not set to T#5S. That is not a standard problem. I'd give iec 2? The code uses TON but not correctly configured, but standard syntax. Maybe 1 due incomplete timer call requiring correction. "compila solo tras correcciones menores" It did compile; but functional logic missing PT. Could assign iec 1? Actually IEC compliance: "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." It compiles without corrections. So not 1. "2: compila sin cambios; declaraciones y tipos correctos." Declarations and types correct. So 2. Coherencia: contradicting? It calls timer(IN:=TRUE) but never defines PT, so timer function maybe uses default 0; state variable. It's coherent but incomplete. Could be 2? Maybe 1 due missing PT causing no real timer. The logic flow no contradiction. But missing PT is a logic bug not contradiction. I'd assign coherencia 2? Hmm.
+
+22 B2-6383: direct TON pass.
+23 B2-2583: fail 3 steps 1,2,4 with TP. Same as B2-3727.
+24 B2-2211: direct TON pass.
+
+Need create 24 objects.
+
+Need verify fixed values. Many passes have funcional_fijo=3. The fails have null. B2-4891 has null. Need assign functional 0-2 for fails. Need assign iec for all null.
+
+Let's decide scoring scheme consistently.
+
+Categories:
+
+Functional:
+- Passes: 3 fixed.
+- B2-3727 (TP fails steps 1,2,4): I'd assign 0 because uses wrong timer type and fails requirement. Maybe 1? Need examine. Protocol: step1 expected FALSE after 3s. TP with PT 5s gives TRUE for first 5 seconds. So fails step1,2,4. It opens immediately and closes after 5s while level still high. The main logic is wrong. So functional 0.
+- B2-7829: same 0.
+- B2-5243: fails step1, opens immediately due missing PT. It also fails main delay. Functional 0.
+- B2-2583: same TP 0.
+- B2-4891: compiles no simulate due interface; logic would be correct if inputs/output configured. But we need choose 0-2. I'd assign functional 1 (because logic present but I/O nonconform, cannot use directly). Or 2? Let's scrutinize instruction: "Si compila pero no se pudo simular (interfaz no conforme): funcional 0, 1 o 2 leyendo el código; nunca 3." It also says "puntúa lo que el código es, no lo que el asistente probablemente quiso hacer." The code as an FB has no external input/output. It cannot receive nivelAlto from harness. Its valve output is not accessible. So as a block, it does not fulfill interface. However functional logic within local variable is correct. In many exams, missing I/O is significant but the control logic might get 1. I'd assign 1. Justify: "La lógica TON es correcta, pero nivelAlto/valvula no están declaradas como VAR_INPUT/VAR_OUTPUT; sin interfaz conforme no opera." That fits 1.
+
+IEC:
+For all direct TON one-liners: should be 3. For conditional/redundant ones: 2. For TP ones: 2? Maybe 2. For missing PT: 2. For B2-4891: 2 or 1. We'll set 2. Need justify.
+
+Let's classify each:
+
+1 B2-9847: passes, code with estado, conditional TON call. IEC: 2? It compiles without changes, declarations correct, standard TON. But not idiomatic: conditional invocation and extra state. "Compila sin cambios; declaraciones y tipos correctos." 2. Coherencia: 2. Claridad: 2. Mantenibilidad: 1 or 2. Need maybe 1 due magic T#5S and duplicate logic. But "cambios localizados" maybe there is repeated reset and call. I'd assign 1? Let's look at criteria: 0: valores mágicos por todas partes; impossible rewrite. 1: modificable con esfuerzo; constantes parcialmente parametrizadas. 2: parámetros como variables o constantes declaradas; cambios localizados. Here they have no named constant for T#5S; one literal. But "cambios localizados" could be line `PT := T#5S`. The time appears once? Actually in top call `PT := T#5S`; one occurrence. Could modify there. No duplication except logic with timer resets. I'd give 2. But note the conditional `IF timer.Q = FALSE THEN timer(IN := nivelAlto, PT := T#5S);` and ELSE call without PT. There is only one PT. The logic is confusing but maintainable if understand. I'd assign 2.
+
+2 B2-6674: direct TON. IEC 3. Coherencia 3. Claridad 2? It has comments "La valvula abre tras 5 s..." one comment. Names descriptive. Structure minimal. Could be 3? There is no modularization needed, but the FB itself is modular. Comments brief. I'd give 3? The rubric: 3 "además modularización adecuada (FB reutilizable, separación entre lógica y E/S) y comentarios que explican el porqué." This code is a reusable FB with input/output, no excessive comments but concise. Could qualify 3. But to avoid all direct TON max, consider clarity 2? They have descriptive names and a brief comment, separated. I'd say 2 or 3. Need consistent. For highly commented ones give 3, for minimal direct maybe 2. Since task says comments brief. A one-line comment explaining behavior is enough. I'd maybe give 3 to ideal direct one-liners: they explain why (delay to open, immediate close). But some are nearly identical. We can differentiate less? We must be consistent 24. Could assign 3 for all direct TON with comment explaining why and variable names. Mantenibilidad maybe 2 for all direct due no time constant. Hmm.
+
+Let's decide rating patterns:
+
+Group A: Direct TON (passes) with comments:
+B2-6674, B2-3609, B2-5560, B2-5675, B2-7015, B2-6278, B2-6755, B2-8183, B2-7426, B2-4395, B2-4528, B2-8816, B2-9944, B2-6018, B2-3672, B2-6383, B2-2211
+(plus maybe B2-4395, B2-7426 with IF). All use TON correctly. IEC 3. Coherencia 3. Claridad: some with extensive comments (5560, 5675, 6278, 4528, 9944, 2211) maybe 3; others minimal but still clear maybe 2 or 3. Mantenibilidad: maybe 2 for all, maybe 3 for extensive? Rubric 3 "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica". They don't have time as FB input; but the POU itself is a FB. Not extensible regarding time. 2 is safer. For B2-5560 maybe 2 because T#5S inline; for B2-2211 maybe 2. We can assign 2 globally. But if we assign too many 2s, okay. Need not be strict max? The user wants score 0-3. Could assign 2 for maintainability for all simple because T#5S is literal but no duplication. Maybe 1 for TP? Hmm.
+
+Group B: Conditional/redundant TON (passes):
+1 B2-9847: IEC 2, coherencia 2, claridad 2, mantenibilidad 1 or 2. Let's assign 2 for mantenibilidad? There is state variable and timer, PT one place. 2.
+3 B2-1651: IEC 2, coherencia 2, claridad 2, mantenibilidad 2? It calls timer twice, PT in one place. 2.
+12 B2-7426: Actually direct TON but with IF timer.Q THEN valvula true else false. This is equivalent, maybe add state via output. IEC 3? It uses TON direct, then IF. Coherencia 3. Claridad 2 or 3. It has comments. Mantenibilidad 2.
+14 B2-4395: same pattern. 
+These are direct with IF; not any worse than direct assignment. Could be IEC 3. Coherencia 3.
+But B2-7426 and B2-4395 code:
+timerNivelAlto(IN := nivelAlto, PT := T#5S);
+IF timerNivelAlto.Q THEN valvula := TRUE; ELSE valvula := FALSE;
+This is idiomatic enough. Could give IEC 3, coherencia 3.
+
+Group C: TP (fails):
+9 B2-3727, 11 B2-7829, 23 B2-2583. All use TP. Functional 0. IEC 2. Coherencia maybe 1 or 2. Claridad 2? Comments accurate? Comments on B2-3727 "Temporiza el tiempo que el nivel está alto" is misleading; "La válvula se abre si el nivel está alto durante 5 segundos" true for pulse but false after pulse. They use TP inappropriate. Clarity: variable tNivelAlto, comments but misleading. I'd give 2? Names descriptive, comments adequate but wrong. Maybe 2. Coherencia: 1 due using TP with IF NOT nivelAlto redundant and cannot keep valve open. Could be 1. Mantenibilidad: 1? Because using wrong timer type requires replacing TP with TON; PT hardcoded. I'd give 1 or 2. Since one wrong block type, changes localized. Maybe 1: no parameterization and logic requires rewrite due pulse semantics. I'll assign coherencia=1, claridad=2, mantenibilidad=1 for all TP.
+
+But B2-2583 comments are similar. yes.
+
+Group D: B2-5243 missing PT: functional 0. IEC 2? Coherencia 1 or 2. The code has redundant timer reset and no PT. Coherencia: variable estado, timer called without PT. Missing PT is a logic flaw but not contradiction. I'd give 1 because conditions around timer are incomplete. Claridad 2? Comments maybe "Inicialización del timer" and "Control", but missing PT not evident. I'd give 2? Hmm. Mantenibilidad 1: no constant for time; timer PT not set; changes needed. 
+Need justify "el temporizador nunca recibe PT, por lo que la lógica de retardo queda sin configurar".
+
+Group E: B2-4891 no I/O: functional 1. IEC 2. Coherencia 2 (logic coherent), Claridad 2? Comments say input/output but declared local; misleading. 1? Let's assign 2 maybe. Mantenibilidad 2? T#5S hardcoded but simple. Could be 1? We'll decide.
+
+Need ensure no value outside allowed. If compiles and passes functional fixed 3. For fails functional not fixed 0-2. All good.
+
+Need maybe include exact "just_func_iec": a line. If funcional and iec were not fixed? The field contains "una línea, o \"\" si las dos estaban fijadas". We need for all. If funcional fixed but iec not, only one of two fixed, so need just_func_iec reason for iec. For passes with functional fixed 3 but iec null, we need justify iec. For fails, need justify maybe both? The instruction says "just_func_iec": "una línea, o \"\" si las dos estaban fijadas". Only if both fixed? Since none both? Maybe some may have functional_fijo null and iec_fijo null (fail). Then we justify both? The field can mention both funcional and iec? Need one line. "just_func_iec" to explain func/iec? Probably for reasons for any non-fixed. We can include both in one line for fails. But if functional_fijo was fixed, only iec. We'll craft concise.
+
+Need decide exact values per response. Let's map.
+
+I'll create table:
+
+1 B2-9847: funcional fixed 3. iec = 2 (compila, TON correct types, pero llamada condicional no idiomática). coherencia = 2 (redundancia en llamada al temporizador, sin contradicciones). claridad = 2 (nombres descriptivos, comentarios breves aunque lógica dispersa). mantenibilidad = 2 (retardo literal T#5S, cambios localizados; sin parametrización). Potential maybe 1? We'll keep 2.
+
+2 B2-6674: funcional fixed 3. iec = 3. coherencia = 3. claridad = 3. mantenibilidad = 2. Need just lines.
+just_func_iec: "TON estándar con PT:=T#5S, declaraciones correctas y uso idiomático." 
+just_coherencia: "Directo y sin estados; el TON se reinicia por IN y garantiza cierre inmediato."
+just_claridad: "Nombres claros y comentario breve que explica el retardo y cierre."
+just_mantenibilidad: "Único literal de tiempo T#5S localizado en la llamada; modificación simple."
+
+3 B2-1651: func fixed 3. iec = 2 maybe. coherencia = 2? It has redundant double timer call when not nivelAlto. Let's evaluate coherencia: "IF NOT nivelAlto THEN timer(IN:=FALSE); estado:=FALSE; END_IF; IF nivelAlto THEN ... ELSE estado:=FALSE; timer(IN:=FALSE); END_IF;" There's redundancy and repeated resets but no contradiction. Could be 2. Maybe 1? It is coherent but "redundancias o condiciones muertas sin efecto grave" fits 1? The rubric: 1: lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave. 2: sin contradicciones; inicialización correcta; transiciones completas. Since there is redundancy but not severe. I'd assign 2. Just: "Redundancia al resetear el temporizador en dos ramas, pero sin contradicciones." Hmm.
+Claridad = 2. Mantenibilidad = 2? It has PT one place. But there is duplicate reset code. Could be 1. Let's assign 1? The code has estado and timer with PT literal. But maintainability: duplicated reset/timer call increases effort. However task simple. I'd set 2 for code in B2-1651? Need not be harsh. Let's assign 1 for repeated logic? Hmm.
+
+Maybe I need a consistent framework for maintainability:
+- 3: no duplication, parameters or constants declared, modular extensible.
+- 2: no duplication but literal time hardcoded; or slight duplication but localized.
+- 1: duplication of logic or multiple magic values; requires effort to modify.
+- 0: impossible.
+
+For simple direct TON: 2 (literal T#5S hardcoded but one location).
+For B2-9847/B2-1651: they duplicate timer call/reset and PT maybe. I'd assign 1 because duplicate reset paths and magic PT. But could be 2. Need maybe avoid overly low: the code is still modifiable. Rubric 1 "modificable con esfuerzo; constantes parcialmente parametrizadas." There is duplication. I'd assign 2? Actually if two places reset timer: B2-1651 has `timer(IN := FALSE)` in two places; changing timer use maybe modifies two. B2-9847 has `timer(IN := FALSE)` in ELSE and `timer(IN := TRUE, PT := T#5S)` in IF; centralized enough. I'd use 2 for B2-9847, 1 for B2-1651? Hmm.
+
+Given we need not perfect, but consistent.
+
+Let's maybe define maintainability as:
+- Direct TON one-liners: 2 (time literal).
+- Direct TON with IF (B2-7426, B2-4395): 2.
+- Conditional/state TON (B2-9847, B2-1651, B2-5243): 1 (because they introduce additional state variable and conditional logic not parameterized).
+- TP: 1 (wrong timer, need replace).
+- B2-4891: 1 or 2.
+
+But if we set B2-9847 mantenibilidad=1, justify "retardo T#5S mágico y estado/temporizador con lógica condicional no parametrizada." That's okay.
+
+However B2-9847 passes harness. It is not a bad code; extra state maybe not harmful. But maintainability maybe 2. Hmm.
+
+Let's check what "Mantenibilidad" criteria: 0 valores mágicos por todas partes; imposible modificar sin reescribir. 1 modificable con esfuerzo; constantes parcialmente parametrizadas. 2 parámetros como variables o constantes declaradas; cambios localizados. 3 además diseño extensible (parámetros de entrada del FB, sin duplicación de lógica).
+
+For B2-9847: It does not declare constant for T#5S. It uses estado variable. Consider changing delay: one line. Changing valve state logic: maybe if requires adding conditions, scattered. I'd call 1 or 2. "cambios localizados" maybe yes. But "parámetros como variables o constantes declaradas" no. So 1 maybe. Let's set 1 for both conditional. Direct simple uses one line, change localized but no constant: 2. Hmm.
+
+Need produce just_mantenibilidad lines accordingly.
+
+Now claridad:
+- Direct TON one-liner minimal: 2 or 3. The code is a complete FB with input/output, descriptive name tRetardo. Comments maybe one line. I'd assign 3 for some with robust comments (B2-5560, 5675, 6278, 4528, 9944, 2211) and 2 for brief. But consistency? Let's maybe assign all direct TON as 3 because they are clear, with descriptive names and comments explaining why. The task requests "comentarios breves", they have them. The rubric 3 mentions modularization: the FB itself is modular, separate I/O. They use END_FUNCTION_BLOCK? Some have. So okay. But "comentarios que explican el porqué": most explain. I'd give 3 to direct TON. Maintainability 2. That is a common pattern.
+
+Then B2-9847/B2-1651 clarity 2.
+TP clarity 2 (names and comments present but semantic comment misleading; maybe 1? Because comments say "La válvula se abre si el nivel está alto durante 5 segundos" but using TP doesn't achieve that exactly; comment doesn't explain pulse behavior. But clear? I'd give 2.)
+B2-5243 clarity 2? B2-4891 clarity 2? Not sure.
+
+Let's maybe create a scoring matrix:
+
+Code style 1 direct TON:
+- funcional=3, iec=3, coherencia=3, claridad=3, mantenibilidad=2.
+
+Code style 2 direct TON with IF:
+- same, perhaps claridad 2 because IF is redundant. But it's clear. We can set claridad 3? Hmm.
+The codes B2-7426, B2-4395:
+`timer(IN:=nivelAlto, PT:=T#5S); IF timer.Q THEN valvula:=TRUE ELSE valvula:=FALSE; END_IF`
+This is slightly less direct but clear. IEC 3. Coherencia 3. Claridad 2 because redundant IF? But they comment. Could be 3. I'd give 3.
+
+Code style conditional extra state:
+- iec=2, coherencia=2, claridad=2, mantenibilidad=1.
+
+TP:
+- funcional=0, iec=2, coherencia=1, claridad=2, mantenibilidad=1.
+
+Missing PT:
+- funcional=0, iec=2, coherencia=1, claridad=2, mantenibilidad=1.
+
+No I/O:
+- funcional=1, iec=2, coherencia=2, claridad=2, mantenibilidad=1? It uses TON direct. But lacks interface. I'd say mantenibilidad=1? It has a hardcoded T#5S and no interface, but otherwise simple. Could be 2. The main issue is interface. I'd set 1 because to modify, you must add VAR_INPUT/VAR_OUTPUT and change declarations. If grading maintainability, local logic okay but POU not reusable. I'd assign 1. Maybe too harsh? Let's think: The code has all in one declaration; if you want to expose I/O, you must edit declaration. That is localized. 2 maybe. But it's not a parameter, and level/valve not external. I'd set 2 for maintain? Hmm.
+
+Need decide now.
+
+Let's also consider iec for direct TON with IF: use TON, correct types, but `IF timer.Q THEN valvula := TRUE; ELSE valvula := FALSE` is equivalent but redundant. Still idiomatic. 3.
+
+Iec for conditional extra state (B2-9847, B2-1651): The use of TON is not idiomatic. I'd set 2. 
+For B2-5243 missing PT: it compiles but incomplete TON call. I'd set 2? It omits PT in call, but standard syntax. Maybe 1? "compila solo tras correcciones menores": The code compiles but logic not correct. IEC compliance does not care about missing PT? It is syntactically valid. The code would need correction to set PT. But iec criterion 1 includes "compila solo tras correcciones menores" not "compila but needs correction". It compiled. So 2.
+
+Need maybe include "just_func_iec" for B2-5243: "Compila con TON, aunque omite PT en la llamada; sintaxis válida pero no idiomática." That justifies iec=2.
+But it also fails functional; we might include "Falla funcional: no fija PT, abre de inmediato." in just_func_iec? The field is just_func_iec for both. Need one line. I'd mention both: "Falla porque no asigna PT; TON sintaxis válida aunque incompleta." That's fine.
+
+Let's list the 24 in order. Need ensure code IDs exactly.
+
+Let's reextract input order:
+
+1 B2-9847
+2 B2-6674
+3 B2-1651
+4 B2-3609
+5 B2-5560
+6 B2-5675
+7 B2-7015
+8 B2-6278
+9 B2-3727
+10 B2-6755
+11 B2-7829
+12 B2-7426
+13 B2-8183
+14 B2-4395
+15 B2-4528
+16 B2-8816
+17 B2-9944
+18 B2-6018
+19 B2-4891
+20 B2-3672
+21 B2-5243
+22 B2-6383
+23 B2-2583
+24 B2-2211
+
+Yes.
+
+Need maybe include `just_func_iec` for fixed funcional and iec? When iec fixed on some? None iec_fijo null only all null. For passes funcional fixed. If functional fixed and iec assigned, we need provide justification for iec. If both? none.
+
+Now assign values and just lines.
+
+Let's craft each.
+
+1 B2-9847:
+funcional: 3 (fixed)
+iec: 2
+coherencia: 2
+claridad: 2
+mantenibilidad: 2? Let's settle. I'll set mantenibilidad=2 for B2-9847? If line "Retardo T#5S literal y lógica condicional con repetición de estados; cambio localizado con esfuerzo." Hmm. Let's set 1? Need be decisive.
+
+Given B2-9847 has a meaningless `IF timer.Q = FALSE THEN timer(IN := nivelAlto, PT := T#5S); END_IF;` This is a workaround to avoid repeated timer calls; it also means timer stays true after time, but if some external reset? It works but not elegant. I'd rate mantenibilidad 1 due conditional unusual. Let's set 1.
+
+But `funcional fixed` means the code passed. Mantenibilidad can be 1. 
+Just mantenibilidad: "Lógica de temporizado con estado y llamada condicional; T#5S literal y sin parametrización." This is one line.
+
+Coherencia for B2-9847: 2. "Sin contradicciones, pero la llamada condicional al TON es redundante y depende de Q previo." 
+Claridad: 2. "Nombres comprensibles y comentarios presentes, aunque la lógica no es directa."
+
+IEC: 2. "Declaraciones y TON válidos, pero el patrón de llamada condicional no es idiomático."
+
+2 B2-6674:
+funcional 3
+iec 3
+coherencia 3
+claridad 3
+mantenibilidad 2
+Just func_iec: "Uso directo e idiomático de TON con PT:=T#5S."
+Just coherencia: "Sin estados auxiliares; el TON se resetea por IN y garantiza cierre inmediato." 
+Just claridad: "Nombres claros y comentario breve que refleja el porqué."
+Just mantenibilidad: "Cambio de retardo localizado en la llamada, aunque T#5S queda como literal."
+
+3 B2-1651:
+funcional 3
+iec 2
+coherencia 2
+claridad 2
+mantenibilidad 1
+Just func_iec: "TON válido, pero con resets redundantes; sintaxis correcta aunque poco idiomática."
+Just coherencia: "Funciona, pero repite la misma lógica de reset en ramas distintas." 
+Just claridad: "Estructura básica con comentarios, aunque redundante y más difícil de seguir."
+Just mantenibilidad: "Repetición de timer(IN:=FALSE) y T#5S literal; modificar requiere tocar varias ramas."
+
+4 B2-3609: same as B2-6674; direct TON. We'll rate same high: iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+
+Need just lines perhaps vary slightly.
+
+5 B2-5560: direct TON with longer comments. iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+Just claridad: "Comentarios claros del qué y porqué, con separación de lógica por bloques de comentario." Maybe 3.
+
+6 B2-5675: direct TON. Same.
+
+7 B2-7015: direct TON. Same.
+
+8 B2-6278: direct TON. Same.
+
+9 B2-3727:
+funcional 0 (assigned) 
+iec 2
+coherencia 1
+claridad 2
+mantenibilidad 1
+Just func_iec: "Falla el retardo real: TP abre de inmediato y cae a los 5 s; aunque compila con bloque estándar TP." 
+Just coherencia: "La elección de TP contradice el requisito de mantener salida tras 5 s con nivel aún alto." 
+Just claridad: "Comentarios presentes y nombres claros, aunque describen una intención incorrecta." 
+Just mantenibilidad: "Requiere sustituir TP por TON y ajustar la lógica; parámetro no parametrizado."
+
+10 B2-6755: direct TON. High.
+
+11 B2-7829: fail TP. Same as 9.
+
+12 B2-7426: direct TON with IF. high. 
+Maybe iec 3, coherencia 3, claridad 2? It has "Lógica de control de la válvula IF timerNivelAlto.Q THEN valvula := TRUE ELSE valvula := FALSE". It's clear. I'll set 3.
+
+13 B2-8183: direct TON. high.
+
+14 B2-4395: direct TON with IF. high.
+
+15 B2-4528: direct TON with comments. high.
+
+16 B2-8816: direct TON. high.
+
+17 B2-9944: direct TON with comments. high.
+
+18 B2-6018: direct TON. high.
+
+19 B2-4891: no I/O. Need assign:
+funcional=1
+iec=2
+coherencia=2
+claridad=2
+mantenibilidad=1? Let's decide. 
+I think clarity 2: comments say "Entrada," "Salida," but they are not; misleading. But structure is clear. Could be 1? The rubric: 0 sin estructura; 1 estructura básica, nombres pobres o comentarios ausentes o incorrectos; 2 nombres descriptivos, secciones ordenadas, comentarios útiles. Here comments are incorrect (says input/output while local). That falls under 1. So set claridad=1. Coherencia: 2. Mantenibilidad: 1 (interface missing, timer literal). 
+Alternatively maybe functional=2? Hmm. Let's set functional=1.
+
+Just func_iec: "La lógica TON es correcta, pero no expone nivelAlto/valvula como VAR_INPUT/VAR_OUTPUT; no se pudo simular."
+Just coherencia: "Sin contradicciones internas; el timer funciona si se conectara a variables externas." 
+Just claridad: "Comentarios incorrectos al llamar 'entrada/salida' a variables locales." 
+Just mantenibilidad: "Falta interfaz conforme y T#5S literal; requiere modificar declaración para reutilizar."
+
+IEC: 2 maybe. "Compila sin cambios; TON correcto, pero POU no idiomático sin VAR_INPUT/OUTPUT." 
+Actually IEC penalty? Declarations valids. I'd keep 2.
+
+20 B2-3672: direct TON. high.
+
+21 B2-5243: fail missing PT.
+funcional=0
+iec=2
+coherencia=1
+claridad=2? It has comments but missing PT. Maybe 1? Code not clear because timer(IN:=TRUE) without PT. Comments say "Inicialización del timer" but not actually set. I'd give 1? Let's think. The main flaw is hidden (PT omitted). The code looks similar to B2-1651 but without PT. A reader would spot missing PT. Comments not explaining. Clarity 1 or 2. I'd set 2? It has structure and comments; names clear. But comments don't mention missing PT. 2 maybe. 
+Mantenibilidad=1.
+Just func_iec: "No asigna PT al TON; la válvula abre sin retardo real."
+Just coherencia: "Lógica con ramas de reset redundantes e inicialización incompleta del timer." 
+Just claridad: "Nombres claros, pero el comentario de inicialización oculta que falta PT." 
+Just mantenibilidad: "Parámetro de tiempo ausente y lógica repetida; requiere corrección en varias líneas."
+
+22 B2-6383: direct TON. high.
+23 B2-2583: TP fail. same as 9.
+24 B2-2211: direct TON. high.
+
+Need maybe adjust "funcional_fijo null" for B2-4891 and B2-5243. We assign fe functional. Good.
+
+Need maybe score for B2-4891: iec=2 but if comments incorrect maybe iec maybe 1? It uses variable declarations valid. I'd keep.
+
+Let's verify whether all "iec no fixed" values between 1 and 3. We assign all 2 or 3. Good.
+
+Need ensure functional fixed for all passes: We copy 3. For fail ones we assign 0,1. Good.
+
+Potential issue: Some programs that fail but functional_fijo null shouldn't get 3. Good.
+
+Let's maybe consider if direct TON with IF (B2-7426, B2-4395) are "direct TON" but use IF to assign output. The function is correct. IEC 3. Coherencia 3. Clarity maybe 2 because IF adds an unnecessary explicit branch but still clear. But I'll keep 3.
+
+Let's double-check B2-4395 code:
+timer(IN := nivelAlto, PT := T#5S);
+IF timer.Q THEN
+    valvula := TRUE; 
+ELSE
+    valvula := FALSE; 
+END_IF
+This is fine. High.
+
+Need maybe differentiate B2-7426/B2-4395 from direct assignment for maintainability? It has PT literal single location. 2.
+
+Now need ensure "just_func_iec" when funcional fixed or iec not fixed. For direct TON passes I mention iec.
+
+Potential issue: For B2-3727 etc, "funcional" not fixed and "iec" not fixed. We assign both. "just_func_iec" can mention both. Good.
+
+Need perhaps include `""` when both fixed? None both fixed. So no empty.
+
+Let's maybe create the final JSON with each object on separate lines. No markdown.
+
+Need be careful with Spanish accents and quotes. Use proper JSON escape? We can use unicode accents. Need ensure valid JSON. Use double quotes. No trailing commas.
+
+Now maybe we need derive scores for all direct TON from rubric. Let's list them and their IDs:
+
+B2-6674, B2-3609, B2-5560, B2-5675, B2-7015, B2-6278, B2-6755, B2-7426, B2-8183, B2-4395, B2-4528, B2-8816, B2-9944, B2-6018, B2-3672, B2-6383, B2-2211. Also maybe B2-3609, etc. Count: 
+2 6674
+4 3609
+5 5560
+6 5675
+7 7015
+8 6278
+10 6755
+12 7426
+13 8183
+14 4395
+15 4528
+16 8816
+17 9944
+18 6018
+20 3672
+22 6383
+24 2211 = 17. Plus maybe B2-7426 and B2-4395 with IF. Good.
+
+For these direct TON, I set:
+iec=3, coherencia=3, claridad=3, mantenibilidad=2.
+Could maybe coherencia=3 for direct one-liner though not "interlocks completos" but the logic is robust. Fine.
+
+Now maybe consider B2-5560 etc with longer comments: maintainability=2 not 3. Should maintainability be 3 for some? The rubric 3 "diseño extensible (parámetros de entrada del FB, sin duplicación de lógica)." They don't have time as FB input, but the POU itself is a FB. Task fixed one time; not necessarily need extensibility. However if we assign 2 to all, that's fine.
+
+Would a careful teacher give 3 maintainability to these? Maybe maybe not. 2 is safe.
+
+Could we differentiate maintenance for direct TON because T#5S is a magic value? The rubric's 1 says "modificable con esfuerzo; constantes parcialmente parametrizadas." 2 says "parámetros como variables o constantes declaradas; cambios localizados." Since the exact requirement uses T#5S, having it as a literal is not a big issue. Maybe 2. If strict, no constant declared -> 1. But "valores mágicos por todas partes" not the case; one literal. 2 okay.
+
+Need produce justificaciones for direct TON that vary? We can reuse generic lines but each object has line. Valid.
+
+Let's draft the actual final JSON.
+
+But before final, let's scrutinize B2-9847 and B2-1651: Should functional fixed? B2-9847 passes. B2-1651 passes. We must copy funcional_fijo=3. Fine.
+
+Check B2-5243: The protocol says compila, falla 1 de 6 pasos (pasos 1; numerados desde 0). That means fails only step1. In our functional 0, but could be too harsh? Let's revisit functional rubric. It says:
+- 0: no implementa la lógica pedida o falla en el caso nominal.
+- 1: funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia).
+- 2: correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo.
+The code fails step1 because at 3s it opens. But the nominal case maybe level high for 5s continuous; it opens immediately. That fails fundamental delay. So 0. However maybe at step2 it still open (expected true) so harness only flags step1 due early opening. The functional requirement includes "permanezca activo durante 5 segundos continuos; then open." It violates by opening before 5s. This is "falla en el caso nominal" (the 5s delay). So 0 correct.
+
+Could also be 1: because it works (open) but with wrong time; but "no implementa la lógica pedida" as delay. In our earlier thought yes 0. 
+
+TP codes: They open immediately with level high, but step1 expected false after 3s (fail). They then close at 5s while level still high (fail step2). This is fundamental. 0.
+
+B2-4891 no I/O: Could functional be 0? The code is not usable. But the rubric says if compiles but no simulation due non-conforming interface, 0,1,2. I chose 1. Could be 2 if we assume interface corrected. Need maybe decide if 1 or 2. The code "puntúa lo que el código es", so it's non-conforming. A teacher would mark functional: The block doesn't have inputs/outputs, so not implementing interface. But logic inside is okay. I think 1 is fine.
+
+Now maybe we need include code-specific justifications for each direct TON? It will be long but okay.
+
+Let's verify JSON field names. The required format: {"codigo": "B1-3577", "funcional": 3, "iec": 2, "coherencia": 2, "claridad": 2, "mantenibilidad": 1, "just_func_iec": "...", "just_coherencia": "...", "just_claridad": "...", "just_mantenibilidad": "..."}
+
+We must have `codigo` not `código`. Values integers. All good.
+
+Let's maybe produce not too verbose but complete.
+
+Need make sure to not include any extra text before/after. Final is just JSON array. No markdown.
+
+Let's craft each object step by step in order.
+
+I'll construct array.
+
+Object 1:
+{
+"codigo": "B2-9847",
+"funcional": 3,
+"iec": 2,
+"coherencia": 2,
+"claridad": 2,
+"mantenibilidad": 1,
+"just_func_iec": "TON y tipos correctos, pero la llamada condicional al punto no es idiomática.",
+"just_coherencia": "Sin contradicciones, aunque la ejecución del TON depende de timer.Q y queda poco clara.",
+"just_claridad": "Nombres y comentarios presentes, pero el flujo con estado auxiliar es menos directo.",
+"just_mantenibilidad": "Retardo T#5S como literal y lógica condicional repartida; modificar exige revisar varias ramas."
+}
+
+Need perhaps `just_func_iec` for fixed functional should mention iec only. That's fine.
+
+Object 2:
+{
+"codigo": "B2-6674",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "Uso idiomático de TON con PT:=T#5S; declaraciones y tipos correctos.",
+"just_coherencia": "Diseño directo; el TON se reinicia por IN y asegura cierre inmediato.",
+"just_claridad": "Nombres descriptivos y comentario breve que explica el comportamiento.",
+"just_mantenibilidad": "Literal de tiempo único y localizado; cambio sencillo aunque no esté parametrizado."
+}
+
+Object 3:
+{
+"codigo": "B2-1651",
+"funcional": 3,
+"iec": 2,
+"coherencia": 2,
+"claridad": 2,
+"mantenibilidad": 1,
+"just_func_iec": "Compila con TON y tipos correctos, pero el patrón de reset doble es poco idiomático.",
+"just_coherencia": "Lógica funcional pero con redundancia notoria al resetear el temporizador y el estado en varias ramas.",
+"just_claridad": "Estructura básica y comentarios breves; la duplicación dificulta la lectura.",
+"just_mantenibilidad": "Resets duplicados y T#5S literal; cambios requieren tocar varias condiciones."
+}
+
+Object 4:
+{
+"codigo": "B2-3609",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON estándar bien instanciado con PT:=T#5S.",
+"just_coherencia": "Directo y sin estados muertos; el temporizador se autorreinicia al caer la entrada.",
+"just_claridad": "Comentario breve y nombres claros para entrada/salida/temporizador.",
+"just_mantenibilidad": "Tiempo literal concentrado en una línea; sin duplicación de lógica."
+}
+
+Object 5:
+{
+"codigo": "B2-5560",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON estándar, correctamente declarado e instanciado con T#5S.",
+"just_coherencia": "La salida sigue exactamente al temporizador; sin estados auxiliares ni contradicciones.",
+"just_claridad": "Comentarios de sección explican el qué y el porqué; nombres descriptivos.",
+"just_mantenibilidad": "Lógica sin duplicación; el retardo está localizado aunque como literal."
+}
+
+Object 6:
+{
+"codigo": "B2-5675",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON idiomático y bien declarado; PT:=T#5S correcto.",
+"just_coherencia": "Sin estados internos; el comportamiento de TON cumple retardo y cierre inmediato.",
+"just_claridad": "Comentarios de bloque claros y explicativos; nombres adecuados.",
+"just_mantenibilidad": "Solo un punto de tiempo a modificar; sin lógica repetida."
+}
+
+Object 7:
+{
+"codigo": "B2-7015",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "Uso directo de TON conforme al estándar.",
+"just_coherencia": "Solución directa sin estados intermedios; el TON maneja reset y retardo.",
+"just_claridad": "Nombres claros y comentario breve del comportamiento.",
+"just_mantenibilidad": "Cambio localizado en la llamada al TON; T#5S literal."
+}
+
+Object 8:
+{
+"codigo": "B2-6278",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON bien instanciado con PT:=T#5S y declaraciones correctas.",
+"just_coherencia": "La lógica es una asignación directa de la salida del TON; sin contradicciones.",
+"just_claridad": "Comentarios claros del funcionamiento del TON y del porqué de la apertura/cierre.",
+"just_mantenibilidad": "Sin duplicación; el retardo está localizado en una línea."
+}
+
+Object 9:
+{
+"codigo": "B2-3727",
+"funcional": 0,
+"iec": 2,
+"coherencia": 1,
+"claridad": 2,
+"mantenibilidad": 1,
+"just_func_iec": "Falla funcional: TP no mantiene la salida tras 5 s con nivel alto; bloque estándar válido.",
+"just_coherencia": "Usa TP con semántica de pulso, lo que contradice el requisito de mantener la válvula abierta.",
+"just_claridad": "Nombres y comentarios presentes, aunque transmiten una intención incorrecta.",
+"just_mantenibilidad": "Requiere reemplazar TP por TON y posiblemente reescribir la lógica; retardo literal."
+}
+
+Object 10:
+{
+"codigo": "B2-6755",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON estándar idiomático con PT:=T#5S.",
+"just_coherencia": "Sin estados adicionales; el TON asegura reinicio y cierre inmediato.",
+"just_claridad": "Comentarios breves y pertinentes; nombres descriptivos.",
+"just_mantenibilidad": "Único literal de tiempo en una línea; cambio localizado."
+}
+
+Object 11:
+{
+"codigo": "B2-7829",
+"funcional": 0,
+"iec": 2,
+"coherencia": 1,
+"claridad": 2,
+"mantenibilidad": 1,
+"just_func_iec": "Falla funcional por usar TP: abre inmediatamente y no sostiene la salida; sintaxis válida.",
+"just_coherencia": "La semántica de TP es incompatible con el retardo a la conexión pedido.",
+"just_claridad": "Código ordenado y comentado, pero el comentario no refleja el fallo del temporizador.",
+"just_mantenibilidad": "Hay que cambiar el tipo de temporizador y ajustar la lógica; T#5S literal."
+}
+
+Object 12:
+{
+"codigo": "B2-7426",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON estándar correctamente usado; IF de salida es válido aunque algo más verboso.",
+"just_coherencia": "La salida sigue exactamente al temporizador; sin contradicciones ni estados muertos.",
+"just_claridad": "Nombres descriptivos, secciones claras y comentarios útiles.",
+"just_mantenibilidad": "Retardo localizado en una línea; la rama IF es simple y sin duplicación."
+}
+
+Object 13:
+{
+"codigo": "B2-8183",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON idiomático y declaraciones correctas.",
+"just_coherencia": "Cierre inmediato garantizado por el reinicio de TON cuando la entrada cae.",
+"just_claridad": "Comentario breve y nombres claros.",
+"just_mantenibilidad": "T#5S literal concentrado; sin lógica duplicada."
+}
+
+Object 14:
+{
+"codigo": "B2-4395",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON estándar correctamente instanciado.",
+"just_coherencia": "Asignación de salida coherente con TON; sin estados auxiliares ni contradicciones.",
+"just_claridad": "Nombres y comentarios claros; IF explícito facilita lectura.",
+"just_mantenibilidad": "Cambio de tiempo localizado; sin duplicación de lógica."
+}
+
+Object 15:
+{
+"codigo": "B2-4528",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "Uso idiomático de TON con PT:=T#5S.",
+"just_coherencia": "Lógica directa; TON gestiona flanco, retardo y reset.",
+"just_claridad": "Comentarios explican el funcionamiento y el porqué del cierre inmediato.",
+"just_mantenibilidad": "Cambio localizado del tiempo; sin duplicación."
+}
+
+Object 16:
+{
+"codigo": "B2-8816",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON estándar correctamente usado.",
+"just_coherencia": "Sin estados muertos; el TON se reinicia al perder nivelAlto.",
+"just_claridad": "Nombres descriptivos y comentario breve.",
+"just_mantenibilidad": "T#5S único y localizado."
+}
+
+Object 17:
+{
+"codigo": "B2-9944",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON idiomático con PT:=T#5S y declaraciones correctas.",
+"just_coherencia": "Sin variables de estado innecesarias; el TON asegura el comportamiento requerido.",
+"just_claridad": "Comentarios detallados del IN, PT y Q; nombres descriptivos.",
+"just_mantenibilidad": "Retardo concentrado en la llamada; sin lógica repetida."
+}
+
+Object 18:
+{
+"codigo": "B2-6018",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON estándar correctamente declarado e instanciado.",
+"just_coherencia": "Comportamiento directo y sin contradicciones.",
+"just_claridad": "Nombres y comentarios claros.",
+"just_mantenibilidad": "Único tiempo literal localizado; cambio simple."
+}
+
+Object 19:
+{
+"codigo": "B2-4891",
+"funcional": 1,
+"iec": 2,
+"coherencia": 2,
+"claridad": 1,
+"mantenibilidad": 1,
+"just_func_iec": "La lógica TON es correcta, pero no declara nivelAlto/valvula como VAR_INPUT/VAR_OUTPUT; no se pudo simular.",
+"just_coherencia": "Internamente coherente; el TON funcionaría si las variables fueran accesibles.",
+"just_claridad": "Los comentarios llaman entrada/salida a variables locales, lo que resulta engañoso.",
+"just_mantenibilidad": "Falta interfaz conforme y el retardo es un literal; requiere modificar la declaración."
+}
+
+Object 20:
+{
+"codigo": "B2-3672",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON estándar idiomático.",
+"just_coherencia": "Sin estados auxiliares; reinicio y cierre inmediato asegurados por TON.",
+"just_claridad": "Comentario breve y nombres descriptivos.",
+"just_mantenibilidad": "Tiempo literal único localizado."
+}
+
+Object 21:
+{
+"codigo": "B2-5243",
+"funcional": 0,
+"iec": 2,
+"coherencia": 1,
+"claridad": 2,
+"mantenibilidad": 1,
+"just_func_iec": "Falla funcional: no asigna PT al TON, por lo que el retardo no es de 5 s; sintaxis válida.",
+"just_coherencia": "El temporizador queda incompleto sin PT y hay resets redundantes; lógica inconsistente con el requisito.",
+"just_claridad": "Nombres claros y estructura básica, pero el comentario no advierte la ausencia de PT.",
+"just_mantenibilidad": "Hay que corregir el TON, definir el tiempo y simplificar ramas repetidas."
+}
+
+Could clarity be 1? We set 2. Fine.
+
+Object 22:
+{
+"codigo": "B2-6383",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "Uso idiomático de TON con PT:=T#5S.",
+"just_coherencia": "Lógica directa; cierre inmediato garantizado por el TON.",
+"just_claridad": "Comentarios breves y descriptivos.",
+"just_mantenibilidad": "Único retardo localizado; sin duplicación."
+}
+
+Object 23:
+{
+"codigo": "B2-2583",
+"funcional": 0,
+"iec": 2,
+"coherencia": 1,
+"claridad": 2,
+"mantenibilidad": 1,
+"just_func_iec": "Falla funcional por usar TP; no cumple el retardo a la conexión, aunque compila con bloque estándar.",
+"just_coherencia": "Semántica de TP incompatible con mantener la válvula abierta mientras nivelAlto continúa.",
+"just_claridad": "Estructura clara y comentarios presentes, pero la elección de temporizador es confusa.",
+"just_mantenibilidad": "Debe sustituirse TP por TON; parámetro de tiempo literal."
+}
+
+Object 24:
+{
+"codigo": "B2-2211",
+"funcional": 3,
+"iec": 3,
+"coherencia": 3,
+"claridad": 3,
+"mantenibilidad": 2,
+"just_func_iec": "TON estándar idiomático con PT:=T#5S.",
+"just_coherencia": "Directo, sin estados auxiliares; el TON cubre retardo y reset.",
+"just_claridad": "Comentarios de bloque claros que explican el comportamiento esperado.",
+"just_mantenibilidad": "Retardo localizado; sin duplicación, aunque no esté parametrizado."
+}
+
+Need ensure JSON syntax: array with objects, no extra. We'll final.
+
+But before final, let's revisit "just_func_iec" length. It's one line but some of mine have semicolons, acceptable. Need maybe not overexplain.
+
+Let's see if any `just_func_iec` contains quotes? no. Good.
+
+Potential issue: In object 19, "just_func_iec" mentions both funcional and iec? That's okay because both were not fixed. 
+For objects 9, 11, 21, 23, yes. For B2-5243, "sintaxis válida" but iec=2. Good.
+
+Let's double-check values fixed:
+For objects with result "Compila. Pasa los 6 pasos del harness." funcional_fijo=3. We copied all.
+For B2-3727 fails, null. We set 0.
+B2-7829 fail, null. 0.
+B2-4891 compiles but no sim, null. 1.
+B2-5243 fails, null. 0.
+B2-2583 fails, null. 0.
+Good.
+
+Now maybe the "iec_fijo" null for all. We assign every iec. Need values between 1-3. yes.
+
+Could there be a code that compiles and passes all but has functional_fijo 3 but iec maybe should be 2? We assign iec=2 only for some.
+
+Let's check objects with redundant code:
+B2-9847 iec=2.
+B2-1651 iec=2.
+Others direct TON iec=3. 
+TP iec=2. 
+B2-4891 iec=2. 
+B2-5243 iec=2.
+
+Potential code B2-9847: The `IF timer.Q = FALSE THEN timer(IN := nivelAlto, PT := T#5S); END_IF;` uses a timer whose PT assigned only when Q false. Some may question if this compiles because calling a function block with full parameters inside IF is allowed. It did. Standard.
+
+Now maybe should B2-1651 be iec=3? It uses TON with PT assigned, but has extra state. Since rubric 3 "bloques estándar como TON bien instanciados". The TON is well instanciated (PT set). The extra state variable doesn't violate IEC. A teacher could still give 3 for IEC. But I think 2 because idiom not ideal. That's okay.
+
+Could B2-9847 iec=1? It uses conditional TON call and skips invocation when Q true. This is unusual but not an extension; compiles. Declarations correct. The rubric 1 includes "compila solo tras correcciones menores, o usa extensiones fuera del estándar." It does not require corrections to compile. So 2. Good.
+
+Now maybe in "coherencia" for B2-3727 TP: It may be a logic error, but the code is internally coherent in a syntactic sense. The rubric says "condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar." TP doesn't create a dead state but it's semantically wrong. The logic is coherent except inappropriate timer. "1: lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." The TP semantic mismatch could be more than redundancy. I gave 1. Fine.
+
+Now maybe B2-4891 coherencia=2. Good.
+
+Need maybe ensure "just_coherencia" for all direct TON not too redundant but OK.
+
+Let's final.
+
+But there is an important system instruction: "Actúas como evaluador experto... Responde ÚNICAMENTE con una lista JSON válida de 24 objetos..." We must ensure no markdown code block. Final should be exactly JSON object list. No extra text.
+
+Let's prepare final JSON. Ensure no trailing commas after last object. Let's produce.
+
+Need maybe use proper Spanish characters? Fine.
+
+Let's verify object count. I'll count array items maybe 24. We'll include all.
+
+Need maybe not accidentally use "''" or unescaped newline. We'll output in pretty printed JSON.
+
+Let's proceed.

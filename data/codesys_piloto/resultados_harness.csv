@@ -1,0 +1,145 @@
+id_respuesta,tarea,modelo,estrategia,corrida,interfaz_ok,compila (S/N),error_compilacion,ciclo_ms,veredicto,pasos_fallidos,version_codesys,fecha,observaciones
+B1_claude-sonnet-4-6_zero_shot_ejec_1,B1,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_Motor exacta
+B1_claude-sonnet-4-6_zero_shot_ejec_2,B1,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_Motor exacta
+B1_claude-sonnet-4-6_zero_shot_ejec_3,B1,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Motor exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+B1_claude-sonnet-4-6_few_shot_ejec_1,B1,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Motor exacta
+B1_claude-sonnet-4-6_few_shot_ejec_2,B1,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Motor exacta
+B1_claude-sonnet-4-6_few_shot_ejec_3,B1,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Motor exacta
+B1_gpt-4o_zero_shot_ejec_1,B1,gpt-4o,zero_shot,1,compatible,,,,,,,,Interfaz FB_Motor exacta
+B1_gpt-4o_zero_shot_ejec_2,B1,gpt-4o,zero_shot,2,compatible,,,,,,,,Interfaz FB_Motor exacta
+B1_gpt-4o_zero_shot_ejec_3,B1,gpt-4o,zero_shot,3,compatible,,,,,,,,Interfaz FB_Motor exacta
+B1_gpt-4o_few_shot_ejec_1,B1,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Motor exacta
+B1_gpt-4o_few_shot_ejec_2,B1,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Motor exacta
+B1_gpt-4o_few_shot_ejec_3,B1,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Motor exacta
+B2_claude-sonnet-4-6_zero_shot_ejec_1,B2,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B2_claude-sonnet-4-6_zero_shot_ejec_2,B2,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B2_claude-sonnet-4-6_zero_shot_ejec_3,B2,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B2_claude-sonnet-4-6_few_shot_ejec_1,B2,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B2_claude-sonnet-4-6_few_shot_ejec_2,B2,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B2_claude-sonnet-4-6_few_shot_ejec_3,B2,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B2_gpt-4o_zero_shot_ejec_1,B2,gpt-4o,zero_shot,1,incompatible,,,,,,,,Declara E/S en VAR local en vez de VAR_INPUT/VAR_OUTPUT (entradas en VAR: nivelAlto; salidas en VAR: valvula); omite END_FUNCTION_BLOCK
+B2_gpt-4o_zero_shot_ejec_2,B2,gpt-4o,zero_shot,2,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B2_gpt-4o_zero_shot_ejec_3,B2,gpt-4o,zero_shot,3,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B2_gpt-4o_few_shot_ejec_1,B2,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B2_gpt-4o_few_shot_ejec_2,B2,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B2_gpt-4o_few_shot_ejec_3,B2,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Valvula exacta
+B3_claude-sonnet-4-6_zero_shot_ejec_1,B3,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_Contador exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+B3_claude-sonnet-4-6_zero_shot_ejec_2,B3,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_Contador exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+B3_claude-sonnet-4-6_zero_shot_ejec_3,B3,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Contador exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+B3_claude-sonnet-4-6_few_shot_ejec_1,B3,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Contador exacta
+B3_claude-sonnet-4-6_few_shot_ejec_2,B3,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Contador exacta
+B3_claude-sonnet-4-6_few_shot_ejec_3,B3,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Contador exacta
+B3_gpt-4o_zero_shot_ejec_1,B3,gpt-4o,zero_shot,1,compatible,,,,,,,,Interfaz FB_Contador exacta
+B3_gpt-4o_zero_shot_ejec_2,B3,gpt-4o,zero_shot,2,compatible,,,,,,,,Interfaz FB_Contador exacta; incluye bloque no estándar INIT..END_INIT en la implementación
+B3_gpt-4o_zero_shot_ejec_3,B3,gpt-4o,zero_shot,3,compatible,,,,,,,,Interfaz FB_Contador exacta
+B3_gpt-4o_few_shot_ejec_1,B3,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Contador exacta
+B3_gpt-4o_few_shot_ejec_2,B3,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Contador exacta
+B3_gpt-4o_few_shot_ejec_3,B3,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Contador exacta
+B4_claude-sonnet-4-6_zero_shot_ejec_1,B4,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_Giro exacta
+B4_claude-sonnet-4-6_zero_shot_ejec_2,B4,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_Giro exacta
+B4_claude-sonnet-4-6_zero_shot_ejec_3,B4,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Giro exacta
+B4_claude-sonnet-4-6_few_shot_ejec_1,B4,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Giro exacta
+B4_claude-sonnet-4-6_few_shot_ejec_2,B4,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Giro exacta
+B4_claude-sonnet-4-6_few_shot_ejec_3,B4,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Giro exacta
+B4_gpt-4o_zero_shot_ejec_1,B4,gpt-4o,zero_shot,1,compatible,,,,,,,,Interfaz FB_Giro exacta
+B4_gpt-4o_zero_shot_ejec_2,B4,gpt-4o,zero_shot,2,compatible,,,,,,,,Interfaz FB_Giro exacta
+B4_gpt-4o_zero_shot_ejec_3,B4,gpt-4o,zero_shot,3,compatible,,,,,,,,Interfaz FB_Giro exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+B4_gpt-4o_few_shot_ejec_1,B4,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Giro exacta
+B4_gpt-4o_few_shot_ejec_2,B4,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Giro exacta
+B4_gpt-4o_few_shot_ejec_3,B4,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Giro exacta
+B5_claude-sonnet-4-6_zero_shot_ejec_1,B5,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_Ventilador exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+B5_claude-sonnet-4-6_zero_shot_ejec_2,B5,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_Ventilador exacta
+B5_claude-sonnet-4-6_zero_shot_ejec_3,B5,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Ventilador exacta
+B5_claude-sonnet-4-6_few_shot_ejec_1,B5,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Ventilador exacta
+B5_claude-sonnet-4-6_few_shot_ejec_2,B5,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Ventilador exacta
+B5_claude-sonnet-4-6_few_shot_ejec_3,B5,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Ventilador exacta
+B5_gpt-4o_zero_shot_ejec_1,B5,gpt-4o,zero_shot,1,incompatible,,,,,,,,Declara E/S en VAR local en vez de VAR_INPUT/VAR_OUTPUT (entradas en VAR: quemadorOn; salidas en VAR: ventilador)
+B5_gpt-4o_zero_shot_ejec_2,B5,gpt-4o,zero_shot,2,incompatible,,,,,,,,Declara E/S en VAR local en vez de VAR_INPUT/VAR_OUTPUT (entradas en VAR: quemadorOn; salidas en VAR: ventilador)
+B5_gpt-4o_zero_shot_ejec_3,B5,gpt-4o,zero_shot,3,incompatible,,,,,,,,Declara E/S en VAR local en vez de VAR_INPUT/VAR_OUTPUT (entradas en VAR: quemadorOn; salidas en VAR: ventilador); omite END_FUNCTION_BLOCK
+B5_gpt-4o_few_shot_ejec_1,B5,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Ventilador exacta
+B5_gpt-4o_few_shot_ejec_2,B5,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Ventilador exacta
+B5_gpt-4o_few_shot_ejec_3,B5,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Ventilador exacta
+B6_claude-sonnet-4-6_zero_shot_ejec_1,B6,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_Baliza exacta
+B6_claude-sonnet-4-6_zero_shot_ejec_2,B6,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_Baliza exacta
+B6_claude-sonnet-4-6_zero_shot_ejec_3,B6,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Baliza exacta
+B6_claude-sonnet-4-6_few_shot_ejec_1,B6,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Baliza exacta
+B6_claude-sonnet-4-6_few_shot_ejec_2,B6,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Baliza exacta
+B6_claude-sonnet-4-6_few_shot_ejec_3,B6,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Baliza exacta
+B6_gpt-4o_zero_shot_ejec_1,B6,gpt-4o,zero_shot,1,incompatible,,,,,,,,Declara E/S en VAR local en vez de VAR_INPUT/VAR_OUTPUT (entradas en VAR: alarma; salidas en VAR: lampara)
+B6_gpt-4o_zero_shot_ejec_2,B6,gpt-4o,zero_shot,2,compatible,,,,,,,,Interfaz FB_Baliza exacta
+B6_gpt-4o_zero_shot_ejec_3,B6,gpt-4o,zero_shot,3,compatible,,,,,,,,Interfaz FB_Baliza exacta
+B6_gpt-4o_few_shot_ejec_1,B6,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Baliza exacta
+B6_gpt-4o_few_shot_ejec_2,B6,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Baliza exacta
+B6_gpt-4o_few_shot_ejec_3,B6,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Baliza exacta
+I1_claude-sonnet-4-6_zero_shot_ejec_1,I1,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_Semaforo exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+I1_claude-sonnet-4-6_zero_shot_ejec_2,I1,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_Semaforo exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+I1_claude-sonnet-4-6_zero_shot_ejec_3,I1,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Semaforo exacta
+I1_claude-sonnet-4-6_few_shot_ejec_1,I1,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Semaforo exacta
+I1_claude-sonnet-4-6_few_shot_ejec_2,I1,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Semaforo exacta
+I1_claude-sonnet-4-6_few_shot_ejec_3,I1,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Semaforo exacta
+I1_gpt-4o_zero_shot_ejec_1,I1,gpt-4o,zero_shot,1,incompatible,,,,,,,,"Nombres/tipos de variables coinciden con FB_Semaforo, pero cierra bloques de interfaz con palabras clave inexistentes END_VAR_INPUT / END_VAR_OUTPUT en lugar de END_VAR"
+I1_gpt-4o_zero_shot_ejec_2,I1,gpt-4o,zero_shot,2,compatible,,,,,,,,Interfaz FB_Semaforo exacta
+I1_gpt-4o_zero_shot_ejec_3,I1,gpt-4o,zero_shot,3,incompatible,,,,,,,,"Declara E/S en VAR local en vez de VAR_INPUT/VAR_OUTPUT (entradas en VAR: habilitado; salidas en VAR: luzV,luzA,luzR)"
+I1_gpt-4o_few_shot_ejec_1,I1,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Semaforo exacta
+I1_gpt-4o_few_shot_ejec_2,I1,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Semaforo exacta
+I1_gpt-4o_few_shot_ejec_3,I1,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Semaforo exacta
+I2_claude-sonnet-4-6_zero_shot_ejec_1,I2,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_Llenado exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+I2_claude-sonnet-4-6_zero_shot_ejec_2,I2,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_Llenado exacta
+I2_claude-sonnet-4-6_zero_shot_ejec_3,I2,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Llenado exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+I2_claude-sonnet-4-6_few_shot_ejec_1,I2,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Llenado exacta
+I2_claude-sonnet-4-6_few_shot_ejec_2,I2,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Llenado exacta
+I2_claude-sonnet-4-6_few_shot_ejec_3,I2,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Llenado exacta
+I2_gpt-4o_zero_shot_ejec_1,I2,gpt-4o,zero_shot,1,incompatible,,,,,,,,"Declara E/S en VAR local en vez de VAR_INPUT/VAR_OUTPUT (entradas en VAR: nivelAlto,nivelBajo,btnInicio,btnParo; salidas en VAR: vLlenado,motorMezcla,vDescarga)"
+I2_gpt-4o_zero_shot_ejec_2,I2,gpt-4o,zero_shot,2,incompatible,,,,,,,,"Declara E/S en VAR local en vez de VAR_INPUT/VAR_OUTPUT (entradas en VAR: nivelAlto,nivelBajo,btnInicio,btnParo; salidas en VAR: vLlenado,motorMezcla,vDescarga)"
+I2_gpt-4o_zero_shot_ejec_3,I2,gpt-4o,zero_shot,3,incompatible,,,,,,,,"Declara E/S en VAR local en vez de VAR_INPUT/VAR_OUTPUT (entradas en VAR: nivelAlto,nivelBajo,btnInicio,btnParo; salidas en VAR: vLlenado,motorMezcla,vDescarga)"
+I2_gpt-4o_few_shot_ejec_1,I2,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Llenado exacta
+I2_gpt-4o_few_shot_ejec_2,I2,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Llenado exacta
+I2_gpt-4o_few_shot_ejec_3,I2,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Llenado exacta
+I3_claude-sonnet-4-6_zero_shot_ejec_1,I3,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_claude-sonnet-4-6_zero_shot_ejec_2,I3,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_claude-sonnet-4-6_zero_shot_ejec_3,I3,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_claude-sonnet-4-6_few_shot_ejec_1,I3,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_claude-sonnet-4-6_few_shot_ejec_2,I3,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_claude-sonnet-4-6_few_shot_ejec_3,I3,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_gpt-4o_zero_shot_ejec_1,I3,gpt-4o,zero_shot,1,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_gpt-4o_zero_shot_ejec_2,I3,gpt-4o,zero_shot,2,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_gpt-4o_zero_shot_ejec_3,I3,gpt-4o,zero_shot,3,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_gpt-4o_few_shot_ejec_1,I3,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_gpt-4o_few_shot_ejec_2,I3,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I3_gpt-4o_few_shot_ejec_3,I3,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Alarmas exacta
+I4_claude-sonnet-4-6_zero_shot_ejec_1,I4,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta
+I4_claude-sonnet-4-6_zero_shot_ejec_2,I4,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+I4_claude-sonnet-4-6_zero_shot_ejec_3,I4,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+I4_claude-sonnet-4-6_few_shot_ejec_1,I4,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta
+I4_claude-sonnet-4-6_few_shot_ejec_2,I4,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta
+I4_claude-sonnet-4-6_few_shot_ejec_3,I4,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta
+I4_gpt-4o_zero_shot_ejec_1,I4,gpt-4o,zero_shot,1,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta
+I4_gpt-4o_zero_shot_ejec_2,I4,gpt-4o,zero_shot,2,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta
+I4_gpt-4o_zero_shot_ejec_3,I4,gpt-4o,zero_shot,3,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta
+I4_gpt-4o_few_shot_ejec_1,I4,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta
+I4_gpt-4o_few_shot_ejec_2,I4,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta
+I4_gpt-4o_few_shot_ejec_3,I4,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_EstrellaTriangulo exacta
+I5_claude-sonnet-4-6_zero_shot_ejec_1,I5,claude-sonnet-4-6,zero_shot,1,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_claude-sonnet-4-6_zero_shot_ejec_2,I5,claude-sonnet-4-6,zero_shot,2,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_claude-sonnet-4-6_zero_shot_ejec_3,I5,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_claude-sonnet-4-6_few_shot_ejec_1,I5,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_claude-sonnet-4-6_few_shot_ejec_2,I5,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_claude-sonnet-4-6_few_shot_ejec_3,I5,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_gpt-4o_zero_shot_ejec_1,I5,gpt-4o,zero_shot,1,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_gpt-4o_zero_shot_ejec_2,I5,gpt-4o,zero_shot,2,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_gpt-4o_zero_shot_ejec_3,I5,gpt-4o,zero_shot,3,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_gpt-4o_few_shot_ejec_1,I5,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_gpt-4o_few_shot_ejec_2,I5,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I5_gpt-4o_few_shot_ejec_3,I5,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Clasificadora exacta
+I6_claude-sonnet-4-6_zero_shot_ejec_1,I6,claude-sonnet-4-6,zero_shot,1,sin FB extraíble,,,,,,,,Sin cabecera FUNCTION_BLOCK ni bloque VAR..END_VAR en data/processed (en data/raw el modelo dividió declaración y cuerpo en 2 bloques markdown y extraer_codigo.py conservó solo el cuerpo)
+I6_claude-sonnet-4-6_zero_shot_ejec_2,I6,claude-sonnet-4-6,zero_shot,2,sin FB extraíble,,,,,,,,Sin cabecera FUNCTION_BLOCK ni bloque VAR..END_VAR en data/processed (en data/raw el modelo dividió declaración y cuerpo en 2 bloques markdown y extraer_codigo.py conservó solo el cuerpo)
+I6_claude-sonnet-4-6_zero_shot_ejec_3,I6,claude-sonnet-4-6,zero_shot,3,compatible,,,,,,,,Interfaz FB_Temperatura exacta; omite END_FUNCTION_BLOCK al final (el editor de CODESYS no lo requiere en el panel inferior)
+I6_claude-sonnet-4-6_few_shot_ejec_1,I6,claude-sonnet-4-6,few_shot,1,compatible,,,,,,,,Interfaz FB_Temperatura exacta
+I6_claude-sonnet-4-6_few_shot_ejec_2,I6,claude-sonnet-4-6,few_shot,2,compatible,,,,,,,,Interfaz FB_Temperatura exacta
+I6_claude-sonnet-4-6_few_shot_ejec_3,I6,claude-sonnet-4-6,few_shot,3,compatible,,,,,,,,Interfaz FB_Temperatura exacta
+I6_gpt-4o_zero_shot_ejec_1,I6,gpt-4o,zero_shot,1,compatible,,,,,,,,Interfaz FB_Temperatura exacta
+I6_gpt-4o_zero_shot_ejec_2,I6,gpt-4o,zero_shot,2,compatible,,,,,,,,Interfaz FB_Temperatura exacta
+I6_gpt-4o_zero_shot_ejec_3,I6,gpt-4o,zero_shot,3,incompatible,,,,,,,,"Nombres/tipos de variables coinciden con FB_Temperatura, pero cierra bloques de interfaz con palabras clave inexistentes END_VAR_INPUT / END_VAR_OUTPUT en lugar de END_VAR; además usa REAL(rawTemp) en el cuerpo"
+I6_gpt-4o_few_shot_ejec_1,I6,gpt-4o,few_shot,1,compatible,,,,,,,,Interfaz FB_Temperatura exacta
+I6_gpt-4o_few_shot_ejec_2,I6,gpt-4o,few_shot,2,compatible,,,,,,,,Interfaz FB_Temperatura exacta
+I6_gpt-4o_few_shot_ejec_3,I6,gpt-4o,few_shot,3,compatible,,,,,,,,Interfaz FB_Temperatura exacta

@@ -1,0 +1,962 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B4 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>B4 — Inversión de giro con enclavamiento cruzado (Basico)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja B4 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa la inversión de giro de un motor. Con el botón btnFwd el motor gira en sentido horario (salida fwd); con btnRev, en sentido antihorario (salida rev). Ambas salidas jamás deben estar activas simultáneamente y, para invertir el sentido de giro, es obligatorio pasar primero por el paro (btnParo). Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Giro con variables de entrada btnFwd, btnRev, btnParo (BOOL) y salidas fwd, rev (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_B4.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea B4 (inversion de giro)
+    ---------------------------------------------------------------------------
+    Propiedad critica (enmienda 4): &quot;nunca fwd AND rev&quot; se evalua en CADA scan
+    y queda ENCLAVADA en &#x27;violacionInterlock&#x27; hasta el final del banco, porque
+    una violacion transitoria entre dos evaluaciones pasaria inadvertida. El
+    veredicto final exige superar todos los pasos Y que la bandera este en
+    FALSE. Se registra aparte porque una violacion de seguridad es
+    cualitativamente distinta de un fallo funcional.
+
+    USO: crear este PROGRAM junto al FUNCTION_BLOCK de la respuesta a evaluar y
+    ejecutar en modo Simulacion. Al terminar, leer &#x27;veredicto&#x27;: 1 = supera,
+    2 = falla.
+
+    ---------------------------------------------------------------------------
+    CORRECCION DEL 2026-09-09 (enmienda 9). Validado con validar_harness_B4.py.
+    La version anterior daba veredicto 1, y sin levantar la bandera, a una
+    implementacion con una CARRERA DE INTERLOCK: el enclavamiento cruzado se
+    evaluaba contra el valor de la otra salida en el scan ANTERIOR. Con el
+    motor ya girando se comporta bien, pero al pulsar las dos ordenes ESTANDO
+    EN REPOSO ambas salidas se activan a la vez durante un scan.
+
+    Causa: la secuencia solo pulsaba las dos ordenes con el motor ya girando en
+    reversa (paso 6), situacion en la que la salida activa bloquea a la otra
+    incluso con la comparacion retrasada. Nunca las pulsaba desde el reposo,
+    que es justamente el caso en que la carrera se manifiesta.
+
+    Es un fallo de COBERTURA, no del mecanismo: la enmienda 4 dejo el
+    instrumento capaz de detectar la violacion transitoria, pero la secuencia
+    no llegaba a provocarla. Una bandera enclavada solo puede atrapar lo que la
+    secuencia produce.
+
+    Correccion: se anaden dos pasos que pulsan ambas ordenes desde el reposo.
+    El paso 8 no exige un sentido concreto —el enunciado no dice cual debe
+    ganar si se piden los dos a la vez— sino unicamente que no coexistan.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reposo *)
+            btnFwd := FALSE; btnRev := FALSE; btnParo := FALSE;
+            espFwd := FALSE; espRev := FALSE;
+        1:  (* Marcha adelante *)
+            btnFwd := TRUE;
+            espFwd := TRUE;  espRev := FALSE;
+        2:  (* Se suelta la orden: debe mantenerse (enclavamiento) *)
+            btnFwd := FALSE;
+            espFwd := TRUE;  espRev := FALSE;
+        3:  (* Reversa sin pasar por paro: prohibida *)
+            btnRev := TRUE;
+            espFwd := TRUE;  espRev := FALSE;
+        4:  (* Paro *)
+            btnRev := FALSE; btnParo := TRUE;
+            espFwd := FALSE; espRev := FALSE;
+        5:  (* Ahora si, marcha en reversa *)
+            btnParo := FALSE; btnRev := TRUE;
+            espFwd := FALSE; espRev := TRUE;
+        6:  (* Ambas ordenes con el motor ya girando: la activa debe bloquear *)
+            btnFwd := TRUE;
+            espFwd := FALSE; espRev := TRUE;
+        7:  (* Paro *)
+            btnFwd := FALSE; btnRev := FALSE; btnParo := TRUE;
+            espFwd := FALSE; espRev := FALSE;
+
+        (* --- Ambas ordenes DESDE EL REPOSO (enmienda 9): es el unico caso en
+               que una carrera de interlock se manifiesta --- *)
+        8:  (* No se exige un sentido concreto, solo que no coexistan *)
+            btnParo := FALSE; btnFwd := TRUE; btnRev := TRUE;
+        9:  (* Paro final *)
+            btnFwd := FALSE; btnRev := FALSE; btnParo := TRUE;
+            espFwd := FALSE; espRev := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#B4-8136">B4-8136</a><a href="#B4-1620">B4-1620</a><a href="#B4-8880">B4-8880</a><a href="#B4-9178">B4-9178</a><a href="#B4-2076">B4-2076</a><a href="#B4-2916">B4-2916</a><a href="#B4-1844">B4-1844</a><a href="#B4-9939">B4-9939</a><a href="#B4-9793">B4-9793</a><a href="#B4-5174">B4-5174</a><a href="#B4-1107">B4-1107</a><a href="#B4-2313">B4-2313</a><a href="#B4-4978">B4-4978</a><a href="#B4-6326">B4-6326</a><a href="#B4-2461">B4-2461</a><a href="#B4-9948">B4-9948</a><a href="#B4-7421">B4-7421</a><a href="#B4-1969">B4-1969</a><a href="#B4-9599">B4-9599</a><a href="#B4-3739">B4-3739</a><a href="#B4-1794">B4-1794</a><a href="#B4-9025">B4-9025</a><a href="#B4-7211">B4-7211</a><a href="#B4-5930">B4-5930</a></div>
+<div class="caja resp" id="B4-8136"><div class="cod"><h3>B4-8136</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 4 de 10 pasos del harness (pasos 3,4,7,9; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL; (* Boton para girar en sentido horario *)
+    btnRev : BOOL; (* Boton para girar en sentido antihorario *)
+    btnParo : BOOL; (* Boton para parar el motor *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Salida para giro horario *)
+    rev : BOOL; (* Salida para giro antihorario *)
+END_VAR
+VAR
+    estado : INT := 0; (* Estado actual del motor *)
+END_VAR
+
+(* Estados: 0 - Parado, 1 - Giro horario, 2 - Giro antihorario *)
+CASE estado OF
+    0: (* Parado *)
+        IF btnFwd THEN
+            estado := 1;
+        ELSIF btnRev THEN
+            estado := 2;
+        END_IF;
+    1: (* Giro horario *)
+        fwd := TRUE;
+        rev := FALSE;
+        IF btnParo THEN
+            estado := 0;
+        ELSIF btnRev THEN
+            estado := 2;
+        END_IF;
+    2: (* Giro antihorario *)
+        fwd := FALSE;
+        rev := TRUE;
+        IF btnParo THEN
+            estado := 0;
+        ELSIF btnFwd THEN
+            estado := 1;
+        END_IF;
+END_CASE;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-1620"><div class="cod"><h3>B4-1620</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd  : BOOL; (* Boton marcha horaria *)
+    btnRev  : BOOL; (* Boton marcha antihoraria *)
+    btnParo : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Salida giro horario *)
+    rev : BOOL; (* Salida giro antihorario *)
+END_VAR
+
+(* Paro: desactiva ambas salidas *)
+IF btnParo THEN
+    fwd := FALSE;
+    rev := FALSE;
+
+(* Marcha horaria: solo si rev no esta activa (paso previo por paro obligatorio) *)
+ELSIF btnFwd AND NOT rev THEN
+    fwd := TRUE;
+
+(* Marcha antihoraria: solo si fwd no esta activa (paso previo por paro obligatorio) *)
+ELSIF btnRev AND NOT fwd THEN
+    rev := TRUE;
+END_IF;
+
+(* Enclavamiento de seguridad: nunca ambas salidas activas simultaneamente *)
+IF fwd AND rev THEN
+    fwd := FALSE;
+    rev := FALSE;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-8880"><div class="cod"><h3>B4-8880</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL;   // Botón para giro en sentido horario
+    btnRev : BOOL;   // Botón para giro en sentido antihorario
+    btnParo : BOOL;  // Botón de paro
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL;      // Salida para giro en sentido horario
+    rev : BOOL;      // Salida para giro en sentido antihorario
+END_VAR
+
+VAR
+    estado : INT;    // Estado del motor: 0 = Parado, 1 = Horario, 2 = Antihorario
+END_VAR
+
+// Inicialización de salidas
+fwd := FALSE;
+rev := FALSE;
+
+// Lógica de control
+IF btnParo THEN
+    // Si se presiona el botón de paro, el motor se detiene
+    estado := 0;
+ELSIF btnFwd AND (estado = 0) THEN
+    // Si se presiona el botón de giro horario y el motor está parado
+    estado := 1;
+ELSIF btnRev AND (estado = 0) THEN
+    // Si se presiona el botón de giro antihorario y el motor está parado
+    estado := 2;
+END_IF
+
+// Actualización de salidas según el estado
+CASE estado OF
+    0: // Parado
+        fwd := FALSE;
+        rev := FALSE;
+    1: // Giro horario
+        fwd := TRUE;
+        rev := FALSE;
+    2: // Giro antihorario
+        fwd := FALSE;
+        rev := TRUE;
+END_CASE;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-9178"><div class="cod"><h3>B4-9178</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd  : BOOL; (* Botón marcha horaria *)
+    btnRev  : BOOL; (* Botón marcha antihoraria *)
+    btnParo : BOOL; (* Botón paro *)
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL; (* Salida giro horario *)
+    rev : BOOL; (* Salida giro antihorario *)
+END_VAR
+
+VAR
+    (* Estado interno: TRUE = en marcha, FALSE = parado *)
+    xRunning : BOOL := FALSE;
+END_VAR
+
+(*
+    Lógica de control:
+    - btnParo detiene el motor (prioridad máxima).
+    - btnFwd activa fwd solo si el motor está parado (rev = FALSE).
+    - btnRev activa rev solo si el motor está parado (fwd = FALSE).
+    - Nunca se permite activar fwd y rev simultáneamente.
+    - Para invertir el giro es obligatorio pasar por paro.
+*)
+
+(* 1. Paro con prioridad máxima *)
+IF btnParo THEN
+    fwd      := FALSE;
+    rev      := FALSE;
+    xRunning := FALSE;
+
+(* 2. Marcha horaria: solo si el motor está parado *)
+ELSIF btnFwd AND NOT xRunning THEN
+    fwd      := TRUE;
+    rev      := FALSE;  (* Enclavamiento: garantiza rev = FALSE *)
+    xRunning := TRUE;
+
+(* 3. Marcha antihoraria: solo si el motor está parado *)
+ELSIF btnRev AND NOT xRunning THEN
+    rev      := TRUE;
+    fwd      := FALSE;  (* Enclavamiento: garantiza fwd = FALSE *)
+    xRunning := TRUE;
+
+(* 4. Sin pulsación relevante: mantener estado actual *)
+END_IF;</pre></div>
+<div class="caja resp" id="B4-2076"><div class="cod"><h3>B4-2076</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL;  // Botón para girar en sentido horario
+    btnRev : BOOL;  // Botón para girar en sentido antihorario
+    btnParo : BOOL; // Botón para parar el motor
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL;  // Salida para girar en sentido horario
+    rev : BOOL;  // Salida para girar en sentido antihorario
+END_VAR
+
+VAR
+    estado : INT := 0; // Variable de estado: 0 - Parado, 1 - Giro horario, 2 - Giro antihorario
+END_VAR
+
+// Máquina de estados
+CASE estado OF
+    0: // Estado Parado
+        fwd := FALSE;
+        rev := FALSE;
+        IF btnFwd THEN
+            estado := 1; // Cambia a giro horario
+        ELSIF btnRev THEN
+            estado := 2; // Cambia a giro antihorario
+        END_IF
+
+    1: // Estado Giro Horario
+        fwd := TRUE;
+        rev := FALSE;
+        IF btnParo THEN
+            estado := 0; // Cambia a parado
+        END_IF
+
+    2: // Estado Giro Antihorario
+        fwd := FALSE;
+        rev := TRUE;
+        IF btnParo THEN
+            estado := 0; // Cambia a parado
+        END_IF
+END_CASE</pre></div>
+<div class="caja resp" id="B4-2916"><div class="cod"><h3>B4-2916</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd  : BOOL; // Botón para iniciar giro en sentido horario
+    btnRev  : BOOL; // Botón para iniciar giro en sentido antihorario
+    btnParo : BOOL; // Botón de paro (TRUE = detener motor)
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL; // Salida para giro en sentido horario
+    rev : BOOL; // Salida para giro en sentido antihorario
+END_VAR
+
+(* 
+   Lógica de giro horario (fwd):
+   Se activa con btnFwd o se mantiene enclavada con su propio estado (fwd).
+   Condiciones de bloqueo: NO debe estar activo el giro inverso (NOT rev) 
+   y NO debe estar presionado el botón de paro (NOT btnParo).
+*)
+fwd := (btnFwd OR fwd) AND NOT rev AND NOT btnParo;
+
+(* 
+   Lógica de giro antihorario (rev):
+   Se activa con btnRev o se mantiene enclavada con su propio estado (rev).
+   Condiciones de bloqueo: NO debe estar activo el giro horario (NOT fwd) 
+   y NO debe estar presionado el botón de paro (NOT btnParo).
+*)
+rev := (btnRev OR rev) AND NOT fwd AND NOT btnParo;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-1844"><div class="cod"><h3>B4-1844</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL; (* Boton de giro horario *)
+    btnRev : BOOL; (* Boton de giro antihorario *)
+    btnParo : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Salida de giro horario *)
+    rev : BOOL; (* Salida de giro antihorario *)
+END_VAR
+
+(* Enclavamiento de giro horario: requiere que no este activo el paro ni el giro opuesto *)
+fwd := (btnFwd OR fwd) AND NOT btnParo AND NOT rev;
+
+(* Enclavamiento de giro antihorario: requiere que no este activo el paro ni el giro opuesto *)
+rev := (btnRev OR rev) AND NOT btnParo AND NOT fwd;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-9939"><div class="cod"><h3>B4-9939</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 3 de 10 pasos del harness (pasos 2,3,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL;   // Botón para giro en sentido horario
+    btnRev : BOOL;   // Botón para giro en sentido antihorario
+    btnParo : BOOL;  // Botón para detener el motor
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL;      // Salida para giro en sentido horario
+    rev : BOOL;      // Salida para giro en sentido antihorario
+END_VAR
+
+VAR
+    estado : INT;    // Estado actual del motor: 0 = Paro, 1 = Fwd, 2 = Rev
+END_VAR
+
+// Inicialización del estado
+estado := 0;
+
+// Lógica de control del motor
+IF btnParo THEN
+    // Si se presiona el botón de paro, detener el motor
+    estado := 0;
+ELSIF btnFwd AND (estado = 0) THEN
+    // Si se presiona el botón de avance y el motor está parado, girar en sentido horario
+    estado := 1;
+ELSIF btnRev AND (estado = 0) THEN
+    // Si se presiona el botón de retroceso y el motor está parado, girar en sentido antihorario
+    estado := 2;
+END_IF
+
+// Actualización de las salidas según el estado
+CASE estado OF
+    0: // Estado de paro
+        fwd := FALSE;
+        rev := FALSE;
+    1: // Estado de giro en sentido horario
+        fwd := TRUE;
+        rev := FALSE;
+    2: // Estado de giro en sentido antihorario
+        fwd := FALSE;
+        rev := TRUE;
+END_CASE
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-9793"><div class="cod"><h3>B4-9793</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 10 pasos del harness (pasos 3,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL; (* Boton para girar en sentido horario *)
+    btnRev : BOOL; (* Boton para girar en sentido antihorario *)
+    btnParo : BOOL; (* Boton para parar *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Sentido horario *)
+    rev : BOOL; (* Sentido antihorario *)
+END_VAR
+VAR
+    estado : INT := 0; (* Estado actual del sistema *)
+    parado : BOOL := TRUE; (* Indica si el motor está parado *)
+END_VAR
+
+(* Estado 0: Parado *)
+IF btnParo THEN
+    estado := 0;
+    parado := TRUE;
+    fwd := FALSE;
+    rev := FALSE;
+ELSIF parado AND btnFwd THEN
+    estado := 1;
+    parado := FALSE;
+    fwd := TRUE;
+    rev := FALSE;
+ELSIF parado AND btnRev THEN
+    estado := 2;
+    parado := FALSE;
+    fwd := FALSE;
+    rev := TRUE;
+END_IF
+
+(* Estado 1: Girando en sentido horario *)
+IF btnParo THEN
+    estado := 0;
+    parado := TRUE;
+    fwd := FALSE;
+    rev := FALSE;
+ELSIF btnRev THEN
+    estado := 2;
+    fwd := FALSE;
+    rev := TRUE;
+END_IF
+
+(* Estado 2: Girando en sentido antihorario *)
+IF btnParo THEN
+    estado := 0;
+    parado := TRUE;
+    fwd := FALSE;
+    rev := FALSE;
+ELSIF btnFwd THEN
+    estado := 1;
+    fwd := TRUE;
+    rev := FALSE;
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-5174"><div class="cod"><h3>B4-5174</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 4 de 10 pasos del harness (pasos 3,4,7,9; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL; (* Boton para giro horario *)
+    btnRev : BOOL; (* Boton para giro antihorario *)
+    btnParo : BOOL; (* Boton para paro *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Giro horario *)
+    rev : BOOL; (* Giro antihorario *)
+END_VAR
+VAR
+    estado : INT := 0; (* Estado actual del sistema *)
+END_VAR
+
+(* Máquina de estados para controlar el giro del motor *)
+CASE estado OF
+    0: (* Estado de paro *)
+        IF btnFwd THEN
+            estado := 1; (* Transición a giro horario *)
+        ELSIF btnRev THEN
+            estado := 2; (* Transición a giro antihorario *)
+        END_IF;
+    1: (* Estado de giro horario *)
+        fwd := TRUE;
+        rev := FALSE;
+        IF btnParo THEN
+            estado := 0; (* Transición a paro *)
+        ELSIF btnRev THEN
+            estado := 2; (* Transición a giro antihorario *)
+        END_IF;
+    2: (* Estado de giro antihorario *)
+        fwd := FALSE;
+        rev := TRUE;
+        IF btnParo THEN
+            estado := 0; (* Transición a paro *)
+        ELSIF btnFwd THEN
+            estado := 1; (* Transición a giro horario *)
+        END_IF;
+END_CASE;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-1107"><div class="cod"><h3>B4-1107</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd  : BOOL; (* Boton marcha horaria *)
+    btnRev  : BOOL; (* Boton marcha antihoraria *)
+    btnParo : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Salida giro horario *)
+    rev : BOOL; (* Salida giro antihorario *)
+END_VAR
+
+(* Logica de enclavamiento con paso obligatorio por paro *)
+
+(* Paro: desactiva ambas salidas *)
+IF btnParo THEN
+    fwd := FALSE;
+    rev := FALSE;
+
+(* Marcha horaria: solo si rev no esta activa (no se permite inversion directa) *)
+ELSIF btnFwd AND NOT rev THEN
+    fwd := TRUE;
+
+(* Marcha antihoraria: solo si fwd no esta activa (no se permite inversion directa) *)
+ELSIF btnRev AND NOT fwd THEN
+    rev := TRUE;
+END_IF;
+
+(* Seguridad hardware: garantiza exclusion mutua ante cualquier condicion imprevista *)
+IF fwd AND rev THEN
+    fwd := FALSE;
+    rev := FALSE;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-2313"><div class="cod"><h3>B4-2313</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 10 pasos del harness (pasos 3,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL;  // Botón para girar en sentido horario
+    btnRev : BOOL;  // Botón para girar en sentido antihorario
+    btnParo : BOOL; // Botón para parar el motor
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL;    // Salida para giro horario
+    rev : BOOL;    // Salida para giro antihorario
+END_VAR
+
+VAR
+    estado : INT := 0; // Estado actual del sistema (0: Parado, 1: Giro horario, 2: Giro antihorario)
+END_VAR
+
+// Transiciones de estado
+CASE estado OF
+    0: // Estado Parado
+        IF btnFwd THEN
+            estado := 1; // Cambia a giro horario
+        ELSIF btnRev THEN
+            estado := 2; // Cambia a giro antihorario
+        END_IF
+
+    1: // Estado Giro Horario
+        IF btnParo THEN
+            estado := 0; // Cambia a parado
+        ELSIF btnRev THEN
+            estado := 2; // Cambia a giro antihorario
+        END_IF
+
+    2: // Estado Giro Antihorario
+        IF btnParo THEN
+            estado := 0; // Cambia a parado
+        ELSIF btnFwd THEN
+            estado := 1; // Cambia a giro horario
+        END_IF
+END_CASE
+
+// Asignación de salidas según el estado
+CASE estado OF
+    0:
+        fwd := FALSE;
+        rev := FALSE;
+    1:
+        fwd := TRUE;
+        rev := FALSE;
+    2:
+        fwd := FALSE;
+        rev := TRUE;
+END_CASE
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-4978"><div class="cod"><h3>B4-4978</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL; (* Botón para giro horario *)
+    btnRev : BOOL; (* Botón para giro antihorario *)
+    btnParo : BOOL; (* Botón de paro *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Salida para giro horario *)
+    rev : BOOL; (* Salida para giro antihorario *)
+END_VAR
+VAR
+    estado : INT; (* Estado actual del motor: 0 = Paro, 1 = Horario, 2 = Antihorario *)
+END_VAR
+
+(* Lógica de control para la inversión de giro del motor *)
+IF btnParo THEN
+    estado := 0; (* Parar el motor *)
+ELSIF btnFwd AND (estado = 0) THEN
+    estado := 1; (* Activar giro horario si el motor está parado *)
+ELSIF btnRev AND (estado = 0) THEN
+    estado := 2; (* Activar giro antihorario si el motor está parado *)
+END_IF
+
+(* Actualizar salidas basadas en el estado actual *)
+fwd := (estado = 1);
+rev := (estado = 2);
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-6326"><div class="cod"><h3>B4-6326</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL; (* Botón para giro horario *)
+    btnRev : BOOL; (* Botón para giro antihorario *)
+    btnParo : BOOL; (* Botón de paro *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Salida para giro horario *)
+    rev : BOOL; (* Salida para giro antihorario *)
+END_VAR
+VAR
+    estado : INT; (* Estado del motor: 0 = Paro, 1 = Horario, 2 = Antihorario *)
+END_VAR
+
+(* Lógica de control para la inversión de giro del motor *)
+IF btnParo THEN
+    estado := 0; (* Parar el motor *)
+ELSIF btnFwd AND (estado = 0) THEN
+    estado := 1; (* Activar giro horario si el motor está parado *)
+ELSIF btnRev AND (estado = 0) THEN
+    estado := 2; (* Activar giro antihorario si el motor está parado *)
+END_IF
+
+(* Asignación de salidas basadas en el estado actual *)
+fwd := (estado = 1);
+rev := (estado = 2);
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-2461"><div class="cod"><h3>B4-2461</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL; (* Boton de giro horario *)
+    btnRev : BOOL; (* Boton de giro antihorario *)
+    btnParo : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Salida de giro horario *)
+    rev : BOOL; (* Salida de giro antihorario *)
+END_VAR
+
+(* Enclavamiento de giro horario: requiere que no este activo el paro ni el giro inverso *)
+fwd := (btnFwd OR fwd) AND NOT btnParo AND NOT rev;
+
+(* Enclavamiento de giro antihorario: requiere que no este activo el paro ni el giro horario *)
+rev := (btnRev OR rev) AND NOT btnParo AND NOT fwd;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-9948"><div class="cod"><h3>B4-9948</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL; (* Boton de marcha en sentido horario *)
+    btnRev : BOOL; (* Boton de marcha en sentido antihorario *)
+    btnParo : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Salida para giro horario *)
+    rev : BOOL; (* Salida para giro antihorario *)
+END_VAR
+
+(* Enclavamiento para giro horario: requiere que no este activo el paro ni el giro opuesto *)
+fwd := (fwd OR btnFwd) AND NOT btnParo AND NOT rev;
+
+(* Enclavamiento para giro antihorario: requiere que no este activo el paro ni el giro opuesto *)
+rev := (rev OR btnRev) AND NOT btnParo AND NOT fwd;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-7421"><div class="cod"><h3>B4-7421</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd  : BOOL; // Botón para iniciar giro en sentido horario
+    btnRev  : BOOL; // Botón para iniciar giro en sentido antihorario
+    btnParo : BOOL; // Botón de paro (TRUE = detener motor)
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL; // Comando de salida para giro horario
+    rev : BOOL; // Comando de salida para giro antihorario
+END_VAR
+
+(* 
+   Lógica de control de giro:
+   - Se utiliza un circuito de auto-retención (enclavamiento) para cada sentido.
+   - La condición &quot;NOT rev&quot; en fwd y &quot;NOT fwd&quot; en rev garantiza que nunca 
+     estén activas simultáneamente.
+   - Al estar enclavado un sentido, presionar el botón del sentido opuesto 
+     no tendrá efecto. Es obligatorio presionar btnParo primero.
+*)
+
+fwd := (btnFwd OR fwd) AND NOT rev AND NOT btnParo;
+rev := (btnRev OR rev) AND NOT fwd AND NOT btnParo;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-1969"><div class="cod"><h3>B4-1969</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL; (* Boton para giro horario *)
+    btnRev : BOOL; (* Boton para giro antihorario *)
+    btnParo : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Salida para giro horario *)
+    rev : BOOL; (* Salida para giro antihorario *)
+END_VAR
+VAR
+    estado : INT; (* Estado del motor: 0 = Paro, 1 = Horario, 2 = Antihorario *)
+END_VAR
+
+(* Logica de control para inversion de giro del motor *)
+IF btnParo THEN
+    estado := 0; (* Parar el motor *)
+ELSIF btnFwd AND (estado = 0) THEN
+    estado := 1; (* Activar giro horario si el motor esta parado *)
+ELSIF btnRev AND (estado = 0) THEN
+    estado := 2; (* Activar giro antihorario si el motor esta parado *)
+END_IF
+
+(* Actualizar salidas segun el estado *)
+fwd := (estado = 1);
+rev := (estado = 2);
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-9599"><div class="cod"><h3>B4-9599</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd  : BOOL; (* Botón marcha horaria *)
+    btnRev  : BOOL; (* Botón marcha antihoraria *)
+    btnParo : BOOL; (* Botón de paro *)
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL; (* Salida giro horario *)
+    rev : BOOL; (* Salida giro antihorario *)
+END_VAR
+
+VAR
+    (* Estado interno: TRUE = en marcha, FALSE = parado *)
+    xRunning : BOOL := FALSE;
+END_VAR
+
+(*
+    Lógica de control:
+    - btnParo detiene el motor (prioridad alta).
+    - btnFwd activa fwd solo si el motor está parado (xRunning = FALSE).
+    - btnRev activa rev solo si el motor está parado (xRunning = FALSE).
+    - Una vez en marcha, solo btnParo puede cambiar el estado.
+    - fwd y rev nunca pueden estar activas simultáneamente.
+*)
+
+(* 1. Paro con prioridad máxima *)
+IF btnParo THEN
+    fwd      := FALSE;
+    rev      := FALSE;
+    xRunning := FALSE;
+
+(* 2. Arranque en sentido horario: solo si el motor está parado *)
+ELSIF btnFwd AND NOT xRunning THEN
+    fwd      := TRUE;
+    rev      := FALSE;  (* Interbloqueo: asegurar rev inactiva *)
+    xRunning := TRUE;
+
+(* 3. Arranque en sentido antihorario: solo si el motor está parado *)
+ELSIF btnRev AND NOT xRunning THEN
+    rev      := TRUE;
+    fwd      := FALSE;  (* Interbloqueo: asegurar fwd inactiva *)
+    xRunning := TRUE;
+
+(* 4. Motor en marcha: mantener estado hasta recibir paro *)
+(* No se hace nada; fwd/rev conservan su valor *)
+END_IF;
+
+(* 5. Interbloqueo de seguridad por hardware: nunca ambas activas *)
+IF fwd AND rev THEN
+    fwd      := FALSE;
+    rev      := FALSE;
+    xRunning := FALSE;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-3739"><div class="cod"><h3>B4-3739</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 10 pasos del harness (pasos 3; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL;  // Botón para girar en sentido horario
+    btnRev : BOOL;  // Botón para girar en sentido antihorario
+    btnParo : BOOL; // Botón para parar el motor
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL;    // Salida para girar en sentido horario
+    rev : BOOL;    // Salida para girar en sentido antihorario
+END_VAR
+
+VAR
+    estado : INT := 0; // Estado actual del sistema (0: Parado, 1: Giro horario, 2: Giro antihorario)
+END_VAR
+
+// Máquina de estados
+CASE estado OF
+    0: // Estado Parado
+        fwd := FALSE;
+        rev := FALSE;
+        IF btnFwd THEN
+            estado := 1; // Cambia a giro horario
+        ELSIF btnRev THEN
+            estado := 2; // Cambia a giro antihorario
+        END_IF
+
+    1: // Estado Giro Horario
+        fwd := TRUE;
+        rev := FALSE;
+        IF btnParo THEN
+            estado := 0; // Cambia a parado
+        ELSIF btnRev THEN
+            estado := 2; // Cambia a giro antihorario
+        END_IF
+
+    2: // Estado Giro Antihorario
+        fwd := FALSE;
+        rev := TRUE;
+        IF btnParo THEN
+            estado := 0; // Cambia a parado
+        ELSIF btnFwd THEN
+            estado := 1; // Cambia a giro horario
+        END_IF
+END_CASE</pre></div>
+<div class="caja resp" id="B4-1794"><div class="cod"><h3>B4-1794</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd  : BOOL; (* Boton marcha sentido horario *)
+    btnRev  : BOOL; (* Boton marcha sentido antihorario *)
+    btnParo : BOOL; (* Boton de paro *)
+END_VAR
+VAR_OUTPUT
+    fwd : BOOL; (* Salida sentido horario *)
+    rev : BOOL; (* Salida sentido antihorario *)
+END_VAR
+VAR
+    stateFwd : BOOL; (* Estado interno: motor girando en horario *)
+    stateRev : BOOL; (* Estado interno: motor girando en antihorario *)
+END_VAR
+
+(* Paro: desactiva ambos sentidos *)
+IF btnParo THEN
+    stateFwd := FALSE;
+    stateRev := FALSE;
+
+(* Arranque horario: solo si el sentido antihorario esta detenido *)
+ELSIF btnFwd AND NOT stateRev THEN
+    stateFwd := TRUE;
+
+(* Arranque antihorario: solo si el sentido horario esta detenido *)
+ELSIF btnRev AND NOT stateFwd THEN
+    stateRev := TRUE;
+END_IF;
+
+(* Asignacion de salidas; garantia hardware: nunca ambas activas *)
+fwd := stateFwd AND NOT stateRev;
+rev := stateRev AND NOT stateFwd;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-9025"><div class="cod"><h3>B4-9025</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd  : BOOL; (* Botón marcha horaria *)
+    btnRev  : BOOL; (* Botón marcha antihoraria *)
+    btnParo : BOOL; (* Botón paro *)
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL; (* Salida giro horario *)
+    rev : BOOL; (* Salida giro antihorario *)
+END_VAR
+
+VAR
+    (* Estado interno: TRUE = en marcha, FALSE = parado *)
+    xRunning : BOOL := FALSE;
+END_VAR
+
+(*
+    Lógica de control:
+    - btnParo detiene el motor (prioridad máxima).
+    - btnFwd activa fwd solo si el motor está parado (rev = FALSE).
+    - btnRev activa rev solo si el motor está parado (fwd = FALSE).
+    - Nunca se permite cambio directo de sentido sin pasar por paro.
+*)
+
+(* ── 1. PARO: prioridad máxima ── *)
+IF btnParo THEN
+    fwd      := FALSE;
+    rev      := FALSE;
+    xRunning := FALSE;
+
+(* ── 2. MARCHA HORARIA: solo si el motor está parado ── *)
+ELSIF btnFwd AND NOT xRunning THEN
+    fwd      := TRUE;
+    rev      := FALSE;  (* Enclavamiento: rev siempre apagada *)
+    xRunning := TRUE;
+
+(* ── 3. MARCHA ANTIHORARIA: solo si el motor está parado ── *)
+ELSIF btnRev AND NOT xRunning THEN
+    rev      := TRUE;
+    fwd      := FALSE;  (* Enclavamiento: fwd siempre apagada *)
+    xRunning := TRUE;
+
+(* ── 4. Sin pulsación relevante: mantener estado actual ── *)
+END_IF;
+
+(* ── 5. Enclavamiento de seguridad por hardware (doble seguro) ── *)
+(* Garantiza que nunca ambas salidas estén activas, incluso ante  *)
+(* corrupción de memoria o fallo lógico imprevisto.               *)
+IF fwd AND rev THEN
+    fwd      := FALSE;
+    rev      := FALSE;
+    xRunning := FALSE;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-7211"><div class="cod"><h3>B4-7211</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 2 de 10 pasos del harness (pasos 3,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd  : BOOL; // Botón para giro en sentido horario
+    btnRev  : BOOL; // Botón para giro en sentido antihorario
+    btnParo : BOOL; // Botón de paro (prioridad a la desconexión)
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL; // Salida para motor en sentido horario
+    rev : BOOL; // Salida para motor en sentido antihorario
+END_VAR
+
+(* 
+   Lógica de control:
+   - NOT btnParo: El paro tiene prioridad absoluta.
+   - NOT rev / NOT fwd: Enclavamiento para evitar activación simultánea y obligar a pasar por paro.
+   - NOT btnRev / NOT btnFwd: Evita problemas si se pulsan ambos botones a la vez estando el motor detenido.
+   - (btnFwd OR fwd): Auto-retención (enclavamiento) de la señal.
+*)
+
+fwd := NOT btnParo AND NOT rev AND NOT btnRev AND (btnFwd OR fwd);
+rev := NOT btnParo AND NOT fwd AND NOT btnFwd AND (btnRev OR rev);
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B4-5930"><div class="cod"><h3>B4-5930</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 10 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Giro
+VAR_INPUT
+    btnFwd : BOOL;   // Botón para giro en sentido horario
+    btnRev : BOOL;   // Botón para giro en sentido antihorario
+    btnParo : BOOL;  // Botón de paro
+END_VAR
+
+VAR_OUTPUT
+    fwd : BOOL;      // Salida para giro en sentido horario
+    rev : BOOL;      // Salida para giro en sentido antihorario
+END_VAR
+
+VAR
+    estado : INT;    // Estado del motor: 0 = Paro, 1 = Horario, 2 = Antihorario
+END_VAR
+
+// Inicialización de salidas
+fwd := FALSE;
+rev := FALSE;
+
+// Lógica de control del motor
+IF btnParo THEN
+    estado := 0; // Cambiar a estado de paro
+ELSIF btnFwd AND (estado = 0) THEN
+    estado := 1; // Cambiar a estado de giro horario
+ELSIF btnRev AND (estado = 0) THEN
+    estado := 2; // Cambiar a estado de giro antihorario
+END_IF
+
+// Actualización de salidas según el estado
+CASE estado OF
+    0: // Paro
+        fwd := FALSE;
+        rev := FALSE;
+    1: // Giro horario
+        fwd := TRUE;
+        rev := FALSE;
+    2: // Giro antihorario
+        fwd := FALSE;
+        rev := TRUE;
+END_CASE
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

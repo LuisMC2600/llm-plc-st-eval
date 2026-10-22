@@ -1,0 +1,62 @@
+[
+ {
+  "codigo": "J51",
+  "categoria": "FLANCO",
+  "justificacion": "La línea IF NOT puertaAbiertaAnterior THEN puertaAbiertaAnterior := puertaAbierta; sobrescribe la memoria de flanco justo antes de evaluar la transición, eliminando el primer flanco."
+ },
+ {
+  "codigo": "J07",
+  "categoria": "FLANCO",
+  "justificacion": "Solo se asignan C1.CU, C1.RESET y C1.PV, pero nunca se invoca C1 como bloque; el CTU no se ejecuta y no cuenta."
+ },
+ {
+  "codigo": "J22",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "tBlink(IN := NOT tBlink.Q) rearma el TP inmediatamente al bajar Q, por lo que no genera el 1 s de apagado requerido."
+ },
+ {
+  "codigo": "J32",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "El TP con bBlinkTrig se relanza al expirar Q sin temporizar 1 s en bajo; la intermitencia 1 s/1 s no se cumple."
+ },
+ {
+  "codigo": "J38",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Usa un TON con IN:=TRUE permanente; tIntermitente.Q enciende luzA de forma fija tras 1 s, no parpadea."
+ },
+ {
+  "codigo": "J44",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "bParpadeoOn solo se invierte cuando tParpadeo.Q es TRUE, por lo que luzA queda fija y no se genera el parpadeo."
+ },
+ {
+  "codigo": "J09",
+  "categoria": "SECUENCIA",
+  "justificacion": "La máquina de estados está dentro de ELSIF btnInicio THEN; al soltar el botón no se ejecuta y la secuencia no se retiene ni avanza."
+ },
+ {
+  "codigo": "J10",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "En estado 2 usa motorMezcla := tMezcla.Q y IF NOT tMezcla.Q THEN estado:=3; con TON Q es FALSE antes de expirar, por lo que salta a descarga inmediatamente."
+ },
+ {
+  "codigo": "J20",
+  "categoria": "SECUENCIA",
+  "justificacion": "IF NOT btnInicio THEN estado := 0; fuerza el estado a reposo en cada ciclo si el botón no está pulsado, perdiendo la autorretención de la secuencia."
+ },
+ {
+  "codigo": "J25",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "Usa un TP como temporizador de mezcla y no lo invoca en cada ciclo; TP activa Q desde el flanco, provocando transición prematura."
+ },
+ {
+  "codigo": "J34",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "tMezcla es TP y se evalúa IF tMezcla.Q en el mismo ciclo tras dispararlo; como TP activa Q inmediatamente, se adelanta la descarga."
+ },
+ {
+  "codigo": "J41",
+  "categoria": "TEMPORIZACION",
+  "justificacion": "En el estado 2 no se invoca tMezcla en cada ciclo; con TP, Q queda activa desde el disparo y la transición a descarga se produce prematuramente."
+ }
+]

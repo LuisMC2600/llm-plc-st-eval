@@ -1,0 +1,29 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20261013002537
+Nombre de usuario: DESKTOP-2K8TKD6\LUIS C
+Usuario RunAs: DESKTOP-2K8TKD6\LUIS C
+Nombre de la configuración: 
+Máquina: DESKTOP-2K8TKD6 (Microsoft Windows NT 10.0.26300.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\codesys\ejecutar_sens_dialecto.ps1
+Id. de proceso: 25964
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Respuestas a compilar: 2  (estimado 0-0 min)
+Argumentos: --profile="CODESYS V3.5 SP22 Patch 3" --runscript="C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\codesys\compilar_lote_sp22.py" --noUI
+Codigo de salida: 0  |  duracion: 0,8 min
+[OK] Plantilla sin cambios
+Controles -> correcto: compila=1 errores=0 | con errores: compila=0 errores=4 | funcion: compila=1
+Resultado: 2 respuestas | compilan 2 | no compilan 0 | NA 0
+Evidencia: C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\codesys\20261013_002537_compilacion
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20261013002622
+**********************

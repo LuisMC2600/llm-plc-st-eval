@@ -1,0 +1,201 @@
+{
+ "tarea": "B8",
+ "titulo": "Conteo de eventos por flanco",
+ "nivel": "Basico",
+ "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el registro de aperturas de una puerta de seguridad. Cada apertura (transición de FALSE a TRUE de la señal puertaAbierta) debe incrementar el número de aperturas en uno; mantener la puerta abierta no debe seguir contando. Al acumular 5 o más aperturas debe activarse la salida de aviso. La entrada reset pone el registro en cero y desactiva el aviso. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Puerta con variables de entrada puertaAbierta, reset (BOOL) y salidas aviso (BOOL) y nAperturas (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+ "protocolo_prueba": "Harness: PRG_Test_B8.st\n\nBANCO DE PRUEBA AUTOVERIFICABLE - Tarea B8 (FB_Puerta: aperturas por flanco)\n    ---------------------------------------------------------------------------\n    Validado por simulacion en codesys/validar_harness_B8.py (traduccion fiel):\n    9 implementaciones (1 correcta, 8 defectuosas), ciclos de 4, 10 y 20 ms.\n\n    Pasos (cuentas acumuladas):\n      0 reset, puerta cerrada ............................ n=0  aviso=F\n      1 se suelta reset y se abre la puerta (1 flanco) ... n=1  aviso=F\n      2 puerta sostenida abierta 500 ms .................. n=1  aviso=F\n      3 puerta cerrada ................................... n=1  aviso=F\n      4 3 flancos generados .............................. n=4  aviso=F  (umbral 4)\n      5 1 flanco ......................................... n=5  aviso=T  (umbral '>5')\n      6 1 flanco ......................................... n=6  aviso=T  ('=5', saturacion)\n      7 reset, puerta cerrada ............................ n=0  aviso=F  (reset incompleto)\n      8 se suelta reset, 1 flanco ........................ n=1  aviso=F  (bloqueo tras reset)\n    Las transiciones de reset se hacen con la puerta cerrada: el enunciado no\n    define que pasa con un flanco durante el reset, asi que no se prueba.\n\n    Generador determinista de flancos (patron de B3): el numero de flancos no\n    depende del ciclo de la MainTask; el asentamiento del paso queda retenido\n    mientras se generan.\n\n--- Pasos (CASE paso OF) ---\n\n        0: reset := TRUE;  puertaAbierta := FALSE; tEspera := T#200MS; esperadoN := 0; esperadoAv := FALSE;\n        1: reset := FALSE; puertaAbierta := TRUE;  tEspera := T#200MS; esperadoN := 1; esperadoAv := FALSE;\n        2: puertaAbierta := TRUE;                  tEspera := T#500MS; esperadoN := 1; esperadoAv := FALSE;\n        3: puertaAbierta := FALSE;                 tEspera := T#200MS; esperadoN := 1; esperadoAv := FALSE;\n        4:                                         tEspera := T#200MS; esperadoN := 4; esperadoAv := FALSE;\n        5:                                         tEspera := T#200MS; esperadoN := 5; esperadoAv := TRUE;\n        6:                                         tEspera := T#200MS; esperadoN := 6; esperadoAv := TRUE;\n        7: reset := TRUE;  puertaAbierta := FALSE; tEspera := T#200MS; esperadoN := 0; esperadoAv := FALSE;\n        8: reset := FALSE;                         tEspera := T#200MS; esperadoN := 1; esperadoAv := FALSE;",
+ "respuestas": [
+  {
+   "codigo": "B8-2855",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; // Entrada que indica si la puerta está abierta\n    reset : BOOL; // Entrada para resetear el contador de aperturas\nEND_VAR\n\nVAR_OUTPUT\n    aviso : BOOL; // Salida que indica si se han acumulado 5 o más aperturas\n    nAperturas : INT; // Salida que muestra el número de aperturas\nEND_VAR\n\nVAR\n    puertaAbiertaAnterior : BOOL := FALSE; // Variable para almacenar el estado anterior de la puerta\nEND_VAR\n\n// Comprueba si se ha reseteado el sistema\nIF reset THEN\n    nAperturas := 0; // Reinicia el contador de aperturas\n    aviso := FALSE; // Desactiva el aviso\nELSE\n    // Comprueba si la puerta ha pasado de cerrada a abierta\n    IF NOT puertaAbiertaAnterior AND puertaAbierta THEN\n        nAperturas := nAperturas + 1; // Incrementa el contador de aperturas\n    END_IF\n\n    // Actualiza el estado anterior de la puerta\n    puertaAbiertaAnterior := puertaAbierta;\n\n    // Comprueba si se han acumulado 5 o más aperturas\n    IF nAperturas >= 5 THEN\n        aviso := TRUE; // Activa el aviso\n    ELSE\n        aviso := FALSE; // Desactiva el aviso\n    END_IF\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-2057",
+   "resultado_codesys": "Compila. Falla 7 de 9 pasos del harness (pasos 1,2,3,4,5,6,8; numerados desde 0).",
+   "mensajes_compilador": "",
+   "funcional_fijo": null,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; // Entrada que indica si la puerta está abierta\n    reset : BOOL; // Entrada para resetear el contador de aperturas\nEND_VAR\n\nVAR_OUTPUT\n    aviso : BOOL; // Salida que indica si se han acumulado 5 o más aperturas\n    nAperturas : INT; // Salida que muestra el número de aperturas\nEND_VAR\n\nVAR\n    puertaAbiertaAnterior : BOOL; // Variable para almacenar el estado anterior de puertaAbierta\nEND_VAR\n\n// Inicialización de variables\nIF NOT puertaAbiertaAnterior THEN\n    puertaAbiertaAnterior := puertaAbierta;\nEND_IF\n\n// Lógica de reset\nIF reset THEN\n    nAperturas := 0;\n    aviso := FALSE;\nEND_IF\n\n// Contador de aperturas\nIF puertaAbierta AND NOT puertaAbiertaAnterior THEN\n    nAperturas := nAperturas + 1;\nEND_IF\n\n// Actualización del estado anterior de puertaAbierta\npuertaAbiertaAnterior := puertaAbierta;\n\n// Lógica de aviso\nIF nAperturas >= 5 THEN\n    aviso := TRUE;\nELSE\n    aviso := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-3959",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Senal de puerta abierta *)\n    reset : BOOL; (* Resetea el contador y el aviso *)\nEND_VAR\nVAR_OUTPUT\n    aviso : BOOL; (* Aviso de 5 o mas aperturas *)\n    nAperturas : INT; (* Numero de aperturas registradas *)\nEND_VAR\nVAR\n    flancoApertura : R_TRIG; (* Detector de flanco ascendente *)\nEND_VAR\n\n(* Deteccion de transicion de FALSE a TRUE *)\nflancoApertura(CLK := puertaAbierta);\n\n(* Logica de reseteo e incremento del contador *)\nIF reset THEN\n    nAperturas := 0;\nELSIF flancoApertura.Q THEN\n    nAperturas := nAperturas + 1;\nEND_IF;\n\n(* Activacion del aviso al acumular 5 o mas aperturas *)\naviso := (nAperturas >= 5);\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-6962",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; // Señal de la puerta, TRUE si está abierta\n    reset : BOOL;         // Señal de reset, TRUE para reiniciar el contador\nEND_VAR\n\nVAR_OUTPUT\n    aviso : BOOL;         // Señal de aviso, TRUE si se han acumulado 5 o más aperturas\n    nAperturas : INT;     // Contador de aperturas de la puerta\nEND_VAR\n\nVAR\n    puertaAbiertaAnt : BOOL; // Estado anterior de la señal puertaAbierta\nEND_VAR\n\n// Inicialización de variables\nIF reset THEN\n    nAperturas := 0;      // Reinicia el contador de aperturas\n    aviso := FALSE;       // Desactiva la señal de aviso\nELSE\n    // Detecta el flanco ascendente de la señal puertaAbierta\n    IF NOT puertaAbiertaAnt AND puertaAbierta THEN\n        nAperturas := nAperturas + 1; // Incrementa el contador de aperturas\n    END_IF\n\n    // Activa la señal de aviso si se han acumulado 5 o más aperturas\n    IF nAperturas >= 5 THEN\n        aviso := TRUE;\n    ELSE\n        aviso := FALSE;\n    END_IF\nEND_IF\n\n// Actualiza el estado anterior de la señal puertaAbierta\npuertaAbiertaAnt := puertaAbierta;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-4908",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset         : BOOL; (* Reset del registro *)\nEND_VAR\nVAR_OUTPUT\n    aviso      : BOOL; (* Aviso por 5 o mas aperturas *)\n    nAperturas : INT;  (* Contador de aperturas *)\nEND_VAR\nVAR\n    rTrigPuerta : R_TRIG; (* Detector de flanco ascendente *)\nEND_VAR\n\n(* Detectar flanco ascendente de puertaAbierta *)\nrTrigPuerta(CLK := puertaAbierta);\n\n(* Reset tiene prioridad sobre el conteo *)\nIF reset THEN\n    nAperturas := 0;\nELSIF rTrigPuerta.Q THEN\n    (* Incrementar solo en cada nueva apertura *)\n    nAperturas := nAperturas + 1;\nEND_IF;\n\n(* Activar aviso al alcanzar 5 o mas aperturas *)\naviso := nAperturas >= 5;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-3439",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; // Entrada que indica si la puerta está abierta\n    reset : BOOL; // Entrada para resetear el contador de aperturas\nEND_VAR\n\nVAR_OUTPUT\n    aviso : BOOL; // Salida que indica si se han acumulado 5 o más aperturas\n    nAperturas : INT; // Salida que muestra el número de aperturas\nEND_VAR\n\nVAR\n    puertaAbiertaAnterior : BOOL; // Variable para almacenar el estado anterior de puertaAbierta\nEND_VAR\n\n// Inicialización de variables\nIF reset THEN\n    nAperturas := 0;\n    aviso := FALSE;\n    puertaAbiertaAnterior := FALSE;\nEND_IF\n\n// Detectar transición de FALSE a TRUE en puertaAbierta\nIF NOT puertaAbiertaAnterior AND puertaAbierta THEN\n    nAperturas := nAperturas + 1;\nEND_IF\n\n// Actualizar el estado anterior de puertaAbierta\npuertaAbiertaAnterior := puertaAbierta;\n\n// Activar la salida de aviso si se han acumulado 5 o más aperturas\nIF nAperturas >= 5 THEN\n    aviso := TRUE;\nELSE\n    aviso := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-1092",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset : BOOL;         (* Señal de reset *)\nEND_VAR\nVAR_OUTPUT\n    aviso : BOOL;         (* Señal de aviso *)\n    nAperturas : INT;     (* Número de aperturas *)\nEND_VAR\nVAR\n    puertaAbiertaAnt : BOOL; (* Estado anterior de la puerta *)\nEND_VAR\n\n(* Si se activa el reset, reiniciar el contador y desactivar el aviso *)\nIF reset THEN\n    nAperturas := 0;\n    aviso := FALSE;\nELSE\n    (* Detectar transición de FALSE a TRUE en puertaAbierta *)\n    IF NOT puertaAbiertaAnt AND puertaAbierta THEN\n        nAperturas := nAperturas + 1;\n    END_IF;\n    \n    (* Activar aviso si el número de aperturas es 5 o más *)\n    IF nAperturas >= 5 THEN\n        aviso := TRUE;\n    ELSE\n        aviso := FALSE;\n    END_IF;\nEND_IF;\n\n(* Actualizar el estado anterior de la puerta *)\npuertaAbiertaAnt := puertaAbierta;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-3080",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; // Señal de la puerta, TRUE si está abierta\n    reset : BOOL;         // Señal para resetear el contador de aperturas\nEND_VAR\n\nVAR_OUTPUT\n    aviso : BOOL;         // Señal de aviso, TRUE si se alcanzan 5 o más aperturas\n    nAperturas : INT;     // Contador de aperturas de la puerta\nEND_VAR\n\nVAR\n    puertaAbiertaAnt : BOOL; // Estado anterior de la señal puertaAbierta\nEND_VAR\n\n// Inicialización de variables\nIF reset THEN\n    nAperturas := 0;      // Reinicia el contador de aperturas\n    aviso := FALSE;       // Desactiva la señal de aviso\nELSE\n    // Detecta la transición de FALSE a TRUE de puertaAbierta\n    IF NOT puertaAbiertaAnt AND puertaAbierta THEN\n        nAperturas := nAperturas + 1; // Incrementa el contador de aperturas\n    END_IF\n    \n    // Activa la señal de aviso si se alcanzan 5 o más aperturas\n    IF nAperturas >= 5 THEN\n        aviso := TRUE;\n    ELSE\n        aviso := FALSE;\n    END_IF\nEND_IF\n\n// Actualiza el estado anterior de la puerta\npuertaAbiertaAnt := puertaAbierta;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-6589",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de estado de la puerta de seguridad *)\n    reset : BOOL;         (* Pone a cero el contador y apaga el aviso *)\nEND_VAR\n\nVAR_OUTPUT\n    aviso : BOOL;         (* TRUE si se acumulan 5 o más aperturas *)\n    nAperturas : INT;     (* Número acumulado de aperturas *)\nEND_VAR\n\nVAR\n    flancoApertura : R_TRIG; (* Detector de flanco de subida estándar IEC *)\nEND_VAR\n\n(* Detectar transición de FALSE a TRUE en la señal de la puerta *)\nflancoApertura(CLK := puertaAbierta);\n\n(* Lógica de reinicio o incremento del contador *)\nIF reset THEN\n    nAperturas := 0;\nELSIF flancoApertura.Q THEN\n    nAperturas := nAperturas + 1;\nEND_IF;\n\n(* Evaluación de la salida de aviso (se desactiva automáticamente al resetear nAperturas) *)\naviso := (nAperturas >= 5);\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-2238",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de la puerta: TRUE = abierta *)\n    reset         : BOOL; (* Reset del contador y aviso *)\nEND_VAR\n\nVAR_OUTPUT\n    aviso      : BOOL; (* TRUE cuando se alcanzan 5 o más aperturas *)\n    nAperturas : INT;  (* Número de aperturas registradas *)\nEND_VAR\n\nVAR\n    puertaAbierta_prev : BOOL; (* Estado anterior para detección de flanco *)\nEND_VAR\n\n(* ── Lógica principal ── *)\n\n(* Reset tiene prioridad sobre el conteo *)\nIF reset THEN\n    nAperturas         := 0;\n    aviso              := FALSE;\n    puertaAbierta_prev := FALSE;\n\nELSE\n    (* Detectar flanco ascendente: FALSE → TRUE *)\n    IF puertaAbierta AND NOT puertaAbierta_prev THEN\n        nAperturas := nAperturas + 1;\n    END_IF;\n\n    (* Activar aviso al alcanzar 5 o más aperturas *)\n    aviso := (nAperturas >= 5);\n\nEND_IF;\n\n(* Guardar estado actual para el siguiente ciclo *)\npuertaAbierta_prev := puertaAbierta;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-4457",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset : BOOL;         (* Señal de reset *)\nEND_VAR\nVAR_OUTPUT\n    aviso : BOOL;         (* Señal de aviso *)\n    nAperturas : INT;     (* Número de aperturas *)\nEND_VAR\nVAR\n    puertaAbiertaAnt : BOOL; (* Estado anterior de la puerta *)\nEND_VAR\n\n(* Si se activa el reset, se reinicia el contador y el aviso *)\nIF reset THEN\n    nAperturas := 0;\n    aviso := FALSE;\nELSE\n    (* Detectar transición de FALSE a TRUE en puertaAbierta *)\n    IF NOT puertaAbiertaAnt AND puertaAbierta THEN\n        nAperturas := nAperturas + 1;\n    END_IF;\n\n    (* Activar aviso si el número de aperturas es 5 o más *)\n    IF nAperturas >= 5 THEN\n        aviso := TRUE;\n    ELSE\n        aviso := FALSE;\n    END_IF;\nEND_IF;\n\n(* Actualizar el estado anterior de la puerta *)\npuertaAbiertaAnt := puertaAbierta;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-7031",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; // Señal de la puerta, TRUE si está abierta\n    reset : BOOL;         // Señal de reset, TRUE para reiniciar el contador\nEND_VAR\n\nVAR_OUTPUT\n    aviso : BOOL;         // Señal de aviso, TRUE si se han alcanzado 5 aperturas\n    nAperturas : INT;     // Contador de aperturas de la puerta\nEND_VAR\n\nVAR\n    puertaAbiertaAnt : BOOL; // Estado anterior de la señal puertaAbierta\nEND_VAR\n\n// Inicialización\nIF reset THEN\n    nAperturas := 0;      // Reinicia el contador de aperturas\n    aviso := FALSE;       // Desactiva el aviso\nELSE\n    // Detecta la transición de FALSE a TRUE de puertaAbierta\n    IF NOT puertaAbiertaAnt AND puertaAbierta THEN\n        nAperturas := nAperturas + 1; // Incrementa el contador\n    END_IF\n\n    // Activa el aviso si se alcanzan 5 o más aperturas\n    IF nAperturas >= 5 THEN\n        aviso := TRUE;\n    ELSE\n        aviso := FALSE;\n    END_IF\nEND_IF\n\n// Actualiza el estado anterior de puertaAbierta\npuertaAbiertaAnt := puertaAbierta;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-9508",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset : BOOL; (* Botón de reset *)\nEND_VAR\nVAR_OUTPUT\n    aviso : BOOL; (* Salida de aviso *)\n    nAperturas : INT; (* Número de aperturas *)\nEND_VAR\nVAR\n    puertaAbiertaAnterior : BOOL; (* Estado anterior de la puerta *)\nEND_VAR\n\n(* Reinicio del registro *)\nIF reset THEN\n    nAperturas := 0;\n    aviso := FALSE;\nEND_IF\n\n(* Detección de transición de FALSE a TRUE *)\nIF puertaAbierta AND NOT puertaAbiertaAnterior THEN\n    nAperturas := nAperturas + 1;\nEND_IF\n\n(* Actualización del estado anterior *)\npuertaAbiertaAnterior := puertaAbierta;\n\n(* Activación del aviso si se alcanzan 5 aperturas *)\nIF nAperturas >= 5 THEN\n    aviso := TRUE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-3862",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset : BOOL; (* Reinicia el registro y el aviso *)\nEND_VAR\nVAR_OUTPUT\n    aviso : BOOL; (* Activo al alcanzar 5 o mas aperturas *)\n    nAperturas : INT; (* Contador de aperturas *)\nEND_VAR\nVAR\n    flancoApertura : R_TRIG; (* Detector de flanco de subida *)\nEND_VAR\n\n(* Deteccion de la transicion de FALSE a TRUE *)\nflancoApertura(CLK := puertaAbierta);\n\n(* Logica de reinicio y conteo *)\nIF reset THEN\n    nAperturas := 0;\nELSIF flancoApertura.Q THEN\n    nAperturas := nAperturas + 1;\nEND_IF;\n\n(* Evaluacion del aviso *)\naviso := (nAperturas >= 5);\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-6907",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset : BOOL; (* Reset del registro *)\nEND_VAR\nVAR_OUTPUT\n    aviso : BOOL; (* Aviso por 5 o mas aperturas *)\n    nAperturas : INT; (* Contador de aperturas *)\nEND_VAR\nVAR\n    contador : CTU; (* Contador ascendente *)\nEND_VAR\n\n(* Cuenta los flancos de subida y activa el aviso al llegar a 5 *)\ncontador(CU := puertaAbierta, RESET := reset, PV := 5);\naviso := contador.Q;\nnAperturas := contador.CV;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-1323",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset : BOOL; (* Botón de reset *)\nEND_VAR\nVAR_OUTPUT\n    aviso : BOOL; (* Salida de aviso *)\n    nAperturas : INT; (* Número de aperturas *)\nEND_VAR\nVAR\n    puertaAbiertaAnterior : BOOL; (* Estado anterior de la puerta abierta *)\nEND_VAR\n\n(* Reinicio del registro *)\nIF reset THEN\n    nAperturas := 0;\n    aviso := FALSE;\nELSE\n    (* Detección de transición de FALSE a TRUE *)\n    IF NOT puertaAbiertaAnterior AND puertaAbierta THEN\n        nAperturas := nAperturas + 1;\n    END_IF\n\n    (* Activación del aviso si se alcanzan 5 aperturas *)\n    aviso := nAperturas >= 5;\nEND_IF\n\n(* Actualización del estado anterior de la puerta *)\npuertaAbiertaAnterior := puertaAbierta;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-4753",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de la puerta: TRUE = abierta *)\n    reset         : BOOL; (* Reset del contador y aviso *)\nEND_VAR\n\nVAR_OUTPUT\n    aviso      : BOOL; (* TRUE cuando nAperturas >= 5 *)\n    nAperturas : INT;  (* Número de aperturas registradas *)\nEND_VAR\n\nVAR\n    puertaAbierta_prev : BOOL; (* Estado anterior para detección de flanco *)\nEND_VAR\n\n(* ------------------------------------------------------------------ *)\n(* Lógica principal                                                     *)\n(* ------------------------------------------------------------------ *)\n\n(* Reset tiene prioridad sobre cualquier otra acción *)\nIF reset THEN\n    nAperturas         := 0;\n    aviso              := FALSE;\n    puertaAbierta_prev := FALSE;\n\nELSE\n    (* Detección de flanco ascendente: FALSE -> TRUE *)\n    IF puertaAbierta AND NOT puertaAbierta_prev THEN\n        nAperturas := nAperturas + 1; (* Incrementar solo en la transición *)\n    END_IF;\n\n    (* Activar aviso al alcanzar 5 o más aperturas *)\n    aviso := (nAperturas >= 5);\n\nEND_IF;\n\n(* Guardar estado actual para el próximo ciclo *)\npuertaAbierta_prev := puertaAbierta;"
+  },
+  {
+   "codigo": "B8-5019",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; // Señal de estado de la puerta (TRUE = abierta)\n    reset : BOOL;         // Señal para reiniciar el contador y apagar el aviso\nEND_VAR\n\nVAR_OUTPUT\n    aviso : BOOL;         // Indicador de 5 o más aperturas\n    nAperturas : INT;     // Registro del número de aperturas\nEND_VAR\n\nVAR\n    flancoApertura : R_TRIG; // Instancia para detectar el flanco de subida\nEND_VAR\n\n// Detección de la transición de FALSE a TRUE en la entrada puertaAbierta\nflancoApertura(CLK := puertaAbierta);\n\n// Lógica de reinicio y conteo de aperturas\nIF reset THEN\n    nAperturas := 0;\nELSIF flancoApertura.Q THEN\n    nAperturas := nAperturas + 1;\nEND_IF;\n\n// Evaluación de la salida de aviso (se desactiva automáticamente al resetear)\naviso := (nAperturas >= 5);\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-3064",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de estado de la puerta (TRUE = abierta) *)\n    reset : BOOL;         (* Señal para reiniciar el contador y apagar el aviso *)\nEND_VAR\n\nVAR_OUTPUT\n    aviso : BOOL;         (* Indicador de alarma por 5 o más aperturas *)\n    nAperturas : INT;     (* Registro del número de aperturas acumuladas *)\nEND_VAR\n\nVAR\n    flancoApertura : R_TRIG; (* Instancia para detectar el flanco de subida *)\nEND_VAR\n\n(* Detección de la transición de FALSE a TRUE en la señal de la puerta *)\nflancoApertura(CLK := puertaAbierta);\n\n(* Lógica de reinicio y conteo de aperturas *)\nIF reset THEN\n    nAperturas := 0;\nELSIF flancoApertura.Q THEN\n    nAperturas := nAperturas + 1;\nEND_IF;\n\n(* Activación del aviso si se alcanzan 5 o más aperturas *)\naviso := (nAperturas >= 5);\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-8512",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset : BOOL;         (* Señal de reset *)\nEND_VAR\nVAR_OUTPUT\n    aviso : BOOL;         (* Señal de aviso *)\n    nAperturas : INT;     (* Número de aperturas *)\nEND_VAR\nVAR\n    puertaAbiertaAnt : BOOL; (* Estado anterior de la puerta *)\nEND_VAR\n\n(* Si reset está activo, reiniciar el contador y desactivar el aviso *)\nIF reset THEN\n    nAperturas := 0;\n    aviso := FALSE;\nELSE\n    (* Detectar transición de FALSE a TRUE en puertaAbierta *)\n    IF NOT puertaAbiertaAnt AND puertaAbierta THEN\n        nAperturas := nAperturas + 1;\n    END_IF;\n    \n    (* Activar aviso si el número de aperturas es 5 o más *)\n    IF nAperturas >= 5 THEN\n        aviso := TRUE;\n    ELSE\n        aviso := FALSE;\n    END_IF;\nEND_IF;\n\n(* Actualizar el estado anterior de la puerta *)\npuertaAbiertaAnt := puertaAbierta;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-6800",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta: TRUE = abierta *)\n    reset         : BOOL; (* Reset: pone contador a 0 y desactiva aviso *)\nEND_VAR\n\nVAR_OUTPUT\n    aviso      : BOOL; (* TRUE cuando nAperturas >= 5 *)\n    nAperturas : INT;  (* Número de aperturas registradas *)\nEND_VAR\n\nVAR\n    puertaAbierta_prev : BOOL; (* Valor de puertaAbierta en el ciclo anterior *)\nEND_VAR\n\n(* ------------------------------------------------------------------ *)\n(* Lógica principal                                                     *)\n(* ------------------------------------------------------------------ *)\n\n(* Reset tiene prioridad sobre cualquier otra acción *)\nIF reset THEN\n    nAperturas         := 0;\n    aviso              := FALSE;\n    puertaAbierta_prev := FALSE; (* Evita flanco espurio tras el reset *)\n\nELSE\n    (* Detección de flanco ascendente: FALSE -> TRUE *)\n    IF puertaAbierta AND NOT puertaAbierta_prev THEN\n        nAperturas := nAperturas + 1;\n    END_IF;\n\n    (* Activar aviso al alcanzar o superar 5 aperturas *)\n    IF nAperturas >= 5 THEN\n        aviso := TRUE;\n    END_IF;\n\nEND_IF;\n\n(* Guardar estado actual para el próximo ciclo *)\npuertaAbierta_prev := puertaAbierta;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-9528",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset         : BOOL; (* Pone el registro en cero *)\nEND_VAR\nVAR_OUTPUT\n    aviso      : BOOL; (* Aviso al acumular 5 o mas aperturas *)\n    nAperturas : INT;  (* Contador de aperturas *)\nEND_VAR\nVAR\n    rTrigPuerta : R_TRIG; (* Detector de flanco ascendente de la puerta *)\nEND_VAR\n\n(* Detectar flanco ascendente: solo cuenta la transicion FALSE->TRUE *)\nrTrigPuerta(CLK := puertaAbierta);\n\nIF reset THEN\n    (* Reset: pone el contador en cero y desactiva el aviso *)\n    nAperturas := 0;\nELSIF rTrigPuerta.Q THEN\n    (* Nueva apertura detectada: incrementar contador *)\n    nAperturas := nAperturas + 1;\nEND_IF;\n\n(* Activar aviso si se han acumulado 5 o mas aperturas *)\naviso := nAperturas >= 5;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-3270",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset : BOOL; (* Botón de reinicio *)\nEND_VAR\nVAR_OUTPUT\n    aviso : BOOL; (* Salida de aviso *)\n    nAperturas : INT; (* Contador de aperturas *)\nEND_VAR\nVAR\n    puertaAbiertaAnterior : BOOL; (* Estado anterior de la puerta *)\nEND_VAR\n\n(* Reinicio del contador y aviso *)\nIF reset THEN\n    nAperturas := 0;\n    aviso := FALSE;\nELSE\n    (* Detección de transición de FALSE a TRUE *)\n    IF NOT puertaAbiertaAnterior AND puertaAbierta THEN\n        nAperturas := nAperturas + 1;\n    END_IF\n\n    (* Activación del aviso si se alcanzan 5 aperturas *)\n    aviso := nAperturas >= 5;\nEND_IF\n\n(* Actualización del estado anterior de la puerta *)\npuertaAbiertaAnterior := puertaAbierta;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "B8-2626",
+   "resultado_codesys": "Compila. Pasa los 9 pasos del harness.",
+   "mensajes_compilador": "",
+   "funcional_fijo": 3,
+   "iec_fijo": null,
+   "codigo_st": "FUNCTION_BLOCK FB_Puerta\nVAR_INPUT\n    puertaAbierta : BOOL; (* Señal de puerta abierta *)\n    reset         : BOOL; (* Reset del registro *)\nEND_VAR\nVAR_OUTPUT\n    aviso      : BOOL; (* Aviso por 5 o mas aperturas *)\n    nAperturas : INT;  (* Contador de aperturas *)\nEND_VAR\nVAR\n    rTrigPuerta : R_TRIG; (* Detector de flanco ascendente *)\nEND_VAR\n\n(* Detectar flanco ascendente de puertaAbierta *)\nrTrigPuerta(CLK := puertaAbierta);\n\n(* Reset tiene prioridad sobre el conteo *)\nIF reset THEN\n    nAperturas := 0;\nELSIF rTrigPuerta.Q THEN\n    (* Incrementar solo en cada nueva apertura *)\n    nAperturas := nAperturas + 1;\nEND_IF;\n\n(* Activar aviso al alcanzar 5 o mas aperturas *)\naviso := nAperturas >= 5;\n\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}

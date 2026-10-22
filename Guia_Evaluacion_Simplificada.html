@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guía simplificada de evaluación</title>
+<style>
+:root{--fg:#1d2330;--mut:#5b6474;--bg:#fff;--card:#f5f7fa;--line:#d9dee7;--acc:#1f5fa8;--ok:#1e7a46;--warn:#9a5b00}
+body{font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif;color:var(--fg);background:var(--bg);max-width:980px;margin:0 auto;padding:24px 16px}
+h1{font-size:24px;margin:0 0 4px}h2{font-size:19px;margin:32px 0 8px;border-bottom:2px solid var(--acc);padding-bottom:4px}
+h3{font-size:16px;margin:20px 0 6px;color:var(--acc)}p.sub{color:var(--mut);margin:0 0 16px}
+table{border-collapse:collapse;width:100%;margin:8px 0 12px;font-size:14px}th,td{border:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
+th{background:var(--card)}.box{background:var(--card);border-left:4px solid var(--acc);padding:10px 14px;margin:12px 0}
+.warn{border-left-color:var(--warn)}.ok{border-left-color:var(--ok)}code{background:#eef1f5;padding:1px 4px;border-radius:3px}
+ul{margin:4px 0 8px 20px;padding:0}li{margin:2px 0}.t{font-weight:600}
+@media print{h2{page-break-before:auto}.task{page-break-inside:avoid}}
+</style></head><body>
+
+<h1>Guía simplificada de evaluación</h1>
+<p class="sub">Tesis «LLM como Asistentes de Programación PLC en la Academia». Resume, caso por caso, cómo se califica cada tarea con las fichas de diagnóstico (C1, C5, C6, C2) y con la rúbrica de 5 criterios (25 tareas de código). Se basa en la clave, el enunciado y el protocolo del harness. No contiene calificaciones de ninguna respuesta.</p>
+
+<h2>0. ¿El método fue válido? Lista de verificación</h2>
+<p>Esta guía permite comprobar que los <b>criterios</b> se aplicaron bien, pero no que la evaluación haya sido <b>independiente</b>. Esto último depende de cómo se trabajó. Para poder reportarla como evaluación humana a ciegas deben cumplirse estos puntos:</p>
+<table><tr><th>#</th><th>Condición</th><th>Cómo comprobarla</th></tr>
+<tr><td>1</td><td>Cada evaluador calificó sin ver la ficha del otro ni la ficha IA.</td><td>Las fichas se llenaron antes del 2026-10-08 a las 14:24 (Panamá), o sin abrir <code>_COMPARACION_IA_NO_OFICIAL</code>.</td></tr>
+<tr><td>2</td><td>Nadie abrió los archivos <code>_SELLADO_*</code> antes de terminar.</td><td>Declaración de los evaluadores.</td></tr>
+<tr><td>3</td><td>Se calificó lo que dice la respuesta, no lo que «quiso decir».</td><td>Las observaciones justifican las notas con hechos del texto o del código.</td></tr>
+<tr><td>4</td><td>Las mismas reglas se aplicaron a las 24 respuestas de cada tarea.</td><td>Dos respuestas con el mismo defecto tienen la misma nota.</td></tr>
+<tr><td>5</td><td>Los valores fijados por CODESYS no se cambiaron.</td><td>Las celdas azules siguen como venían.</td></tr>
+<tr><td>6</td><td>Hay desacuerdos razonables entre evaluadores.</td><td>Entre dos humanos lo normal es coincidir en un 70–90 % de las decisiones. Un 100 % indica que las fichas no son independientes.</td></tr></table>
+<div class="box warn"><b>Prueba rápida de recalibración (unos 30 min).</b> Elegir 6 respuestas al azar de C1 y 6 de una tarea de rúbrica (por ejemplo, B2), volver a calificarlas en una ficha en blanco sin mirar la anterior y comparar. Si las notas cambian mucho, el criterio no estaba estable.</div>
+
+<h2>1. Fichas de diagnóstico (C1, C5, C6)</h2>
+<div class="box"><b>Procedimiento común.</b> Leer la clave (E1–E4) y después la respuesta completa. Para cada error de la clave:
+<ul><li><span class="t">Detectado = S</span> si la respuesta señala el mismo defecto concreto, aunque use otras palabras o lo ubique en otra línea. Una mención vaga («revisar los temporizadores») no cuenta. Si el ítem tiene dos partes, basta con una (anotar cuál faltó).</li>
+<li><span class="t">Corrección válida = S</span> si la corrección propuesta lo resolvería de verdad. Se deja vacía si el error no fue detectado.</li>
+<li><span class="t">Hallazgos adicionales</span>: defectos reales que no están en la clave. Se cuentan una vez cada uno.</li>
+<li><span class="t">Errores inventados</span>: lo que la respuesta presenta como error y no lo es. Se cuentan una vez cada uno.</li></ul></div>
+
+<div class="task"><h3>C1 · Semáforo con errores</h3>
+<table><tr><th>Ítem</th><th>Se marca S si la respuesta dice…</th><th>Corrección válida</th><th>Trampa frecuente</th></tr>
+<tr><td>E1 Condición invertida</td><td>que <code>IF NOT habilitado</code> debería ser <code>IF habilitado</code>.</td><td>Quitar el NOT o intercambiar las ramas.</td><td>—</td></tr>
+<tr><td>E2 TON sin reinicio</td><td>que t1 tiene IN:=TRUE permanente y nunca vuelve a FALSE entre estados, así que las transiciones siguientes son inmediatas.</td><td>Poner IN a FALSE al cambiar de estado (o usar un TON por estado).</td><td>Decir «el TON se reinicia en cada ciclo» es un diagnóstico erróneo, no una detección.</td></tr>
+<tr><td>E3 Estado 3 inalcanzable</td><td>que ninguna transición asigna <code>estado := 3</code>.</td><td>Ir al estado 3 cuando habilitado está inactivo.</td><td>Eliminar el estado 3 no cumple la especificación (debe existir el intermitente).</td></tr>
+<tr><td>E4 parp no conmuta</td><td>que <code>parp</code> nunca cambia y no hay parpadeo.</td><td>Generarlo con temporizadores de 1 s.</td><td>—</td></tr></table>
+<p><b>Adicional válido:</b> luzV/luzR no se apagan en el estado 3. <b>Inventados típicos:</b> «falta inicializar estado o parp», cuando ya arrancan en 0/FALSE por defecto; «luzR no se apaga en el estado 1».</p></div>
+
+<div class="task"><h3>C5 · Estrella-triángulo con errores</h3>
+<table><tr><th>Ítem</th><th>Se marca S si la respuesta dice…</th><th>Corrección válida</th></tr>
+<tr><td>E1 Interlock kY/kD</td><td>que kD se activa en el estado 1 y kY no se apaga hasta el estado 2, así que ambos coinciden al menos un scan.</td><td>Apagar kY antes de (o en lugar de) encender kD.</td></tr>
+<tr><td>E2 Tiempo muerto</td><td>que t2 se declara pero no se usa y faltan los 100 ms.</td><td>Un estado intermedio con t2 de T#100MS.</td></tr>
+<tr><td>E3 t1 sin reinicio en paro</td><td>que t1 no se reinicia en el paro y al rearrancar la transición es inmediata.</td><td>Llamar t1 con IN:=FALSE en el paro o en el estado 0.</td></tr>
+<tr><td>E4 Paro no apaga kM</td><td>que el bloque de paro no pone kM := FALSE.</td><td>Añadir kM := FALSE.</td></tr></table>
+<p><b>Inventados típicos:</b> «el estado 2 se queda bloqueado» (es el estado de marcha en triángulo, es correcto que permanezca); «t1/t2 sin inicializar».</p></div>
+
+<div class="task"><h3>C6 · Escalado de temperatura con errores</h3>
+<table><tr><th>Ítem</th><th>Se marca S si la respuesta dice…</th><th>Corrección válida</th></tr>
+<tr><td>E1 División entera</td><td>que <code>rawTemp / 27648</code> se calcula en INT y da 0.</td><td>Convertir a REAL <b>antes</b> de dividir. Ojo: <code>rawTemp*100/27648</code> en INT desborda y no es válida.</td></tr>
+<tr><td>E2 Histéresis inexistente</td><td>que los umbrales están mal (activa en 75 en vez de 80) y la rama ELSIF no se alcanza.</td><td>Activar con ≥ 80.0 y desactivar con ≤ 75.0; entre ambos, conservar el estado.</td></tr>
+<tr><td>E3 Falta rawTemp &lt; 0</td><td>que los valores negativos no generan alarma.</td><td>Condición <code>rawTemp &lt; 0 OR rawTemp &gt; 27648</code>.</td></tr>
+<tr><td>E4 Alarma sin reposición ni corte</td><td>que almSensor no vuelve a FALSE <b>o</b> que no apaga el enfriador.</td><td>ELSE almSensor := FALSE y forzar enfriador := FALSE con alarma.</td></tr></table></div>
+
+<h2>2. Ficha C2 · Requisito ambiguo</h2>
+<table><tr><th>Columna</th><th>Cómo decidir</th></tr>
+<tr><td>E/S presentes (5)</td><td>S si la tabla trae, con cualquier nombre: nivel del tanque, agua en el pozo, botón de paro, mando de la bomba, luz de aviso.</td></tr>
+<tr><td>Tipos IEC válidos</td><td>S si <b>todos</b> los tipos son IEC (BOOL, INT, REAL…) y coherentes con la señal.</td></tr>
+<tr><td>POU recomendado</td><td>El que la respuesta recomienda: FUNCTION, FUNCTION_BLOCK, PROGRAM o «Varios o ninguno».</td></tr>
+<tr><td>Justificación coherente</td><td>S si el argumento es técnicamente correcto (por ejemplo, FB porque necesita memoria o temporizadores). FUNCTION no puede guardar estado.</td></tr>
+<tr><td>A1–A6</td><td>S si plantea la ambigüedad: A1 digital/analógica · A2 qué es «tanque vacío» (histéresis) · A3 tiempo de marcha en seco y rearme · A4 tipo de botón · A5 qué agrupa la luz · A6 qué pasa al volver el agua.</td></tr>
+<tr><td>Adicionales</td><td>Otras dudas pertinentes, por ejemplo contactos NO/NC o la tensión de la bomba.</td></tr>
+<tr><td>¿Incluyó código?</td><td>S si escribió ST (el enunciado lo prohibía).</td></tr></table>
+
+<h2>3. Rúbrica de 5 criterios (25 tareas)</h2>
+<div class="box"><b>Orden recomendado para cada respuesta:</b>
+<ol><li>Mirar el resultado de CODESYS (celda azul).</li>
+<li>Si <b>no compila</b>: IEC = 0 y Funcional = 0 (ya vienen fijados); puntuar coherencia, claridad y mantenibilidad leyendo el código.</li>
+<li>Si <b>pasa todo el harness</b>: Funcional = 3 (fijo); puntuar IEC (1–3) y los otros tres criterios.</li>
+<li>Si <b>compila y falla pasos</b>: Funcional 0–2 según qué pasos fallan (protocolo en el HTML de la tarea). 0 = falla el caso nominal; 1 = el nominal funciona y fallan casos límite; 2 = solo fallos menores sin riesgo.</li>
+<li>Si <b>compila, pero no se pudo simular</b> (interfaz no conforme): Funcional 0–2 leyendo el código, nunca 3.</li></ol></div>
+<table><tr><th>Criterio</th><th>0</th><th>1</th><th>2</th><th>3</th></tr>
+<tr><td>IEC (si compila)</td><td>—</td><td>extensiones fuera del estándar</td><td>declaraciones y tipos correctos</td><td>además idiomático: POU adecuado, TON/R_TRIG/CTU bien instanciados, TIME correcto</td></tr>
+<tr><td>Coherencia</td><td>contradicciones o estados muertos que impiden operar</td><td>redundancias o condiciones muertas sin efecto grave</td><td>sin contradicciones; transiciones completas</td><td>además robusta: interlocks completos, segura ante entradas simultáneas</td></tr>
+<tr><td>Claridad</td><td>sin estructura ni comentarios</td><td>estructura básica, nombres pobres</td><td>nombres descriptivos, comentarios útiles</td><td>además modular y con comentarios que explican el porqué</td></tr>
+<tr><td>Mantenibilidad</td><td>valores mágicos por todas partes</td><td>parcialmente parametrizado</td><td>constantes o variables declaradas; cambios localizados</td><td>además extensible: parámetros de entrada, sin duplicación</td></tr></table>
+<div class="box warn"><b>Decisiones que deben acordarse antes y aplicarse igual en todas las tareas:</b> (a) IEC de las respuestas con interfaz no conforme (¿1 o 2?); (b) si un defecto que el harness no detecta baja la coherencia; (c) si un literal que impone el propio enunciado (T#5S, 12…) penaliza la mantenibilidad; (d) en B3/C7, pin <code>R</code> estándar frente a <code>RESET</code> de CODESYS.</div>
+
+<h3>Qué revisar en cada tarea (funcional y coherencia)</h3>
+<table><tr><th>Tarea</th><th>Lo esencial que debe cumplir</th><th>Errores típicos a buscar</th></tr>
+<tr><td>B1 Motor marcha/paro</td><td>Autorretención; paro y emergencia dominan; tras la emergencia no rearranca con marcha mantenida.</td><td>Rearranque tras emergencia; enclavamiento permanente sin vía de reset.</td></tr>
+<tr><td>B2 Válvula TON</td><td>Abre tras 5 s continuos; cierra al instante.</td><td>Usar TP; TON sin PT; TON reiniciado en cada scan.</td></tr>
+<tr><td>B3 Contador 12</td><td>Cuenta por flanco; lote a 12; el reset pone a cero y apaga.</td><td>Contar por nivel; reset que no apaga la salida.</td></tr>
+<tr><td>B4 Inversión de giro</td><td>fwd y rev nunca a la vez; invertir exige pasar por el paro.</td><td>Inversión directa; salidas encendidas en paro.</td></tr>
+<tr><td>B5 Ventilador 30 s</td><td>Marcha con quemador y sigue 30 s después.</td><td>TON con NOT da 30 s de marcha falsa al arrancar; TP que no se rearma.</td></tr>
+<tr><td>B6 Baliza 1/1 s</td><td>Parpadea 1 s/1 s con alarma; apagada sin ella.</td><td>Temporizador reiniciado en cada scan; TP que no se redispara.</td></tr>
+<tr><td>B7 Selector M/A</td><td>Combinacional, sin memoria; FUNCTION es lo idiomático.</td><td>Memoria innecesaria; E/S declaradas como VAR.</td></tr>
+<tr><td>B8 Aperturas ≥ 5</td><td>Cuenta por flanco; aviso con 5 o más; reset.</td><td>Inicialización que anula el flanco; contar por nivel.</td></tr>
+<tr><td>I1 Semáforo</td><td>20/4/15 s cíclico; intermitente sin habilitado; reinicia en verde.</td><td>TON llamado solo dentro de ramas; TON sin reiniciar al deshabilitar.</td></tr>
+<tr><td>I2 Llenado por etapas</td><td>Secuencia correcta; paro en cualquier etapa a salidas seguras y reposo.</td><td>TON que no vence; paro que no reinicia el temporizador.</td></tr>
+<tr><td>I3 Alarmas con prioridad</td><td>Retención; código de la mayor prioridad; ack individual solo si la causa desapareció.</td><td>Ack por nivel o que actúa con la causa presente.</td></tr>
+<tr><td>I4 Estrella-triángulo</td><td>8 s; tiempo muerto de 100 ms; kY y kD nunca juntos; paro total.</td><td>TON en ramas condicionales; solape de un scan.</td></tr>
+<tr><td>I5 Clasificadora</td><td>Pistón 1 s comenzando 2 s después; contadores alta/baja.</td><td>Bandera que no se limpia; una pieza baja que cancela el desvío pendiente.</td></tr>
+<tr><td>I6 Escalado e histéresis</td><td>Escalado en REAL; histéresis 80/75; alarma fuera de rango que apaga el enfriador.</td><td>Usar <code>REAL(x)</code> (no es ST válido); división entera.</td></tr>
+<tr><td>I7 Bombas dúplex</td><td>Alterna por flanco; la primera es bomba1; respaldo por falla; almFalla correcta.</td><td>Rol de principal mal inicializado; alarma por falla del respaldo.</td></tr>
+<tr><td>I8 Permisivos compresor</td><td>Arranque por flanco con permisivos; aceite 3 s; parada al perder un permisivo; sin autoarranque; causaBloqueo.</td><td>TP en vez de TON; causaBloqueo que ignora los 3 s.</td></tr>
+<tr><td>A1 PID</td><td>Forma estándar; Ti ≤ 0 desactiva la integral; límites 0–100; anti-windup por clamping.</td><td><code>dt</code> como nombre de variable (palabra reservada en CODESYS).</td></tr>
+<tr><td>A2 Lotes multifase</td><td>Fases 1–5; inicio solo en reposo; el abort descarga si hay producto; salida fase.</td><td>TON que no se reinicia entre lotes; TP en la mezcla.</td></tr>
+<tr><td>A3 Reintentos</td><td>Flanco de txReq; 500 ms por intento; eco; 3 intentos; ok/error retenidos.</td><td>TON no reiniciado entre intentos; rxOk leído por nivel.</td></tr>
+<tr><td>A4 Rampa</td><td>Subida 10 %/s, bajada 20 %/s, paro rápido 40 %/s, sin sobrepaso.</td><td>Conversión TIME→REAL inválida; división entera de TIME.</td></tr>
+<tr><td>A5 Buffer circular</td><td>Estructura correcta; índice −1 al inicio; sobrescritura circular; nEventos ≤ 20.</td><td>Índice no inicializado a −1.</td></tr>
+<tr><td>A6 Modos jerárquicos</td><td>Arranca en manual; cambio solo con estadoSeguro; forzado por flanco e índice 0–7.</td><td>Variable de bucle sin declarar; METHOD fuera del estándar.</td></tr>
+<tr><td>C3 Ladder → ST (TON)</td><td>Autorretención con paro NC; TON 10 s; lámpara.</td><td>Olvidar el NOT del contacto NC; TON reiniciado en cada scan.</td></tr>
+<tr><td>C7 Ladder → ST (CTU)</td><td>CTU con PV 12, reset, loteListo y cuenta.</td><td>Llamada no formal o vacía del contador.</td></tr>
+<tr><td>C8 Ladder → ST (TON)</td><td>TON 5 s y válvula.</td><td>TON llamado de forma condicional; E/S declaradas como VAR.</td></tr></table>
+
+<h2>4. Revisión final de cada ficha</h2>
+<ul><li>Todas las filas en «Completa».</li>
+<li>Elegir dos respuestas con el mismo defecto y comprobar que tienen la misma nota.</li>
+<li>Comprobar que las observaciones o justificaciones citan algo concreto del texto o del código.</li>
+<li>Guardar la ficha con el nombre del evaluador y la fecha, y no editarla después de enviarla.</li></ul>
+</body></html>

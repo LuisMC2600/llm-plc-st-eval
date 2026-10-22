@@ -1,0 +1,37 @@
+Filas en tabla_definitivo.csv: 600 (esperado 600)
+
+Cruce modelo x c1_categoria:
+c1_categoria  FALLA_LOGICA  INTERFAZ_NO_CONFORME  NO_COMPILA  PASA
+m                                                                 
+Claude                  22                     0          14   114
+GPT-4o                  43                    22          31    54
+Gemini                   2                     0           7   141
+Qwen                    72                     6          30    42
+
+Tabla 4.6 del maestro (logica / interfaz / no compila):
+  Gemini  esperado 2/0/7  observado 2/0/7  OK
+  Claude  esperado 22/0/14  observado 22/0/14  OK
+  GPT-4o  esperado 43/22/31  observado 43/22/31  OK
+  Qwen    esperado 72/6/30  observado 72/6/30  OK
+
+Respuestas que no pasan el banco de prueba: 249 (esperado 249)
+Criterio 2 global: 518/600 (esperado 518)
+Criterio 1 global: 351/600 (esperado 351)
+
+Respuestas de A1 con `dt` (caso_dt=1): 18 (esperado 18, seccion 4.5)
+Respuestas con `dt` en cualquier tarea: 21 (tareas: ['A1', 'A4'])
+tarea  m     
+A1     Claude    4
+       GPT-4o    3
+       Gemini    5
+       Qwen      6
+A4     Gemini    1
+       Qwen      2
+Respuestas con END_STRUCT; (caso_end_struct=1): 7 (esperado 7, INC-34)
+
+Filas emparejadas con la simulacion por modelo: 600 de 600
+Diferencias en pasos_fallidos entre tabla y simulacion: 0
+FALLA_LOGICA con veredicto 2 en la simulacion: 139 de 139
+INTERFAZ_NO_CONFORME con mensaje "no es ninguna entrada" en la simulacion: 28 de 28
+
+RESULTADO GLOBAL: TODO CUADRA

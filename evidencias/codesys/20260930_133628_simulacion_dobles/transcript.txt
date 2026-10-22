@@ -1,0 +1,30 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20260930133628
+Nombre de usuario: DESKTOP-2K8TKD6\LUIS C
+Usuario RunAs: DESKTOP-2K8TKD6\LUIS C
+Nombre de la configuración: 
+Máquina: DESKTOP-2K8TKD6 (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\codesys\ejecutar_simular_lote.ps1 -Modo dobles -Tareas B1,C3 -Salida data\results_codesys\harness_dobles_fase2_C3.csv
+Id. de proceso: 29892
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Modo dobles | tareas: B1,C3 | ciclos: 4,10 ms
+Los harnesses largos (B5, I1, I2) tardan ~1-2 min por simulacion. El lote completo de dobles ronda 1-1.5 h.
+Codigo de salida: 0  |  duracion: 7,6 min
+[OK] Plantilla sin cambios
+Simulaciones: 26 | coinciden con Python: 24
+  B1: 10/10  VERIFICADO
+  C3: 14/16  REVISAR
+Evidencia: C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\codesys\20260930_133628_simulacion_dobles
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20260930134405
+**********************

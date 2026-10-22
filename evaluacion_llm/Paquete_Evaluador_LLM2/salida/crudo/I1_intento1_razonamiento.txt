@@ -1,0 +1,1148 @@
+We need answer as evaluator. Need produce JSON list of 24 objects in same order. We're to score each. Need follow rules.
+
+We need parse input. Need evaluate each response. Need know harness steps: 0 disabled V/R off; 1 enable expect green; 2 expects green 20s then yellow; 3 yellow 4s then red; 4 red 15s then green; 5 green 20s then yellow; 6 yellow 4s then red; 7 disable during red expect measured yellow blink 1s/1s with V/R continuously off, duration 7s; 8 re-enable expect reinicia verde.
+
+Need score functional: if fixed. For compiles pass all -> 3 fixed. For fail steps not fixed need assign 0/1/2 based on protocol and failures. We need read code and possibly compare. Can infer many. IEC: if no compile fixed 0. If compile and not fixed, need score 1/2/3. Need evaluate use of standard. Many use TON, TP. Some use non-standard? Maybe `//` comments outside standard? Actually IEC 61131-3 ST supports //? In CODESYS, yes? Standard ST supports (* *), // maybe not standard? But in CODESYS, // accepted. Need assess. Need be careful: they ask conforms IEC. Comments with // maybe extension? We can treat as minor extension not penalize? Need rubric: 1 if uses extensiones fuera del estándar; 2 compila without changes declarations types correct. Since all compile. Many use `//` comments, which CODESYS supports but is extension? Hmm IEC 61131-3 allows `//`? Actually IEC 61131-3 ST supports both? I think single-line comments introduced in 2nd edition? It supports `//`? CODESYS supports. But prompt has "comentarios breves". We can accept. Score 2 maybe. 3 if idiomatic using TON etc. Need assign.
+
+Need produce one line justifications. Need not overdo.
+
+We must only JSON list, no markdown. Need ensure 24 objects. Let's go sequentially.
+
+We need evaluate each with exact codes.
+
+Let's list codes from input:
+1 I1-2135
+2 I1-7364
+3 I1-5111
+4 I1-7969
+5 I1-5434
+6 I1-7084
+7 I1-2168
+8 I1-3359
+9 I1-8741
+10 I1-4990
+11 I1-8830
+12 I1-7322
+13 I1-3250
+14 I1-3464
+15 I1-8420
+16 I1-5295
+17 I1-8541
+18 I1-4916
+19 I1-5056
+20 I1-1955
+21 I1-8761
+22 I1-4511
+23 I1-4945
+24 I1-3124
+
+Need check count 24.
+
+Need understand harness and these implementations.
+
+Let's analyze each carefully.
+
+Functional scoring:
+
+Cases with pass all fixed 3: I1-2135, I1-5434, I1-7084, I1-2168, I1-3359, I1-8830, I1-7322, I1-3250, I1-3464, I1-8541, I1-4511. Also maybe I1-1955? no fail. I1-3124 fail. Need count pass all:
+- I1-2135: "Pasa los 9"
+- I1-5434 pass
+- I1-7084 pass
+- I1-2168 pass
+- I1-3359 pass
+- I1-8830 pass
+- I1-7322 pass
+- I1-3250 pass
+- I1-3464 pass
+- I1-8541 pass
+- I1-4511 pass
+Also? Let's check I1-5111 fail step7; I1-7364 fail 6; I1-7969 fail7; I1-4990 fail step7; I1-8741 no simulate; I1-8420 fail8; I1-5295 fail7; I1-4916 no compile; I1-5056 fail step7; I1-1955 fail7; I1-8761 fail6; I1-4945 no compile; I1-3124 fail step7. Good.
+
+Need assign functional for failures.Functional 0 if no implement or fails nominal. 1 if nominal but fails edge evident (flanks, reset, emergency). 2 correct nominal and most limits; minor failures no risk. 3 all. Since if compiles but fails pass, could be 0-2.
+
+Need identify which failures correspond.
+
+Protocol includes: step0 disabled off; step1 enable green; step2-4 first full cycle; step5-6 second cycle; step7 disable in red and check blink with V/R off continuously for T#7s; step8 re-enable green. If implementation passes some steps but fails step7 only, likely nominal and cycle okay but blink or V/R issue during disabled. That is 2? It fails edge (disabled). But functional rubric: "1: funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." Here fail step7 (disabled) which is an edge? But nominal sequence may be ok. So likely funcional=1 or 2? Need decide. The fails step7 means the disabled intermitente may be incorrect or V/R not off? Let's analyze each fail step7.
+
+I1-5111: Uses TP tBlink and bBlinkTrig. Let's simulate: In disabled, `tBlink(IN := bBlinkTrig, PT := T#1S); IF NOT tBlink.Q AND NOT bBlinkTrig THEN bBlinkTrig := TRUE; END_IF; IF tBlink.Q THEN bBlinkTrig := FALSE; END_IF; luzA := tBlink.Q;`. This seems wrong: TP generates pulse 1s when IN rises, Q true for PT. It is not toggling. It will produce 1s ON then reset to false and retrigger after some cycle. So yellow blink maybe 1s on, 1s off? Wait: When bBlinkTrig false and Q false -> set bBlinkTrig true. Next scan, tBlink(IN:=TRUE) triggers pulse Q true for 1s. When Q true, set bBlinkTrig false. TP with IN false? Actually simultaneously after call, bBlinkTrig false may affect next scan. But because IN is input to TP is edge-triggered; setting bBlinkTrig false in same scan after call does not affect current output? It may at next scan. TP will not be restarted until Q false AND bBlinkTrig false. While Q true, condition NOT bBlinkTrig maybe false; after Q false, then set bBlinkTrig true next scan, next after triggers. So yields Q true for 1s, Q false for one scan? Actually when Q becomes false (after PT), at that same scan: `IF NOT tBlink.Q AND NOT bBlinkTrig THEN` bBlinkTrig is already false (set when Q true), so sets bBlinkTrig true. Then next scan, tBlink(IN:=TRUE), Q true. So maybe off for one scan only, not 1s. Hmm but fails step7. So functional 2? It fails disabled exact timing. Most cycle passes. This is edge/disabled fail. Could be 1 or 2. We need use "falla 1 de 9" likely correct most. But step7 is important. Rubric says 2 "correcto en caso nominal y en mayoría de casos límite; fallas menores sin riesgo." However step7 is a required case, not minor? It fails one of the explicit modes. Functional: 0 no implements logic or fails nominal; 1 nominal but fails edge evident; 2 correct nominal and majority edge; fail minor. Since sequence nominal passes, fails disabled mode (which is explicit important, not "límite" maybe). But one could argue disabled mode is one of two main modes. It fails that, so functional=1? Need map. The instruction: "funcional 0,1,2 según rúbrica, usando qué pasos fallan y el protocolo." For a code that passes all normal sequence but fails step7, I'd assign 1 if fails disabled mode significantly. However they fail only step 7; step0 (V/R off) and maybe step8 pass. Actually step7 tests yellow blink timing/other lights. If fails step7, likely disabled intermitente fails. Nominal case includes habilitado true sequence; disabled is also in requirements. Functional 2 might be for "fail minor without risk" but a phase with emergency/disabled is not minor. Could be 1. Need calibrate.
+
+Look at I1-5111 specifics: Falla 1 step7. Let's infer why. Step7 length T#7S, expects measured intervals complete, V/R continuously off. I think this code may produce yellow blink but with pattern not exactly 1s/1s? Let's reason more. If TP Q true 1s, false maybe one scan? Actually let's simulate more exactly.
+
+CODESYS TP: When IN FALSE and Q FALSE. Every scan:
+- bBlinkTrig initially false.
+- tBlink(IN := bBlinkTrig, PT:=T#1S): IN false, Q false.
+- IF NOT tBlink.Q AND NOT bBlinkTrig THEN bBlinkTrig:=TRUE.
+- next scan: tBlink(IN:=TRUE) starts timer; Q TRUE; IF tBlink.Q THEN bBlinkTrig:=FALSE.
+- for next ~1s scans, tBlink(IN:=FALSE, PT), Q remains TRUE. IF tBlink.Q THEN bBlinkTrig:=FALSE.
+- When timer reaches 1s, on a scan, TP updates Q=FALSE (or after), IF NOT tBlink.Q AND NOT bBlinkTrig THEN bBlinkTrig:=TRUE. So IN for next scan likely TRUE. Q false for one scan until next scan? Actually if Q false at end of call, then lower IF sets bBlinkTrig true. Next scan tBlink IN true => Q true again. So off time is about 1 scan (4-10ms), not 1s. Therefore step7 fails because not 1s on/off? Or maybe if it triggers on every switch? That definitely fails toggling requirement. But the harness measures intervals of at least maybe T#1s; it fails. This is a more significant edge violation.
+
+Could assign functional=1 for all step7-only fails? Need consider I1-5056, I1-3124, I1-4990. Some may have blink but V/R off? Step7 fail likely if duty cycle wrong. The normal cycle passes. So functional=1? But the rubric: 1 "funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia)." Actually disabled blinking is one of main requirements, not just edge. But "flancos, reset, paro de emergencia" includes transition to disabled? It says "casos límite evidentes" examples. The semantics from evaluator likely: fail 1 step in 9 with normal sequence passes -> 2? Hmm Let's examine possible mapping in previous evaluations? We don't have. Need be consistent.
+
+Maybe we can distinguish: If only fails step7 but otherwise all cycles and step8 pass, it's functionally "mostly correct", fail minor? But disabled intermitente is explicit. If the yellow intermitente is somewhat on/off but timing not measured? It may even pass if sampled not at exact? This harness fixed. Failing step7 means either light sequence not exactly 1s/1s or V/R not off. This is a functional defect with safety implications (wrong signal). Functional 2? "correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." Wrong intermitent pattern maybe not minor; it's a required mode. But "mayoría de los casos límite" = it passes step0 and step8, fails step7. Could be 1 or 2. I'd lean 1 if fail an explicit mode. But there are also codes fail many steps (2/7/8 etc) -> definitely 1 or 0. Need assign individually.
+
+For fail step7 only, if the only defect is intermitente not proper but normal operation works and transition maybe works, I'd assign 1? Wait "fallas menores sin riesgo" 2. A yellow light not buzzing at proper 1s might be considered a functional edge; but risk? It's sign. I'd assign 2 maybe because it passes 8 of 9 steps, including rest? But the step it fails is important mode, not minor. Hmm.
+
+Let's examine each fail case.
+
+Maybe use numeric threshold:
+- If fails only step7, functional=1? The instruction says "0: no implementa la lógica pedida o falla en el caso nominal. 1: funciona en el caso nominal pero falla en casos límite evidentes (flancos, reset, paro de emergencia). 2: correcto en el caso nominal y en la mayoría de los casos límite; fallas menores sin riesgo." So if fails disabled mode only, I'd call it "falla en caso límite evidente" -> 1. But if fails 7 of 9 steps including normal sequence, maybe 0.
+
+Need identify "caso nominal": enabled cyclic sequence. Step7 is disabled case. So failing step7 is failing an edge case, but explicit. Could be 1. But phrase "falla en casos límite evidentes (flancos, reset, paro de emergencia)" exactly fit "flancos, reset". So 1. But if it fails only step7 but all other edge (reenable), maybe functional 2? Hmm "correcto en el caso nominal y en la mayoría de los casos límite" - it fails one edge case (intermitent) but handles another (reenable) and step0. But the disabled mode is not "menor sin riesgo". I'd choose 1 for all step7-only because they fail a required mode. However it could be harsh.
+
+Functional scoring can be 1 for those, and maybe for those fail many steps, 0 or 1 depending if some normal step pass. Need evaluate codes.
+
+Let's analyze each code.
+
+### 1. I1-2135 (pass all, fixed 3)
+Need IEC: It compiles, uses TON, standard blocks well instanciated. But has an issue? `tFase(IN := FALSE);` after changing state within same scan might be okay. Use `CASE`, TON. Uses `luzV := (estado = 0);` BOOL assignment. Idiomatic enough. Could score IEC=3. Need evaluate coherencia, claridad, mantenibilidad.
+
+Code has `estado : INT := 0;` but no explicit initial state for tFase, okay. Coherence: When habilitado TRUE, CASE sets timer IN TRUE with PT. If tFase.Q then estado increments AND timer IN FALSE in same scan. That's okay maybe TON Q true for one scan. Disabled: `tParpadeo(IN := TRUE, PT := T#1S); IF tParpadeo.Q THEN toggles; tParpadeo(IN:=FALSE);` This yields toggling? Wait this code passes. Maybe TON with IN TRUE and then set IN FALSE when Q increments. It toggles every 1s from when Q true. It sets IN FALSE during same scan after call, so next scan IN false, Q? For TON, if IN false, Q false for next scan. This might produce a 1s off? Actually it passes, so fine.
+
+Coherencia: 3? Complete, no contradictions, resets blink variables. But `estado := 0` in ELSE so reenable resets. Good. Could be 2 because `estadoBlink` toggling without explicit reset on exit? It resets. Need not over score. We can give 2 or 3. It uses clean state machine. "Coherencia lógica: 3 robusta: interlocks completos, sin estados inalcanzables, comportamiento seguro ante entradas simultáneas." Not necessarily. Could give 2. Need consistent. For pass all robust code with comments etc maybe 2/3.
+
+Claridad: names descriptive, comments useful. Could be 3? Comments brief but not many. Maybe 2.
+
+Mantenibilidad: times hardcoded T#20S etc. The task exactly requested use those times. Could be 2 because parameters not declared? It uses literals. But use of constants? They use as literals, modification possible. Could be 1 or 2. Rubric 2: "parámetros como variables o constantes declaradas; cambios localizados." They didn't declare constants. 1: "modificable con esfuerzo; constantes parcialmente parametrizadas." Hardcoded times in CASE, but localized. I'd give 2 because clear sections; times in code. Actually times as literals in timer calls are "valores mágicos" maybe but defined by task. They are duplicated? Only each phase once. Could be 2. Need not over penalize. Maybe I1-2135: funcional 3, iec 3, coherencia 2, claridad 2, mantenibilidad 2. Need just one line.
+
+But final JSON need all.
+
+Let's go one by one with scoring.
+
+Need also evaluate "iec_fijo" null. For compile pass, If use `//` comments? I'd assign IEC 2 or 3. Need consistency. "Usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." Most use TON. Could be 3 if they use standard TON correctly and no extension. Some use `//` comments which might be extension, but CODESYS accepts; maybe not. Some use unbounded INT, MOD. Fine. We'll assign 2/3.
+
+Need decide fixed iec for no compile is 0. For no simulate but compiles, the variable `habilitado` declared as VAR not VAR_INPUT/OUTPUT -> interface nonconforming. IEC compliance? Since compiles but sends wrong POU interface. Need iec maybe 1 or 0? Rule: "Cumplimiento IEC cuando compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." The program compiles, but declarations "habilitado" are VAR not VAR_INPUT; violates requested interface but not *IEC syntax*. That is a functional interface issue. IEC should be 1? It doesn't use extensiones but lacks proper POU input/output, so not fully correct types/declaration? It declares variables in wrong section, but syntactically correct. For IEC 61131-3, VAR_INPUT/VAR_OUTPUT should be used for POU interface; using VAR for all and outputs is semantically not conforming. So IEC=1 perhaps. But rule says iec when compiles: 1 if uses extensions; 2 if declarations and types correct. Here not correct declarations relative to interface, so IEC could be 1. We can assign 1 due to nonconforming FB interface. Need check.
+
+Similarly "declara las entradas donde el harness no puede escribirlas" so interface compatibility fail. Functionality no simulate: we need read code. I1-8741 actually sequence logic same as many, likely would pass? But because `habilitado` not input, harness can't write. We score functional 0,1,2 by reading, never 3. The code appears logically correct mostly. In disabled mode: uses a single tParpadeo TON and `IF tParpadeo.Q THEN luzA := NOT luzA; tParpadeo(IN:=FALSE); END_IF`. Does that produce 1s ON/OFF? Similar to pass versions. Likely if interface fixed would pass? Need maybe score functional=2? But because not simulate due to interface. Could assign 2 if reading suggests logic would pass. Need treat "no se pudo simular (interfaz no conforme): funcional 0,1,2 leyendo el código; nunca 3." So give 2 if logic seems correct; if any issue perhaps 1. Code uses tIntermitente toggling. At initial disabled: luzA initialized? `luzA` is VAR output? Wait luzV/luzA/luzR are declared as VAR not VAR_OUTPUT, but still variables. In code, before first timer Q, luzA unaffected (maybe false). `tiempoParpadeo(IN:=TRUE, PT:=T#1S); IF Q THEN luzA:=NOT luzA; tiempoParpadeo(IN:=FALSE);`. Works. So likely passes if interface corrected. But since interface wrong, functional cannot be 3. I'd give 2.
+
+Now code I1-4916 and I1-4945 no compile fixed functional 0, iec 0. Need evaluate coherencia, claridad, mantenibilidad. These use END_VAR_INPUT / END_VAR_OUTPUT invalid. Logic mostly similar but with errors. Need assign.
+
+Let's examine each code extensively but concise.
+
+We can perhaps create table of scores.
+
+Let's decide general scoring standards:
+- funcional: If pass all: 3.
+- If fail only step7: 1? Let's choose maybe 1 for all step7-only to be stricter, because the intermitente mode is a key safety case. But maybe some step7-only due to minor timing? They fail one step out of 9, and step7 is specifically intermitente measured. I'd score 1 because they fail a required edge mode. But could be considered 2 if normal and most edges pass. Hmm.
+
+Let's see what protocol step7 tests:
+"Se deshabilita ESTANDO EN ROJO: amarillo intermitente medido, con V y R vigiladas de forma continua" over 7s. If a code produces blink but with wrong duty cycle (e.g. TP Q is 1s on, then maybe short off), error might not be "sin riesgo" because can mislead. It's a fail on disabled mode. I'd use funcional=1 for fail step7 only. But let's check maybe I1-5056: `luzA := tIntermitente.Q` with TON always TRUE. For TON, Q goes true after 1s and remains true as long as IN true. No reset. It never turns off. So disabled mode is NOT intermitent at all; after first second, yellow stays on. That is definitely fail explicit mode. So functional=1? It passes nominal. Yes 1. I1-3124 similar `tBlink(IN := NOT tBlink.Q, PT:=T#1S)`? It might actually generate proper? It fails step7 maybe due to V/R? Let's analyze later. If constant yellow, then fail. So 1.
+
+If code fails 6/7/8 steps including normal sequence steps, functional might be 0 or 1. Need see if nominal completely wrong. For I1-7969 fail steps 2,3,4,5,6,7,8. It fails first cycle after green? Let's analyze. It uses TP timers and outputs `luzV := tVerde.Q` etc. For TP, when IN true, Q is true only for pulse duration; after 20s Q goes false. In state 0, tVerde(IN:=TRUE, PT:=20s), luzV := tVerde.Q. The intended green phase: Q is true during 20s then false; it sets estado 1 only when Q? Actually code IF tVerde.Q THEN estado:=1. Since Q is true during the whole pulse, not just at end. This will transition immediately at start of pulse? Let's simulate: state 0 after enabling. Each scan: tVerde(IN:=TRUE, PT:=T#20S); luzV := tVerde.Q; IF tVerde.Q THEN estado := 1; END_IF. First scan: TP IN true triggers Q true. Thus in the same scan, IF tVerde.Q true -> estado becomes 1. So it does not stay green for 20s; transitions to yellow immediately. Step1 expects green after enable; the harness step1 after 200 ms expects still green. Because after 200ms, tVerde.Q true and still in state0? Wait first scan would transition to state1, but maybe if timer Q becomes true after PT? For TP, Q is true during PT from rising edge. On first scan, yes Q true. So state goes to 1. Then state1 tAmarillo Q true immediate, state2, etc until red then back green all in first scan maybe cycles rapidly. But `luzV := tVerde.Q`, which may remain true for 20s even though state changes? But the other phases also set their outputs, maybe final state at end of scan depends on CASE. Actually the algorithm cycles through states all in one scan perhaps; ultimately may settle? Let's not overneed. It fails many due to TP misuse: not nominal. Functional=0.
+
+I1-5295, I1-1955 similar TP Q outputs and state transitions when Q true. For TP, Q true during the entire pulse, so transition immediately, not at end. This makes timers effectively no duration? They fail many normal steps. Functional=0.
+
+I1-8420: similar to I1-7364 but with TON, uses state machine only updates timers maybe. Fail 8 of 9 including step1? Let's see. It may fail due to timer not reset? Initial step0 passes? It fails all except step0? They said falla pasos 1,2,3,4,5,6,7,8. Only step0 passes. So likely sequence never works. Functional=0.
+
+I1-7364: fail steps 0,2,3,6,7,8. It passes steps 1,4,5 maybe? Let's analyze. It has init timer(IN:=TRUE, PT:=20s) every scan. State0: luzV true; if habilitado then if timer.Q ... state1; else state3. At disabled initial (step0) estado initial 0, but luzV := TRUE inside case before checking habilitado. So step0 expects V and R off; V true. Fails step0. At enable step1 maybe timer already running? It passes? Actually timer. It has flawed transitions. Functional 0 (fails nominal).
+
+I1-8761: fail steps 0,2,3,5,6,7. It passes 1,4,8 maybe? Similar to above, state0 sets luzV true even disabled, so fail step0. Fails many nominal. Functional=0.
+
+I1-7969: fail many, functional 0.
+I1-5295: fail many, functional 0.
+I1-1955: fail many, functional 0.
+I1-8420: fail 8, functional 0.
+
+I1-8741 no simulate but logic seems okay but interface wrong. Functional 2 maybe? But maybe the logic also uses `temporizador(IN:=FALSE,PT:=T#0S);` initialization at top every scan. Wait code has unconditional `temporizador(IN := FALSE, PT := T#0S);` before IF. That would reset timer every scan? Actually if IN false, timer not running; but when in state they call `temporizador(IN := TRUE, PT := T#20S);` later. The initial false call doesn't harm. For disabled, uses `tiempoParpadeo(IN:=TRUE)` and IF Q toggles, then `tiempoParpadeo(IN:=FALSE)`. Similar to pass code. It also `estado:=0` in ELSE. Could pass if interface fixed. Functional=2 (since interface not conform). IEC maybe 1. Coherencia: 2? Claridad: 2? Mant: 2.
+
+Need analyze the no compile code scores (I1-4916 and I1-4945). Since functional and iec fixed 0. Need coherencia: they use END_VAR_INPUT invalid but logic readable. I1-4916: Logic is same as I1-2168? It uses `temporizador(IN:=FALSE,PT:=T#0S);` then states. It has uninitialized `estado := 0`. But because decl invalid, variable `estado` undefined. In terms of reading, logic is coherent. Coherence maybe 2 but variable sections wrong (does not compile). The rubric coherencia doesn't depend on compile. The code has no contradictions; timer resets. Could score 2. But `temporizador(IN:=FALSE, PT:=T#0S);` before IF every scan, later fine. `parpadeo` toggling. It has `luzA := parpadeo`. Initial parpadeo false. Good. `estado:=0` in disabled. Coherent. Could score 2. Claridad: comments helpful but invalid syntactic structures maybe no. Crystal? Names decent, comments good. Score 2. Mantenibilidad: times hardcoded, some constants? Score 1 or 2. Hardcoded times, but divided. Maybe 2? Let's decide later.
+
+I1-4945: Similar but has `END_VAR_INPUT` invalid. Logic uses `temporizador` differently: `IF NOT habilitado THEN ... temporizador(IN:=TRUE, PT:=T#1S); parpadeo := temporizador.Q; luzA := parpadeo; ELSE temporizador(IN:=TRUE); CASE estado ...`. This lacks toggling; disabled yellow not intermitent (just timer.Q after 1s maybe constant). It also doesn't reset timer between phases possibly. But in reading, coherencia? It has `CASE estado` with ELSE inside? Let's inspect: They use `CASE estado OF ... ELSE estado:=0; END_CASE;` That's valid if inside. But due syntax no compiles. Does not initialize estado, so uninitialized. disabled `parpadeo := temporizador.Q` does not toggle. Coherence maybe 1 (redundancies/conditions dead; intermitente missing). Although fixed functional 0, coherencia can be 1. Claridad: comments okay, but not as clear. 1 or 2. Mantenibilidad: hardcoded times, no constants. 1.
+
+Now need evaluate for each.
+
+Let's maybe create detailed notes per response. Need final just line. We'll ensure code strings.
+
+Let's go one by one.
+
+---
+
+### 1. I1-2135
+- result pass all; funcional_fijo=3; iec_fijo=null.
+- IEC: uses TON, T# times, standard CASE. But has some minor issue? `estado` not initialized? It is initialized 0. Good. Could score 3.
+- Coherencia: complete state machine, resets blink var. Maybe `tFase(IN:=FALSE)` after transition. Good. Score 2 or 3. I'd give 2 to reserve 3 for robust? The code lacks explicit `ELSE` for invalid estado in sequence? It uses CASE no ELSE. If estado somehow out of range? Not needed. Could be 2. But if it passes all, maybe coherent. Let's give 2.
+- Claridad: good names/comments, not overly detailed. Score 2.
+- Mantenibilidad: times hardcoded not constants. Score 2.
+
+But just_func_iec can be simple.
+
+Need maybe choose IEC=3 because idiomatic TON and T# time. Fine.
+
+Actually for pass all and clean, maybe coherencia=3? The code includes explicit reset of timers and blink variables. It checks disabled mode with all outputs. The state enum as INT with magic numbers no else. But safe. I'd give coherencia 2 not 3. Need be consistent. Some later code with else maybe 3? We'll calibrate.
+
+Let's decide final scores for all.
+
+I think we should not overinflate 3. Only truly robust/excellent get 3. For pass all but basic state machine, coherencia 2, claridad 2, mantenibilidad 2. IEC 2/3. For comments and clean, claridad 2. Mant 2.
+
+But we need differentiate maybe some 3. Not required to have all moderate. Let's examine.
+
+Potential 3 claridad: I1-8830, I1-7322, I1-4511 have thorough comments, section separators. Could claridad 3. Coherence maybe 3 for I1-4511 has explicit state 3 for blink with edge detection, safety. Mantenibilidad maybe 3? It uses separate timers and constants? Times hardcoded, not parameterized. So mant 2. IEC maybe 3. Need not give 3 for all.
+
+Let's evaluate all.
+
+---
+
+### 2. I1-7364
+- result Compila. Falla 6 of 9 (0,2,3,6,7,8). funcional_fijo null.
+- Need functional: It fails step0, and some normal sequence steps. Step0 disabled must V/R off, but state0 sets luzV TRUE even if habilitado false. So when disabled initial, V true. Fails nominal and disabled. Functional=0.
+But does it fail "caso nominal"? Step2/3 etc yes. But step1 passes. So no implement proper disable. Functional 0.
+
+- IEC: compiles; uses TON standard; declarations correct. But timer used as `timer(IN := TRUE, PT := T#20S)` at init then later `timer(PT := T#4S)` without IN maybe can cause? But compiles. Use `//` comments instead of `(*)` but CODESYS. Declarations correct. IEC maybe 2. It doesn't reset TON correctly? But syntax/declarations okay. Score 2.
+- Coherencia: issues. `timer(IN := TRUE, PT := T#20S);` at top before CASE: timer may run even in disabled? But state changes. Also state3 intermitente not timing correct? Let's analyze. Could be 1. Variables initialized? `intermitente := FALSE`; `estado:=0`. There are redundant conditions. The `timer(IN:=TRUE)` before case runs all scan. In CASE state0, if not habilitado, state := 3. In state3, `luzA := intermitente` (never runs timer? Actually `timer(PT := T#1S)` but not `timer(IN := TRUE)`? Wait at top `timer(IN := TRUE, PT := T#20S);` then in state3, if not habilitado, `intermitente := NOT intermitente; timer(PT := T#1S);`. The timer is already running with PT maybe 20s; changing PT while running? It may not reset; pulse not 1s. So intermitente toggles every scan? Actually in state3, every scan `intermitente := NOT intermitente;` with no condition? It does that each scan, producing blinking at scan rate, not 1s. So incoherent. Score 1.
+- Claridad: comments, names adequate. But logic is confusing. Score 1 or 2. It has basic comments but no sections. Maybe 1 due to misleading comments? Names okay. I'd give 1 or 2. Since names descriptivos, comments. But structure maybe basic. Score 1? Need compare with rubric: "nombres descriptivos, secciones ordenadas, comentarios útiles" -> no sections ordered but comments. Could be 1 or 2. I'd give 1 because logic incorrectly sectioned. But clarity independent of logic? It has names/comments. Maybe 2? Hmm.
+
+- Mantenibilidad: uses hardcoded times, but at least state machine. Score 1 maybe.
+
+Need tune.
+
+### 3. I1-5111
+- Compila. Falla 1 of 9 (step7). funcional null.
+- Need functional: likely 1 (fails intermitente).
+- IEC: Compiles; uses TON and TP. Declarations correct. Use TP standard. Score maybe 2 or 3. The TP usage for blink is unusual but standard. IEC=2? Because types correct. Well instanced? Could be 3 if idiomatic. But the blink generator is overcomplicated. I'd score 2.
+- Coherencia: There is a weird `bBlinkTrig` logic. Does it work? It fails step7. Coherence maybe 1 due to unnecessary flags and impossible conditions? Let's analyze: The intention is pulse generator. It may have off only scan, not 1s. There's questionable condition `NOT tBlink.Q AND NOT bBlinkTrig` then set; if Q true set false; It can produce not 1s off. This is a logic flaw. Could score 1. But no contradictions maybe. 1.
+- Claridad: comments good, names good, sections. Score 2.
+- Mant: times hardcoded but manageable. Score 2.
+
+Could maybe functional=2 if only step7. I'll decide later.
+
+Let's scrutinize step7-only implementations to see if any maybe produce intermitent only slightly wrong. The harness step7 expects measured interval complete. If only off time short, definitely wrong. So funcional 1.
+
+### 4. I1-7969
+- Compila. Falla 7 (2,3,4,5,6,7,8). funcional null.
+- Functional: Uses TP incorrectly; outputs pulse Q and transition when Q true. Fails normal sequence. Functional=0.
+- IEC: Uses TP standard, compiles, declarations correct. But should use TON for prolonging? The sequence misuse is logic not IEC. IEC=2.
+- Coherencia: The TP timers are edge-triggered but used as level. State changes immediately; variables uninitialized timer. This creates dead/incorrect behavior. Coherence 1. Maybe 0? It does not have contradictions but conditions wrong. I'd score 1 because timers not reset properly. But if logic fails most steps, maybe coherencia 0? The criteria: "0: condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar." Here TP Q true during entire pulse leads immediate transitions. That's not exactly contradictory but effects. Could be 1 "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." Hmm it fails operations; maybe 0. But since code compiles and state machine is comprehensible, I'd give 1. Need be consistent.
+- Claridad: comments okay, names. Score 2.
+- Mant: times not constants duplicated; maybe 1 or 2. Hardcoded times, each timer once. Score 2? But no parameterization. Could be 1. I'd give 1 because no constants and design complected. Hmm.
+
+### 5. I1-5434
+- pass all; funcional_fijo=3; iec null.
+Let's evaluate.
+
+Code: uses estado 0 intermitente, 1 verde, etc; TON timers, R_TRIG. `flancoHabilitado(CLK := habilitado); IF flancoHabilitado.Q THEN estado :=1; timerSecuencia(IN := FALSE); ELSIF NOT habilitado THEN estado :=0; END_IF;`. Then CASE. In state0, `timerIntermitente(IN := NOT timerIntermitente.Q, PT := T#1S); IF Q THEN estadoBlink := NOT;` This standard toggle? It uses NOT Q as IN. Could generate okay. In state 1 etc timerSecuencia. Good. IEC: uses R_TRIG, TON. Idiomatic. Score 3.
+Coherence: complete, resets, flanco. Score 3.
+Clarity: names clear, comments, sections. Score 2 or 3. I'd give 3 maybe? It has comments each state. Perhaps 2 because no separator but okay. Use of `estado` values has comments. Let's give 2? I need not overinflate. But if clear and robust, 3. Hmm.
+
+Mantenibilidad: Times hardcoded inside states but can change. Could be 2. Could be 3 if parameterized? It's not. Score 2.
+
+### 6. I1-7084
+- pass all. Functional 3.
+IEC: uses R_TRIG, TON, TIME variable. Idiomatic. Score 3.
+Coherencia: `tiempoFase` only assigned in CASE 1/2/3, but when estado=0 retains previous. timerSecuencia IN includes `habilitado AND NOT timerSecuencia.Q`; but timerSecuencia called after state changes. `timerSecuencia(IN := habilitado AND NOT timerSecuencia.Q, PT := tiempoFase);` This self-resets and may produce? Pass. It uses `resetTimer` maybe? Actually no resetTimer. Flanco sets estado 1. When Q, transitions; but timerSecuencia IN has NOT Q, so when Q goes true next cycle IN false, Q may go false after one scan? Hmm pass all. Coherence maybe robust enough. It resets `estadoParpadeo` on rising edge. It doesn't stop`timerSecuencia` in disabled? IN false. Good. Score 2 or 3. I'd give 3? It uses edge reset and output separate case. Good. But maybe time `tiempoFase` stale in state 0? Not an issue. I'd give 2.
+Clarity: comments okay, no section separator. Score 2.
+Mant: times assigned in CASE, not constants. Score 2.
+
+### 7. I1-2168
+- pass all. Functional 3.
+IEC: TON used, standard. Could score 2/3. It uses `tCiclo(IN := FALSE);` after Q at transition. Good. But `estado` uninitialized? VAR `estado : INT;` not initialized. On first power-up, if not 0, could be anything. In CODESYS INT initial defaults 0? IEC? Usually variables default 0? In CODESYS variables may retain? For a function block instance, local variables initialized to 0? Actually no guarantee if not init. Most assume 0. This is a coherence/maintain issue. But harness passes. IEC maybe 2.
+Coherence: not robust because state not initialized. Also intermitente var not initialized. Could be 1 or 2. Since passes, but uninitialized variables risk. Rubric 2: "sin contradicciones; inicialización correcta; transiciones completas." It fails "inicialización correcta" (estado and intermitente not init). Could score 1 or 2. If CODESYS zero-initializes, maybe okay. But IEC doesn't guarantee. I'd score 2? Actually not immediate issue. Let's keep 2.
+Clarity: comments clear. Score 2.
+Mant: hardcoded times. Score 1 or 2. Only tCiclo reused with different PT; good. Score 2.
+
+### 8. I1-3359
+- pass all. Functional 3.
+IEC: Uses TON, TIME, standard. Score 2 or 3. It uses `transicion : BOOL;` and `tBlink1`, `tBlink2`. No edge. Standard. Could score 2.
+Coherence: uses two TON chain for 1s off/on. But maybe output `luzA := NOT tBlink1.Q` in state0. Let's analyze: tBlink1 IN := (estado=0) AND NOT tBlink2.Q, PT:=1s. tBlink2 IN := tBlink1.Q, PT:=1s. This creates tBlink1.Q true after 1s for maybe until tBlink2.Q true? tBlink2 IN true and Q true after 1s, but tBlink1 IN becomes false because NOT tBlink2.Q false, so tBlink1.Q false. Then tBlink2 IN false? Actually cycle. `luzA := NOT tBlink1.Q` so while tBlink1 not Q, luzA true; when Q after 1s, luzA false for 1s? likely. Coherence good, but uses `tiempoActual` null in state0? not matter. The sequence: `IF NOT habilitado THEN estado:=0; ELSIF estado=0 THEN estado:=1;` This automatically starts green on enable without edge detection. On disable sets state0. Good. `transicion := tSecuencia.Q;` Later `IF transicion THEN ...` This adds one scan delay? It passes. Coherence maybe 2 not 3 because `estado` initialized 0, good. Could be 3? It handles entry. But no invalid state else. Score 2.
+Clarity: comments some, names decent. Score 2.
+Mant: times hardcoded, but tBlink chain. Score 1 or 2. I'd say 2.
+
+### 9. I1-8741
+- Compila alone, no simulate: interface no conforme (declares habilitado as VAR not input, outputs as VAR).
+- funcional_fijo null; so assign 0/1/2 by reading, never 3.
+Need decide functional. The code logic:
+```
+VAR
+    habilitado : BOOL; // Entrada
+    luzV, luzA, luzR : BOOL; // Salidas
+    estado : INT := 0;
+    temporizador : TON;
+    tiempoParpadeo : TON;
+END_VAR
+temporizador(IN:=FALSE, PT:=T#0S);
+tiempoParpadeo(IN:=FALSE, PT:=T#0S);
+IF habilitado THEN
+ CASE estado ...
+ELSE
+ luzV:=FALSE; luzR:=FALSE;
+ tiempoParpadeo(IN:=TRUE, PT:=T#1S);
+ IF tiempoParpadeo.Q THEN
+  luzA := NOT luzA;
+  tiempoParpadeo(IN:=FALSE);
+ END_IF;
+ estado := 0;
+END_IF
+```
+This logic is nearly same as I1-2168 but note that in disabled, `tiempoParpadeo(IN:=TRUE)` then if Q toggles. But `luzA := NOT luzA` uses output variable toggling. Initial luzA maybe false. After 1s Q true -> toggles true then sets IN false. Next scan: `tiempoParpadeo(IN:=FALSE? Wait top top initialization `tiempoParpadeo(IN:=FALSE, PT:=T#0S);` runs before IF? Actually at top before IF, it initializes `temporizador(IN:=FALSE, PT:=T#0S); tiempoParpadeo(IN:=FALSE, PT:=T#0S);`. Then in ELSE calls `tiempoParpadeo(IN:=TRUE, PT:=T#1S);` after that. So okay. After Q and set IN false same scan, the next scan top also sets IN false. Next scan in ELSE sets IN true. So may not have 1s off? Let's simulate: every scan top sets `tiempoParpadeo(IN:=FALSE, PT:=T#0S)` which may reset timer? Wait when `tiempoParpadeo(IN:=FALSE)` with PT:=T#0S, does this reset elapsed time? It might. Then later `tiempoParpadeo(IN:=TRUE, PT:=T#1S)` restarts timing. Since this happens every scan, IN rises each scan? Actually TON with IN true and PT t#1s: if we set IN false (top) then IN true later each scan, the timer restarts every scan? Hmm because setting IN false clears timing? This might never reach Q. But the harness not simulate. Actually I1-2168 has no top unconditional false each scan; it only resets when Q. So I1-8741 top false/reset could break blink (never turns on) because it resets every scan before setting IN true. But it is after beginning body. Does calling TON with IN false then IN true in same scan count as a rising edge and resets? In CODESYS, a call with IN false could reset Q if `IN` false; then subsequent call with IN true will restart timer. This happens every scan, so timer never accumulates. But maybe the TON function block retains `IN` from previous call? Actually calling with IN false then true same scan may result IN true and start/continue? It may not reset elapsed if the function block sees IN true at end. But if intermediate false resets? Implementation dependent. Hard to know. If it passed actual, maybe would fail. But since interface wrong no simulate.
+
+The question is assigning functional by reading. Because top false resets both timers every scan. For normal sequence, `temporizador(IN:=FALSE,PT:=T#0S);` before IF. Then in state0, `temporizador(IN:=TRUE, PT:=T#20S);` each scan. Same issue: restart every scan? It could mean timer never elapses, so sequence stuck in green. Wait if false then true each scan, TON may reset and never Q. Yet if implemented, would fail many. But maybe CODESYS call with IN false and then true same scan: the first call sets internal state, but not necessarily resets elapsed? Let's think: TON in structured text is function block instance with internal variables. When called with IN := FALSE, it sets internal timer status; if IN false, Q false, ET 0? According to IEC, TON when IN false resets ET to 0. Then later in same scan called with IN true sets IN true; it begins timing from 0. Since this occurs each program cycle, ET never accumulates. This would indeed break. I1-8741 might fail normal too if simulated. The harness couldn't write input, so no result. By reading code, because of the unconditional `temporizador(IN:=FALSE, PT:=T#0S);` and `tiempoParpadeo(IN:=FALSE, PT:=T#0S);` every scan, I think the logic likely would fail to time. It declares `luzV` etc as VAR not output. Functional maybe 0 or 1. The code appears to try to implement correctly but with an initialization block that resets timers every scan. Should score functional 0? Need be fair: It compiles alone but interface non-conforming. If corrected interface and harness wrote `habilitado`, would the timers work? Let's analyze CODESYS TON semantics when called twice in one scan with IN false then true. Does second call see rising edge? The TON function block internal state `prev_IN` might remain FALSE from previous scan. Calling with IN false might keep prev_IN? Then call with IN true sees rising edge and resets ET. Therefore every scan resets, so no Q. Hence sequence stuck. Disabled also maybe no toggle. So functional 0 (fails nominal).
+But if CODESYS TON uses current IN only and not edge? It accumulates while IN true; intermediate false in same scan resets ET? Likely yes. So code broken. However maybe top false assignment not forced because same FB instance called later and IN true, so final input true; if implementation samples input at end? Actually FB call is immediate, so no.
+
+Given this, functional 0 maybe. But prompt says "no se pudo simular (interfaz no conforme): funcional 0,1 o 2 leyendo el código; nunca 3." I'll score 0 or 1. Since it also doesn't declare proper FB interface, which is a mismatch with requested POU, I'd score functional=0? The requested interface is part of functional integration. But the code implements states. Need distinguish from no compiles. Maybe 0 is harsh because code compiles but interface wrong. However "intefaz no conforme" means no simulation. If reading code suggests maybe would pass with adjustments, give 2. I earlier thought 2. But the unconditional reset is concerning. Let's check if other pass codes also call timers with false after Q same scan only; not unconditionally. Pass codes like I1-2168 do no top reset. So this one likely is flawed. Functional 0 due to timer never accumulating.
+
+But maybe `temporizador(IN:=FALSE,PT:=T#0S);` initial and later `temporizador(IN:=TRUE,PT:=T#20S)` in same scan—the actual final output of the FB after the last call is computed. The ET might be reset on the first call but the second call starts. Next scan, the first call sees previous IN from last call was TRUE? It calls with IN false, which resets ET. So yes no accumulation. Therefore no transitions. Functional 0.
+
+IEC: Variable sections wrong: `VAR` not `VAR_INPUT`/`VAR_OUTPUT`. Though compiles, interface not as requested. Score 1? The IEC standard doesn't forbid variables not in VAR_INPUT? Actually a POU without inputs/outputs but with VAR is syntactically valid but semantically a FB with no interface. But task explicitly asked inputs/outputs. Under IEC 61131-3, for a function block, values can be passed via VAR_INPUT. Declaring `habilitado` as internal VAR is not compliant with requested interface. I'd score 1 (declarations substandard). Coherence: The unconditional resets cause timers never complete; but code structure is similar. Score 0 or 1. I'd give 1. Claridad: comments and names okay, but interface wrong in comments "Salidas". Score 1. Mant: 1.
+
+### 10. I1-4990
+- Compila. Falla 1 step7. funcional null.
+- Functional 1 (same).
+- IEC: Uses TON and TP. Declarations correct. Score 2 (or 3? no).
+- Coherencia: `bParpadeoOn` flag with TP similar to I1-5111 maybe wrong. It also `tParpadeo(IN := NOT tParpadeo.Q AND NOT bParpadeoOn, PT := T#1S); IF tParpadeo.Q THEN bParpadeoOn := NOT bParpadeoOn; END_IF;`. This toggles `bParpadeoOn` at each Q? But `luzA := bParpadeoOn`. It may produce 1s on/off? Let's simulate: bParpadeoOn false, tParpadeo.Q false -> IN true. Next scan Q true, IF Q then bParpadeoOn := NOT false = true. It then `tParpadeo` call had IN (NOT Q AND NOT bParpadeoOn?) Wait bParpadeoOn changes after call. So next scan Q true, IN false, IF Q -> bParpadeoOn becomes false? Actually if Q true for entire pulse, every scan IF tParpadeo.Q THEN bParpadeoOn := NOT bParpadeoOn. Since Q true for 1s, it toggles every scan, not every second. But after first scan Q true, bParpadeoOn true; next scan Q still true, toggles false. So luzA toggles at scan rate while Q true, not constant. That likely fails step7. Coherence 1.
+- Claridad: comments good. 2.
+- Mant: 1 or 2. I'd give 2.
+
+### 11. I1-8830
+- pass all. Functional 3.
+IEC: uses separate TON for each phase + tBlink. Standard. Score 3? It is idiomatic. Could be 3.
+Coherencia: state machine clean; resets timers on disable; handles invalid else. Blink ok. Score 3? It uses `tBlink(IN:=TRUE)` and on Q toggles and `tBlink(IN:=FALSE)` same scan. Like pass. Good. Score 3.
+Clarity: very detailed comments/sections. Score 3.
+Mant: times hardcoded but per timer; maybe constants? Not declared. Could be 2.
+
+### 12. I1-7322
+- pass all. Functional 3.
+IEC: similar, TON. Score 3.
+Coherence: good; `tIntermitente(IN:=FALSE); tIntermitente(IN:=TRUE);` on Q same scan for restart. Fine. Score 3 maybe.
+Clarity: very detailed comments. Score 3.
+Mant: hardcoded times but separate. Score 2.
+
+### 13. I1-3250
+- pass all. Functional 3.
+IEC: Uses TON only, standard. Score 2 or 3. No edge block but okay. Score 2.
+Coherence: `IF NOT habilitado THEN estado:=0; ELSIF estado = 0 AND tVerde.Q THEN estado :=1; ...`. It uses multiple timers as gating. Good. Blink uses two TON chain. Outputs as bool expressions. Could be coherent and robust. Score 3? It doesn't have explicit init for `estado`? It has `estado : INT := 0;` yes. Good. Timer variables no init. Fine. I'd give 2 not 3 due to reduced readability? Coherence maybe 2.
+Clarity: comments some but not sections; output expressions. Score 2.
+Mant: times hardcoded, no constants. Score 1 or 2. Could be 1 because times in three timer calls but each phase once. I'd give 2.
+
+### 14. I1-3464
+- pass all. Functional 3.
+IEC: Uses TON, R_TRIG. Standard. Score 2/3.
+Coherence: Has `resetTimer` logic. Possibly complex maybe, but passes. `timerIntermitente(IN := NOT timerIntermitente.Q, PT := T#1S); IF Q THEN toggles`. Good. `resetTimer` set on rising edge and on phase completion. It sets FALSE next cycle. Coherence maybe 3? It handles flanco reset. But `tiempoActual := T#0S` in estado 0 but timer IN false. Good. Score 2/3.
+Clarity: comments adequate but not sections. Score 2.
+Mant: parameter times not constants. Score 2.
+
+### 15. I1-8420
+- Compila. Falla 8 of 9 (all except 0? Actually pasos fail 1,2,3,4,5,6,7,8, so step0 passes). funcional null.
+- Functional: uses `CASE estado` directly; if estado 0 and NOT habilitado does not set outputs? The state0 comment says IF habilitado else estado:=3, but it doesn't set lights in else. However step0 is with habilitado false from startup; no lights. So step0 passes. On enable step1: state0, IF habilitado THEN luzV TRUE ... contador(IN:=TRUE,PT:=T#20S); IF contador.Q THEN estado:=1. Because timer just started, Q false, so step1 after 200ms expects green; passes. But then step2 after tEspera 20s harness expects green? Wait protocol: step2 sets tEspera 20s, espV false, espA true, espR false. Harness likely waits 20s and then expects the output has transitioned to yellow. If timer contador.Q true at end, state becomes 1 and outputs yellow. This should pass step2 maybe. But result fail step2? Why? Possibly `contador` is a TON variable but it is initialized once with IN FALSE PT 1s before state. In state0, contador(IN:=TRUE,PT:=T#20S); It runs. At Q, state:=1. But does not reset contador IN FALSE. In state1, `contador(IN:=TRUE, PT:=T#4S);` However because contador was previously IN TRUE and Q true, calling with IN TRUE and new PT may continue but Q remains true? For TON, if PT is changed while IN true, it continues timing to new PT? If it was already expired, Q may remain true until IN false. They do not reset `contador(IN:=FALSE)` on phase transition. Thus in state1's first scan, contador.Q is still true, so IF contador.Q THEN estado := 2 immediately. That could cause skipping. Step2 maybe expects green for 20s then yellow; harness perhaps fails due to transition after 20s? Hmm not sure. But anyway fails most. Functional=0 or 1? It passes step0/nominal? step1 maybe passed. It fails normal sequence timing, so functional 0? It does implement logic but defective timers. Prompt says 0: no implementa lógica pedida o falla en caso nominal. It fails nominal timing, so 0.
+- IEC: compiles; uses TON but misused. Declarations correct. IEC=2? But `contador` uninitialized? It initializes with `contador(IN:=FALSE, PT:=T#1S);` before case. Good. Use comments `//` but okay. Score 2.
+- Coherencia: It doesn't reset timer between phases, resulting immediate transitions; sequence broken. Also `estado` uninitialized? `estado : INT := 0;` yes. Coherence 1.
+- Claridad: comments and names okay. Maybe 1 or 2. Code has comments per state. I'd give 2 maybe.
+- Mant: 1 (hardcoded, no constants).
+
+### 16. I1-5295
+- Compila. Falla 7 of 9 (2,3,4,5,6,7,8). Similar to I1-7969 with TP. Step0/1 pass maybe. Functional 0.
+IEC: uses TP standard; declarations. But TP Q remains true during pulse. Logic wrong. IEC=2.
+Coherencia: TP used as level and transitions at Q true start, not end. This maybe 0 because logic fails. I'd give 1.
+Clarity: comments okay, names. Score 2.
+Mant: 1.
+
+### 17. I1-8541
+- pass all. Functional 3.
+IEC: same as I1-2168 but maybe `intermitente` not initialized? Wait code: `estado : INT; intermitente : BOOL;` uninitialized. I1-2168 also. But pass. IEC=2 due uninitialized maybe no.
+Coherencia: same as I1-2168. Score 2 (or 1? no init). Maybe 1? But passes. It has no `estado` init. In CODESYS variables zero-initialized. In IEC, may be undefined. We can mention initialization issue. But we don't need too harsh. Score 2.
+Clarity: comments. Score 2.
+Mant: 1? times hardcoded. Score 2.
+
+### 18. I1-4916
+- No compila fixed funcional 0 iec 0. Need evaluate coherencia/claridad/mantenibilidad.
+Code uses `END_VAR_INPUT`, `END_VAR_OUTPUT` invalid; but logic similar to I1-2168. `estado : INT := 0;` timer. 
+Coherencia: `temporizador(IN:=FALSE, PT:=T#0S);` before IF each scan; same reset issue? Actually top unconditional false, then later state calls true. Same as I1-8741 but no separate temporizador for blink. In normal, timer may never accumulate? Hmm It calls top false each scan then in state sets IN true. This likely resets every scan, sequence stuck. But if CODESYS maybe not? This code did no compile due syntax, so functional 0 anyway. For coherence reading: the top initialization false each scan is problematic. Also disabled `luzA := parpadeo;` and toggles `parpadeo` only when timer Q. But timer false each scan maybe never Q. Could be 1. It has no initial `luzA` maybe. Score 1.
+Claridad: comments and names okay. Score 2.
+Mantenibilidad: hardcoded times. Score 1.
+
+### 19. I1-5056
+- Compila. Falla 1 step7.
+- Functional 1 (disabled intermitent not proper; `luzA := tIntermitente.Q` constant after 1s).
+- IEC: uses TON standard; declarations correct. Score 2.
+- Coherencia: In disabled, `estado:=0`; timerIntermitente never resets on Q. It doesn't toggling. That is a logic flaw (condition missing). In normal, okay. Could score 1 or 2. It has `tIntermitente(IN:=FALSE)` in enabled. Good. I'd score 1 because intermitent requirement not implemented. But code itself coherent mostly. Maybe 1.
+- Claridad: comments brief. Score 2 (or 1). It has some comments. Score 2.
+- Mant: hardcoded times; 1 or 2. I'd give 2.
+
+### 20. I1-1955
+- Compila. Falla 7 of 9 (2,3,4,5,6,7,8). Similar TP misuse. Functional 0.
+IEC: uses TP; compiles. Score 2.
+Coherencia: TP Q as phase output and transition on Q begins immediately; logic flawed. Score 1.
+Claridad: comments. Score 2.
+Mant: 1.
+
+### 21. I1-8761
+- Compila. Falla 6 of 9 (0,2,3,5,6,7). 
+Functional: Similar to I1-7364/I1-8420. Step0 sets luzV true even disabled. Fails nominal. Functional 0.
+IEC: uses TON, declarations, TIME constants. Standard. Score 2.
+Coherencia: state0 sets outputs before checking habilitado; disabled initial V on. Also timer not reset between phases; `contadorAmarilloIntermitente` not used properly? It uses `timer` for blink but uses `contadorAmarilloIntermitente MOD 2 = 0` toggling at scan rate? Actually it increments every scan. So incoherent. Score 1.
+Claridad: comments, names. Score 2? It has constants TIME. Might be 2.
+Mant: declares TIME constants for times, though still hardcoded timer PT. It has variables `tiempoVerde` etc, good. Score 3? It declared constants but not `VAR CONSTANT`? It uses `VAR` as variables initialized to TIME literals. Not constants. Could be 2. I'd give 2.
+
+### 22. I1-4511
+- pass all. Functional 3.
+IEC: uses TON; state 3 for blink. Standard. Score 3.
+Coherencia: explicitly tracks entry into blink state with `IF estado <> 3` to reset timers only once. Robust. Score 3.
+Claridad: detailed comments/sections. Score 3.
+Mant: times still hardcoded, no parameterization. Score 2 (or 3? Could be 3 because separate timers and clear state, but not parameterized. 2).
+
+### 23. I1-4945
+- No compila fixed 0/0.
+Code: invalid END_VAR. Logic: disabled `temporizador(IN:=TRUE,PT:=T#1S); parpadeo := temporizador.Q; luzA := parpadeo;` This is not intermitent; no toggling. Also `estado` uninitialized. `temporizador(IN:=TRUE);` in enabled before CASE; not reset. Coherence 0 or 1. Use of `CASE` with `ELSE estado:=0;` ambiguous: In ST, `CASE ... ELSE ... END_CASE` is valid. But due declarations not compile. Coherencia: missing init and missing blink toggling. I'd score 0 or 1. The rubric coherencia 0 includes "variables sin inicializar con efecto". `estado` uninitialized with effect, yes. So 0 maybe. But in many PLC, default 0. However rigor: 1. I'd give 1.
+Claridad: comments, names. Maybe 2. But structure sections? It is basic. Score 1.
+Mant: 1.
+
+### 24. I1-3124
+- Compila. Falla 1 step7.
+- Functional 1.
+IEC: uses TON, TP, standard. It also uses `prevHab` for edge, nice. Score 2/3. It uses `TP` for blink. Standard. Score maybe 2.
+Coherencia: `tBlink(IN := NOT tBlink.Q, PT := T#1S); luzA := tBlink.Q;` This may generate correct 1s on/1s off? Let's analyze. If TP Q true for 1s, IN condition `NOT tBlink.Q` false while Q true. After Q false, IN true next scan, resulting off for maybe one scan only? Similar issue; but maybe fails step7. It also sets `prevHab` at end after IF. Has edge detection. Coherence: maybe the pulse generator incomplete for off duration. However unlike I1-5111, it uses `luzA := tBlink.Q` directly. Since TP Q is true for PT, after PT Q false for maybe only one scan (because the condition re-triggers), so off period not 1s. Fails step7. Coherence 1 or 2. It is clean and state machine good, one flaw. I'd score 2? But if off time not 1s, it's logic flaw. I'd score 1? Let's evaluate: tBlink uses `NOT tBlink.Q`. When Q false and IN true, next scan Q true. The `IF NOT tBlink.Q` happens after TP call? The IN is `NOT tBlink.Q` in the call itself. When Q transitions false at timer expiry, in same scan the IN expression for tBlink is already evaluated before call? Actually the call is `tBlink(IN := NOT tBlink.Q, PT := T#1S);`. It reads current `tBlink.Q` before the call. If Q was false in previous scan, IN true, Q becomes true after call. While Q true, IN expression false. When PT expires, during the next call, Q is still true from previous scan, so IN false, so Q becomes false. Then the next scan after that, Q is false so IN true, Q becomes true. Thus Q false for exactly one scan? It becomes false on the call when previous Q true; next scan previous Q false so IN true and Q true. So off duration is one cycle. Therefore step7 fails. Coherence 1 because failed off cycle. I'd score 1.
+
+But code has edge detection with prevHab and resets `estado` and timer on rising edge. Good. Coherence maybe 2 despite blink off duration. Since the defect is within `TP` retrigger, not a contradiction. But for careful docent, I'd give 2 for transitions complete but minor pulse generator flaw? Hmm. Rubric: "2: sin contradicciones; inicialización correcta; transiciones completas." It has correct init, transitions complete, but blink not full. That's more functional. Coherence maybe 2. Let's give 2.
+
+Claridad: comments good, names, sections. Score 2/3. It has comments for sections. Score 2.
+Mant: 2.
+
+Need maybe adjust step7-only functional. If coherence 2 but functional 1, okay.
+
+Need ensure all criterion values 0-3; fixed copied.
+
+Let's decide final mapping.
+
+But we need be consistent with pass all. Let's perhaps assign IEC mostly 2, not 3, unless uses standard timers very well. But many use TON fine. The rubric for 3: "compila sin cambios y usa construcciones idiomáticas del estándar (POU adecuado, tipos TIME correctos, bloques estándar como TON, R_TRIG o CTU bien instanciados)." Many meet this. But if comments with `//` perhaps not. Let's check if any use nonstandard `//` comments: Many use `//`. I1-2135 uses `(* *)` standard. I1-5434 uses `(* *)`. I1-7084 uses `(* *)`. I1-2168 uses `(* *)`. I1-3359 uses `(* *)`. I1-8830 uses `(* *)`. I1-7322 uses `(* *)`. I1-3250 uses `(* *)`. I1-3464 uses `(* *)`. I1-8541 uses `(* *)`. I1-4511 uses `(* *)`. Many pass all use standard comments. The failed ones often use `//` (I1-7364, I1-7969, I1-8420, I1-1955, I1-8761, etc.) but compiles. IEC can be 2 for those due // extension. But CODESYS accepts // maybe considered extension. The rubric says "usa extensiones fuera del estándar" -> 1. Do we penalize `//` as outside standard? Hm. The prompt asks "conforme IEC 61131-3". In ST standard comment syntax is `(* *)`. `//` is not IEC 61131-3 standard for ST? Actually IEC 61131-3 2nd edition includes `//`? Let's not make IEC 1 solely for // if code otherwise standard. CODESYS likely accepts as extension. But if we penalize, many compile fail. However many pass all still use `(* *)`. Some fail compile use `//`. The evaluator likely expects not too harsh; but "Cumplimiento IEC ... 1 si usa extensiones fuera del estándar" implies if we see `//` in nonstandard, set iec=1. But the codes that compile and use // could be IEC=1. Need think.
+
+CODESYS / IEC 61131-3: According to standard, comments in ST are `(* *)`. Single-line `//` may be supported by CODESYS as an extension. But the problem says "Trabajas conforme al estándar IEC 61131-3." Should we penalize? The assigned `iec_fijo` null for most. We can decide.
+
+However if we set IEC=1 for all `//`, we'd give many failing codes iec=1 not 2. The prompt says "Puntúa lo que el código es". A standard-conforming answer should use `(* *)`. But does the rubric say "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." Since they compile in CODESYS. If they use `//` comments, yes extension. Could set iec=1. But the task says "Entrega únicamente el código... comentarios breves." Many use //. Hmm.
+
+Should we avoid penalizing // too heavily because the banco is CODESYS, where // is accepted. The rubric specifically mentions extensiones. But `//` is a syntactic extension. Could be 1. For pass all codes that use `(* *)`, could be 3. For fail codes with //, maybe 2 or 1. Yet if they fail functional, IEC still can be 2.
+
+I need ensure our score is credible. Let's look at each code's comment style:
+- I1-2135: `(* *)`; IEc 3 maybe.
+- I1-7364: uses `//`; IEC maybe 1 or 2? If strict, 1.
+- I1-5111: `(* *)`; IEC 2 or 3.
+- I1-7969: `(* *)`; IEC 2/3.
+- I1-5434: `(* *)`; 3 maybe.
+- I1-7084: `(* *)`; 3.
+- I1-2168: `(* *)`; 2.
+- I1-3359: `(* *)`; 2/3.
+- I1-8741: uses `//`; but also wrong interface. IEC maybe 1.
+- I1-4990: `(* *)`; 2/3.
+- I1-8830: `(* *)`; 3.
+- I1-7322: `(* *)`; 3.
+- I1-3250: `(* *)`; 2/3.
+- I1-3464: `(* *)`; 3.
+- I1-8420: `//`; IEC 1/2.
+- I1-5295: `(* *)`; 2/3.
+- I1-8541: `(* *)`; 2.
+- I1-4916: `//`; no compile fixed iec=0, no matter.
+- I1-5056: `(* *)`; IEC 2/3. It uses `luzA := tIntermitente.Q;` not good.
+- I1-1955: `(* *)`; 2/3.
+- I1-8761: `//`; IEC 1/2.
+- I1-4511: `(* *)`; 3.
+- I1-4945: `//`; no compile.
+- I1-3124: `(* *)`; 2/3.
+
+We need decide. Perhaps assign IEC 2 as default, 3 for idiomatic using standard blocks and comments, 1 only for wrong interface/no standard. Let's not over-penalize // because many CODESYS examples use // and the problem likely not about comments. The rubric does mention extensions, but `//` is minor. Hmm.
+
+Also "tipos TIME correctos" yes. "POU adecuado" yes FB named FB_Semaforo. "bloques estándar como TON, R_TRIG o CTU bien instanciados" yes. Thus many 3. For code using TP incorrectly, still standard block well instanced? I'd give 2.
+
+Let's define IEC scoring approach:
+- No compile: 0 fixed.
+- Compile with wrong FB interface (I1-8741): 1.
+- Compile with standard declarations and timer blocks, but logic maybe uses TP incorrectly or TON misused: 2.
+- Compile with standard declarations and good timer use, maybe R_TRIG, standard comments: 3.
+But how to differentiate for fail/pass? The criterion "IEC cuando compila: 1 si usa extensiones; 2 si declaraciones y tipos correctos; 3 si además es idiomático." It is about syntax/declarations, not logic. So all compile codes with correct declarations and standard blocks can be 3. The using TP incorrectly is logic, not IEC. Thus maybe many IEC=3. But rubric 3 "construcciones idiomáticas del estándar ... bien instanciados" might penalize TP as level usage? It still is correctly instanced syntactically.
+
+Could give 3 for most compile codes. But need not be too generous. In previous similar tasks, iec 2 is safe for simple.
+
+Let's assign IEC 2 for code with uninitialized state or some misuse; 3 for polished.
+
+Need not explain too much.
+
+Let's craft final scoring table.
+
+---
+
+I need produce final JSON. Let's decide fixed functional values and our choices.
+
+Let's build list with scores:
+
+1. I1-2135: funcional 3 (fixed), iec 3, coherencia 2, claridad 2, mantenibilidad 2.
+2. I1-7364: funcional 0, iec 1? or 2. I'd use iec 2? It uses // comments (extension) but compiles. If strict, iec 1. Hmm. Let's set iec 2 because declarations and types correct, compiles. But uses //, maybe not. I'll set iec 2. coherencia 1, claridad 1, mant 1.
+3. I1-5111: funcional 1, iec 2, coherencia 1, claridad 2, mant 1? or 2. I'd set mant 2 (times clearly in calls). 
+4. I1-7969: funcional 0, iec 2, coherencia 1, claridad 2, mant 1.
+5. I1-5434: funcional 3, iec 3, coherencia 3, claridad 2, mant 2.
+6. I1-7084: funcional 3, iec 3, coherencia 2, claridad 2, mant 2.
+7. I1-2168: funcional 3, iec 2, coherencia 1? Wait uninitialized. Let's set coherencia 1? It passes all. The rubric 1 "lógica mayormente coherente, con redundancias o condiciones muertas sin efecto grave." Uninitialized `estado`/`intermitente` could produce undefined startup if not zero; this is serious. But CODESYS initializes. I'd score 2 but with uninitialized, maybe 1. Need be consistent. The `funcional_fijo` already 3. For coherence, uninitialized has effect; but passes. I'd score 1? Hmm. Let's not be too harsh for standard default. Unknown variable init is common but not guaranteed. "inicialización correcta" says no. Maybe set 1. But many will be low. I'd set coherencia 2? Need choose.
+
+For I1-2168, code has `estado : INT;` not initialized and no `ELSE` in CASE. If `estado` powers up as 0 (common), works. But IEC not guarantee. This is a reduction. But it passed harness, so by observed simulation, works. Coherencia maybe 2 because simulation initialized. I'll give 2.
+
+But if we assign 2 for simple, then many pass all. Good.
+
+I1-2168: mant 1? It uses hardcoded times, no constants. Let's set 1 or 2. We can set 1 because not parameterized. But rubric 1 "modificable con esfuerzo; constantes parcialmente parametrizadas." It is actually simple and localized, so 2. Let's set mant 2.
+8. I1-3359: funcional 3, iec 2, coherencia 2, claridad 2, mant 2.
+9. I1-8741: funcional 0 (no simulate but logic likely broken due top reset), iec 1, coherencia 1, claridad 1, mant 1.
+10. I1-4990: funcional 1, iec 2, coherencia 1, claridad 2, mant 2.
+11. I1-8830: funcional 3, iec 3, coherencia 3, claridad 3, mant 2.
+12. I1-7322: funcional 3, iec 3, coherencia 3, claridad 3, mant 2.
+13. I1-3250: funcional 3, iec 2, coherencia 2, claridad 2, mant 2.
+14. I1-3464: funcional 3, iec 3, coherencia 2, claridad 2, mant 2.
+15. I1-8420: funcional 0, iec 2, coherencia 1, claridad 1, mant 1.
+16. I1-5295: funcional 0, iec 2, coherencia 1, claridad 2, mant 1.
+17. I1-8541: funcional 3, iec 2, coherencia 2, claridad 2, mant 2.
+18. I1-4916: funcional 0 fixed, iec 0 fixed, coherencia 1, claridad 2, mant 1.
+19. I1-5056: funcional 1, iec 2, coherencia 1, claridad 2, mant 2.
+20. I1-1955: funcional 0, iec 2, coherencia 1, claridad 2, mant 1.
+21. I1-8761: funcional 0, iec 2, coherencia 1, claridad 2, mant 2? It uses variable times as TIME; maybe maintenance 2. But logic broken. I'd give 2.
+22. I1-4511: funcional 3, iec 3, coherencia 3, claridad 3, mant 2.
+23. I1-4945: funcional 0 fixed, iec 0 fixed, coherencia 0 or 1, claridad 1, mant 1.
+24. I1-3124: funcional 1, iec 2, coherencia 2, claridad 2, mant 2.
+
+Need maybe recalibrate functional for I1-8741: If we say functional 0 because timers reset, but no simulated. Maybe okay.
+
+Need ensure no fixed iec when null? For I1-4916 and I1-4945 iec_fijo=0 so copy exactly. For others with iec null, our values. For functional fixed: all pass all have fixed 3, I1-4916/4945 fixed 0, we copy. Others null. We assign.
+
+Need verify functional rule: "Si compila pero falla pasos: funcional 0,1 o 2 según la rúbrica". Our functional for step7-only is 1, for multiple fail 0. For I1-8741 no simulate: functional 0/1/2 reading. We assign 0. Good.
+
+Potential issue: Some fail only step7 but pass all nominal. Is functional=1 okay? Let's maybe more nuanced: If code passes 8 of 9 and only fails intermitent, functional could be 2 because "mayoría de los casos límite" and "fallas menores sin riesgo." But failing intermitent not minor. We'll keep 1. Justification lines can mention "secuencia normal funciona, pero falla intermitente/deshabilitado" to support 1.
+
+Need maybe for step7-only with marginal blink off one scan, 1. Good.
+
+Let's write justifications:
+
+Need one line for `just_func_iec`: if functional_fijo and iec_fijo both fixed, may be "". But many have funcional_fijo=3 but iec_fijo null, so need one line covering iec maybe. For fixed both? I1-4916/4945 both fixed; just_func_iec can be "". For I1-2135, functional fixed 3, iec null; just_func_iec should be about iec (or both? "Válido: usa TON y TIME estándar, declaraciones conformes."). The instruction: `"just_func_iec": "una línea, o \"\" si las dos estaban fijadas"` So if both fixed, empty. If one fixed and one not, we still include one line for the scored one? It says "una línea, o "" si las dos estaban fijadas". For pass all funcional fixed=3, iec null: need one line for iec. We won't mention funcional maybe. But okay.
+
+Need be concise.
+
+Let's craft per object just lines.
+
+1. I1-2135:
+- just_func_iec: "Bloques TON estándar bien instanciados; tipos TIME y declaraciones correctos." (iec=3)
+- just_coherencia: "Máquina de estados clara sin contradicciones; temporizadores y parpadeo se reinician." (2)
+- just_claridad: "Nombres descriptivos y comentarios breves; estructura por ramas habilitado/deshabilitado." (2)
+- just_mantenibilidad: "Tiempos directos en el código, sin constantes declaradas; cambios localizados." (2)
+
+2. I1-7364:
+- funcional 0, iec 2
+- just_func_iec: "Compila y declara TON correctamente, pero la lógica del timer/parpadeo no cumple la secuencia." (but line can mention funcional? Wait just_func_iec should justify iec maybe not funcional because funcional not fixed but need maybe why funcional? Actually the user asked "just_func_iec" combined: could include both funcional and iec if not fixed? The format says "una línea, o "" si las dos estaban fijadas." I think it's for functional and/or iec scores. We can include both if needed. For cases with functional not fixed and iec not fixed, one line should justify both. E.g., "Funcional nulo: falla caso nominal y deshabilitado; IEC compila sin cambios con declaraciones correctas." 
+Need follow: "just_func_iec": a line. Let's use one concise sentence covering what was assigned. 
+For all fixed cases, only IEC. For no compile fixed both, empty.
+
+So:
+2. just_func_iec: "Falla pasos nominales y de deshabilitado; IEC compila con TON estándar y tipos correctos." (0,2)
+- just_coherencia: "Timer sin reset correcto entre fases y parpadeo al ritmo de scan; lógica incoherente." 
+- just_claridad: "Comentarios y nombres aceptables, aunque la organización no separa estados con claridad." (1)
+- just_mantenibilidad: "Tiempos fijos en cada estado sin parametrizar; modificar exige tocar lógica." (1)
+
+3. I1-5111:
+- funcional 1, iec 2
+- just_func_iec: "Secuencia nominal funciona pero falla el intervalo de intermitente; IEC compila con TON/TP."
+- coherencia: "El temporizador de intermitente con TP y bandera no produce apagado de 1s; lógica redundante." 
+- claridad: "Nombres y comentarios claros, aunque el parpadeo es difícil de seguir." 
+- mant: "Tiempos fijos pero agrupados en fases; cambio de tiempos localizado."
+
+4. I1-7969:
+- funcional 0, iec 2
+- just_func_iec: "Usa TP como si fuera nivel, por lo que las fases no temporizan; IEC compila con TP estándar."
+- coherencia: "Transiciones se disparan al inicio del pulso, no al terminar, rompiendo la secuencia." 
+- claridad: "Estructura por estados y comentarios básicos; nombres descriptivos." 
+- mant: "Tiempos fijos, sin constantes ni separación de pulsos; modificación riesgosa."
+
+5. I1-5434:
+- funcional 3 fixed, iec 3
+- just_func_iec: "IEC idiomático: R_TRIG, TON y tipos TIME bien instanciados." (fixed funcional)
+- coherencia: "Máquina de estados con flanco de habilitación, resets explícitos y salidas cubiertas." (3)
+- claridad: "Nombres claros y comentarios por estado; se entiende de un vistazo." (2)
+- mant: "Tiempos literales en CASE; lógica centralizada pero no parametrizada." (2)
+
+6. I1-7084:
+- just_func_iec: "IEC idiomático: R_TRIG y TON con TIME; declaraciones correctas."
+- coherencia: "Separación de temporización, transición y salidas; reinicio por flanco correcto." (2)
+- claridad: "Comentarios útiles y nombres descriptivos, aunque falta separador visual." (2)
+- mant: "Tiempos concentrados en CASE pero como literales, no constantes externas." (2)
+
+7. I1-2168:
+- iec 2
+- just_func_iec: "IEC correcto con TON; aunque simples, temporizadores y tipos estándar."
+- coherencia: "Sin contradicciones y transiciones completas; variables de estado sin inicialización explícita." (2)
+- claridad: "Nombres descriptivos y comentarios breves; flujo principal claro." (2)
+- mant: "Ciclo con un solo temporizador reutilizado; tiempos en literales localizados." (2)
+
+8. I1-3359:
+- iec 2
+- just_func_iec: "Uso estándar de TON y TIME; compila sin cambios."
+- coherencia: "Cadena de dos TON para intermitente y transiciones coherentes; sin estados muertos." (2)
+- claridad: "Comentarios breves y nombres adecuados; estructura por bloques lógicos." (2)
+- mant: "Tiempos escritos en CASE; lógica de parpadeo acoplada a estados." (2)
+
+9. I1-8741:
+- funcional 0, iec 1
+- just_func_iec: "Interfaz no conforme (VAR en lugar de VAR_INPUT/OUTPUT); el reinicio de timers cada scan impediría temporizar." (maybe too much)
+- coherencia: "La inicialización incondicional de TON cada ciclo rompe la acumulación de tiempo." 
+- claridad: "Comentarios de entrada/salida pero secciones de declaración incorrectas." 
+- mant: "Sin parametrización; mezcla reinicios y lógica, difícil de ajustar."
+
+Need maybe functional 0 not 2. Is justification okay.
+
+10. I1-4990:
+- funcional 1, iec 2
+- just_func_iec: "Nominal funciona; intermitente falla; IEC compila con TON/TP estándar."
+- coherencia: "Bandera de parpadeo se re-evalúa con Q activa, alternando de forma no controlada." 
+- claridad: "Comentarios y secciones claros; nombres descriptivos."
+- mant: "Tiempos fijos en fases; parpadeo acoplado a bandera interna."
+
+11. I1-8830:
+- iec 3
+- just_func_iec: "IEC idiomático: TON separados, TIME y bloques estándar bien instanciados."
+- coherencia: "Resets completos al deshabilitar, ELSE para estado inválido y parpadeo consistente." 3
+- claridad: "Muy ordenado con separadores y comentarios que explican cada fase." 3
+- mant: "Tiempos literales aunque localizados; agregar constantes facilitaría cambios." 2
+
+12. I1-7322:
+- iec 3
+- just_func_iec: "TON estándar bien instanciados; TIME correctos; compila sin cambios."
+- coherencia: "Temporizadores de fase reiniciados al deshabilitar; transiciones completas y seguras." 3
+- claridad: "Excelente orden visual y comentarios por fase." 3
+- mant: "Diseño claro, pero tiempos fijos sin constantes declaradas." 2
+
+13. I1-3250:
+- iec 2
+- just_func_iec: "Uso estándar de TON y expresiones booleanas; compila sin cambios."
+- coherencia: "Temporizadores encadenados y salidas condicionadas; sin contradicciones." 2
+- claridad: "Nombres claros; comentarios breves; lógica compacta." 2
+- mant: "Tiempos duros en cada llamada; sin parámetros centralizados." 2? maybe 1? We'll set 1? I earlier set 2. Let's final set 1? Hmm. The code has timers as variables and uses T#20S etc directly; not parameterized. It may be 1. But it is clean. I'll keep 2.
+Actually for maintenance, no constants and times in multiple lines, but modifications localized. 2.
+
+14. I1-3464:
+- iec 3
+- just_func_iec: "R_TRIG y TON idiomáticos; tipos TIME correctos."
+- coherencia: "Reseteos por flanco y por fin de fase; variables auxiliares coherentes." 2
+- claridad: "Nombres claros y comentarios por sección; lógica leíble." 2
+- mant: "Tiempos asignados en CASE; no parametrizado pero localizado." 2
+
+15. I1-8420:
+- funcional 0, iec 2
+- just_func_iec: "Falla secuencia nominal por no resetear timer entre fases; IEC compila con TON estándar."
+- coherencia: "Timer reutilizado sin reset al cambiar de estado, por lo que las transiciones se encadenan mal." 
+- claridad: "Estructura de estados presente, pero comentarios no reflejan la falta de reset." 
+- mant: "Tiempos fijos y dependencia de un solo timer; frágil para modificar."
+
+16. I1-5295:
+- funcional 0, iec 2
+- just_func_iec: "Comportamiento nominal malo por TP como nivel; IEC compila con TP estándar."
+- coherencia: "Transición al inicio del pulso, no al expirar, por lo que la máquina no temporiza." 
+- claridad: "Nombres y comentarios claros por estado."
+- mant: "Tiempos fijos y sin constantes; cambios implican tocar cada estado."
+
+17. I1-8541:
+- iec 2
+- just_func_iec: "Compila con TON y TIME estándar; declaraciones correctas."
+- coherencia: "Máquina clásica de tres estados; parpadeo y reinicio coherentes." 2
+- claridad: "Comentarios breves y nombres descriptivos." 2
+- mant: "Tiempos fijos en literales; un solo temporizador reutilizado." 2
+
+18. I1-4916:
+- fixed both -> just_func_iec ""
+- coherencia: "La lógica es legible pero el reset de timer al iniciar cada scan impediría temporizar." 1
+- claridad: "Nombres y comentarios correctos, pero sintaxis de declaración inválida." 2
+- mant: "Tiempos literales y sin parámetros; estructura simple." 1
+
+19. I1-5056:
+- funcional 1, iec 2
+- just_func_iec: "Secuencia normal correcta, pero intermitente no alterna; IEC compila con TON."
+- coherencia: "Falta rearrancar tIntermitente al expirar; Q queda activo y amarillo fijo." 
+- claridad: "Comentarios por estado y nombres claros." 
+- mant: "Tiempos fijos; modificación de fases localizada."
+
+20. I1-1955:
+- funcional 0, iec 2
+- just_func_iec: "Falla fases por usar TP como nivel; IEC compila con TP estándar."
+- coherencia: "Transición inmediata con Q del TP; no temporiza duración de fase." 
+- claridad: "Comentarios por estado y nombres adecuados." 
+- mant: "Tiempos literales sin centralizar; repetitivo."
+
+21. I1-8761:
+- funcional 0, iec 2
+- just_func_iec: "Falla nominal y deshabilitado; IEC compila con TON y TIME."
+- coherencia: "Sin reset correcto entre fases y parpadeo por contador a ritmo de scan; incoherente." 
+- claridad: "Comentarios presentes, pero la lógica del parpadeo confunde." 
+- mant: "Declara variables de tiempo, pero su uso no parametriza limpiamente." 2? Maybe 1. In final we set 2.
+
+22. I1-4511:
+- iec 3
+- just_func_iec: "TON estándar bien organizados y TIME correctos; POU conforme."
+- coherencia: "Estado intermitente explícito, resets de entrada/salida e invalid state." 3
+- claridad: "Separadores visuales y comentarios muy claros." 3
+- mant: "Tiempos fijos dentro de cada fase; no hay constantes declaradas." 2
+
+23. I1-4945:
+- fixed both -> ""
+- coherencia: "Falta inicializar estado y el parpadeo no alterna; variables con efecto indefinido." 0/1. I'll choose 1? Wait if no compile, but code reading. The line "variables con efecto indefinido" fits 0. Hmm.
+Rubric coherencia 0: "condiciones contradictorias, variables sin inicializar con efecto, o estados muertos que impiden operar." Here `estado` uninitialized with effect, disabled parpadeo doesn't work. So coherencia=0 maybe. I'll set coherencia=0. Justification: "Estado sin inicialización y parpadeo sin alternancia; variables clave sin comportamiento definido." 
+- claridad: "Sintaxis de declaración inválida; comentarios y nombres básicos." 1
+- mant: "Tiempos duros y sin parametrizar; difícil de modificar." 1
+
+24. I1-3124:
+- funcional 1, iec 2
+- just_func_iec: "Secuencia nominal correcta; falla intervalo apagado del intermitente; IEC compila con TON/TP."
+- coherencia: "Detección de flanco y resets correctos, pero TP re-disparado deja apagado solo un scan." 2
+- claridad: "Comentarios y nombres claros; secciones ordenadas." 2
+- mant: "Tiempos fijos, pero lógica bien localizada." 2
+
+Need maybe change I1-4945 coherencia to 0. In final.
+
+Let's review step7-only functional=1 just line maybe.
+
+Need maybe set `iec` for I1-7364 to 1 because uses // and not standard? Hmm.
+
+Let's consider the rubric "Cumplimiento IEC cuando compila: 1 si usa extensiones fuera del estándar; 2 si declaraciones y tipos son correctos; 3 si además es idiomático." For I1-7364 uses `//` comment which is extension outside IEC? If we decide that, iec 1. But the code also uses END_IF missing? It compiles. The `timer(PT := T#4S);` with default IN? In ST, assigning only PT is legal if named arguments? Yes. It compiles. Declarations correct. Even with //, it's an extension but minor. The rubric says 1 if uses extensiones. Should we penalize? But many responses use `//`, including no compile. For correctness, perhaps 1 for //. Yet for codes that use `//` and have other issues, 1. For pass all they use standard comments so no issue. Let's identify which compile codes use `//`:
+- I1-7364 uses `//`
+- I1-8741 uses `//`
+- I1-8420 uses `//`
+- I1-8761 uses `//`
+- I1-4916, I1-4945 no compile fixed.
+Maybe I1-5056? It uses `(* *)` no //.
+I1-1955 uses `(* *)`.
+Thus if strict, I1-7364, I1-8741, I1-8420, I1-8761 would have iec=1. We already have I1-8741 iec=1 due interface. I1-8420/8761/7364 could be iec=1. The problem says "conforme IEC 61131-3"; teacher might penalize //. But in CODESYS, // is accepted and may be part of IEC 61131-3 3rd? Let's check: IEC 61131-3:2003? Actually comments in ST can be `(* *)`; there is no `//` standard until maybe 3rd edition? IEC 61131-3:2013 didn't add // in ST? Some PLCs support // but not standard. So yes // extension. Should we set iec=1 for those? The rubric says: "1: compila solo tras correcciones menores, o usa extensiones fuera del estándar." That matches exactly. Since they compile in CODESYS but use // extension. So for those, iec=1. That would lower some. Let's update:
+- I1-7364: iec 1 (uses //)
+- I1-8741: iec 1
+- I1-8420: iec 1? It uses //, but declarations correct. We can set iec=1. 
+- I1-8761: iec=1.
+- I1-4916/4945 fixed 0.
+For other compile codes use standard comments. I1-5295 etc use `(* *)`. Good.
+
+What about I1-1955 uses `(* *)` but comments? yes.
+
+Let's set iec=1 for //. But I1-8420/8761 maybe also declarations fine but extension. Does that conflict with "compila sin cambios; declaraciones y tipos correctos" iec=2? The rubric says 1 if uses extensiones. So yes, if // is extension, 1. We'll apply.
+
+Need update just_func_iec for those to mention comment extension? Maybe:
+I1-7364: "No cumple funcional; IEC compila pero usa comentarios // (extensión no estándar)." But the user may not care. Hmm.
+
+However, setting iec=1 for // may be too harsh if the course accepts CODESYS. But they explicitly say "conforme IEC 61131-3". I think penalizing is defensible. Need be consistent. For `I1-8741`, also wrong interface + //. okay iec=1.
+
+What about `I1-4916` and `I1-4945` fixed iec=0.
+
+Let's maybe not over penalize `//` because the prompt's `iec_fijo` null maybe expected from code that compila; previous automated scoring probably not use // as extension? But as evaluator, okay.
+
+Let's update final accordingly:
+- I1-7364 iec: 1 (not 2)
+- I1-8420 iec: 1
+- I1-8761 iec: 1
+- I1-8741 iec: 1 (already)
+Maybe I1-5295 using `(* *)` so 2.
+
+But I1-4916 fixed iec 0.
+
+Need adjust just lines.
+
+Let's review if any pass all use //? I1-2135 etc no. Good.
+
+Now need maybe coherencia for I1-8741: we set 1. Good.
+
+Potential issue with I1-8741 functional: If code uses // extension and no interface, but logic maybe broken due top reset. Fine.
+
+Need maybe for I1-7364 functional maybe 0; IEC 1. Good.
+
+Let's refine final table with justifications.
+
+Let's decide final scores:
+
+1. I1-2135: funcional 3, iec 3, coherencia 2, claridad 2, mantenibilidad 2.
+2. I1-7364: funcional 0, iec 1, coherencia 1, claridad 1, mantenibilidad 1.
+3. I1-5111: funcional 1, iec 2, coherencia 1, claridad 2, mantenibilidad 2.
+4. I1-7969: funcional 0, iec 2, coherencia 1, claridad 2, mantenibilidad 1.
+5. I1-5434: funcional 3, iec 3, coherencia 3, claridad 2, mantenibilidad 2.
+6. I1-7084: funcional 3, iec 3, coherencia 2, claridad 2, mantenibilidad 2.
+7. I1-2168: funcional 3, iec 2, coherencia 2, claridad 2, mantenibilidad 2.
+8. I1-3359: funcional 3, iec 2, coherencia 2, claridad 2, mantenibilidad 2.
+9. I1-8741: funcional 0, iec 1, coherencia 1, claridad 1, mantenibilidad 1.
+10. I1-4990: funcional 1, iec 2, coherencia 1, claridad 2, mantenibilidad 2.
+11. I1-8830: funcional 3, iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+12. I1-7322: funcional 3, iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+13. I1-3250: funcional 3, iec 2, coherencia 2, claridad 2, mantenibilidad 2.
+14. I1-3464: funcional 3, iec 3, coherencia 2, claridad 2, mantenibilidad 2.
+15. I1-8420: funcional 0, iec 1, coherencia 1, claridad 1, mantenibilidad 1.
+16. I1-5295: funcional 0, iec 2, coherencia 1, claridad 2, mantenibilidad 1.
+17. I1-8541: funcional 3, iec 2, coherencia 2, claridad 2, mantenibilidad 2.
+18. I1-4916: funcional 0, iec 0, coherencia 1, claridad 2, mantenibilidad 1.
+19. I1-5056: funcional 1, iec 2, coherencia 1, claridad 2, mantenibilidad 2.
+20. I1-1955: funcional 0, iec 2, coherencia 1, claridad 2, mantenibilidad 1.
+21. I1-8761: funcional 0, iec 1, coherencia 1, claridad 2, mantenibilidad 1? Let's set mant 1 because no clean constants despite variable times. Actually declares `tiempoVerde : TIME := T#20S;` etc; that is parameterized somewhat. It uses them in timer PT, but not as constants and uses `contadorAmarilloIntermitente` etc. So mant 2 maybe. Let's keep mant 2? The rubric 2: "parámetros como variables o constantes declaradas; cambios localizados." It has variables for times (not constants) and time values declared once. So maintenance 2. Even though logic broken. I'd set mant 2.
+22. I1-4511: funcional 3, iec 3, coherencia 3, claridad 3, mantenibilidad 2.
+23. I1-4945: funcional 0, iec 0, coherencia 0, claridad 1, mantenibilidad 1.
+24. I1-3124: funcional 1, iec 2, coherencia 2, claridad 2, mantenibilidad 2.
+
+Need perhaps adjust I1-8541 mant to 2.
+
+Now write just lines.
+
+Let's craft proper JSON.
+
+Need ensure no markdown block. Just JSON list.
+
+Let's formulate each.
+
+Double-check object order matches.
+
+Let's write final with exact codes.
+
+Need maybe just_func_iec for I1-2135 etc. Ensure line not too long.
+
+Let's compose carefully.
+
+---
+
+Final JSON:
+
+[
+ {
+  "codigo": "I1-2135",
+  "funcional": 3,
+  "iec": 3,
+  "coherencia": 2,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "IEC idiomático: TON estándar bien instanciado y tipos TIME correctos.",
+  "just_coherencia": "Máquina de estados clara, con reinicio de temporizadores y parpadeo consistente.",
+  "just_claridad": "Nombres descriptivos y comentarios breves; estructura por ramas principales.",
+  "just_mantenibilidad": "Tiempos literales localizados, sin constantes declaradas."
+ },
+ {
+  "codigo": "I1-7364",
+  "funcional": 0,
+  "iec": 1,
+  "coherencia": 1,
+  "claridad": 1,
+  "mantenibilidad": 1,
+  "just_func_iec": "Falla caso nominal y deshabilitado; usa comentarios // y lógica de timer no conforme.",
+  "just_coherencia": "Timer sin reset correcto entre fases y parpadeo a ritmo de scan incoherente.",
+  "just_claridad": "Comentarios y nombres aceptables, pero la organización no ayuda a seguir los estados.",
+  "just_mantenibilidad": "Tiempos fijos en cada estado sin parametrizar; modificar exige tocar lógica."
+ },
+ {
+  "codigo": "I1-5111",
+  "funcional": 1,
+  "iec": 2,
+  "coherencia": 1,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "La secuencia nominal funciona pero falla el intermitente medido; compila con TON/TP estándar.",
+  "just_coherencia": "El generador de intermitente con TP deja apagado un intervalo incorrecto; lógica confusa.",
+  "just_claridad": "Nombres y comentarios claros, aunque el parpadeo es difícil de seguir.",
+  "just_mantenibilidad": "Tiempos fijos pero localizados en cada fase."
+ },
+ {
+  "codigo": "I1-7969",
+  "funcional": 0,
+  "iec": 2,
+  "coherencia": 1,
+  "claridad": 2,
+  "mantenibilidad": 1,
+  "just_func_iec": "Falla fases nominales por usar TP como nivel; compila con TP estándar.",
+  "just_coherencia": "Transiciones se disparan al inicio del pulso, no al expirar; secuencia rota.",
+  "just_claridad": "Estructura por estados y comentarios básicos; nombres descriptivos.",
+  "just_mantenibilidad": "Tiempos fijos sin constantes ni separación de lógica de temporización."
+ },
+ {
+  "codigo": "I1-5434",
+  "funcional": 3,
+  "iec": 3,
+  "coherencia": 3,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "IEC idiomático: R_TRIG, TON y TIME bien instanciados.",
+  "just_coherencia": "Máquina de estados con flanco de habilitación, resets explícitos y salidas cubiertas.",
+  "just_claridad": "Nombres claros y comentarios por estado; se entiende bien.",
+  "just_mantenibilidad": "Tiempos literales en CASE; sin constantes externas."
+ },
+ {
+  "codigo": "I1-7084",
+  "funcional": 3,
+  "iec": 3,
+  "coherencia": 2,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "IEC idiomático: R_TRIG y TON con TIME; declaraciones correctas.",
+  "just_coherencia": "Separación de temporización, transición y salidas; reinicio por flanco correcto.",
+  "just_claridad": "Comentarios útiles y nombres descriptivos, aunque sin separadores visuales fuertes.",
+  "just_mantenibilidad": "Tiempos concentrados en CASE pero como literales."
+ },
+ {
+  "codigo": "I1-2168",
+  "funcional": 3,
+  "iec": 2,
+  "coherencia": 2,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "IEC correcto con TON y TIME; compila sin cambios.",
+  "just_coherencia": "Sin contradicciones y transiciones completas; variables de estado sin inicialización explícita.",
+  "just_claridad": "Nombres descriptivos y comentarios breves; flujo principal claro.",
+  "just_mantenibilidad": "Un solo temporizador reutilizado; tiempos literales localizados."
+ },
+ {
+  "codigo": "I1-3359",
+  "funcional": 3,
+  "iec": 2,
+  "coherencia": 2,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "Uso estándar de TON y TIME; compila sin cambios.",
+  "just_coherencia": "Dos TON encadenados para parpadeo y transiciones coherentes; sin estados muertos.",
+  "just_claridad": "Comentarios breves y nombres adecuados; estructura lógica clara.",
+  "just_mantenibilidad": "Tiempos escritos en CASE; lógica de parpadeo acoplada a estados."
+ },
+ {
+  "codigo": "I1-8741",
+  "funcional": 0,
+  "iec": 1,
+  "coherencia": 1,
+  "claridad": 1,
+  "mantenibilidad": 1,
+  "just_func_iec": "Interfaz no conforme y reinicio de timers cada scan impediría temporizar; IEC solo compila en CODESYS.",
+  "just_coherencia": "La inicialización incondicional de TON cada ciclo rompe la acumulación de tiempo.",
+  "just_claridad": "Comentarios de entrada/salida, pero secciones VAR incorrectas para el POU pedido.",
+  "just_mantenibilidad": "Sin parametrización y con reinicios mezclados en la lógica."
+ },
+ {
+  "codigo": "I1-4990",
+  "funcional": 1,
+  "iec": 2,
+  "coherencia": 1,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "Nominal funciona pero falla intermitente medido; compila con TON/TP estándar.",
+  "just_coherencia": "Bandera de parpadeo se re-evalúa con Q activa, alternando de forma no controlada.",
+  "just_claridad": "Comentarios y secciones claros; nombres descriptivos.",
+  "just_mantenibilidad": "Tiempos fijos en fases; parpadeo acoplado a bandera interna."
+ },
+ {
+  "codigo": "I1-8830",
+  "funcional": 3,
+  "iec": 3,
+  "coherencia": 3,
+  "claridad": 3,
+  "mantenibilidad": 2,
+  "just_func_iec": "IEC idiomático: TON separados, TIME y bloques estándar bien instanciados.",
+  "just_coherencia": "Resets completos al deshabilitar, ELSE para estado inválido y parpadeo consistente.",
+  "just_claridad": "Muy ordenado, con separadores y comentarios que explican cada fase.",
+  "just_mantenibilidad": "Tiempos literales aunque localizados; mejoraría con constantes declaradas."
+ },
+ {
+  "codigo": "I1-7322",
+  "funcional": 3,
+  "iec": 3,
+  "coherencia": 3,
+  "claridad": 3,
+  "mantenibilidad": 2,
+  "just_func_iec": "TON estándar bien instanciados, TIME correctos y compila sin cambios.",
+  "just_coherencia": "Temporizadores de fase reiniciados al deshabilitar; transiciones completas y seguras.",
+  "just_claridad": "Excelente orden visual y comentarios por fase.",
+  "just_mantenibilidad": "Diseño claro, pero tiempos fijos sin constantes declaradas."
+ },
+ {
+  "codigo": "I1-3250",
+  "funcional": 3,
+  "iec": 2,
+  "coherencia": 2,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "Uso estándar de TON y expresiones booleanas; compila sin cambios.",
+  "just_coherencia": "Temporizadores encadenados y salidas condicionadas; sin contradicciones.",
+  "just_claridad": "Nombres claros y comentarios breves; lógica compacta.",
+  "just_mantenibilidad": "Tiempos duros en cada llamada; lógica localizada pero no parametrizada."
+ },
+ {
+  "codigo": "I1-3464",
+  "funcional": 3,
+  "iec": 3,
+  "coherencia": 2,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "R_TRIG y TON idiomáticos; tipos TIME correctos.",
+  "just_coherencia": "Reseteos por flanco y por fin de fase; variables auxiliares coherentes.",
+  "just_claridad": "Nombres claros y comentarios por sección; lógica leíble.",
+  "just_mantenibilidad": "Tiempos asignados en CASE; no parametrizado pero localizado."
+ },
+ {
+  "codigo": "I1-8420",
+  "funcional": 0,
+  "iec": 1,
+  "coherencia": 1,
+  "claridad": 1,
+  "mantenibilidad": 1,
+  "just_func_iec": "Falla secuencia nominal por no resetear timer entre fases; IEC compila con extensiones de comentario //.",
+  "just_coherencia": "Timer reutilizado sin reset al cambiar de estado, encadenando mal las transiciones.",
+  "just_claridad": "Estructura de estados presente, pero comentarios no reflejan la falta de reset.",
+  "just_mantenibilidad": "Tiempos fijos y dependencia de un solo timer; frágil para modificar."
+ },
+ {
+  "codigo": "I1-5295",
+  "funcional": 0,
+  "iec": 2,
+  "coherencia": 1,
+  "claridad": 2,
+  "mantenibilidad": 1,
+  "just_func_iec": "Falla comportamiento nominal por usar TP como nivel; compila con TP estándar.",
+  "just_coherencia": "Transición al inicio del pulso, no al expirar; la máquina no temporiza.",
+  "just_claridad": "Nombres y comentarios claros por estado.",
+  "just_mantenibilidad": "Tiempos fijos y sin constantes; cambios implican tocar cada estado."
+ },
+ {
+  "codigo": "I1-8541",
+  "funcional": 3,
+  "iec": 2,
+  "coherencia": 2,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "Compila con TON y TIME estándar; declaraciones correctas.",
+  "just_coherencia": "Máquina clásica de tres estados; parpadeo y reinicio coherentes.",
+  "just_claridad": "Comentarios breves y nombres descriptivos.",
+  "just_mantenibilidad": "Tiempos fijos en literales; un solo temporizador reutilizado."
+ },
+ {
+  "codigo": "I1-4916",
+  "funcional": 0,
+  "iec": 0,
+  "coherencia": 1,
+  "claridad": 2,
+  "mantenibilidad": 1,
+  "just_func_iec": "",
+  "just_coherencia": "La lógica es legible, pero el timer se reinicia al iniciar cada scan; no temporizaría.",
+  "just_claridad": "Nombres y comentarios correctos, aunque la sintaxis de declaración es inválida.",
+  "just_mantenibilidad": "Tiempos literales y sin parámetros; estructura simple."
+ },
+ {
+  "codigo": "I1-5056",
+  "funcional": 1,
+  "iec": 2,
+  "coherencia": 1,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "Secuencia normal correcta pero intermitente no alterna; IEC compila con TON.",
+  "just_coherencia": "Falta rearrancar tIntermitente al expirar; Q queda activo y amarillo fijo.",
+  "just_claridad": "Comentarios por estado y nombres claros.",
+  "just_mantenibilidad": "Tiempos fijos; modificación de fases localizada."
+ },
+ {
+  "codigo": "I1-1955",
+  "funcional": 0,
+  "iec": 2,
+  "coherencia": 1,
+  "claridad": 2,
+  "mantenibilidad": 1,
+  "just_func_iec": "Falla fases nominales por usar TP como nivel; compila con TP estándar.",
+  "just_coherencia": "Transición inmediata con Q del TP; no temporiza duración de fase.",
+  "just_claridad": "Comentarios por estado y nombres adecuados.",
+  "just_mantenibilidad": "Tiempos literales sin centralizar; lógica repetitiva."
+ },
+ {
+  "codigo": "I1-8761",
+  "funcional": 0,
+  "iec": 1,
+  "coherencia": 1,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "Falla nominal y deshabilitado; IEC compila pero usa comentarios // y temporización incorrecta.",
+  "just_coherencia": "Sin reset correcto entre fases y parpadeo por contador a ritmo de scan; incoherente.",
+  "just_claridad": "Comentarios presentes; los tiempos declarados ayudan a leer.",
+  "just_mantenibilidad": "Define variables de tiempo, pero la lógica no está bien parametrizada."
+ },
+ {
+  "codigo": "I1-4511",
+  "funcional": 3,
+  "iec": 3,
+  "coherencia": 3,
+  "claridad": 3,
+  "mantenibilidad": 2,
+  "just_func_iec": "TON estándar bien organizados y TIME correctos; POU conforme.",
+  "just_coherencia": "Estado intermitente explícito, resets de entrada/salida y manejo de estado inválido.",
+  "just_claridad": "Separadores visuales y comentarios muy claros.",
+  "just_mantenibilidad": "Tiempos fijos dentro de cada fase; no hay constantes declaradas."
+ },
+ {
+  "codigo": "I1-4945",
+  "funcional": 0,
+  "iec": 0,
+  "coherencia": 0,
+  "claridad": 1,
+  "mantenibilidad": 1,
+  "just_func_iec": "",
+  "just_coherencia": "Estado sin inicialización y parpadeo sin alternancia; variables clave sin comportamiento definido.",
+  "just_claridad": "Sintaxis de declaración inválida; comentarios y nombres básicos.",
+  "just_mantenibilidad": "Tiempos duros y sin parametrizar; difícil de modificar."
+ },
+ {
+  "codigo": "I1-3124",
+  "funcional": 1,
+  "iec": 2,
+  "coherencia": 2,
+  "claridad": 2,
+  "mantenibilidad": 2,
+  "just_func_iec": "Secuencia nominal correcta; falla intervalo apagado del intermitente; compila con TON/TP.",
+  "just_coherencia": "Detección de flanco y resets correctos, pero TP re-disparado deja apagado solo un scan.",
+  "just_claridad": "Comentarios y nombres claros; secciones ordenadas.",
+  "just_mantenibilidad": "Tiempos fijos, pero lógica bien localizada."
+ }
+]
+
+Need verify if `just_func_iec` for I1-8741 says "Interfaz no conforme y reinicio..." but functional is 0 and iec 1; okay.
+
+Potential issue: I1-8741 "IEC solo compila en CODESYS" but it uses // and wrong interface; okay.
+
+Need ensure JSON valid: no unescaped quotes? The strings have `//` okay. Some have accents. Fine.
+
+Need ensure there is no newline inside strings? We use one-line strings. Some contain `;` etc. Fine.
+
+Need maybe add quotes around all keys and values.
+
+Let's verify 24 objects? Count:
+1 I1-2135
+2 I1-7364
+3 I1-5111
+4 I1-7969
+5 I1-5434
+6 I1-7084
+7 I1-2168
+8 I1-3359
+9 I1-8741
+10 I1-4990
+11 I1-8830
+12 I1-7322
+13 I1-3250
+14 I1-3464
+15 I1-8420
+16 I1-5295
+17 I1-8541
+18 I1-4916
+19 I1-5056
+20 I1-1955
+21 I1-8761
+22 I1-4511
+23 I1-4945
+24 I1-3124
+
+Good.
+
+Double-check fixed values:
+- I1-2135 funcional_fijo 3 -> we set 3.
+- I1-5434 3 -> set 3.
+- I1-7084 3.
+- I1-2168 3.
+- I1-3359 3.
+- I1-8830 3.
+- I1-7322 3.
+- I1-3250 3.
+- I1-3464 3.
+- I1-8541 3.
+- I1-4511 3.
+- I1-4916 fixed 0/0 set.
+- I1-4945 fixed 0/0 set.
+Good.
+
+For funcional null where fail step7 only we set 1; where fail 6+ set 0. I1-8741 no simulate set 0; okay.
+
+Need maybe question: "Si compila pero falla pasos: funcional 0,1,2 según rúbrica, usando qué pasos fallan. ... cuando funcional no estaba fijado, que esté entre 0 y 2" satisfied.
+
+Need maybe for `iec_fijo` null and compiles: values 1-3; all set 1/2/3.
+
+Potential issue: `I1-7364` iec=1 because uses // but we didn't mention unless just. Could be okay.
+
+Potential issue: `just_func_iec` for `I1-7364` includes "usa comentarios // y lógica de timer no conforme" maybe "IEC compila con extensión //". Fine.
+
+Let's maybe refine some justifications if they include both functional and iec but may exceed line. It's okay.
+
+Need ensure no initial text before JSON, no markdown. The final answer should be exactly the list.
+
+Let's produce final.

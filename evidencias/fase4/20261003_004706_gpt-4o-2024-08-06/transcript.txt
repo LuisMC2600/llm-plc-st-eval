@@ -1,0 +1,227 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20261003004706
+Nombre de usuario: DESKTOP-2K8TKD6\LUIS C
+Usuario RunAs: DESKTOP-2K8TKD6\LUIS C
+Nombre de la configuración: 
+Máquina: DESKTOP-2K8TKD6 (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\herramientas\ejecutar_con_evidencia.ps1 -Modelo gpt-4o-2024-08-06 -Confirmar
+Id. de proceso: 37136
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+===== 1. Integridad del banco frente al piloto =====
+
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_004706_gpt-4o-2024-08-06\20261003_004706_01_integridad_hashes.png  (1920x1080)  sha256=d913549d0a4d35e5
+
+===== 2. Configuracion del lote =====
+
+
+===== 3. Dry-run =====
+[dry-run] gpt-4o-2024-08-06 | C8 | few_shot | ejec 3
+
+Resumen: 0 ya existÝan, 180 pendientes.
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_004706_gpt-4o-2024-08-06\20261003_004707_02_dryrun.png  (1920x1080)  sha256=c9789bebb8697c15
+
+===== 4. Ejecucion (llamadas reales) =====
+[ok] gpt-4o-2024-08-06 | B1 | zero_shot | ejec 1 (4.1s)
+[ok] gpt-4o-2024-08-06 | B1 | zero_shot | ejec 2 (2.51s)
+[ok] gpt-4o-2024-08-06 | B1 | zero_shot | ejec 3 (4.36s)
+[ok] gpt-4o-2024-08-06 | B1 | few_shot | ejec 1 (1.67s)
+[ok] gpt-4o-2024-08-06 | B1 | few_shot | ejec 2 (1.43s)
+[ok] gpt-4o-2024-08-06 | B1 | few_shot | ejec 3 (1.22s)
+[ok] gpt-4o-2024-08-06 | B2 | zero_shot | ejec 1 (1.83s)
+[ok] gpt-4o-2024-08-06 | B2 | zero_shot | ejec 2 (2.08s)
+[ok] gpt-4o-2024-08-06 | B2 | zero_shot | ejec 3 (2.24s)
+[ok] gpt-4o-2024-08-06 | B2 | few_shot | ejec 1 (1.31s)
+[ok] gpt-4o-2024-08-06 | B2 | few_shot | ejec 2 (1.03s)
+[ok] gpt-4o-2024-08-06 | B2 | few_shot | ejec 3 (1.74s)
+[ok] gpt-4o-2024-08-06 | B3 | zero_shot | ejec 1 (2.57s)
+[ok] gpt-4o-2024-08-06 | B3 | zero_shot | ejec 2 (3.37s)
+[ok] gpt-4o-2024-08-06 | B3 | zero_shot | ejec 3 (2.8s)
+[ok] gpt-4o-2024-08-06 | B3 | few_shot | ejec 1 (1.84s)
+[ok] gpt-4o-2024-08-06 | B3 | few_shot | ejec 2 (1.83s)
+[ok] gpt-4o-2024-08-06 | B3 | few_shot | ejec 3 (1.67s)
+[ok] gpt-4o-2024-08-06 | B4 | zero_shot | ejec 1 (2.68s)
+[ok] gpt-4o-2024-08-06 | B4 | zero_shot | ejec 2 (3.34s)
+[ok] gpt-4o-2024-08-06 | B4 | zero_shot | ejec 3 (2.56s)
+[ok] gpt-4o-2024-08-06 | B4 | few_shot | ejec 1 (1.61s)
+[ok] gpt-4o-2024-08-06 | B4 | few_shot | ejec 2 (1.53s)
+[ok] gpt-4o-2024-08-06 | B4 | few_shot | ejec 3 (1.54s)
+[ok] gpt-4o-2024-08-06 | B5 | zero_shot | ejec 1 (2.21s)
+[ok] gpt-4o-2024-08-06 | B5 | zero_shot | ejec 2 (1.57s)
+[ok] gpt-4o-2024-08-06 | B5 | zero_shot | ejec 3 (2.14s)
+[ok] gpt-4o-2024-08-06 | B5 | few_shot | ejec 1 (1.3s)
+[ok] gpt-4o-2024-08-06 | B5 | few_shot | ejec 2 (1.04s)
+[ok] gpt-4o-2024-08-06 | B5 | few_shot | ejec 3 (0.97s)
+[ok] gpt-4o-2024-08-06 | B6 | zero_shot | ejec 1 (2.6s)
+[ok] gpt-4o-2024-08-06 | B6 | zero_shot | ejec 2 (1.92s)
+[ok] gpt-4o-2024-08-06 | B6 | zero_shot | ejec 3 (2.62s)
+[ok] gpt-4o-2024-08-06 | B6 | few_shot | ejec 1 (1.66s)
+[ok] gpt-4o-2024-08-06 | B6 | few_shot | ejec 2 (1.61s)
+[ok] gpt-4o-2024-08-06 | B6 | few_shot | ejec 3 (1.47s)
+[ok] gpt-4o-2024-08-06 | B7 | zero_shot | ejec 1 (1.92s)
+[ok] gpt-4o-2024-08-06 | B7 | zero_shot | ejec 2 (1.85s)
+[ok] gpt-4o-2024-08-06 | B7 | zero_shot | ejec 3 (1.9s)
+[ok] gpt-4o-2024-08-06 | B7 | few_shot | ejec 1 (1.16s)
+[ok] gpt-4o-2024-08-06 | B7 | few_shot | ejec 2 (1.13s)
+[ok] gpt-4o-2024-08-06 | B7 | few_shot | ejec 3 (1.11s)
+[ok] gpt-4o-2024-08-06 | B8 | zero_shot | ejec 1 (2.21s)
+[ok] gpt-4o-2024-08-06 | B8 | zero_shot | ejec 2 (2.51s)
+[ok] gpt-4o-2024-08-06 | B8 | zero_shot | ejec 3 (2.46s)
+[ok] gpt-4o-2024-08-06 | B8 | few_shot | ejec 1 (1.85s)
+[ok] gpt-4o-2024-08-06 | B8 | few_shot | ejec 2 (1.55s)
+[ok] gpt-4o-2024-08-06 | B8 | few_shot | ejec 3 (1.34s)
+[ok] gpt-4o-2024-08-06 | I1 | zero_shot | ejec 1 (3.25s)
+[ok] gpt-4o-2024-08-06 | I1 | zero_shot | ejec 2 (2.83s)
+[ok] gpt-4o-2024-08-06 | I1 | zero_shot | ejec 3 (3.27s)
+[ok] gpt-4o-2024-08-06 | I1 | few_shot | ejec 1 (2.51s)
+[ok] gpt-4o-2024-08-06 | I1 | few_shot | ejec 2 (2.33s)
+[ok] gpt-4o-2024-08-06 | I1 | few_shot | ejec 3 (2.4s)
+[ok] gpt-4o-2024-08-06 | I2 | zero_shot | ejec 1 (2.89s)
+[ok] gpt-4o-2024-08-06 | I2 | zero_shot | ejec 2 (3.81s)
+[ok] gpt-4o-2024-08-06 | I2 | zero_shot | ejec 3 (3.15s)
+[ok] gpt-4o-2024-08-06 | I2 | few_shot | ejec 1 (2.64s)
+[ok] gpt-4o-2024-08-06 | I2 | few_shot | ejec 2 (2.55s)
+[ok] gpt-4o-2024-08-06 | I2 | few_shot | ejec 3 (2.44s)
+[ok] gpt-4o-2024-08-06 | I3 | zero_shot | ejec 1 (3.3s)
+[ok] gpt-4o-2024-08-06 | I3 | zero_shot | ejec 2 (3.49s)
+[ok] gpt-4o-2024-08-06 | I3 | zero_shot | ejec 3 (2.95s)
+[ok] gpt-4o-2024-08-06 | I3 | few_shot | ejec 1 (2.52s)
+[ok] gpt-4o-2024-08-06 | I3 | few_shot | ejec 2 (2.26s)
+[ok] gpt-4o-2024-08-06 | I3 | few_shot | ejec 3 (2.93s)
+[ok] gpt-4o-2024-08-06 | I4 | zero_shot | ejec 1 (5.28s)
+[ok] gpt-4o-2024-08-06 | I4 | zero_shot | ejec 2 (3.29s)
+[ok] gpt-4o-2024-08-06 | I4 | zero_shot | ejec 3 (2.78s)
+[ok] gpt-4o-2024-08-06 | I4 | few_shot | ejec 1 (2.83s)
+[ok] gpt-4o-2024-08-06 | I4 | few_shot | ejec 2 (3.32s)
+[ok] gpt-4o-2024-08-06 | I4 | few_shot | ejec 3 (3.03s)
+[ok] gpt-4o-2024-08-06 | I5 | zero_shot | ejec 1 (4.55s)
+[ok] gpt-4o-2024-08-06 | I5 | zero_shot | ejec 2 (3.84s)
+[ok] gpt-4o-2024-08-06 | I5 | zero_shot | ejec 3 (3.49s)
+[ok] gpt-4o-2024-08-06 | I5 | few_shot | ejec 1 (2.03s)
+[ok] gpt-4o-2024-08-06 | I5 | few_shot | ejec 2 (5.15s)
+[ok] gpt-4o-2024-08-06 | I5 | few_shot | ejec 3 (2.42s)
+[ok] gpt-4o-2024-08-06 | I6 | zero_shot | ejec 1 (2.81s)
+[ok] gpt-4o-2024-08-06 | I6 | zero_shot | ejec 2 (3.07s)
+[ok] gpt-4o-2024-08-06 | I6 | zero_shot | ejec 3 (2.47s)
+[ok] gpt-4o-2024-08-06 | I6 | few_shot | ejec 1 (2.16s)
+[ok] gpt-4o-2024-08-06 | I6 | few_shot | ejec 2 (1.89s)
+[ok] gpt-4o-2024-08-06 | I6 | few_shot | ejec 3 (2.1s)
+[ok] gpt-4o-2024-08-06 | I7 | zero_shot | ejec 1 (3.46s)
+[ok] gpt-4o-2024-08-06 | I7 | zero_shot | ejec 2 (3.69s)
+[ok] gpt-4o-2024-08-06 | I7 | zero_shot | ejec 3 (3.12s)
+[ok] gpt-4o-2024-08-06 | I7 | few_shot | ejec 1 (2.16s)
+[ok] gpt-4o-2024-08-06 | I7 | few_shot | ejec 2 (2.43s)
+[ok] gpt-4o-2024-08-06 | I7 | few_shot | ejec 3 (2.86s)
+[ok] gpt-4o-2024-08-06 | I8 | zero_shot | ejec 1 (4.18s)
+[ok] gpt-4o-2024-08-06 | I8 | zero_shot | ejec 2 (3.65s)
+[ok] gpt-4o-2024-08-06 | I8 | zero_shot | ejec 3 (3.92s)
+[ok] gpt-4o-2024-08-06 | I8 | few_shot | ejec 1 (3.39s)
+[ok] gpt-4o-2024-08-06 | I8 | few_shot | ejec 2 (2.84s)
+[ok] gpt-4o-2024-08-06 | I8 | few_shot | ejec 3 (3.05s)
+[ok] gpt-4o-2024-08-06 | A1 | zero_shot | ejec 1 (3.63s)
+[ok] gpt-4o-2024-08-06 | A1 | zero_shot | ejec 2 (3.57s)
+[ok] gpt-4o-2024-08-06 | A1 | zero_shot | ejec 3 (3.61s)
+[ok] gpt-4o-2024-08-06 | A1 | few_shot | ejec 1 (2.67s)
+[ok] gpt-4o-2024-08-06 | A1 | few_shot | ejec 2 (2.2s)
+[ok] gpt-4o-2024-08-06 | A1 | few_shot | ejec 3 (2.65s)
+[ok] gpt-4o-2024-08-06 | A2 | zero_shot | ejec 1 (3.9s)
+[ok] gpt-4o-2024-08-06 | A2 | zero_shot | ejec 2 (4.09s)
+[ok] gpt-4o-2024-08-06 | A2 | zero_shot | ejec 3 (4.02s)
+[ok] gpt-4o-2024-08-06 | A2 | few_shot | ejec 1 (3.86s)
+[ok] gpt-4o-2024-08-06 | A2 | few_shot | ejec 2 (3.17s)
+[ok] gpt-4o-2024-08-06 | A2 | few_shot | ejec 3 (4.42s)
+[ok] gpt-4o-2024-08-06 | A3 | zero_shot | ejec 1 (3.47s)
+[ok] gpt-4o-2024-08-06 | A3 | zero_shot | ejec 2 (3.02s)
+[ok] gpt-4o-2024-08-06 | A3 | zero_shot | ejec 3 (3.28s)
+[ok] gpt-4o-2024-08-06 | A3 | few_shot | ejec 1 (3.18s)
+[ok] gpt-4o-2024-08-06 | A3 | few_shot | ejec 2 (3.32s)
+[ok] gpt-4o-2024-08-06 | A3 | few_shot | ejec 3 (3.21s)
+[ok] gpt-4o-2024-08-06 | A4 | zero_shot | ejec 1 (2.63s)
+[ok] gpt-4o-2024-08-06 | A4 | zero_shot | ejec 2 (3.09s)
+[ok] gpt-4o-2024-08-06 | A4 | zero_shot | ejec 3 (3.26s)
+[ok] gpt-4o-2024-08-06 | A4 | few_shot | ejec 1 (2.64s)
+[ok] gpt-4o-2024-08-06 | A4 | few_shot | ejec 2 (2.56s)
+[ok] gpt-4o-2024-08-06 | A4 | few_shot | ejec 3 (2.54s)
+[ok] gpt-4o-2024-08-06 | A5 | zero_shot | ejec 1 (3.52s)
+[ok] gpt-4o-2024-08-06 | A5 | zero_shot | ejec 2 (5.08s)
+[ok] gpt-4o-2024-08-06 | A5 | zero_shot | ejec 3 (3.38s)
+[ok] gpt-4o-2024-08-06 | A5 | few_shot | ejec 1 (2.61s)
+[ok] gpt-4o-2024-08-06 | A5 | few_shot | ejec 2 (2.52s)
+[ok] gpt-4o-2024-08-06 | A5 | few_shot | ejec 3 (2.44s)
+[ok] gpt-4o-2024-08-06 | A6 | zero_shot | ejec 1 (4.64s)
+[ok] gpt-4o-2024-08-06 | A6 | zero_shot | ejec 2 (3.96s)
+[ok] gpt-4o-2024-08-06 | A6 | zero_shot | ejec 3 (3.79s)
+[ok] gpt-4o-2024-08-06 | A6 | few_shot | ejec 1 (3.81s)
+[ok] gpt-4o-2024-08-06 | A6 | few_shot | ejec 2 (3.2s)
+[ok] gpt-4o-2024-08-06 | A6 | few_shot | ejec 3 (3.13s)
+[ok] gpt-4o-2024-08-06 | C1 | zero_shot | ejec 1 (4.61s)
+[ok] gpt-4o-2024-08-06 | C1 | zero_shot | ejec 2 (3.87s)
+[ok] gpt-4o-2024-08-06 | C1 | zero_shot | ejec 3 (5.04s)
+[ok] gpt-4o-2024-08-06 | C1 | few_shot | ejec 1 (3.57s)
+[ok] gpt-4o-2024-08-06 | C1 | few_shot | ejec 2 (3.11s)
+[ok] gpt-4o-2024-08-06 | C1 | few_shot | ejec 3 (2.87s)
+[ok] gpt-4o-2024-08-06 | C2 | zero_shot | ejec 1 (3.13s)
+[ok] gpt-4o-2024-08-06 | C2 | zero_shot | ejec 2 (3.82s)
+[ok] gpt-4o-2024-08-06 | C2 | zero_shot | ejec 3 (3.25s)
+[ok] gpt-4o-2024-08-06 | C2 | few_shot | ejec 1 (2.7s)
+[ok] gpt-4o-2024-08-06 | C2 | few_shot | ejec 2 (2.99s)
+[ok] gpt-4o-2024-08-06 | C2 | few_shot | ejec 3 (2.79s)
+[ok] gpt-4o-2024-08-06 | C3 | zero_shot | ejec 1 (2.11s)
+[ok] gpt-4o-2024-08-06 | C3 | zero_shot | ejec 2 (1.31s)
+[ok] gpt-4o-2024-08-06 | C3 | zero_shot | ejec 3 (1.27s)
+[ok] gpt-4o-2024-08-06 | C3 | few_shot | ejec 1 (1.49s)
+[ok] gpt-4o-2024-08-06 | C3 | few_shot | ejec 2 (1.77s)
+[ok] gpt-4o-2024-08-06 | C3 | few_shot | ejec 3 (1.4s)
+[ok] gpt-4o-2024-08-06 | C4 | zero_shot | ejec 1 (4.03s)
+[ok] gpt-4o-2024-08-06 | C4 | zero_shot | ejec 2 (4.29s)
+[ok] gpt-4o-2024-08-06 | C4 | zero_shot | ejec 3 (4.72s)
+[ok] gpt-4o-2024-08-06 | C4 | few_shot | ejec 1 (3.9s)
+[ok] gpt-4o-2024-08-06 | C4 | few_shot | ejec 2 (3.71s)
+[ok] gpt-4o-2024-08-06 | C4 | few_shot | ejec 3 (3.59s)
+[ok] gpt-4o-2024-08-06 | C5 | zero_shot | ejec 1 (4.4s)
+[ok] gpt-4o-2024-08-06 | C5 | zero_shot | ejec 2 (3.67s)
+[ok] gpt-4o-2024-08-06 | C5 | zero_shot | ejec 3 (3.61s)
+[ok] gpt-4o-2024-08-06 | C5 | few_shot | ejec 1 (2.8s)
+[ok] gpt-4o-2024-08-06 | C5 | few_shot | ejec 2 (3.26s)
+[ok] gpt-4o-2024-08-06 | C5 | few_shot | ejec 3 (2.96s)
+[ok] gpt-4o-2024-08-06 | C6 | zero_shot | ejec 1 (2.86s)
+[ok] gpt-4o-2024-08-06 | C6 | zero_shot | ejec 2 (3.04s)
+[ok] gpt-4o-2024-08-06 | C6 | zero_shot | ejec 3 (2.65s)
+[ok] gpt-4o-2024-08-06 | C6 | few_shot | ejec 1 (2.24s)
+[ok] gpt-4o-2024-08-06 | C6 | few_shot | ejec 2 (2.96s)
+[ok] gpt-4o-2024-08-06 | C6 | few_shot | ejec 3 (2.79s)
+[ok] gpt-4o-2024-08-06 | C7 | zero_shot | ejec 1 (1.36s)
+[ok] gpt-4o-2024-08-06 | C7 | zero_shot | ejec 2 (1.54s)
+[ok] gpt-4o-2024-08-06 | C7 | zero_shot | ejec 3 (1.64s)
+[ok] gpt-4o-2024-08-06 | C7 | few_shot | ejec 1 (1.64s)
+[ok] gpt-4o-2024-08-06 | C7 | few_shot | ejec 2 (1.48s)
+[ok] gpt-4o-2024-08-06 | C7 | few_shot | ejec 3 (1.54s)
+[ok] gpt-4o-2024-08-06 | C8 | zero_shot | ejec 1 (1.26s)
+[ok] gpt-4o-2024-08-06 | C8 | zero_shot | ejec 2 (1.33s)
+[ok] gpt-4o-2024-08-06 | C8 | zero_shot | ejec 3 (1.47s)
+[ok] gpt-4o-2024-08-06 | C8 | few_shot | ejec 1 (1.23s)
+[ok] gpt-4o-2024-08-06 | C8 | few_shot | ejec 2 (1.16s)
+[ok] gpt-4o-2024-08-06 | C8 | few_shot | ejec 3 (0.97s)
+
+Resumen: 0 ya existÝan, 180 procesadas.
+Duracion: 8,2 min
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_004706_gpt-4o-2024-08-06\20261003_005519_03_fin_ejecucion.png  (1920x1080)  sha256=fa292ad658feba3d
+
+===== 5. Verificacion posterior (pendientes deben ser 0) =====
+Resumen: 180 ya existÝan, 0 pendientes.
+
+===== 6. Resumen =====
+
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20261003005520
+**********************

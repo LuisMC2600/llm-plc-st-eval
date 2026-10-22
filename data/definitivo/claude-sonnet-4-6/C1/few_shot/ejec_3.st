@@ -1,0 +1,11 @@
+1. **Condición principal invertida (`IF NOT habilitado THEN`):** La lógica de control del semáforo se ejecuta cuando `habilitado` es FALSE, y las luces se apagan cuando `habilitado` es TRUE. Es exactamente lo contrario a lo especificado. Corrección: cambiar a `IF habilitado THEN`.
+
+2. **El temporizador `t1` nunca se resetea entre estados (estados 0, 1 y 2):** Cuando se produce la transición de un estado al siguiente, `t1` sigue llamándose con `IN := TRUE` y su salida `t1.Q` permanece TRUE desde el ciclo anterior, por lo que el nuevo estado transita inmediatamente sin esperar su tiempo. Corrección: al detectar `t1.Q` y cambiar de estado, resetear el temporizador añadiendo `t1(IN := FALSE);` en ese mismo ciclo (o en el ciclo siguiente poniendo `IN := FALSE` antes de volver a activarlo), de modo que `ET` vuelva a cero antes de iniciar la nueva cuenta.
+
+3. **En el estado 1, `luzR` no se apaga explícitamente (`luzR` queda sin asignar):** Al entrar en el estado 1 procedente del estado 2, `luzR` conserva el valor TRUE del ciclo anterior porque no se escribe en ese estado. Corrección: añadir `luzR := FALSE;` en el estado 1.
+
+4. **En el estado 2, `luzV` no se apaga explícitamente (`luzV` queda sin asignar):** Al entrar en el estado 2 procedente del estado 1, `luzV` puede conservar un valor residual. Corrección: añadir `luzV := FALSE;` en el estado 2.
+
+5. **El estado 3 (amarillo intermitente) nunca es alcanzable:** Ninguna transición de los estados 0, 1 ni 2 asigna `estado := 3`, por lo que el modo intermitente es inalcanzable. Corrección: definir la condición de entrada al estado 3 según la especificación (por ejemplo, una entrada adicional `modoIntermitente : BOOL` que, cuando esté activa, dirija el flujo al estado 3).
+
+6. **La variable `parp` nunca se actualiza (estado 3):** `parp` se usa en el estado 3 para el parpadeo, pero en ningún lugar del código se conmuta su valor ni se usa un temporizador para generar el parpadeo, por lo que `luzA` quedaría fija en el valor inicial de `parp` (FALSE). Corrección: añadir un temporizador adicional (por ejemplo, otro `TON` o un `TP`) que conmute `parp` periódicamente, o usar un bloque `BLINK` si está disponible en la plataforma.

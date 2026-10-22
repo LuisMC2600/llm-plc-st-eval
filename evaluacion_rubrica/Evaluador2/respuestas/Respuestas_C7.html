@@ -1,0 +1,140 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>C7 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>C7 — Conversión Ladder a ST — contador con preset (Complementaria)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja C7 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: convierte a Structured Text el siguiente segmento de un programa en Ladder Diagram (IEC 61131-3), preservando exactamente su comportamiento. Descripción del segmento: Rama 1: el contacto normalmente abierto sensorPieza alimenta la entrada de conteo CU de un contador ascendente CTU llamado C1, cuyo valor preestablecido PV es 12; el contacto normalmente abierto btnReset alimenta la entrada RESET de ese mismo contador. Rama 2: el contacto normalmente abierto de C1.Q alimenta la bobina loteListo. Rama 3: el valor actual C1.CV se transfiere a la variable cuenta. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Contador con variables de entrada sensorPieza, btnReset (BOOL) y salidas loteListo (BOOL) y cuenta (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_B3.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea B3 (contador de piezas por flanco)
+    ---------------------------------------------------------------------------
+    CORRIGE la version anterior, que tenia dos defectos fatales:
+
+    1. El CASE asignaba sensorPieza := TRUE y una linea posterior lo invertia
+       antes de llamar al bloque, de modo que el FB recibia siempre FALSE.
+       No se generaba ningun flanco y el paso 4 reprobaba SIEMPRE, incluso a
+       implementaciones correctas (falso negativo del 100%).
+
+    2. La alternancia ocurria una vez por scan, por lo que el numero de flancos
+       dependia del ciclo de la MainTask (2 flancos con 20 ms, 12 con 4 ms).
+       El resultado era un accidente del entorno, no una medicion.
+
+    SOLUCION: generador determinista de flancos con temporizador propio y
+    contador explicito. Genera exactamente FLANCOS_EXTRA flancos ascendentes
+    con independencia del ciclo de tarea. El temporizador de asentamiento del
+    paso queda retenido mientras la generacion esta en curso, de modo que la
+    evaluacion solo ocurre cuando ya se emitieron todos los flancos.
+
+    3. (detectado por la validacion) Comprobar solo el estado final (cuenta=12,
+       loteListo=TRUE) NO distingue un preset incorrecto: una implementacion que
+       active el lote a las 10 piezas tambien llega a 12 con el lote activo. El
+       umbral se verifica ahora en DOS LOTES: primero 10 flancos (cuenta=11, el
+       lote debe seguir APAGADO) y despues 1 flanco mas (cuenta=12, lote ENCENDIDO).
+
+    Cuentas esperadas: 1 (paso 1) + 10 (paso 4) + 1 (paso 5) = 12.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reset inicial *)
+            btnReset := TRUE;  sensorPieza := FALSE;
+            tEspera := T#200MS; esperadoCuenta := 0; esperadoLote := FALSE;
+        1:  (* Primer flanco ascendente *)
+            btnReset := FALSE; sensorPieza := TRUE;
+            tEspera := T#200MS; esperadoCuenta := 1; esperadoLote := FALSE;
+        2:  (* Sensor sostenido en alto: NO debe seguir contando *)
+            sensorPieza := TRUE;
+            tEspera := T#500MS; esperadoCuenta := 1; esperadoLote := FALSE;
+        3:  (* Vuelta a bajo para preparar la generacion *)
+            sensorPieza := FALSE;
+            tEspera := T#200MS; esperadoCuenta := 1; esperadoLote := FALSE;
+        4:  (* 10 flancos -&gt; 11 cuentas: el lote AUN NO debe activarse.
+               Este paso es el que detecta un preset menor que 12. *)
+            tEspera := T#200MS; esperadoCuenta := 11; esperadoLote := FALSE;
+        5:  (* 1 flanco mas -&gt; 12 cuentas: el lote SI debe activarse.
+               Este paso detecta un preset mayor que 12. *)
+            tEspera := T#200MS; esperadoCuenta := 12; esperadoLote := TRUE;
+        6:  (* Reset final *)
+            btnReset := TRUE;  sensorPieza := FALSE;
+            tEspera := T#200MS; esperadoCuenta := 0; esperadoLote := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#C7-2387">C7-2387</a><a href="#C7-8580">C7-8580</a><a href="#C7-9091">C7-9091</a></div>
+<div class="caja resp" id="C7-2387"><div class="cod"><h3>C7-2387</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Contador
+VAR_INPUT
+    sensorPieza : BOOL; // Contacto normalmente abierto sensor de pieza
+    btnReset : BOOL;    // Contacto normalmente abierto botón de reset
+END_VAR
+
+VAR_OUTPUT
+    loteListo : BOOL; // Bobina que indica que el lote está listo
+    cuenta : INT;      // Variable que almacena el valor actual del contador
+END_VAR
+
+VAR
+    C1 : CTU;          // Contador ascendente
+END_VAR
+
+// Configuración del contador C1
+C1.PV := 12;          // Valor preestablecido del contador
+
+// Rama 1: Conteo de piezas
+C1(CU := sensorPieza, RESET := btnReset);
+
+// Rama 2: Indicación de lote listo
+loteListo := C1.Q;
+
+// Rama 3: Transferencia del valor actual del contador a la variable cuenta
+cuenta := C1.CV;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C7-8580"><div class="cod"><h3>C7-8580</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Contador
+VAR_INPUT
+    sensorPieza : BOOL;  // Contacto normalmente abierto para el sensor de pieza
+    btnReset : BOOL;     // Contacto normalmente abierto para el botón de reset
+END_VAR
+
+VAR_OUTPUT
+    loteListo : BOOL;    // Bobina que indica si el lote está listo
+    cuenta : INT;        // Valor actual del contador
+END_VAR
+
+VAR
+    C1 : CTU;            // Contador ascendente
+END_VAR
+
+// Inicialización del contador ascendente
+C1(CU := sensorPieza, RESET := btnReset, PV := 12);
+
+// Asignación de la salida del contador a la bobina loteListo
+loteListo := C1.Q;
+
+// Transferencia del valor actual del contador a la variable cuenta
+cuenta := C1.CV;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="C7-9091"><div class="cod"><h3>C7-9091</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Contador
+VAR_INPUT
+    sensorPieza : BOOL; (* Contacto NA: entrada de conteo *)
+    btnReset    : BOOL; (* Contacto NA: reset del contador *)
+END_VAR
+VAR_OUTPUT
+    loteListo : BOOL; (* Bobina activada cuando C1.Q = TRUE *)
+    cuenta    : INT;  (* Valor actual del contador C1.CV *)
+END_VAR
+VAR
+    C1 : CTU; (* Contador ascendente IEC 61131-3 *)
+END_VAR
+
+(* Rama 1: sensorPieza -&gt; CU, btnReset -&gt; RESET, PV = 12 *)
+C1(CU := sensorPieza, RESET := btnReset, PV := 12);
+
+(* Rama 2: C1.Q activa la bobina loteListo *)
+loteListo := C1.Q;
+
+(* Rama 3: transferencia del valor actual a la variable cuenta *)
+cuenta := C1.CV;
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

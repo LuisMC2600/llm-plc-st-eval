@@ -1,0 +1,227 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20261003013720
+Nombre de usuario: DESKTOP-2K8TKD6\LUIS C
+Usuario RunAs: DESKTOP-2K8TKD6\LUIS C
+Nombre de la configuración: 
+Máquina: DESKTOP-2K8TKD6 (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\herramientas\ejecutar_con_evidencia.ps1 -Modelo gemini-3.1-pro-preview -Confirmar
+Id. de proceso: 2140
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+===== 1. Integridad del banco frente al piloto =====
+
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_013720_gemini-3.1-pro-preview\20261003_013720_01_integridad_hashes.png  (1920x1080)  sha256=84243dc81b5be7b0
+
+===== 2. Configuracion del lote =====
+
+
+===== 3. Dry-run =====
+[dry-run] gemini-3.1-pro-preview | C8 | few_shot | ejec 3
+
+Resumen: 0 ya existÝan, 180 pendientes.
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_013720_gemini-3.1-pro-preview\20261003_013720_02_dryrun.png  (1920x1080)  sha256=d4ada62019096ca8
+
+===== 4. Ejecucion (llamadas reales) =====
+[ok] gemini-3.1-pro-preview | B1 | zero_shot | ejec 1 (18.59s)
+[ok] gemini-3.1-pro-preview | B1 | zero_shot | ejec 2 (17.73s)
+[ok] gemini-3.1-pro-preview | B1 | zero_shot | ejec 3 (15.14s)
+[ok] gemini-3.1-pro-preview | B1 | few_shot | ejec 1 (12.34s)
+[ok] gemini-3.1-pro-preview | B1 | few_shot | ejec 2 (14.03s)
+[ok] gemini-3.1-pro-preview | B1 | few_shot | ejec 3 (16.7s)
+[ok] gemini-3.1-pro-preview | B2 | zero_shot | ejec 1 (8.36s)
+[ok] gemini-3.1-pro-preview | B2 | zero_shot | ejec 2 (8.47s)
+[ok] gemini-3.1-pro-preview | B2 | zero_shot | ejec 3 (7.8s)
+[ok] gemini-3.1-pro-preview | B2 | few_shot | ejec 1 (7.53s)
+[ok] gemini-3.1-pro-preview | B2 | few_shot | ejec 2 (5.96s)
+[ok] gemini-3.1-pro-preview | B2 | few_shot | ejec 3 (6.29s)
+[ok] gemini-3.1-pro-preview | B3 | zero_shot | ejec 1 (14.51s)
+[ok] gemini-3.1-pro-preview | B3 | zero_shot | ejec 2 (13.08s)
+[ok] gemini-3.1-pro-preview | B3 | zero_shot | ejec 3 (10.92s)
+[ok] gemini-3.1-pro-preview | B3 | few_shot | ejec 1 (17.39s)
+[ok] gemini-3.1-pro-preview | B3 | few_shot | ejec 2 (12.7s)
+[ok] gemini-3.1-pro-preview | B3 | few_shot | ejec 3 (16.18s)
+[ok] gemini-3.1-pro-preview | B4 | zero_shot | ejec 1 (13.45s)
+[ok] gemini-3.1-pro-preview | B4 | zero_shot | ejec 2 (15.67s)
+[ok] gemini-3.1-pro-preview | B4 | zero_shot | ejec 3 (12.34s)
+[ok] gemini-3.1-pro-preview | B4 | few_shot | ejec 1 (15.08s)
+[ok] gemini-3.1-pro-preview | B4 | few_shot | ejec 2 (18.2s)
+[ok] gemini-3.1-pro-preview | B4 | few_shot | ejec 3 (14.53s)
+[ok] gemini-3.1-pro-preview | B5 | zero_shot | ejec 1 (7.92s)
+[ok] gemini-3.1-pro-preview | B5 | zero_shot | ejec 2 (8.33s)
+[ok] gemini-3.1-pro-preview | B5 | zero_shot | ejec 3 (7.61s)
+[ok] gemini-3.1-pro-preview | B5 | few_shot | ejec 1 (6.68s)
+[ok] gemini-3.1-pro-preview | B5 | few_shot | ejec 2 (6.62s)
+[ok] gemini-3.1-pro-preview | B5 | few_shot | ejec 3 (6.11s)
+[ok] gemini-3.1-pro-preview | B6 | zero_shot | ejec 1 (13.17s)
+[ok] gemini-3.1-pro-preview | B6 | zero_shot | ejec 2 (15.52s)
+[ok] gemini-3.1-pro-preview | B6 | zero_shot | ejec 3 (18.95s)
+[ok] gemini-3.1-pro-preview | B6 | few_shot | ejec 1 (13.17s)
+[ok] gemini-3.1-pro-preview | B6 | few_shot | ejec 2 (12.0s)
+[ok] gemini-3.1-pro-preview | B6 | few_shot | ejec 3 (14.55s)
+[ok] gemini-3.1-pro-preview | B7 | zero_shot | ejec 1 (11.35s)
+[ok] gemini-3.1-pro-preview | B7 | zero_shot | ejec 2 (10.34s)
+[ok] gemini-3.1-pro-preview | B7 | zero_shot | ejec 3 (11.15s)
+[ok] gemini-3.1-pro-preview | B7 | few_shot | ejec 1 (10.39s)
+[ok] gemini-3.1-pro-preview | B7 | few_shot | ejec 2 (9.39s)
+[ok] gemini-3.1-pro-preview | B7 | few_shot | ejec 3 (11.93s)
+[ok] gemini-3.1-pro-preview | B8 | zero_shot | ejec 1 (11.69s)
+[ok] gemini-3.1-pro-preview | B8 | zero_shot | ejec 2 (15.51s)
+[ok] gemini-3.1-pro-preview | B8 | zero_shot | ejec 3 (10.72s)
+[ok] gemini-3.1-pro-preview | B8 | few_shot | ejec 1 (10.92s)
+[ok] gemini-3.1-pro-preview | B8 | few_shot | ejec 2 (11.44s)
+[ok] gemini-3.1-pro-preview | B8 | few_shot | ejec 3 (18.27s)
+[ok] gemini-3.1-pro-preview | I1 | zero_shot | ejec 1 (21.2s)
+[ok] gemini-3.1-pro-preview | I1 | zero_shot | ejec 2 (44.51s)
+[ok] gemini-3.1-pro-preview | I1 | zero_shot | ejec 3 (36.38s)
+[ok] gemini-3.1-pro-preview | I1 | few_shot | ejec 1 (39.16s)
+[ok] gemini-3.1-pro-preview | I1 | few_shot | ejec 2 (36.09s)
+[ok] gemini-3.1-pro-preview | I1 | few_shot | ejec 3 (27.47s)
+[ok] gemini-3.1-pro-preview | I2 | zero_shot | ejec 1 (18.4s)
+[ok] gemini-3.1-pro-preview | I2 | zero_shot | ejec 2 (19.98s)
+[ok] gemini-3.1-pro-preview | I2 | zero_shot | ejec 3 (19.24s)
+[ok] gemini-3.1-pro-preview | I2 | few_shot | ejec 1 (15.94s)
+[ok] gemini-3.1-pro-preview | I2 | few_shot | ejec 2 (15.73s)
+[ok] gemini-3.1-pro-preview | I2 | few_shot | ejec 3 (14.27s)
+[ok] gemini-3.1-pro-preview | I3 | zero_shot | ejec 1 (15.4s)
+[ok] gemini-3.1-pro-preview | I3 | zero_shot | ejec 2 (15.64s)
+[ok] gemini-3.1-pro-preview | I3 | zero_shot | ejec 3 (14.22s)
+[ok] gemini-3.1-pro-preview | I3 | few_shot | ejec 1 (17.93s)
+[ok] gemini-3.1-pro-preview | I3 | few_shot | ejec 2 (13.04s)
+[ok] gemini-3.1-pro-preview | I3 | few_shot | ejec 3 (14.49s)
+[ok] gemini-3.1-pro-preview | I4 | zero_shot | ejec 1 (15.32s)
+[ok] gemini-3.1-pro-preview | I4 | zero_shot | ejec 2 (13.11s)
+[ok] gemini-3.1-pro-preview | I4 | zero_shot | ejec 3 (21.49s)
+[ok] gemini-3.1-pro-preview | I4 | few_shot | ejec 1 (15.92s)
+[ok] gemini-3.1-pro-preview | I4 | few_shot | ejec 2 (15.1s)
+[ok] gemini-3.1-pro-preview | I4 | few_shot | ejec 3 (13.79s)
+[ok] gemini-3.1-pro-preview | I5 | zero_shot | ejec 1 (20.66s)
+[ok] gemini-3.1-pro-preview | I5 | zero_shot | ejec 2 (18.76s)
+[ok] gemini-3.1-pro-preview | I5 | zero_shot | ejec 3 (17.1s)
+[ok] gemini-3.1-pro-preview | I5 | few_shot | ejec 1 (20.26s)
+[ok] gemini-3.1-pro-preview | I5 | few_shot | ejec 2 (17.29s)
+[ok] gemini-3.1-pro-preview | I5 | few_shot | ejec 3 (22.35s)
+[ok] gemini-3.1-pro-preview | I6 | zero_shot | ejec 1 (13.44s)
+[ok] gemini-3.1-pro-preview | I6 | zero_shot | ejec 2 (15.42s)
+[ok] gemini-3.1-pro-preview | I6 | zero_shot | ejec 3 (12.06s)
+[ok] gemini-3.1-pro-preview | I6 | few_shot | ejec 1 (10.7s)
+[ok] gemini-3.1-pro-preview | I6 | few_shot | ejec 2 (12.49s)
+[ok] gemini-3.1-pro-preview | I6 | few_shot | ejec 3 (12.96s)
+[ok] gemini-3.1-pro-preview | I7 | zero_shot | ejec 1 (22.19s)
+[ok] gemini-3.1-pro-preview | I7 | zero_shot | ejec 2 (24.66s)
+[ok] gemini-3.1-pro-preview | I7 | zero_shot | ejec 3 (19.42s)
+[ok] gemini-3.1-pro-preview | I7 | few_shot | ejec 1 (22.72s)
+[ok] gemini-3.1-pro-preview | I7 | few_shot | ejec 2 (22.69s)
+[ok] gemini-3.1-pro-preview | I7 | few_shot | ejec 3 (19.68s)
+[ok] gemini-3.1-pro-preview | I8 | zero_shot | ejec 1 (20.93s)
+[ok] gemini-3.1-pro-preview | I8 | zero_shot | ejec 2 (18.94s)
+[ok] gemini-3.1-pro-preview | I8 | zero_shot | ejec 3 (19.4s)
+[ok] gemini-3.1-pro-preview | I8 | few_shot | ejec 1 (17.29s)
+[ok] gemini-3.1-pro-preview | I8 | few_shot | ejec 2 (20.8s)
+[ok] gemini-3.1-pro-preview | I8 | few_shot | ejec 3 (17.76s)
+[ok] gemini-3.1-pro-preview | A1 | zero_shot | ejec 1 (36.65s)
+[ok] gemini-3.1-pro-preview | A1 | zero_shot | ejec 2 (34.27s)
+[ok] gemini-3.1-pro-preview | A1 | zero_shot | ejec 3 (30.82s)
+[ok] gemini-3.1-pro-preview | A1 | few_shot | ejec 1 (24.47s)
+[ok] gemini-3.1-pro-preview | A1 | few_shot | ejec 2 (24.96s)
+[ok] gemini-3.1-pro-preview | A1 | few_shot | ejec 3 (36.38s)
+[ok] gemini-3.1-pro-preview | A2 | zero_shot | ejec 1 (27.81s)
+[ok] gemini-3.1-pro-preview | A2 | zero_shot | ejec 2 (32.24s)
+[ok] gemini-3.1-pro-preview | A2 | zero_shot | ejec 3 (22.27s)
+[ok] gemini-3.1-pro-preview | A2 | few_shot | ejec 1 (22.21s)
+[ok] gemini-3.1-pro-preview | A2 | few_shot | ejec 2 (25.11s)
+[ok] gemini-3.1-pro-preview | A2 | few_shot | ejec 3 (24.62s)
+[ok] gemini-3.1-pro-preview | A3 | zero_shot | ejec 1 (42.87s)
+[ok] gemini-3.1-pro-preview | A3 | zero_shot | ejec 2 (40.34s)
+[ok] gemini-3.1-pro-preview | A3 | zero_shot | ejec 3 (35.72s)
+[ok] gemini-3.1-pro-preview | A3 | few_shot | ejec 1 (33.69s)
+[ok] gemini-3.1-pro-preview | A3 | few_shot | ejec 2 (23.96s)
+[ok] gemini-3.1-pro-preview | A3 | few_shot | ejec 3 (34.52s)
+[ok] gemini-3.1-pro-preview | A4 | zero_shot | ejec 1 (18.36s)
+[ok] gemini-3.1-pro-preview | A4 | zero_shot | ejec 2 (20.1s)
+[ok] gemini-3.1-pro-preview | A4 | zero_shot | ejec 3 (24.47s)
+[ok] gemini-3.1-pro-preview | A4 | few_shot | ejec 1 (16.29s)
+[ok] gemini-3.1-pro-preview | A4 | few_shot | ejec 2 (25.42s)
+[ok] gemini-3.1-pro-preview | A4 | few_shot | ejec 3 (24.43s)
+[ok] gemini-3.1-pro-preview | A5 | zero_shot | ejec 1 (14.86s)
+[ok] gemini-3.1-pro-preview | A5 | zero_shot | ejec 2 (15.96s)
+[ok] gemini-3.1-pro-preview | A5 | zero_shot | ejec 3 (17.09s)
+[ok] gemini-3.1-pro-preview | A5 | few_shot | ejec 1 (17.66s)
+[ok] gemini-3.1-pro-preview | A5 | few_shot | ejec 2 (14.56s)
+[ok] gemini-3.1-pro-preview | A5 | few_shot | ejec 3 (14.08s)
+[ok] gemini-3.1-pro-preview | A6 | zero_shot | ejec 1 (21.21s)
+[ok] gemini-3.1-pro-preview | A6 | zero_shot | ejec 2 (19.8s)
+[ok] gemini-3.1-pro-preview | A6 | zero_shot | ejec 3 (22.46s)
+[ok] gemini-3.1-pro-preview | A6 | few_shot | ejec 1 (26.02s)
+[ok] gemini-3.1-pro-preview | A6 | few_shot | ejec 2 (26.41s)
+[ok] gemini-3.1-pro-preview | A6 | few_shot | ejec 3 (23.32s)
+[ok] gemini-3.1-pro-preview | C1 | zero_shot | ejec 1 (34.64s)
+[ok] gemini-3.1-pro-preview | C1 | zero_shot | ejec 2 (34.24s)
+[ok] gemini-3.1-pro-preview | C1 | zero_shot | ejec 3 (29.59s)
+[ok] gemini-3.1-pro-preview | C1 | few_shot | ejec 1 (30.86s)
+[ok] gemini-3.1-pro-preview | C1 | few_shot | ejec 2 (22.0s)
+[ok] gemini-3.1-pro-preview | C1 | few_shot | ejec 3 (22.81s)
+[ok] gemini-3.1-pro-preview | C2 | zero_shot | ejec 1 (26.38s)
+[ok] gemini-3.1-pro-preview | C2 | zero_shot | ejec 2 (21.63s)
+[ok] gemini-3.1-pro-preview | C2 | zero_shot | ejec 3 (24.43s)
+[ok] gemini-3.1-pro-preview | C2 | few_shot | ejec 1 (17.62s)
+[ok] gemini-3.1-pro-preview | C2 | few_shot | ejec 2 (16.94s)
+[ok] gemini-3.1-pro-preview | C2 | few_shot | ejec 3 (19.15s)
+[ok] gemini-3.1-pro-preview | C3 | zero_shot | ejec 1 (7.42s)
+[ok] gemini-3.1-pro-preview | C3 | zero_shot | ejec 2 (7.59s)
+[ok] gemini-3.1-pro-preview | C3 | zero_shot | ejec 3 (8.76s)
+[ok] gemini-3.1-pro-preview | C3 | few_shot | ejec 1 (9.61s)
+[ok] gemini-3.1-pro-preview | C3 | few_shot | ejec 2 (9.35s)
+[ok] gemini-3.1-pro-preview | C3 | few_shot | ejec 3 (8.53s)
+[ok] gemini-3.1-pro-preview | C4 | zero_shot | ejec 1 (16.08s)
+[ok] gemini-3.1-pro-preview | C4 | zero_shot | ejec 2 (16.92s)
+[ok] gemini-3.1-pro-preview | C4 | zero_shot | ejec 3 (18.13s)
+[ok] gemini-3.1-pro-preview | C4 | few_shot | ejec 1 (16.35s)
+[ok] gemini-3.1-pro-preview | C4 | few_shot | ejec 2 (16.58s)
+[ok] gemini-3.1-pro-preview | C4 | few_shot | ejec 3 (15.54s)
+[ok] gemini-3.1-pro-preview | C5 | zero_shot | ejec 1 (28.67s)
+[ok] gemini-3.1-pro-preview | C5 | zero_shot | ejec 2 (29.79s)
+[ok] gemini-3.1-pro-preview | C5 | zero_shot | ejec 3 (32.44s)
+[ok] gemini-3.1-pro-preview | C5 | few_shot | ejec 1 (20.89s)
+[ok] gemini-3.1-pro-preview | C5 | few_shot | ejec 2 (23.97s)
+[ok] gemini-3.1-pro-preview | C5 | few_shot | ejec 3 (22.04s)
+[ok] gemini-3.1-pro-preview | C6 | zero_shot | ejec 1 (20.77s)
+[ok] gemini-3.1-pro-preview | C6 | zero_shot | ejec 2 (27.08s)
+[ok] gemini-3.1-pro-preview | C6 | zero_shot | ejec 3 (22.6s)
+[ok] gemini-3.1-pro-preview | C6 | few_shot | ejec 1 (18.64s)
+[ok] gemini-3.1-pro-preview | C6 | few_shot | ejec 2 (18.94s)
+[ok] gemini-3.1-pro-preview | C6 | few_shot | ejec 3 (17.87s)
+[ok] gemini-3.1-pro-preview | C7 | zero_shot | ejec 1 (10.32s)
+[ok] gemini-3.1-pro-preview | C7 | zero_shot | ejec 2 (8.72s)
+[ok] gemini-3.1-pro-preview | C7 | zero_shot | ejec 3 (7.8s)
+[ok] gemini-3.1-pro-preview | C7 | few_shot | ejec 1 (10.2s)
+[ok] gemini-3.1-pro-preview | C7 | few_shot | ejec 2 (9.04s)
+[ok] gemini-3.1-pro-preview | C7 | few_shot | ejec 3 (11.37s)
+[ok] gemini-3.1-pro-preview | C8 | zero_shot | ejec 1 (6.88s)
+[ok] gemini-3.1-pro-preview | C8 | zero_shot | ejec 2 (7.35s)
+[ok] gemini-3.1-pro-preview | C8 | zero_shot | ejec 3 (6.43s)
+[ok] gemini-3.1-pro-preview | C8 | few_shot | ejec 1 (9.68s)
+[ok] gemini-3.1-pro-preview | C8 | few_shot | ejec 2 (8.12s)
+[ok] gemini-3.1-pro-preview | C8 | few_shot | ejec 3 (8.02s)
+
+Resumen: 0 ya existÝan, 180 procesadas.
+Duracion: 54,6 min
+[captura] C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval\evidencias\fase4\20261003_013720_gemini-3.1-pro-preview\20261003_023157_03_fin_ejecucion.png  (1920x1080)  sha256=a6a079df060dd6e1
+
+===== 5. Verificacion posterior (pendientes deben ser 0) =====
+Resumen: 180 ya existÝan, 0 pendientes.
+
+===== 6. Resumen =====
+
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20261003023157
+**********************

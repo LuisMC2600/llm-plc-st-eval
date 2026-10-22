@@ -1,0 +1,32 @@
+{
+  "control_funcion": {
+    "nota": "", 
+    "advertencias": 0, 
+    "pous": "FUN_Control", 
+    "tipos": "FUNCTION", 
+    "errores": 0, 
+    "primer_error": "", 
+    "compila": 1, 
+    "resumen_codesys": "Compilaci?n terminada -- 0 errores, 0 advertencias"
+  }, 
+  "control_ok": {
+    "nota": "", 
+    "advertencias": 0, 
+    "pous": "FB_ControlOk", 
+    "tipos": "FUNCTION_BLOCK", 
+    "errores": 0, 
+    "primer_error": "", 
+    "compila": 1, 
+    "resumen_codesys": "Compilaci?n terminada -- 0 errores, 0 advertencias"
+  }, 
+  "control_error": {
+    "nota": "", 
+    "advertencias": 0, 
+    "pous": "FB_ControlError", 
+    "tipos": "FUNCTION_BLOCK", 
+    "errores": 4, 
+    "primer_error": "L?nea 1, columna 1 (Impl) El tipo 'Tipo desconocido: '(noDeclarada + 1)'' no puede convertirse en el tipo 'INT'", 
+    "compila": 0, 
+    "resumen_codesys": "Compilaci?n terminada -- 4 errores, 0 advertencias"
+  }
+}

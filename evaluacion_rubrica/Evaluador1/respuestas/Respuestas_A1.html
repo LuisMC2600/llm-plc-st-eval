@@ -1,0 +1,1662 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A1 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>A1 — Controlador PID con anti-windup (Avanzado)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja A1 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa un controlador PID discreto de temperatura. Entradas: consigna SP, variable de proceso PV, ganancia proporcional Kp, tiempo integral Ti (segundos), tiempo derivativo Td (segundos), todas REAL, y ciclo (TIME) con el período de muestreo, que es el intervalo entre ejecuciones consecutivas del bloque. Usa la forma estándar del PID, CV = Kp · (e + (1/Ti) · ∫e dt + Td · de/dt), con error e = SP − PV, de modo que la salida aumenta cuando PV está por debajo de SP. La derivada se calcula sobre el error. Si Ti es menor o igual a 0.0, la acción integral queda desactivada. La salida CV es el porcentaje de mando, limitada al rango 0.0 a 100.0. Implementa anti-windup por clamping: mientras CV esté saturada en 100.0 la integral no debe acumular error positivo, y mientras esté saturada en 0.0 no debe acumular error negativo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_PID con variables de entrada SP, PV, Kp, Ti, Td (REAL) y ciclo (TIME), y salida CV (REAL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_A1.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE - Tarea A1 (FB_PID con anti-windup por clamping)
+    ---------------------------------------------------------------------------
+    Validado en codesys/validar_harness_A1.py: 12 implementaciones (3 correctas,
+    con integracion rectangular, integral previa y trapezoidal, y 9 defectuosas).
+    Tabla generada desde el validador. tipo: 0 = valor +-tol, 1 = CV &lt;= eVal,
+    2 = CV &gt;= eVal.
+
+    TOLERANCIAS (aprobadas por Luis y su asesora, 30-09-2026):
+  solo P: +-0.01 | integral: +-2 pasos de muestreo | derivada: +-5 % del termino
+  derivativo | saturacion exacta (+-0.001) | anti-windup: sale de la saturacion en
+  menos de 1 s tras invertir el error | sentido: PV &lt; SP -&gt; CV sube.
+
+TIEMPO VIRTUAL: ciclo := T#100MS fijo; pasos por NUMERO DE LLAMADAS. Cada
+escenario usa su PROPIA instancia del FB (fbP, fbI, fbD, fbW), para que el estado
+interno de un escenario (p. ej. una integral acumulada) no contamine otro.
+
+Paso  instancia  (Kp, Ti, Td, SP, PV) llamadas -&gt; comprobacion
+  0   fbP  (2, 0, 0, 50, 40)     5 -&gt; CV = 20.0 +-0.01     solo P, sentido
+  1   fbP  (2, 0, 0, 50, 60)     5 -&gt; CV = 0.0 +-0.001     saturacion baja
+  2   fbP  (2, 0, 0, 50,-20)     5 -&gt; CV = 100.0 +-0.001   saturacion alta
+  3   fbP  (2,-1, 0, 50, 45)     5 -&gt; CV = 10.0 +-0.01     Ti &lt; 0: sin integral
+  4   fbI  (1,10, 0, 50, 45)   100 -&gt; CV = 10.0 +-0.10     5 + 0.5*10 s
+  5   fbI  (1,10, 0, 50, 45)   100 -&gt; CV = 15.0 +-0.10     5 + 0.5*20 s
+  6   fbD  (1, 0, 2, 50+0.1k, 40) 50 -&gt; CV = 17.0 +-0.10   e = 15, Td*de/dt = 2 (SP en rampa:
+                                                           la derivada sobre PV daria 0)
+  7   fbW  (1, 5, 0,100,  0)   300 -&gt; CV = 100.0 +-0.001   30 s saturado en alto
+  8   fbW  (1, 5, 0,100,110)    10 -&gt; CV &lt;= 99.5            sale de 100 en &lt; 1 s
+  9   fbW  (1, 5, 0,  0,200)   300 -&gt; CV = 0.0 +-0.001     30 s saturado en bajo
+ 10   fbW  (1, 5, 0,  0,-10)    10 -&gt; CV &gt;= 0.5             sale de 0 en &lt; 1 s
+
+--- Pasos (CASE paso OF) ---
+
+        0: ins := 0; Kp := 2.0; Ti := 0.0; Td := 0.0; SPbase := 50.0; rampa := FALSE; PV := 40.0; nLlamadas := 5; tipo := 0; eVal := 20.0; tol := 0.01;
+        1: ins := 0; Kp := 2.0; Ti := 0.0; Td := 0.0; SPbase := 50.0; rampa := FALSE; PV := 60.0; nLlamadas := 5; tipo := 0; eVal := 0.0; tol := 0.001;
+        2: ins := 0; Kp := 2.0; Ti := 0.0; Td := 0.0; SPbase := 50.0; rampa := FALSE; PV := -20.0; nLlamadas := 5; tipo := 0; eVal := 100.0; tol := 0.001;
+        3: ins := 0; Kp := 2.0; Ti := -1.0; Td := 0.0; SPbase := 50.0; rampa := FALSE; PV := 45.0; nLlamadas := 5; tipo := 0; eVal := 10.0; tol := 0.01;
+        4: ins := 1; Kp := 1.0; Ti := 10.0; Td := 0.0; SPbase := 50.0; rampa := FALSE; PV := 45.0; nLlamadas := 100; tipo := 0; eVal := 10.0; tol := 0.1;
+        5: ins := 1; Kp := 1.0; Ti := 10.0; Td := 0.0; SPbase := 50.0; rampa := FALSE; PV := 45.0; nLlamadas := 100; tipo := 0; eVal := 15.0; tol := 0.1;
+        6: ins := 2; Kp := 1.0; Ti := 0.0; Td := 2.0; SPbase := 50.0; rampa := TRUE; PV := 40.0; nLlamadas := 50; tipo := 0; eVal := 17.0; tol := 0.1;
+        7: ins := 3; Kp := 1.0; Ti := 5.0; Td := 0.0; SPbase := 100.0; rampa := FALSE; PV := 0.0; nLlamadas := 300; tipo := 0; eVal := 100.0; tol := 0.001;
+        8: ins := 3; Kp := 1.0; Ti := 5.0; Td := 0.0; SPbase := 100.0; rampa := FALSE; PV := 110.0; nLlamadas := 10; tipo := 1; eVal := 99.5; tol := 0.0;
+        9: ins := 3; Kp := 1.0; Ti := 5.0; Td := 0.0; SPbase := 0.0; rampa := FALSE; PV := 200.0; nLlamadas := 300; tipo := 0; eVal := 0.0; tol := 0.001;
+        10: ins := 3; Kp := 1.0; Ti := 5.0; Td := 0.0; SPbase := 0.0; rampa := FALSE; PV := -10.0; nLlamadas := 10; tipo := 2; eVal := 0.5; tol := 0.0;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#A1-9962">A1-9962</a><a href="#A1-1725">A1-1725</a><a href="#A1-9421">A1-9421</a><a href="#A1-8114">A1-8114</a><a href="#A1-6268">A1-6268</a><a href="#A1-7933">A1-7933</a><a href="#A1-7927">A1-7927</a><a href="#A1-6125">A1-6125</a><a href="#A1-3038">A1-3038</a><a href="#A1-7444">A1-7444</a><a href="#A1-7874">A1-7874</a><a href="#A1-9190">A1-9190</a><a href="#A1-6243">A1-6243</a><a href="#A1-6380">A1-6380</a><a href="#A1-5398">A1-5398</a><a href="#A1-9749">A1-9749</a><a href="#A1-9704">A1-9704</a><a href="#A1-6233">A1-6233</a><a href="#A1-7633">A1-7633</a><a href="#A1-5864">A1-5864</a><a href="#A1-5313">A1-5313</a><a href="#A1-2241">A1-2241</a><a href="#A1-6805">A1-6805</a><a href="#A1-8493">A1-8493</a></div>
+<div class="caja resp" id="A1-9962"><div class="cod"><h3>A1-9962</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL; (* Consigna *)
+    PV : REAL; (* Variable de proceso *)
+    Kp : REAL; (* Ganancia proporcional *)
+    Ti : REAL; (* Tiempo integral en segundos *)
+    Td : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Periodo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Variable de control (0.0 a 100.0) *)
+END_VAR
+VAR
+    e : REAL; (* Error actual *)
+    e_prev : REAL; (* Error del ciclo anterior *)
+    integral_acc : REAL; (* Acumulador de la integral del error *)
+    dt_sec : REAL; (* Tiempo de ciclo en segundos *)
+    deriv : REAL; (* Derivada del error *)
+    I_term : REAL; (* Termino integral *)
+    D_term : REAL; (* Termino derivativo *)
+    CV_temp : REAL; (* Variable de control sin limitar *)
+END_VAR
+
+(* Conversion del tiempo de ciclo a segundos *)
+dt_sec := TIME_TO_REAL(ciclo) / 1000.0;
+
+(* Calculo del error *)
+e := SP - PV;
+
+(* Accion Integral con Anti-windup por clamping *)
+IF Ti &gt; 0.0 THEN
+    (* Evita acumular error positivo si CV esta al 100%, o negativo si CV esta al 0% *)
+    IF NOT ((CV &gt;= 100.0 AND e &gt; 0.0) OR (CV &lt;= 0.0 AND e &lt; 0.0)) THEN
+        integral_acc := integral_acc + (e * dt_sec);
+    END_IF;
+    I_term := integral_acc / Ti;
+ELSE
+    integral_acc := 0.0;
+    I_term := 0.0;
+END_IF;
+
+(* Accion Derivativa *)
+IF dt_sec &gt; 0.0 THEN
+    deriv := (e - e_prev) / dt_sec;
+ELSE
+    deriv := 0.0;
+END_IF;
+D_term := Td * deriv;
+
+(* Ecuacion PID estandar *)
+CV_temp := Kp * (e + I_term + D_term);
+
+(* Limitacion de la salida (0.0 a 100.0) *)
+IF CV_temp &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV_temp &lt; 0.0 THEN
+    CV := 0.0;
+ELSE
+    CV := CV_temp;
+END_IF;
+
+(* Actualizacion del error para el calculo derivativo del proximo ciclo *)
+e_prev := e;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-1725"><div class="cod"><h3>A1-1725</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (32 errores).<div class="err">Mensajes del compilador: L?nea 19 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 19 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 19 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 19 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 19 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL;      // Consigna (Setpoint)
+    PV : REAL;      // Variable de proceso
+    Kp : REAL;      // Ganancia proporcional
+    Ti : REAL;      // Tiempo integral (segundos)
+    Td : REAL;      // Tiempo derivativo (segundos)
+    ciclo : TIME;   // Período de muestreo
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;      // Variable de control (0.0 a 100.0 %)
+END_VAR
+
+VAR
+    e : REAL;           // Error actual
+    e_prev : REAL;      // Error del ciclo anterior
+    de_dt : REAL;       // Derivada del error
+    dt : REAL;          // Tiempo de ciclo en segundos
+    I_sum : REAL;       // Sumatoria de la integral del error
+    I_new : REAL;       // Valor tentativo de la integral
+    CV_tentative : REAL;// Salida tentativa para evaluar saturación
+END_VAR
+
+// Convertir tiempo de ciclo a segundos (REAL)
+dt := TIME_TO_REAL(ciclo) / 1000.0;
+
+// Evitar división por cero si el tiempo de ciclo es muy pequeño o cero
+IF dt &lt;= 0.0 THEN
+    dt := 0.001;
+END_IF;
+
+// Cálculo del error (Acción directa: CV aumenta si PV &lt; SP)
+e := SP - PV;
+
+// Cálculo de la derivada del error
+de_dt := (e - e_prev) / dt;
+
+// Acción Integral con Anti-windup (Clamping)
+IF Ti &gt; 0.0 THEN
+    // Calcular integral tentativa
+    I_new := I_sum + (e * dt);
+
+    // Calcular salida tentativa para evaluar saturación
+    CV_tentative := Kp * (e + (I_new / Ti) + (Td * de_dt));
+
+    // Lógica de Clamping: evitar acumulación si satura en la misma dirección del error
+    IF (CV_tentative &gt;= 100.0 AND e &gt; 0.0) OR (CV_tentative &lt;= 0.0 AND e &lt; 0.0) THEN
+        // No se actualiza I_sum (se congela la integral)
+    ELSE
+        I_sum := I_new; // Se actualiza la integral
+    END_IF;
+ELSE
+    I_sum := 0.0; // Desactivar acción integral si Ti &lt;= 0.0
+END_IF;
+
+// Cálculo de la salida final (CV) antes de límites
+IF Ti &gt; 0.0 THEN
+    CV := Kp * (e + (I_sum / Ti) + (Td * de_dt));
+ELSE
+    CV := Kp * (e + (Td * de_dt));
+END_IF;
+
+// Limitar la salida al rango 0.0 - 100.0 %
+IF CV &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV &lt; 0.0 THEN
+    CV := 0.0;
+END_IF;
+
+// Guardar el error actual para el cálculo derivativo del próximo ciclo
+e_prev := e;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-9421"><div class="cod"><h3>A1-9421</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (29 errores).<div class="err">Mensajes del compilador: L?nea 17 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 17 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 17 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 17 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 17 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL; (* Consigna *)
+    PV : REAL; (* Variable de proceso *)
+    Kp : REAL; (* Ganancia proporcional *)
+    Ti : REAL; (* Tiempo integral en segundos *)
+    Td : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Periodo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Porcentaje de mando (0.0 a 100.0) *)
+END_VAR
+VAR
+    e : REAL; (* Error actual *)
+    e_prev : REAL; (* Error del ciclo anterior *)
+    integral : REAL; (* Acumulador de la integral del error *)
+    dt : REAL; (* Tiempo de ciclo en segundos *)
+    P_term : REAL; (* Accion proporcional *)
+    I_term : REAL; (* Accion integral *)
+    D_term : REAL; (* Accion derivativa *)
+    CV_unc : REAL; (* Salida calculada sin limitar *)
+END_VAR
+
+(* Conversion del tiempo de ciclo a segundos *)
+dt := TIME_TO_REAL(ciclo) / 1000.0;
+IF dt &lt;= 0.0 THEN
+    dt := 0.001; (* Evitar division por cero *)
+END_IF;
+
+(* Calculo del error *)
+e := SP - PV;
+
+(* Accion proporcional *)
+P_term := Kp * e;
+
+(* Accion derivativa sobre el error *)
+D_term := Kp * Td * ((e - e_prev) / dt);
+
+(* Accion integral y calculo de salida sin limitar *)
+IF Ti &gt; 0.0 THEN
+    (* Se evalua con la integral tentativa para el ciclo actual *)
+    I_term := Kp * ((integral + (e * dt)) / Ti);
+ELSE
+    I_term := 0.0;
+    integral := 0.0;
+END_IF;
+
+CV_unc := P_term + I_term + D_term;
+
+(* Anti-windup por clamping: actualizacion del acumulador integral *)
+IF Ti &gt; 0.0 THEN
+    (* No acumula si esta saturado al maximo y el error es positivo, o saturado al minimo y el error es negativo *)
+    IF NOT ((CV_unc &gt;= 100.0 AND e &gt; 0.0) OR (CV_unc &lt;= 0.0 AND e &lt; 0.0)) THEN
+        integral := integral + (e * dt);
+    END_IF;
+END_IF;
+
+(* Limitacion de la salida CV al rango 0.0 - 100.0 *)
+IF CV_unc &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV_unc &lt; 0.0 THEN
+    CV := 0.0;
+ELSE
+    CV := CV_unc;
+END_IF;
+
+(* Memoria del error para la derivada en el proximo ciclo *)
+e_prev := e;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-8114"><div class="cod"><h3>A1-8114</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (24 errores).<div class="err">Mensajes del compilador: L?nea 18 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP    : REAL; (* Consigna (setpoint) *)
+    PV    : REAL; (* Variable de proceso *)
+    Kp    : REAL; (* Ganancia proporcional *)
+    Ti    : REAL; (* Tiempo integral en segundos (&lt;=0 desactiva integral) *)
+    Td    : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Periodo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Salida de mando 0.0..100.0 % *)
+END_VAR
+VAR
+    eActual  : REAL; (* Error actual: SP - PV *)
+    eAnterior: REAL; (* Error del ciclo anterior para derivada *)
+    integral : REAL; (* Acumulador de la integral del error *)
+    derivada : REAL; (* Termino derivativo *)
+    dt       : REAL; (* Periodo de muestreo en segundos *)
+    CVraw    : REAL; (* Salida sin saturar *)
+END_VAR
+
+(* Convertir el periodo de muestreo de TIME a segundos *)
+dt := TIME_TO_REAL(ciclo) / 1000.0;
+
+(* Calcular error actual *)
+eActual := SP - PV;
+
+(* --- Termino integral con anti-windup por clamping --- *)
+IF Ti &gt; 0.0 THEN
+    (* Acumular solo si la salida no esta saturada en el sentido del error *)
+    IF NOT ((CV &gt;= 100.0 AND eActual &gt; 0.0) OR
+            (CV &lt;=   0.0 AND eActual &lt; 0.0)) THEN
+        integral := integral + eActual * dt;
+    END_IF;
+ELSE
+    integral := 0.0; (* Accion integral desactivada *)
+END_IF;
+
+(* --- Termino derivativo sobre el error --- *)
+IF dt &gt; 0.0 THEN
+    derivada := (eActual - eAnterior) / dt;
+ELSE
+    derivada := 0.0;
+END_IF;
+
+(* --- Ley PID estandar --- *)
+CVraw := Kp * eActual;
+
+IF Ti &gt; 0.0 THEN
+    CVraw := CVraw + Kp * (1.0 / Ti) * integral;
+END_IF;
+
+CVraw := CVraw + Kp * Td * derivada;
+
+(* --- Saturacion de la salida 0..100 % --- *)
+IF CVraw &gt;= 100.0 THEN
+    CV := 100.0;
+ELSIF CVraw &lt;= 0.0 THEN
+    CV := 0.0;
+ELSE
+    CV := CVraw;
+END_IF;
+
+(* Guardar error para el proximo ciclo *)
+eAnterior := eActual;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-6268"><div class="cod"><h3>A1-6268</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (18 errores).<div class="err">Mensajes del compilador: L?nea 20 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;TIME&#x27; || L?nea 4, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 4, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 4, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 4, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;ciclo&#x27; || L?nea 5, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;dt&#x27; || L?nea 5, columna 1 (Impl) Se esperaba expresi?n en vez de &#x27;dt&#x27; || L?nea 5, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL;  // Setpoint
+    PV : REAL;  // Process Variable
+    Kp : REAL;  // Proportional Gain
+    Ti : REAL;  // Integral Time (seconds)
+    Td : REAL;  // Derivative Time (seconds)
+    ciclo : TIME;  // Sampling period
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;  // Control Variable (0.0 to 100.0)
+END_VAR
+
+VAR
+    e : REAL;  // Error
+    e_prev : REAL;  // Previous Error
+    integral : REAL;  // Integral of error
+    derivative : REAL;  // Derivative of error
+    dt : TIME;  // Time difference
+    dt_sec : REAL;  // Time difference in seconds
+    integral_limit : REAL;  // Limit for integral to prevent windup
+END_VAR
+
+// Calculate error
+e := SP - PV;
+
+// Calculate time difference in seconds
+dt := ciclo;
+dt_sec := dt / 1.0s;  // Convert TIME to REAL seconds
+
+// Proportional term
+CV := Kp * e;
+
+// Integral term
+IF Ti &gt; 0.0 THEN
+    integral := integral + (e * dt_sec);
+    integral_limit := 100.0 / Kp;
+    IF CV &gt;= 100.0 THEN
+        integral := integral - (e * dt_sec);
+    ELSIF CV &lt;= 0.0 THEN
+        integral := integral - (e * dt_sec);
+    END_IF;
+    CV := CV + (Kp / Ti) * integral;
+END_IF;
+
+// Derivative term
+derivative := (e - e_prev) / dt_sec;
+CV := CV + Kp * Td * derivative;
+
+// Clamp CV to 0.0 to 100.0
+IF CV &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV &lt; 0.0 THEN
+    CV := 0.0;
+END_IF;
+
+// Update previous error
+e_prev := e;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-7933"><div class="cod"><h3>A1-7933</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (27 errores).<div class="err">Mensajes del compilador: L?nea 19 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 19 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 19 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 19 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 19 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL;      // Consigna (Setpoint)
+    PV : REAL;      // Variable de proceso (Process Variable)
+    Kp : REAL;      // Ganancia proporcional
+    Ti : REAL;      // Tiempo integral (segundos)
+    Td : REAL;      // Tiempo derivativo (segundos)
+    ciclo : TIME;   // Período de muestreo
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;      // Variable de control (0.0 a 100.0 %)
+END_VAR
+
+VAR
+    e : REAL;                   // Error actual
+    e_prev : REAL := 0.0;       // Error del ciclo anterior
+    integral_sum : REAL := 0.0; // Sumatoria de la integral del error
+    dt : REAL;                  // Tiempo de ciclo en segundos
+    P_term : REAL;              // Término proporcional
+    I_term : REAL;              // Término integral
+    D_term : REAL;              // Término derivativo
+    CV_pre : REAL;              // Salida preliminar para evaluar saturación
+    CV_raw : REAL;              // Salida calculada sin limitar
+END_VAR
+
+// Convertir el tiempo de ciclo a segundos
+dt := TIME_TO_REAL(ciclo) / 1000.0;
+
+// Cálculo del error (salida aumenta si PV &lt; SP)
+e := SP - PV;
+
+// Cálculo del término proporcional
+P_term := Kp * e;
+
+// Cálculo del término derivativo (sobre el error)
+IF dt &gt; 0.0 THEN
+    D_term := Kp * Td * (e - e_prev) / dt;
+ELSE
+    D_term := 0.0;
+END_IF;
+
+// Cálculo del término integral y Anti-windup (Clamping)
+IF Ti &gt; 0.0 THEN
+    // Calcular salida preliminar con la integral del ciclo anterior
+    I_term := (Kp / Ti) * integral_sum;
+    CV_pre := P_term + I_term + D_term;
+    
+    // Anti-windup: evitar acumular error si la salida está saturada en la misma dirección
+    IF (CV_pre &gt;= 100.0 AND e &gt; 0.0) OR (CV_pre &lt;= 0.0 AND e &lt; 0.0) THEN
+        // No se acumula el error (Clamping activo)
+    ELSE
+        // Se acumula el error en la integral
+        IF dt &gt; 0.0 THEN
+            integral_sum := integral_sum + (e * dt);
+        END_IF;
+    END_IF;
+    
+    // Recalcular el término integral con el valor actualizado
+    I_term := (Kp / Ti) * integral_sum;
+ELSE
+    // Desactivar acción integral si Ti &lt;= 0.0
+    integral_sum := 0.0;
+    I_term := 0.0;
+END_IF;
+
+// Suma total de la ecuación PID estándar
+CV_raw := P_term + I_term + D_term;
+
+// Limitación de la salida (0.0 a 100.0)
+IF CV_raw &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV_raw &lt; 0.0 THEN
+    CV := 0.0;
+ELSE
+    CV := CV_raw;
+END_IF;
+
+// Actualizar el error para el cálculo derivativo del próximo ciclo
+e_prev := e;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-7927"><div class="cod"><h3>A1-7927</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (30 errores).<div class="err">Mensajes del compilador: L?nea 18 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;DINT_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;DINT_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL; (* Consigna *)
+    PV : REAL; (* Variable de proceso *)
+    Kp : REAL; (* Ganancia proporcional *)
+    Ti : REAL; (* Tiempo integral en segundos *)
+    Td : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Periodo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Porcentaje de mando (0.0 a 100.0) *)
+END_VAR
+VAR
+    e : REAL; (* Error actual *)
+    e_prev : REAL; (* Error del ciclo anterior *)
+    integral : REAL; (* Acumulador de la integral *)
+    derivada : REAL; (* Tasa de cambio del error *)
+    dt : REAL; (* Tiempo de ciclo en segundos *)
+    CV_raw : REAL; (* Salida calculada sin limitar *)
+END_VAR
+
+(* Conversion del tiempo de ciclo a segundos *)
+dt := DINT_TO_REAL(TIME_TO_DINT(ciclo)) / 1000.0;
+
+IF dt &gt; 0.0 THEN
+    (* Calculo del error *)
+    e := SP - PV;
+
+    (* Accion integral con anti-windup por clamping *)
+    IF Ti &gt; 0.0 THEN
+        (* Evitar integracion si la salida esta saturada y el error empuja en la misma direccion *)
+        IF NOT ((CV &gt;= 100.0 AND e &gt; 0.0) OR (CV &lt;= 0.0 AND e &lt; 0.0)) THEN
+            integral := integral + (e * dt);
+        END_IF;
+    ELSE
+        integral := 0.0; (* Desactivar accion integral si Ti &lt;= 0.0 *)
+    END_IF;
+
+    (* Accion derivativa sobre el error *)
+    derivada := (e - e_prev) / dt;
+
+    (* Calculo de la salida (Forma estandar del PID) *)
+    IF Ti &gt; 0.0 THEN
+        CV_raw := Kp * (e + (integral / Ti) + (Td * derivada));
+    ELSE
+        CV_raw := Kp * (e + (Td * derivada));
+    END_IF;
+
+    (* Limitacion de la salida al rango 0.0 - 100.0 *)
+    IF CV_raw &gt; 100.0 THEN
+        CV := 100.0;
+    ELSIF CV_raw &lt; 0.0 THEN
+        CV := 0.0;
+    ELSE
+        CV := CV_raw;
+    END_IF;
+
+    (* Actualizar el error anterior para el proximo ciclo *)
+    e_prev := e;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-6125"><div class="cod"><h3>A1-6125</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (23 errores).<div class="err">Mensajes del compilador: L?nea 21 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 21 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 21 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 21 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 21 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL;      (* Consigna (Setpoint) *)
+    PV : REAL;      (* Variable de proceso *)
+    Kp : REAL;      (* Ganancia proporcional *)
+    Ti : REAL;      (* Tiempo integral en segundos *)
+    Td : REAL;      (* Tiempo derivativo en segundos *)
+    ciclo : TIME;   (* Período de muestreo *)
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;      (* Variable de control (0.0 a 100.0) *)
+END_VAR
+
+VAR
+    e : REAL;       (* Error actual *)
+    e_prev : REAL;  (* Error del ciclo anterior *)
+    I_term : REAL;  (* Término integral acumulado *)
+    P_term : REAL;  (* Término proporcional *)
+    D_term : REAL;  (* Término derivativo *)
+    dt : REAL;      (* Tiempo de ciclo en segundos *)
+END_VAR
+
+(* Convertir el tiempo de ciclo a segundos (REAL) *)
+dt := TIME_TO_REAL(ciclo) / 1000.0;
+
+(* Evitar ejecución si el tiempo de ciclo es inválido o cero *)
+IF dt &gt; 0.0 THEN
+    
+    (* Cálculo del error (Acción directa: si PV &lt; SP, e &gt; 0 y CV aumenta) *)
+    e := SP - PV;
+
+    (* 1. Término Proporcional *)
+    P_term := Kp * e;
+
+    (* 2. Término Integral con Anti-windup (Clamping) *)
+    IF Ti &gt; 0.0 THEN
+        (* Evaluar saturación de la salida en el ciclo anterior y el signo del error *)
+        IF NOT ((CV &gt;= 100.0 AND e &gt; 0.0) OR (CV &lt;= 0.0 AND e &lt; 0.0)) THEN
+            I_term := I_term + (Kp * e * dt) / Ti;
+        END_IF;
+    ELSE
+        (* Desactivar acción integral si Ti &lt;= 0.0 *)
+        I_term := 0.0; 
+    END_IF;
+
+    (* 3. Término Derivativo (calculado sobre el error) *)
+    D_term := Kp * Td * (e - e_prev) / dt;
+
+    (* Actualizar el error para el cálculo derivativo del próximo ciclo *)
+    e_prev := e;
+
+    (* Cálculo de la salida total *)
+    CV := P_term + I_term + D_term;
+
+    (* Limitación de la salida (Saturación 0.0 a 100.0) *)
+    IF CV &gt; 100.0 THEN
+        CV := 100.0;
+    ELSIF CV &lt; 0.0 THEN
+        CV := 0.0;
+    END_IF;
+
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-3038"><div class="cod"><h3>A1-3038</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (2 errores).<div class="err">Mensajes del compilador: L?nea 4, columna 1 (Impl) El tipo &#x27;TIME&#x27; no puede convertirse en el tipo &#x27;REAL&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL; (* Consigna de temperatura *)
+    PV : REAL; (* Variable de proceso *)
+    Kp : REAL; (* Ganancia proporcional *)
+    Ti : REAL; (* Tiempo integral en segundos *)
+    Td : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Periodo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Salida de control, porcentaje de mando *)
+END_VAR
+VAR
+    e : REAL; (* Error *)
+    e_prev : REAL; (* Error previo para derivada *)
+    integral : REAL; (* Componente integral *)
+    derivada : REAL; (* Componente derivativa *)
+    delta_t : REAL; (* Intervalo de tiempo en segundos *)
+END_VAR
+
+(* Calcular el error *)
+e := SP - PV;
+
+(* Calcular el intervalo de tiempo en segundos *)
+delta_t := REAL_TO_TIME(ciclo) / 1000.0;
+
+(* Calcular la componente integral si Ti &gt; 0.0 *)
+IF Ti &gt; 0.0 THEN
+    integral := integral + (e * delta_t);
+    (* Anti-windup por clamping *)
+    IF CV &gt;= 100.0 THEN
+        integral := MIN(integral, 0.0);
+    ELSIF CV &lt;= 0.0 THEN
+        integral := MAX(integral, 0.0);
+    END_IF;
+END_IF;
+
+(* Calcular la componente derivativa *)
+derivada := (e - e_prev) / delta_t;
+
+(* Calcular la salida del controlador PID *)
+CV := Kp * (e + (integral / Ti) + (Td * derivada));
+
+(* Limitar la salida al rango 0.0 a 100.0 *)
+CV := MAX(0.0, MIN(100.0, CV));
+
+(* Almacenar el error actual para la siguiente iteración *)
+e_prev := e;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-7444"><div class="cod"><h3>A1-7444</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP    : REAL;   (* Setpoint / consigna *)
+    PV    : REAL;   (* Process variable / variable de proceso *)
+    Kp    : REAL;   (* Ganancia proporcional *)
+    Ti    : REAL;   (* Tiempo integral [s]; &lt;= 0 desactiva integral *)
+    Td    : REAL;   (* Tiempo derivativo [s] *)
+    ciclo : TIME;   (* Período de muestreo *)
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;      (* Salida de control [0.0 .. 100.0] % *)
+END_VAR
+
+VAR
+    e_prev    : REAL;   (* Error en la iteración anterior *)
+    integral  : REAL;   (* Acumulador de la integral del error *)
+    Ts        : REAL;   (* Período de muestreo en segundos *)
+    e         : REAL;   (* Error actual: SP - PV *)
+    P_term    : REAL;   (* Término proporcional *)
+    I_term    : REAL;   (* Término integral *)
+    D_term    : REAL;   (* Término derivativo *)
+    CV_raw    : REAL;   (* Salida sin saturar *)
+    saturated : BOOL;   (* TRUE si CV está saturada *)
+    sat_high  : BOOL;   (* TRUE si saturada en límite superior *)
+    sat_low   : BOOL;   (* TRUE si saturada en límite inferior *)
+END_VAR
+
+(* ── Constantes de saturación ── *)
+VAR CONSTANT
+    CV_MAX : REAL := 100.0;
+    CV_MIN : REAL := 0.0;
+END_VAR
+
+(* ─────────────────────────────────────────────────────────────
+   1. Convertir período de muestreo de TIME a segundos (REAL)
+   ───────────────────────────────────────────────────────────── *)
+Ts := TIME_TO_REAL(ciclo) / 1000.0;   (* TIME está en ms en IEC 61131-3 *)
+
+(* Protección: Ts debe ser positivo *)
+IF Ts &lt;= 0.0 THEN
+    Ts := 0.001;   (* 1 ms mínimo para evitar división por cero *)
+END_IF;
+
+(* ─────────────────────────────────────────────────────────────
+   2. Calcular error actual
+   ───────────────────────────────────────────────────────────── *)
+e := SP - PV;
+
+(* ─────────────────────────────────────────────────────────────
+   3. Detectar estado de saturación del ciclo anterior
+   ───────────────────────────────────────────────────────────── *)
+sat_high  := (CV &gt;= CV_MAX);
+sat_low   := (CV &lt;= CV_MIN);
+saturated := sat_high OR sat_low;
+
+(* ─────────────────────────────────────────────────────────────
+   4. Acumulación integral con anti-windup por clamping
+      - Si saturado en máximo: no acumular error positivo
+      - Si saturado en mínimo: no acumular error negativo
+   ───────────────────────────────────────────────────────────── *)
+IF Ti &gt; 0.0 THEN
+    IF NOT ((sat_high AND (e &gt; 0.0)) OR (sat_low AND (e &lt; 0.0))) THEN
+        integral := integral + e * Ts;   (* Integración rectangular hacia adelante *)
+    END_IF;
+END_IF;
+
+(* ─────────────────────────────────────────────────────────────
+   5. Calcular términos PID
+   ───────────────────────────────────────────────────────────── *)
+(* Término proporcional *)
+P_term := e;
+
+(* Término integral (desactivado si Ti &lt;= 0) *)
+IF Ti &gt; 0.0 THEN
+    I_term := (1.0 / Ti) * integral;
+ELSE
+    I_term := 0.0;
+END_IF;
+
+(* Término derivativo: diferencia hacia atrás del error *)
+D_term := Td * (e - e_prev) / Ts;
+
+(* ─────────────────────────────────────────────────────────────
+   6. Calcular salida sin saturar
+   ───────────────────────────────────────────────────────────── *)
+CV_raw := Kp * (P_term + I_term + D_term);
+
+(* ─────────────────────────────────────────────────────────────
+   7. Saturar salida al rango [0.0, 100.0]
+   ───────────────────────────────────────────────────────────── *)
+IF CV_raw &gt;= CV_MAX THEN
+    CV := CV_MAX;
+ELSIF CV_raw &lt;= CV_MIN THEN
+    CV := CV_MIN;
+ELSE
+    CV := CV_raw;
+END_IF;
+
+(* ─────────────────────────────────────────────────────────────
+   8. Guardar error para el siguiente ciclo
+   ───────────────────────────────────────────────────────────── *)
+e_prev := e;</pre></div>
+<div class="caja resp" id="A1-7874"><div class="cod"><h3>A1-7874</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (17 errores).<div class="err">Mensajes del compilador: L?nea 18 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;TIME&#x27; || L?nea 4, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 4, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 4, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 4, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;ciclo&#x27; || L?nea 5, columna 1 (Impl) Se esperaba )&#x27; en lugar de &#x27;dt&#x27; || L?nea 5, columna 1 (Impl) Se esperaba expresi?n en vez de &#x27;dt&#x27; || L?nea 9, columna 1 (Impl) Se esperaba )&#x27; en lugar de &#x27;dt&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL; (* Consigna *)
+    PV : REAL; (* Variable de proceso *)
+    Kp : REAL; (* Ganancia proporcional *)
+    Ti : REAL; (* Tiempo integral en segundos *)
+    Td : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Ciclo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Salida del controlador PID, porcentaje de mando *)
+END_VAR
+VAR
+    e : REAL; (* Error *)
+    e_prev : REAL; (* Error anterior *)
+    integral : REAL; (* Integral del error *)
+    derivada : REAL; (* Derivada del error *)
+    dt : TIME; (* Intervalo de tiempo entre ejecuciones *)
+END_VAR
+
+(* Calculo del error *)
+e := SP - PV;
+
+(* Calculo de la derivada *)
+dt := ciclo;
+derivada := (e - e_prev) / REAL_TO_TIME(dt);
+
+(* Calculo de la integral *)
+IF Ti &gt; 0.0 THEN
+    integral := integral + (e * REAL_TO_TIME(dt)) / Ti;
+ELSE
+    integral := 0.0; (* Desactiva la acción integral *)
+END_IF;
+
+(* Anti-windup por clamping *)
+IF CV &gt;= 100.0 THEN
+    IF e &gt; 0.0 THEN
+        integral := integral - (e * REAL_TO_TIME(dt)) / Ti; (* No acumula error positivo *)
+    END_IF;
+ELSIF CV &lt;= 0.0 THEN
+    IF e &lt; 0.0 THEN
+        integral := integral - (e * REAL_TO_TIME(dt)) / Ti; (* No acumula error negativo *)
+    END_IF;
+END_IF;
+
+(* Calculo de la salida CV *)
+CV := Kp * (e + integral + Td * derivada);
+
+(* Limita CV al rango 0.0 a 100.0 *)
+IF CV &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV &lt; 0.0 THEN
+    CV := 0.0;
+END_IF;
+
+(* Actualiza el error anterior *)
+e_prev := e;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-9190"><div class="cod"><h3>A1-9190</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (25 errores).<div class="err">Mensajes del compilador: L?nea 20 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL;      // Setpoint
+    PV : REAL;      // Process Variable
+    Kp : REAL;      // Proportional Gain
+    Ti : REAL;      // Integral Time (seconds)
+    Td : REAL;      // Derivative Time (seconds)
+    ciclo : TIME;   // Sampling period
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;      // Control Variable (output)
+END_VAR
+
+VAR
+    e : REAL;               // Error
+    e_prev : REAL;          // Previous error
+    integral : REAL;        // Integral term
+    derivative : REAL;      // Derivative term
+    dt : REAL;              // Sampling period in seconds
+    CV_unsat : REAL;        // Unsaturated control variable
+END_VAR
+
+VAR CONSTANT
+    CV_MIN : REAL := 0.0;   // Minimum CV
+    CV_MAX : REAL := 100.0; // Maximum CV
+END_VAR
+
+// Convert TIME to seconds
+dt := TO_REAL(ciclo) / 1000.0;
+
+// Calculate error
+e := SP - PV;
+
+// Proportional term
+CV_unsat := Kp * e;
+
+// Integral term
+IF Ti &gt; 0.0 THEN
+    integral := integral + (e * dt / Ti);
+    
+    // Anti-windup: Clamping
+    IF CV_unsat &gt;= CV_MAX THEN
+        IF e &gt; 0.0 THEN
+            integral := integral - (e * dt / Ti); // Prevent positive windup
+        END_IF
+    ELSIF CV_unsat &lt;= CV_MIN THEN
+        IF e &lt; 0.0 THEN
+            integral := integral - (e * dt / Ti); // Prevent negative windup
+        END_IF
+    END_IF
+END_IF
+
+// Add integral term
+CV_unsat := CV_unsat + Kp * integral;
+
+// Derivative term
+derivative := Td * (e - e_prev) / dt;
+CV_unsat := CV_unsat + Kp * derivative;
+
+// Update previous error
+e_prev := e;
+
+// Saturate CV
+IF CV_unsat &gt; CV_MAX THEN
+    CV := CV_MAX;
+ELSIF CV_unsat &lt; CV_MIN THEN
+    CV := CV_MIN;
+ELSE
+    CV := CV_unsat;
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-6243"><div class="cod"><h3>A1-6243</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (2 errores).<div class="err">Mensajes del compilador: L?nea 4, columna 1 (Impl) El tipo &#x27;TIME&#x27; no puede convertirse en el tipo &#x27;REAL&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL; (* Consigna de temperatura *)
+    PV : REAL; (* Variable de proceso *)
+    Kp : REAL; (* Ganancia proporcional *)
+    Ti : REAL; (* Tiempo integral en segundos *)
+    Td : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Periodo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Porcentaje de mando *)
+END_VAR
+VAR
+    e : REAL; (* Error *)
+    e_prev : REAL; (* Error previo *)
+    integral : REAL; (* Componente integral *)
+    derivada : REAL; (* Componente derivativa *)
+    delta_t : REAL; (* Intervalo de tiempo en segundos *)
+END_VAR
+
+(* Calcular el error *)
+e := SP - PV;
+
+(* Calcular el intervalo de tiempo en segundos *)
+delta_t := REAL_TO_TIME(ciclo) / 1000.0;
+
+(* Calcular la componente integral si Ti es mayor que 0.0 *)
+IF Ti &gt; 0.0 THEN
+    integral := integral + e * delta_t / Ti;
+    
+    (* Implementar anti-windup por clamping *)
+    IF CV &gt;= 100.0 THEN
+        integral := MIN(integral, 0.0);
+    ELSIF CV &lt;= 0.0 THEN
+        integral := MAX(integral, 0.0);
+    END_IF
+END_IF
+
+(* Calcular la componente derivativa *)
+derivada := (e - e_prev) / delta_t * Td;
+
+(* Calcular la salida del controlador PID *)
+CV := Kp * (e + integral + derivada);
+
+(* Limitar la salida al rango 0.0 a 100.0 *)
+CV := MAX(0.0, MIN(100.0, CV));
+
+(* Actualizar el error previo *)
+e_prev := e;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-6380"><div class="cod"><h3>A1-6380</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (2 errores).<div class="err">Mensajes del compilador: L?nea 4, columna 1 (Impl) El tipo &#x27;TIME&#x27; no puede convertirse en el tipo &#x27;REAL&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL; (* Consigna de temperatura *)
+    PV : REAL; (* Variable de proceso *)
+    Kp : REAL; (* Ganancia proporcional *)
+    Ti : REAL; (* Tiempo integral en segundos *)
+    Td : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Periodo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Porcentaje de mando *)
+END_VAR
+VAR
+    e : REAL; (* Error *)
+    e_prev : REAL; (* Error previo *)
+    integral : REAL; (* Componente integral *)
+    derivada : REAL; (* Componente derivativa *)
+    delta_t : REAL; (* Intervalo de tiempo en segundos *)
+END_VAR
+
+(* Calcular el error *)
+e := SP - PV;
+
+(* Convertir el ciclo de tiempo a segundos *)
+delta_t := REAL_TO_TIME(ciclo) / 1000.0;
+
+(* Calcular la componente integral si Ti &gt; 0 *)
+IF Ti &gt; 0.0 THEN
+    integral := integral + (e * delta_t / Ti);
+    
+    (* Anti-windup por clamping *)
+    IF CV &gt;= 100.0 THEN
+        IF e &gt; 0.0 THEN
+            integral := integral - (e * delta_t / Ti);
+        END_IF
+    ELSIF CV &lt;= 0.0 THEN
+        IF e &lt; 0.0 THEN
+            integral := integral - (e * delta_t / Ti);
+        END_IF
+    END_IF
+END_IF
+
+(* Calcular la componente derivativa *)
+derivada := (e - e_prev) / delta_t * Td;
+
+(* Calcular la salida del controlador PID *)
+CV := Kp * (e + integral + derivada);
+
+(* Limitar la salida al rango 0.0 a 100.0 *)
+IF CV &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV &lt; 0.0 THEN
+    CV := 0.0;
+END_IF
+
+(* Almacenar el error actual para el siguiente ciclo *)
+e_prev := e;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-5398"><div class="cod"><h3>A1-5398</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (17 errores).<div class="err">Mensajes del compilador: L?nea 18 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;TIME&#x27; || L?nea 4, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 4, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 4, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 4, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;ciclo&#x27; || L?nea 5, columna 1 (Impl) Se esperaba )&#x27; en lugar de &#x27;dt&#x27; || L?nea 5, columna 1 (Impl) Se esperaba expresi?n en vez de &#x27;dt&#x27; || L?nea 9, columna 1 (Impl) Se esperaba )&#x27; en lugar de &#x27;dt&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL; (* Consigna *)
+    PV : REAL; (* Variable de proceso *)
+    Kp : REAL; (* Ganancia proporcional *)
+    Ti : REAL; (* Tiempo integral en segundos *)
+    Td : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Ciclo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Salida del controlador PID *)
+END_VAR
+VAR
+    e : REAL; (* Error *)
+    e_prev : REAL; (* Error previo *)
+    integral : REAL; (* Integral del error *)
+    derivativa : REAL; (* Derivada del error *)
+    dt : TIME; (* Intervalo de tiempo entre ejecuciones *)
+END_VAR
+
+(* Calculo del error *)
+e := SP - PV;
+
+(* Calculo de la derivativa *)
+dt := ciclo;
+derivativa := (e - e_prev) / REAL_TO_TIME(dt);
+
+(* Calculo de la integral *)
+IF Ti &gt; 0.0 THEN
+    integral := integral + (e * REAL_TO_TIME(dt)) / Ti;
+ELSE
+    integral := 0.0; (* Desactiva la acción integral *)
+END_IF;
+
+(* Anti-windup por clamping *)
+IF CV &gt;= 100.0 THEN
+    IF e &gt; 0.0 THEN
+        integral := integral - e * REAL_TO_TIME(dt) / Ti; (* No acumula error positivo *)
+    END_IF;
+ELSIF CV &lt;= 0.0 THEN
+    IF e &lt; 0.0 THEN
+        integral := integral - e * REAL_TO_TIME(dt) / Ti; (* No acumula error negativo *)
+    END_IF;
+END_IF;
+
+(* Calculo de la salida CV *)
+CV := Kp * (e + integral + Td * derivativa);
+
+(* Limita la salida CV al rango 0.0 a 100.0 *)
+IF CV &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV &lt; 0.0 THEN
+    CV := 0.0;
+END_IF;
+
+(* Actualiza el error previo *)
+e_prev := e;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-9749"><div class="cod"><h3>A1-9749</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (16 errores).<div class="err">Mensajes del compilador: L?nea 20 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;TIME&#x27; || L?nea 2, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 2, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;ciclo&#x27; || L?nea 3, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;dt&#x27; || L?nea 3, columna 1 (Impl) Se esperaba expresi?n en vez de &#x27;dt&#x27; || L?nea 5, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL;  // Setpoint
+    PV : REAL;  // Process Variable
+    Kp : REAL;  // Proportional Gain
+    Ti : REAL;  // Integral Time (seconds)
+    Td : REAL;  // Derivative Time (seconds)
+    ciclo : TIME;  // Sampling period
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;  // Control Variable (0.0 to 100.0)
+END_VAR
+
+VAR
+    e : REAL;  // Error
+    e_prev : REAL;  // Previous Error
+    integral : REAL;  // Integral of Error
+    derivative : REAL;  // Derivative of Error
+    dt : TIME;  // Time difference
+    dt_sec : REAL;  // Time difference in seconds
+END_VAR
+
+// Initialization
+IF ciclo &gt; T#0s THEN
+    dt := ciclo;
+    dt_sec := dt / T#1s;
+ELSE
+    dt := T#1s;
+    dt_sec := 1.0;
+END_IF
+
+// Calculate error
+e := SP - PV;
+
+// Proportional term
+CV := Kp * e;
+
+// Integral term
+IF Ti &gt; 0.0 THEN
+    integral := integral + (e * dt_sec);
+    CV := CV + (Kp / Ti) * integral;
+ELSE
+    integral := 0.0;
+END_IF;
+
+// Derivative term
+derivative := (e - e_prev) / dt_sec;
+CV := CV + Kp * Td * derivative;
+
+// Anti-windup
+IF CV &gt; 100.0 THEN
+    CV := 100.0;
+    IF e &gt; 0.0 THEN
+        integral := integral - e * dt_sec;
+    END_IF;
+ELSIF CV &lt; 0.0 THEN
+    CV := 0.0;
+    IF e &lt; 0.0 THEN
+        integral := integral - e * dt_sec;
+    END_IF;
+END_IF;
+
+// Update previous error
+e_prev := e;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-9704"><div class="cod"><h3>A1-9704</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (25 errores).<div class="err">Mensajes del compilador: L?nea 20 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL_TO_TIME&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;REAL_TO_TIME&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL;      // Setpoint
+    PV : REAL;      // Process Variable
+    Kp : REAL;      // Proportional Gain
+    Ti : REAL;      // Integral Time (seconds)
+    Td : REAL;      // Derivative Time (seconds)
+    ciclo : TIME;   // Sampling Time
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;      // Control Variable (0.0 to 100.0)
+END_VAR
+
+VAR
+    e : REAL;               // Error
+    e_prev : REAL;          // Previous Error
+    integral : REAL;        // Integral Term
+    derivative : REAL;      // Derivative Term
+    dt : REAL;              // Sampling Time in seconds
+    CV_unsat : REAL;        // Unsaturated Control Variable
+END_VAR
+
+VAR CONSTANT
+    CV_MIN : REAL := 0.0;   // Minimum CV
+    CV_MAX : REAL := 100.0; // Maximum CV
+END_VAR
+
+// Convert TIME to seconds
+dt := REAL_TO_TIME(ciclo) / 1000.0;
+
+// Calculate error
+e := SP - PV;
+
+// Proportional term
+CV_unsat := Kp * e;
+
+// Integral term
+IF Ti &gt; 0.0 THEN
+    integral := integral + (e * dt / Ti);
+    
+    // Anti-windup: Clamping
+    IF (CV_unsat &gt;= CV_MAX) AND (e &gt; 0.0) THEN
+        integral := integral; // Do not accumulate positive error
+    ELSIF (CV_unsat &lt;= CV_MIN) AND (e &lt; 0.0) THEN
+        integral := integral; // Do not accumulate negative error
+    ELSE
+        CV_unsat := CV_unsat + Kp * integral;
+    END_IF
+END_IF
+
+// Derivative term
+derivative := Td * (e - e_prev) / dt;
+CV_unsat := CV_unsat + Kp * derivative;
+
+// Update previous error
+e_prev := e;
+
+// Saturate CV
+IF CV_unsat &gt; CV_MAX THEN
+    CV := CV_MAX;
+ELSIF CV_unsat &lt; CV_MIN THEN
+    CV := CV_MIN;
+ELSE
+    CV := CV_unsat;
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-6233"><div class="cod"><h3>A1-6233</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (18 errores).<div class="err">Mensajes del compilador: L?nea 20 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;TIME&#x27; || L?nea 2, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 2, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 2, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;ciclo&#x27; || L?nea 4, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 4, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 4, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL;  // Setpoint
+    PV : REAL;  // Process Variable
+    Kp : REAL;  // Proportional Gain
+    Ti : REAL;  // Integral Time (seconds)
+    Td : REAL;  // Derivative Time (seconds)
+    ciclo : TIME;  // Sampling period
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;  // Control Variable (0.0 to 100.0)
+END_VAR
+
+VAR
+    e : REAL;  // Error
+    e_prev : REAL;  // Previous Error
+    integral : REAL;  // Integral of Error
+    derivative : REAL;  // Derivative of Error
+    dt : TIME;  // Time difference
+END_VAR
+
+// Initialize variables
+IF ciclo &gt; T#0s THEN
+    dt := ciclo;
+ELSE
+    dt := T#1s;  // Avoid division by zero
+END_IF
+
+// Calculate error
+e := SP - PV;
+
+// Proportional term
+CV := Kp * e;
+
+// Integral term
+IF Ti &gt; 0.0 THEN
+    integral := integral + (e * dt / Ti);
+ELSE
+    integral := 0.0;  // Integral action disabled
+END_IF
+
+// Derivative term
+derivative := (e - e_prev) / dt;
+
+// PID output
+CV := CV + integral + (Kp * Td * derivative);
+
+// Anti-windup by clamping
+IF CV &gt; 100.0 THEN
+    CV := 100.0;
+    IF e &gt; 0.0 THEN
+        integral := integral - e;  // Prevent integral windup
+    END_IF
+ELSIF CV &lt; 0.0 THEN
+    CV := 0.0;
+    IF e &lt; 0.0 THEN
+        integral := integral - e;  // Prevent integral windup
+    END_IF
+END_IF;
+
+// Update previous error
+e_prev := e;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-7633"><div class="cod"><h3>A1-7633</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (28 errores).<div class="err">Mensajes del compilador: L?nea 20 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 20 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 20 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL_TO_TIME&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;REAL_TO_TIME&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL;       // Setpoint
+    PV : REAL;       // Process Variable
+    Kp : REAL;       // Proportional Gain
+    Ti : REAL;       // Integral Time (seconds)
+    Td : REAL;       // Derivative Time (seconds)
+    ciclo : TIME;    // Sampling period
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;       // Control Variable (Output)
+END_VAR
+
+VAR
+    e : REAL;        // Error
+    e_prev : REAL;   // Previous error
+    integral : REAL; // Integral term
+    derivative : REAL; // Derivative term
+    dt : REAL;       // Sampling period in seconds
+    CV_unsat : REAL; // Unsaturated Control Variable
+END_VAR
+
+VAR CONSTANT
+    CV_MIN : REAL := 0.0;   // Minimum CV
+    CV_MAX : REAL := 100.0; // Maximum CV
+END_VAR
+
+// Convert ciclo from TIME to REAL (seconds)
+dt := REAL_TO_TIME(ciclo) / 1000.0;
+
+// Calculate error
+e := SP - PV;
+
+// Calculate integral term with anti-windup
+IF Ti &gt; 0.0 THEN
+    integral := integral + e * dt;
+    // Anti-windup clamping
+    IF CV &gt;= CV_MAX AND e &gt; 0.0 THEN
+        integral := integral - e * dt;
+    ELSIF CV &lt;= CV_MIN AND e &lt; 0.0 THEN
+        integral := integral - e * dt;
+    END_IF
+ELSE
+    integral := 0.0;
+END_IF
+
+// Calculate derivative term
+derivative := (e - e_prev) / dt;
+
+// Calculate unsaturated CV
+CV_unsat := Kp * (e + (1.0 / Ti) * integral + Td * derivative);
+
+// Saturate CV
+IF CV_unsat &gt; CV_MAX THEN
+    CV := CV_MAX;
+ELSIF CV_unsat &lt; CV_MIN THEN
+    CV := CV_MIN;
+ELSE
+    CV := CV_unsat;
+END_IF
+
+// Update previous error
+e_prev := e;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-5864"><div class="cod"><h3>A1-5864</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (11 errores).<div class="err">Mensajes del compilador: L?nea 18 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;TIME&#x27; || L?nea 4, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 4, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 4, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 4, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;ciclo&#x27; || L?nea 5, columna 1 (Impl) Se esperaba )&#x27; en lugar de &#x27;dt&#x27; || L?nea 5, columna 1 (Impl) Se esperaba expresi?n en vez de &#x27;dt&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP : REAL; (* Setpoint *)
+    PV : REAL; (* Process Variable *)
+    Kp : REAL; (* Proportional Gain *)
+    Ti : REAL; (* Integral Time in seconds *)
+    Td : REAL; (* Derivative Time in seconds *)
+    ciclo : TIME; (* Sampling Cycle *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Control Variable, 0.0 to 100.0 *)
+END_VAR
+VAR
+    e : REAL; (* Error *)
+    ePrev : REAL; (* Previous Error *)
+    integral : REAL; (* Integral of Error *)
+    derivativa : REAL; (* Derivative of Error *)
+    dt : TIME; (* Time Difference *)
+END_VAR
+
+(* Calculate the error *)
+e := SP - PV;
+
+(* Calculate the derivative of the error *)
+dt := ciclo;
+derivativa := (e - ePrev) / REAL_TO_TIME(dt);
+
+(* Calculate the integral of the error *)
+IF Ti &gt; 0.0 THEN
+    integral := integral + (e * REAL_TO_TIME(ciclo)) / Ti;
+ELSE
+    integral := 0.0; (* Integral action disabled *)
+END_IF;
+
+(* Anti-windup by clamping *)
+IF CV &gt;= 100.0 THEN
+    IF e &gt; 0.0 THEN
+        integral := integral - e * REAL_TO_TIME(ciclo) / Ti; (* Prevent integral windup *)
+    END_IF;
+ELSIF CV &lt;= 0.0 THEN
+    IF e &lt; 0.0 THEN
+        integral := integral - e * REAL_TO_TIME(ciclo) / Ti; (* Prevent integral windup *)
+    END_IF;
+END_IF;
+
+(* Calculate the control variable *)
+CV := Kp * (e + integral + Td * derivativa);
+
+(* Clamp the control variable to the range 0.0 to 100.0 *)
+IF CV &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV &lt; 0.0 THEN
+    CV := 0.0;
+END_IF;
+
+(* Update previous error *)
+ePrev := e;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-5313"><div class="cod"><h3>A1-5313</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (24 errores).<div class="err">Mensajes del compilador: L?nea 18 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP    : REAL; (* Consigna (setpoint) *)
+    PV    : REAL; (* Variable de proceso *)
+    Kp    : REAL; (* Ganancia proporcional *)
+    Ti    : REAL; (* Tiempo integral en segundos (&lt;=0 desactiva integral) *)
+    Td    : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Periodo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Salida de mando en % [0.0 .. 100.0] *)
+END_VAR
+VAR
+    eActual  : REAL; (* Error actual: SP - PV *)
+    eAnterior: REAL; (* Error del ciclo anterior para derivada *)
+    integral : REAL; (* Acumulador de la accion integral *)
+    derivada : REAL; (* Accion derivativa *)
+    dt       : REAL; (* Periodo de muestreo en segundos *)
+    CVraw    : REAL; (* Salida sin limitar *)
+END_VAR
+
+(* Convertir el periodo de muestreo de TIME a segundos *)
+dt := TIME_TO_REAL(ciclo) / 1000.0;
+
+(* Calcular error actual *)
+eActual := SP - PV;
+
+(* --- Accion integral con anti-windup por clamping --- *)
+(* Solo acumula si Ti &gt; 0 y la salida no esta saturada en el sentido del error *)
+IF Ti &gt; 0.0 THEN
+    IF NOT ( (CV &gt;= 100.0) AND (eActual &gt; 0.0) )
+    AND NOT ( (CV &lt;=   0.0) AND (eActual &lt; 0.0) ) THEN
+        integral := integral + eActual * dt;
+    END_IF;
+END_IF;
+
+(* --- Accion derivativa sobre el error --- *)
+IF dt &gt; 0.0 THEN
+    derivada := Td * (eActual - eAnterior) / dt;
+ELSE
+    derivada := 0.0;
+END_IF;
+
+(* --- Calculo de la salida PID --- *)
+CVraw := Kp * eActual + derivada;  (* Terminos P y D *)
+IF Ti &gt; 0.0 THEN
+    CVraw := CVraw + Kp * (1.0 / Ti) * integral; (* Termino I *)
+END_IF;
+
+(* --- Limitacion de la salida al rango [0.0 .. 100.0] --- *)
+IF CVraw &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CVraw &lt; 0.0 THEN
+    CV := 0.0;
+ELSE
+    CV := CVraw;
+END_IF;
+
+(* Guardar error para el siguiente ciclo *)
+eAnterior := eActual;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-2241"><div class="cod"><h3>A1-2241</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 11 pasos del harness.</div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP    : REAL;   (* Consigna / Set Point *)
+    PV    : REAL;   (* Variable de proceso *)
+    Kp    : REAL;   (* Ganancia proporcional *)
+    Ti    : REAL;   (* Tiempo integral [s]; &lt;= 0 desactiva integral *)
+    Td    : REAL;   (* Tiempo derivativo [s] *)
+    ciclo : TIME;   (* Período de muestreo *)
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;      (* Salida de mando [0.0 .. 100.0] % *)
+END_VAR
+
+VAR
+    e        : REAL;   (* Error actual: SP - PV *)
+    e_prev   : REAL;   (* Error en el ciclo anterior *)
+    integral : REAL;   (* Acumulador de la integral del error *)
+    deriv    : REAL;   (* Término derivativo *)
+    Ts       : REAL;   (* Período de muestreo en segundos *)
+    CV_raw   : REAL;   (* Salida sin saturar *)
+    saturado : BOOL;   (* TRUE si CV está saturada *)
+END_VAR
+
+(* ── 1. Período de muestreo ─────────────────────────────────────────── *)
+(* Convierte TIME → segundos; TIME_TO_DINT devuelve milisegundos *)
+Ts := DINT_TO_REAL(TIME_TO_DINT(ciclo)) / 1000.0;
+
+(* Protección: si Ts &lt;= 0 no se puede calcular *)
+IF Ts &lt;= 0.0 THEN
+    RETURN;
+END_IF;
+
+(* ── 2. Error ────────────────────────────────────────────────────────── *)
+e := SP - PV;
+
+(* ── 3. Anti-windup por clamping ─────────────────────────────────────── *)
+(* Determina si la salida anterior estaba saturada *)
+saturado := (CV &gt;= 100.0) OR (CV &lt;= 0.0);
+
+(* Acumula integral sólo si:
+   - Ti &gt; 0  (acción integral activa)
+   - No está saturado, O el error tiende a desaturar:
+       · saturado en 100 → no acumular error positivo (e &gt; 0)
+       · saturado en 0   → no acumular error negativo (e &lt; 0)       *)
+IF Ti &gt; 0.0 THEN
+    IF NOT saturado
+       OR (CV &gt;= 100.0 AND e &lt; 0.0)
+       OR (CV &lt;= 0.0  AND e &gt; 0.0)
+    THEN
+        integral := integral + e * Ts;
+    END_IF;
+END_IF;
+
+(* ── 4. Término derivativo ───────────────────────────────────────────── *)
+deriv := (e - e_prev) / Ts;
+
+(* ── 5. Ley de control PID (forma estándar) ──────────────────────────── *)
+(*  CV = Kp · ( e  +  (1/Ti)·∫e dt  +  Td·de/dt )                       *)
+IF Ti &gt; 0.0 THEN
+    CV_raw := Kp * (e + (1.0 / Ti) * integral + Td * deriv);
+ELSE
+    (* Sin acción integral *)
+    CV_raw := Kp * (e + Td * deriv);
+END_IF;
+
+(* ── 6. Saturación de la salida ──────────────────────────────────────── *)
+IF CV_raw &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV_raw &lt; 0.0 THEN
+    CV := 0.0;
+ELSE
+    CV := CV_raw;
+END_IF;
+
+(* ── 7. Actualiza estado para el próximo ciclo ───────────────────────── *)
+e_prev := e;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-6805"><div class="cod"><h3>A1-6805</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (24 errores).<div class="err">Mensajes del compilador: L?nea 18 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP    : REAL;   (* Consigna / Set Point *)
+    PV    : REAL;   (* Variable de proceso / Process Variable *)
+    Kp    : REAL;   (* Ganancia proporcional *)
+    Ti    : REAL;   (* Tiempo integral [s]; &lt;= 0 desactiva integral *)
+    Td    : REAL;   (* Tiempo derivativo [s] *)
+    ciclo : TIME;   (* Período de muestreo *)
+END_VAR
+
+VAR_OUTPUT
+    CV : REAL;      (* Salida de control [0.0 .. 100.0] % *)
+END_VAR
+
+VAR
+    e_prev    : REAL;   (* Error en el ciclo anterior *)
+    integral  : REAL;   (* Acumulador de la integral del error *)
+    dt        : REAL;   (* Período de muestreo en segundos *)
+    e         : REAL;   (* Error actual: SP - PV *)
+    P_term    : REAL;   (* Término proporcional *)
+    I_term    : REAL;   (* Término integral *)
+    D_term    : REAL;   (* Término derivativo *)
+    CV_raw    : REAL;   (* Salida sin saturar *)
+    saturated : BOOL;   (* TRUE si CV está saturada *)
+    clamp_ok  : BOOL;   (* TRUE si se permite acumular integral *)
+END_VAR
+
+(* ── 1. Período de muestreo en segundos ─────────────────────────────── *)
+dt := TIME_TO_REAL(ciclo) / 1000.0;   (* TIME está en ms en IEC 61131-3 *)
+
+(* ── 2. Error actual ────────────────────────────────────────────────── *)
+e := SP - PV;
+
+(* ── 3. Término proporcional ────────────────────────────────────────── *)
+P_term := e;
+
+(* ── 4. Término integral con anti-windup por clamping ───────────────── *)
+IF Ti &gt; 0.0 THEN
+    (* Determinar si la integración está permitida (anti-windup) *)
+    (* Bloquear acumulación si CV saturada en máx y error positivo,  *)
+    (* o si CV saturada en mín y error negativo.                      *)
+    saturated := (CV &gt;= 100.0) OR (CV &lt;= 0.0);
+
+    clamp_ok := NOT saturated                          (* sin saturación: siempre OK *)
+                OR (CV &gt;= 100.0 AND e &lt; 0.0)          (* saturado alto, error baja  *)
+                OR (CV &lt;= 0.0  AND e &gt; 0.0);           (* saturado bajo, error sube  *)
+
+    IF clamp_ok THEN
+        integral := integral + e * dt;
+    END_IF;
+
+    I_term := (1.0 / Ti) * integral;
+ELSE
+    (* Acción integral desactivada *)
+    integral := 0.0;
+    I_term   := 0.0;
+END_IF;
+
+(* ── 5. Término derivativo (diferencia hacia atrás sobre el error) ──── *)
+IF dt &gt; 0.0 THEN
+    D_term := Td * (e - e_prev) / dt;
+ELSE
+    D_term := 0.0;
+END_IF;
+
+(* ── 6. Salida PID en forma estándar: CV = Kp·(e + I_term + D_term) ── *)
+CV_raw := Kp * (P_term + I_term + D_term);
+
+(* ── 7. Saturación de la salida [0.0 .. 100.0] % ───────────────────── *)
+IF CV_raw &gt; 100.0 THEN
+    CV := 100.0;
+ELSIF CV_raw &lt; 0.0 THEN
+    CV := 0.0;
+ELSE
+    CV := CV_raw;
+END_IF;
+
+(* ── 8. Guardar error para el próximo ciclo ─────────────────────────── *)
+e_prev := e;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="A1-8493"><div class="cod"><h3>A1-8493</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (24 errores).<div class="err">Mensajes del compilador: L?nea 18 (Decl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;:&#x27; || L?nea 18 (Decl) Se esperaba &#x27;;&#x27; en lugar de &#x27;REAL&#x27; || L?nea 18 (Decl) Encontrado token inesperado &#x27;REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;dt&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;:=&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;TIME_TO_REAL&#x27; || L?nea 1, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;(&#x27; || L?nea 1, columna 1 (Impl) Encontrado token inesperado &#x27;(&#x27;</div></div><pre>FUNCTION_BLOCK FB_PID
+VAR_INPUT
+    SP    : REAL; (* Consigna (setpoint) *)
+    PV    : REAL; (* Variable de proceso *)
+    Kp    : REAL; (* Ganancia proporcional *)
+    Ti    : REAL; (* Tiempo integral en segundos (&lt;=0 desactiva integral) *)
+    Td    : REAL; (* Tiempo derivativo en segundos *)
+    ciclo : TIME; (* Periodo de muestreo *)
+END_VAR
+VAR_OUTPUT
+    CV : REAL; (* Salida de mando en % [0.0 .. 100.0] *)
+END_VAR
+VAR
+    eActual  : REAL; (* Error actual: SP - PV *)
+    eAnterior: REAL; (* Error del ciclo anterior para derivada *)
+    integral : REAL; (* Acumulador de la integral del error *)
+    derivada : REAL; (* Termino derivativo *)
+    dt       : REAL; (* Periodo de muestreo en segundos *)
+    CVraw    : REAL; (* Salida PID antes de saturar *)
+END_VAR
+
+(* Convertir el periodo de muestreo de TIME a segundos *)
+dt := TIME_TO_REAL(ciclo) / 1000.0;
+
+(* Calcular error actual *)
+eActual := SP - PV;
+
+(* --- Accion integral con anti-windup por clamping --- *)
+(* Solo se acumula si Ti &gt; 0 y la salida no esta saturada en el sentido del error *)
+IF Ti &gt; 0.0 THEN
+    (* Saturacion alta: no acumular error positivo *)
+    (* Saturacion baja: no acumular error negativo *)
+    IF NOT (CV &gt;= 100.0 AND eActual &gt; 0.0) AND
+       NOT (CV &lt;= 0.0  AND eActual &lt; 0.0) THEN
+        integral := integral + eActual * dt;
+    END_IF;
+END_IF;
+
+(* --- Accion derivativa sobre el error --- *)
+IF dt &gt; 0.0 THEN
+    derivada := (eActual - eAnterior) / dt;
+ELSE
+    derivada := 0.0;
+END_IF;
+
+(* --- Calculo de la salida PID en forma estandar --- *)
+(* CV = Kp * (e + (1/Ti)*integral + Td*derivada) *)
+IF Ti &gt; 0.0 THEN
+    CVraw := Kp * (eActual + (1.0 / Ti) * integral + Td * derivada);
+ELSE
+    (* Sin accion integral *)
+    CVraw := Kp * (eActual + Td * derivada);
+END_IF;
+
+(* --- Saturacion de la salida al rango [0.0 .. 100.0] --- *)
+IF CVraw &gt;= 100.0 THEN
+    CV := 100.0;
+ELSIF CVraw &lt;= 0.0 THEN
+    CV := 0.0;
+ELSE
+    CV := CVraw;
+END_IF;
+
+(* Guardar error actual para el proximo ciclo *)
+eAnterior := eActual;
+
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

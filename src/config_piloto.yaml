@@ -1,0 +1,39 @@
+# =====================================================================
+# CONFIGURACIÓN DEL PILOTO — 2 modelos × 12 tareas × 2 estrategias × 3 ejec.
+# = 144 ejecuciones. Ensayo completo del procedimiento antes de la Fase 4.
+#
+# Uso:  python runner.py --config config_piloto.yaml
+# El experimento definitivo usa config.yaml (4 modelos, 26 tareas, 624 ejec.)
+# =====================================================================
+
+experimento:
+  nombre: "piloto_2modelos_12tareas"
+  ejecuciones_por_tarea: 3
+  estrategias: ["zero_shot", "few_shot"]
+  # Subconjunto: 6 básicas + 6 intermedias.
+  # Cobertura de constructos: enclavamiento, TON, CTU+flanco, interlock,
+  # TOF, oscilador, FSM, prioridades, secuencia temporizada, REAL+histéresis.
+  filtro_tareas: ["B1", "B2", "B3", "B4", "B5", "B6",
+                  "I1", "I2", "I3", "I4", "I5", "I6"]
+
+generacion:
+  temperature: 0.2
+  max_tokens: 2500
+
+# Dos modelos de familias distintas (criterio de diversidad de la propuesta).
+# Actualizar los identificadores a las versiones vigentes ANTES de ejecutar
+# y anotar la fecha de congelamiento en la bitácora (riesgo R1).
+modelos:
+  - id: "gpt-4o"
+    proveedor: "openai"
+  - id: "claude-sonnet-4-6"
+    proveedor: "anthropic"
+
+rutas:
+  tareas: "tasks.json"
+  repositorio: "../data/raw"      # separado del experimento definitivo
+  log: "../data/raw/log.jsonl"
+
+reintentos:
+  max_intentos: 4
+  espera_base_s: 5

@@ -1,0 +1,1052 @@
+We need answer as evaluator. Need produce exactly JSON list 24 objects. Need read all responses carefully. Need apply criteria. We need not use analysis per developer. Need final only JSON.
+
+We need evaluate C5 task. Key errors E1-E4:
+E1 interlock kY/kD: violation: state1 activates kD before kY off, simultaneous at least one cycle. 
+E2 dead time absent: t2 declared unused; no 100ms.
+E3 t1 no reset on stop/rearranque: t1 called IN TRUE permanently and not reset in stop, after stop/restart transition to delta immediate.
+E4 stop does not turn off kM.
+
+Additional accepted? "extra": "" so none. But instructions "a veces hallazgo adicional aceptado" none.
+
+Need for each response:
+det list 4 S/N identify defect.
+cor list 4: S if correction would truly solve, N if no, "" if defect not detected. Need careful: if det S but cor N? possible? Need evaluate correction proposed for that defect. If detection vague? det N then cor "".
+
+adic: integer number of real defects in code not in key. Need identify if response signals actual defects beyond key? Since key likely exhaustive? Need decide counts. Could be false extras? We need careful: additional real defects signal not in clave. For C5, maybe state2 no kD? But that's consequence of E1/E2? Need not count separate if "defectos reales no en clave". Need avoid counting purported issues already covered by E1-E4 in different wording. But if genuinely distinct real defect maybe count. Need infer. We must be consistent.
+
+inv: number of things presented as error and not actually errors. Need count distinct false claims. We need evaluate each response.
+
+We have 24 responses. Need parse each. We must output same order.
+
+Let's list codigos and texts.
+
+Responses:
+1 C5-147
+2 C5-162
+3 C5-131
+4 C5-181
+5 C5-144
+6 C5-134
+7 C5-107
+8 C5-128
+9 C5-108
+10 C5-104
+11 C5-185
+12 C5-106
+13 C5-103
+14 C5-102
+15 C5-160
+16 C5-133
+17 C5-159
+18 C5-196
+19 C5-164
+20 C5-174
+21 C5-119
+22 C5-163
+23 C5-121
+24 C5-153
+
+Need produce objects.
+
+We need parse each and rate.
+
+Let's go one by one. We need ensure det/cor exactly 4.
+
+We analyze response C5-147:
+Text:
+1. Error transición estado1 a estado2: activa kD immediately after t1.Q sin desactivar kY y sin respetar tiempo muerto. Correction: antes activar kD desactivar kY y esperar 100ms; requiere estado intermedio.
+2. Error desactivación de kY: in estado2 kY desactiva, pero debería ocurrir antes de activar kD y después tiempo muerto. Correction mover.
+3. Error manejo tiempo muerto: no hay manejo; no respecta. Correction intro estado y temporizador adicional t2.
+4. Error paro no desactiva kM. Correction.
+5. Error inicialización temporizadores: t1 activates continuously every cycle while estado=1 causing unexpected; correction ensure only once.
+
+Assess:
+E1 detected? Yes item 1, item 2 maybe. det E1 S.
+E2 detected? Yes item 1/3. det S.
+E3 detected? Maybe item 5 mentions t1 activates continuously causing behavior, not specifically no reset after stop/restart. "activar solo una vez al entrar" not exactly t1 no se reinicia en paro. Is this same defect concrete? E3: t1 no reinicia in stop, after paro/rearranque transition immediate. Response 5 does not mention stop or rearranque; says t1 activates continuously in every cycle which is not actually error? Need think: In ST, calling TON with IN TRUE every scan while in state1 is normal; it retains elapsed time. It does not cause unexpected. They present as error that TON activated continuously, which may not be false? It's not error, a TON with IN TRUE is normal. So item5 is invalid issue (maybe false). They did not detect E3. det E3 N. But maybe "solo se active una vez al entrar" to prevent continuous activation; not relevant. Could one argue "t1 not reset" not detected. So E3 N.
+
+E4 S.
+
+Corrections:
+E1: They propose before activating kD desactivar kY and wait 100ms, state intermediate. Solves E1. S.
+E2: Intro t2, yes S.
+E3: not detected => ""; but for item5 correction "asegurarse que solo active una vez" doesn't solve E3? We ignore because E3 not detected. Need if det N => cor "" for that slot.
+E4: Add kM false, S.
+
+adic: Real defects not in key? The response seems no extra true defect beyond E1, E2, E4. Item5 false inv. So adic 0.
+inv: Item5 false? TON called continuous every cycle not error. Count 1. Maybe also item2 "kY desactivation after dead time" perhaps. But not false exactly. They identify E1/E2 repeated. So inv=1.
+
+obs concise.
+
+C5-147 det S,S,N,S? Wait ID E2 yes. E1, E2, E4, missing E3. det ["S","S","N","S"]. cor ["S","S","","S"]. Need if E1 cor? includes waiting 100ms but for E1 immediate desactivar kY before kD yes. S. E2 yes.
+
+Need note first item has maybe "t1.Q active" etc no.
+
+Let's proceed.
+
+Response C5-162:
+Text errors:
+1 Estado1 kD se activa antes desconectar kY violation enclavamiento. Correction: Al detectar t1.Q, only desactivar kY y avanzar a estado tiempo muerto; activar kD after.
+2 Ausencia tiempo muerto: t2 declared unused. Correction estado intermedio etc.
+3 Estado2 kY desactiva demasiado tarde y estado no continuidad: kY en estado2 but kD already active previous; desactivación un ciclo tarde. Además estado2 no activa kD, no timer, no avanza quedando bloqueado en 2. Correction reestructurar.
+4 t1 no se resetea al salir estado1: t1 only called in state1 IN TRUE; al salir leaves IN implicit false and timer resets indirectly. This is functionally fragile; in future maybe... Correction explicit t1(FALSE) or outside.
+5 btnParo no desactiva kM. Correction add.
+
+Assess:
+E1 S (item1).
+E2 S (item2).
+E3? Item4 is about t1 no reset. But their description says t1 only called in state1; al salir deja de invocarse, IN queda implícitamente FALSE y temporizador se resetea indirectamente. They frame as "functionally fragile" not exactly after stop and restart immediate? Need evaluate if identify same defect. The key E3: "t1 se llama con IN := TRUE permanente y no se reinicia en el paro, de modo que tras un paro y un rearranque la transición a triángulo es inmediata." Response C5-162 item4 says t1 called IN TRUE in estado1; "no se resetea al salir del estado 1"; says al cambiar de estado t1 deja de ser invocado por lo que IN queda implícitamente FALSE y el temporizador se resetea solo de forma indirecta. That is actually the opposite: they assert it resets implicitly (though fragile). But they still say no explicit reset, but not due to paro. Does this count as identifying E3? It is not same concrete defect; they say timer resets indirectly, so no sympt. Need maybe det N. Hmm. But they may have recognized lack of explicit reset, and propose explicit t1(FALSE) or outside. Does that solve E3? Actually their correction would solve reset if applied. But detection is about "no se resetea al salir del estado 1" not "no se reinicia en paro / rearranque". The key is specifically stop/rearranque immediate. Mencion "al salir del estado1" could encompass not reset? But the defect in code is t1 IN TRUE permanent. If using `t1(IN := estado=1, PT:=T#8S)` outside CASE, when state 1 false IN false resets. That does solve E3. So maybe count as S detection? Need precise criteria: "S si la respuesta identifica ese mismo defecto concreto, con cualquier redacción y aunque lo ubique en otra línea. Una mención vaga que no señala el defecto concreto vale N." Does item4 identify same defect? It identifies timer not reset when leaving state1, but focuses on implicit reset fragility, doesn't mention parando or rearranque. It doesn't say after paro/rearranque transition immediate. But it does identify call `t1(IN := TRUE)` and no reset. Is that concrete enough? I'd lean maybe S because the E3 core is t1 no reset; response says "t1 no se resetea al salir del estado 1" and correction uses `t1(IN := estado = 1)` or explicit. The key includes "no se reinicia en el paro". This response's explanation actually says it resets indirectly but fragile; missing the stopped case. Could be S with obs mention falto paro/rearranque? The instructions say if key item has two parts, basta identificar una. For E3 core: no reset in stop. Hmm.
+
+Let's parse E3 wording: "El temporizador t1 se llama con IN := TRUE permanente y no se reinicia en el paro, de modo que tras un paro y un rearranque la transición a triángulo es inmediata." The item in JSON has that. The "two parts" maybe "no se reinicia en el paro" and "tras rearranque immediate". The response item4 says "solo se llama en estado 1; al salir deja de ser invocada ... resetea indirectamente. Esto es funcionalmente frágil: si en alguna revisión se llama a t1 desde otro estado, o si el bloque TON retiene su estado, podría provocar comportamientos inesperados." It does not mention paro. It actually denies that t1 doesn't reset; says implicit reset. So I'd mark N for C5-162 E3? Maybe because correction is explicit but not identify the actual failure after stop? Need decide.
+Given evaluator careful, if detection wrong due to claim reset implicit, not same. I'll likely mark N.
+
+E4 S.
+
+Corrections:
+E1 S.
+E2 S.
+E3 N => cor "" if det N.
+E4 S.
+
+adic: any true extra defects? Item3 maybe adds state2 no continuation/quedando bloqueado. Is that an actual defect? Original code state2 only kY:=FALSE and does not advance, so after transitioning to state2 it will remain in state2 with kM and kD? Wait original: state1 sets kD TRUE estado:=2; state2 sets kY FALSE. Then no further state. It stays state2, outputs kM TRUE, kD TRUE, kY FALSE. That's stable in delta, not necessarily "bloqueado inútil"; no need to advance because should stay running until stop. So "no avanza" is not a defect because final state stable; only useful action not. Thus false maybe. But they mention kY desactiva too late and state2 not activate kD as part. Not counting extra real. They proposed reestructurar correct but state2 no avance isn't defect. So adic 0. inv? Item3 "estado2 no avanza; quedando bloqueado en 2 indefinidamente sin ninguna acción útil" is false? Original state2 being final state with kD active is fine though no explicit kD assignment in state2 but output retained from prior. In ST output variables maintain values unless assigned. So state2 maintaining is okay. So item3 includes false assertion "dejando la máquina bloqueada sin acción útil" no real defect. Count inv 1 maybe. Item4 if we mark E3 N, is item4 invalid? They present as error but code might actually reset indirectly? In IEC TON when IN FALSE on next call resets; leaving it not called? If TON instance not called, its Q/ET retain previous values? Actually IEC 61131-3 function block TON if not called, outputs retain. But many implementations call only in state1, so upon leaving state1 no call to TON with IN false; TON output `Q` remains true from last call? Let's think: For a TON function block, if you stop invoking it, it doesn't run. Its internal state and Q output variables stay whatever they were last call. If you then re-enter state1 later, next call with IN TRUE, PT=8s: It may continue from ET previous? Actually since it wasn't called with IN FALSE, internal state retained Q true; when called again IN TRUE and Q true, output stays true. So no reset. The code indeed lack reset. Response C5-162 item4 claims "Al cambiar de estado, t1 deja de ser invocado, por lo que su entrada IN queda implícitamente a FALSE ... y el temporizador se resetea solo de forma indirecta." That claim is erroneous under IEC? In standard, function block inputs are not implicit based on not called; it retains prior inputs? When not called, it just doesn't execute. So "IN queda implícitamente FALSE" false. If no call, not reset. Thus item4 is flawed. If we mark det N for E3, inv maybe count the false assertion? But this item is about E3, a real defect but they mis-explain. We can ob count maybe not identify. inv: Number of things presented as error and not son errors. Since E3 is real error; their assertion "reset indirecto" not separate inv? Could count because they present a false correction? Hmm.
+
+Need be careful with inv: "Número de cosas que la respuesta presenta como error y no lo son (el código es correcto en ese punto o la afirmación contradice la especificación). Un mismo punto repetido cuenta una vez." For item4, they present "t1 no se resetea al salir del estado1" as error, which is true; but their explanation says resets indirectly, contradictory but still it is error. It doesn't add false issue. Probably not count as inv separate. Inv count only non-errors like "estado2 no avanza" maybe. We'll mark inv=1.
+
+Need maybe obs mention E3 not detected or weak. Could state "detecta E1,E2,E4; errores de temporizador mal explicado." But final wants one line.
+
+Let's continue.
+
+Response C5-131:
+Text:
+1. Estado1: t1 finish -> no desactiva kY antes activar kD, violates. Correction desactivar kY before kD in estado1.
+2. Estado2: kY false but not asegurar kD se mantenga activo después t1. Correction asegurar kD maintain.
+3. Estado1: no respect 100ms dead time. Correction timer adicional.
+4. Paro no desactiva kM. Correction add.
+Then code corrections includes t3, etc. Need evaluate.
+
+E1 S (item1). E2 S (item3). E3? They do not mention t1 reset. Item? no. Item2 maybe not. So E3 N. E4 S.
+Corrections:
+E1 S (but their code maybe uses kY := FALSE before t3 in estado1; solves immediate overlapping maybe yes though no dead time? For E1 yes).
+E2 S (t3 timer) but code has t3 started in estado1 and wait in estado2; yes.
+E3 not detected -> cor "".
+E4 S.
+adic: item2 "no asegura que kD se mantenga activo" is false? In original after estado2, kD remains TRUE from previous assignment; output retains. So item2 non-error. inv should count 1. Could be maybe as real? no. So inv=1.
+
+Response C5-181:
+Text lists many:
+1 condición arranque estado0 no inicializa t1 before use. Correction init false.
+2 Cambio estado1 no detener t1. Correction t1(IN FALSE) before change.
+3 Conmutación kY in estado2: No asegura kY se apague antes de encender kD. Correction add kY false before kD true.
+4 Falta tiempo muerto. Correction t2.
+5 Falta control kD en estado2: no asegura kD se mantenga active. Correction kD true at principio estado2.
+6 Falta control kM en estado2: no asegura kM active. Correction kM true.
+7 Falta control kY en estado2: no asegura kY apagado. Correction kY false.
+8-10 Falta control kD/kY/kM estado0 false.
+Need evaluate.
+
+E1: Item3 mentions kY apague antes encender kD. Actually they say "No se asegura que kY se apague antes de encender kD." That is E1. Det S.
+E2: item4 S.
+E3: item1/2 maybe t1 not reset/detener. They mention "No se detiene el temporizador t1 cuando se cambia de estado" and "No se inicializa t1". That is related to E3 no reset. Does it concretely identify? Maybe S? It doesn't mention paro/rearranque but says not reset. Correction t1(IN FALSE) before change and init. This would solve t1 reset if done. Key "no se reinicia en el paro"; item1/2 not specifically paro but same reset issue. Might count S? Need decide. Under "any wording" maybe S. They identify t1 not stopped/reset on state change, not necessarily stop. But if they say init false in estado0 and stop? They only before change. In C5-181 item2 correction "Añadir t1(IN := FALSE); antes de cambiar de estado." That is on transition. To reset after stop? If stop occurs while state1? They have stop logic? Not mentioned? Actually response doesn't mention btnParo? It lists not. But item1 "inicializar t1 en estado0 con t1(IN:=FALSE)" could solve. But they didn't mention stop/rearranque immediate. Is that enough? I'd maybe mark S with cor S? Need be consistent with other responses that mention timer reset. Usually if they detect t1 doesn't stop/reset, that's E3. But key says specifically no reinicia en paro, after stop/restart immediate. C5-181 item2 "No se detiene el temporizador t1 cuando se cambia de estado" might not address stop. Hmm.
+
+Need think about evaluation rubric: det S if "identifica ese mismo defecto concreto". E3 "t1 sin reinicio en paro" core = timer not reset. If response says t1 not initialized/reset, I'd count it as same if it says reset/stop. Here item1/2 no mention paro. But maybe "al cambiar de estado" (state1->state2) also resets; the actual critical is on paro. The correction "antes de cambiar de estado" only resets when t1.Q transition to state2, not when btnParo during state1. But item1 init in state0 with IN FALSE would actually reset when state0 false? They propose in estado0 after stop. Hmm "Condición de arranque en estado 0: No se inicializa t1 antes de usarlo. Corrección: Inicializar t1 en estado 0 con t1(IN := FALSE, PT := T#8S);." In state0 they can call t1(IN false) which resets before start. That solves repeated start after stop. So they identify reset deficiency. I'd mark S maybe.
+
+Need evaluate each error in C5-181 extras:
+Item5 "Falta control de kD en estado2 ... kD TRUE al principio" This is false? In original kD already true set in estado1. But because E1? With original it's true, but even if fixed to not set kD in estado1, state2 may not be final. They present as error not true. inv count.
+Item6 no kM maintained in estado2: false; kM remains true from estado0.
+Item7 kY no maintained false: false; state2 already false each scan.
+Item8-10 outputs false in state0: false? In original, initial startup variables retain previous but if state0 from stop kM might remain due E4; but E4 covers. For kY/kD yes stop sets them false. "No se asegura" maybe because if state0 from elsewhere? But generally not error. These are not actual defects. Many inv. Need count unique false claims. item5-10: "no asegura mantenerse" vs "initialization false" maybe same type. Need determine inv count: items presented as error and code correct. Item5 false. Item6 false. Item7 false. Item8 false (kD false in state0? On initial FB outputs default false, after stop kD false; so not error). Item9 false. Item10 false (kM not false in state0 is consequence E4; but after fixing E4, if paro sets kM false, state0 not necessarily need force; initial default false. As standalone no).
+Need maybe count each distinct false issue? The instructions "cosas que la respuesta presenta como error y no lo son. Un mismo punto repetido cuenta una vez." There are multiple distinct "lack of control" for each output. Could count as 6? But some may be duplicates? We need be fair. In such responses, we count inv as number of distinct false claims. These are 6 distinct false claims (kD in state2, kM in state2, kY in state2, kD state0, kY state0, kM state0). But perhaps they are variants of one theme "outputs not forced in all states", but they are different variables/state. The prompt asks count as one per same point repeated. We can count 6? That would be high but correct. Need check if any are actual defects? 
+- "Falta de control de kD en estado 2: No asegura que kD se mantenga activo después de encenderlo." In original `kD` is assigned TRUE in state1, then state2 does not assign it. In PLC ST, output retains value. Thus not error. So false.
+- "Falta de control de kM en estado 2: No asegura que kM se mantenga activo." In original kM assigned TRUE in state0; it retains. Not error. false.
+- "Falta de control de kY en estado 2: No asegura que kY se mantenga apagado." Actually state2 assigns kY FALSE each scan; so false.
+- "Falta de control de kD en estado 0: No asegura que kD se mantenga apagado." If state0 after stop, kD assigned false in IF stop; if initial, bool default false. Not error. But if state0 via other path? none. false.
+- "Falta de control de kY en estado 0": false because kY false after stop; at initial false. 
+- "Falta de control de kM en estado 0": This is contentious because if initial or normal, kM not necessarily false? In state0 after stop, if E4 not fixed, kM remains true. But they present "control de kM en estado0" without mention E4. Is that a real defect? The requirement says stop disables kM; not necessarily state0 should always force outputs. So false as stated. Count as 6 maybe.
+
+But inv high. Need ensure E1 correction: Item3 correction "Añadir kY := FALSE; antes de kD := TRUE" would solve E1 if placed in state1 before kD. But they locate "en estado 2" maybe says state2? Text: "Conmutación de kY en estado 2: ... Corrección: Añadir kY := FALSE; antes de kD := TRUE." In original state2 doesn't have kD TRUE, state1 does. If they mean add kY false before kD in state1, solves. But their location state2 is wrong. The correction proposed "añadir kY FALSE antes de kD TRUE" solves E1 if in right branch. Need cor S? It might if the line is before kD true in state1. They didn't specify exactly but likely yes. For E1 cor S? We can be generous.
+
+E2 cor S.
+
+E3 cor? They propose init t1 false and t1 false before switching. If state0 init false, solves stop reset maybe if state0 executes after paro? In original stop sets estado0, state0 calls t1(IN false) if they insert there. That would reset. So cor S.
+
+E4: Wait C5-181 does not mention kM not off on stop at all! They mention kM should be true at state2 and false at state0, but not btnParo. So E4 not detected. det E4 N; cor "".
+
+Our det for C5-181 maybe ["S","S","S","N"] or E3 N? Need settle.
+
+Let's read C5-181 again:
+"1. Condición de arranque en estado 0: No se inicializa el temporizador t1 antes de usarlo. Corrección: Inicializar t1 en estado 0 con t1(IN := FALSE, PT := T#8S);.
+2. Cambio de estado en estado 1: No se detiene el temporizador t1 cuando se cambia de estado. Corrección: Añadir t1(IN := FALSE); antes de cambiar de estado.
+3. Conmutación de kY en estado 2: No se asegura que kY se apague antes de encender kD. Corrección: Añadir kY := FALSE; antes de kD := TRUE;."
+The E3 key: t1 sin reinicio en paro. They mention not initialize in state0 and not detener in state1. It implies resets; "estado0" is after paro, so yes maybe identifies actual issue albeit not paro/restart symptom. I'd mark S.
+
+But must ensure if det S then cor S maybe. Their corrections t1(IN FALSE) in state0 and before state change solve reset generally. S.
+
+Now adic for C5-181: None additional real defects beyond key? The items 5-10 false not additional real. So adic=0.
+
+inv: Count false claims. Need maybe item5-10 count. Could include item3 maybe no, E1 true. Item2 maybe no. So inv=6 perhaps. But maybe item3 "Conmutación de kY en estado2" is not correct location but identifies real E1. Not inv. 
+Let's maybe count inv=6.
+
+Response C5-144:
+Text:
+1. Estado inicial incorrecto: initial state not defined; correction ensure estado initialized 0.
+2. state1 kD activates before kY; correction.
+3. dead time absent; correction.
+4. stop doesn't disactivate kM; correction.
+5. falta reinicio temporizadores t1/t2 when btnParo; correction.
+
+Assess:
+E1 S item2.
+E2 S item3.
+E3? item5 says t1/t2 no reinician when paro. That is exactly E3 (t1). It includes t2 too. Det S.
+E4 S item4.
+Corrections:
+E1 S? Correction "desactivar kY antes activar kD" yes but they may do same cycle? Solves E1.
+E2 S (timer).
+E3 S? "añadir lógica para reiniciar t1/t2 en paro" solves E3 yes.
+E4 S.
+adic: item1 estado inicial not defined. Is that a real defect? In IEC `estado : INT;` default initial value is 0 or not? IEC variables are not automatically initialized unless explicit? In structured text, VAR have initial value 0? PLC default usually zero. But some environments may retain? It could be considered robust perhaps, but not in original defect key. Is it a real defect of code? The stated task doesn't mention needing explicit initialization; many PLC IDEs initialize VAR to 0. The code defective but initial state ambiguous maybe not a true logical error per standard? Actually IEC 61131-3 variables with initial value omitted have default initial value (zero). So not true. Count inv=1 for item1.
+Maybe item5 correction includes t2 reset though t2 unused; not a false issue; it's part of E3/E2. No additional.
+inv=1.
+
+Response C5-134:
+Text:
+1. kY and kD simultaneous; correction.
+2. dead time absent t2 unused; correction.
+3. reseteo t1; correction.
+4. stop no kM; correction.
+Assess:
+E1 S.
+E2 S.
+E3 S (explicit t1 not reset after stop/rearranque).
+E4 S.
+Corrections all S.
+adic 0 inv 0.
+
+Response C5-107:
+Text:
+1. Error manejo t1: t1 activa correctamente, pero no se desactiva después uso; correction t1 IN false after state2.
+2. kD before kY; correction.
+3. dead time; correction.
+4. stop no kM; correction.
+5. t2 declared but unused; correction use t2.
+Assess:
+E1 S item2.
+E2 S item3/5.
+E3? item1 says t1 no se desactiva after use, not specifically paro/rearranque; "no se desactiva después de su uso" correction after t1.Q change to 2. Does not mention paro or stop. Does it identify E3? It identifies t1 not reset after use maybe. But key says no reinicia en paro. Hmm. Similar to C5-181 but even less. It doesn't say stop/reset after paro. But if t1(IN FALSE) after use, does solve reset after transition. Does it solve after paro? In original stop while in state1 sets estado0; code would not execute t1(IN FALSE) after t1.Q because t1.Q false if not expired? But when t1.Q true and then state2, they set t1 false. However after btnParo during state1, they don't t1 false. Correction not cover stop? It says "Después de que t1.Q sea verdadero, desactivar t1... después estado cambie a 2." That does not reset in paro. So if restarted after a stop mid-timing, failure remains. Thus E3 not detected / correction N. The core defect not addressed. I'd mark E3 N.
+But maybe they say "no se desactiva después de su uso" could be considered same no reset. Yet no rearranque. We should be strict: does not mention stop/rearranque. Let's mark N? Need consistent with decisions.
+C5-107 item1 says t1 "no se está desactivando después de su uso, lo que puede causar un comportamiento inesperado si el bloque se vuelve a ejecutar." This doesn't mention paro, but "si bloque se vuelve a ejecutar" maybe rearranque? They don't tie to paro. Could be enough? Hmm.
+The key item E3 has "no se reinicia en el paro, de modo que tras un paro y un rearranque..." Response says not deactivated after use, causing unexpected if block re-executes. I'd say it identifies general lack of reset but not specific paro/rearranque instant. Maybe "cualquier redacción" allows. But "defecto concreto" no. I lean N for strict? Need maybe many responses mention timer reset without paro; if I mark S for C5-181 but N for C5-107 inconsistent. Let's define criterion: Det S if mentions t1 no reset/IN always TRUE after stop or rearranque; general "no se desactiva después de uso" is vague and not same concrete. C5-181 mentions initialize in state0 and stop? Not explicitly paro but state0. Hmm.
+
+Let's maybe treat E3 detection as S if they clearly say t1 never reset/non initialized/always IN TRUE. C5-107 says "no se desactiva después de su uso". This is essentially no reset, but not in paro. Could count S? The correction `t1(IN := FALSE)` after `estado` changes to 2 (not in paro). If t1.Q true at state transition, t1 resets after transition. But if rearranque after paro, state 2 not? After first run from state0->1->2, if paro from state2 resets estado0 but t1 not reset? However in state2 they would have set t1 false after t1.Q, so t1 reset. If paro during state1 before 8s, no reset; rearranque would resume or immediate depending. They didn't address. So maybe not full.
+Given key "basta con identificar una parte" (no reinicia en paro). C5-107 doesn't mention paro. N.
+
+Need also E2 cor? yes.
+
+E4 S.
+
+adic: Item5 t2 declared but unused is actually E2, already detected; no new real defect. Item? Maybe no.
+inv: Any false? Item1 if det N but it identifies real defect? E3 is real defect, just not specifically. We generally not count as inv if issue is real but detection insufficient? The inv criteria says "cosas que la respuesta presenta como error y no lo son". Item1 is a real error (t1 not reset) albeit not specific; not inv. Item? none false. inv=0.
+
+Response C5-128:
+Similar to C5-162 but with some tweaks:
+1 E1 kD active before kY (S).
+2 E2 dead time (S).
+3 Estado2 kY false repetitively but kD never activated in correct route; state2 leaves motor no contactor. Correction state final should assign kD.
+4 t1 no reset al volver estado0: says t1 only called in state1; if btnParo while t1 running and rearranque, TON recuerda ET; depends; correction t1(IN FALSE) in state0/paro.
+5 btnParo no kM.
+Assess:
+E1 S.
+E2 S.
+E3 S (explicit stop/rearranque).
+E4 S.
+Corrections:
+E1 S.
+E2 S.
+E3 S.
+E4 S.
+adic? Item3: state2 only kY false, kD never activa correct route leaving motor without contactor. In original, kD is activated in state1, so motor not without after transition. But after correction E1, state2 would be dead time; item3 maybe describes need for final state. Is it a real additional defect? It is a consequence of the structure; not separate new defect. Could count as no. It also says "estado2 ... dejando motor sin ningún contactor de marcha activo indefinidamente" under corrected logic not original. In original, if kD active from state1, not true. Might be false inv 1? But they present as "tras corrección Error1, kD debe activarse..." It's not exactly a code defect; maybe not. For inv maybe count if statement as error that current state2 no kD is a defect? Current code actually kD active due state1. If they say current state2 never activates kD correct route, but the current kD activation is mislocated; ultimately no separate. Not count inv maybe.
+Let's compare C5-162 item3 had similar "bloqueado en 2" we considered inv. C5-128 item3 "estado 2 solo desactiva kY ciclo tras ciclo sin activar kD ni avanzar... dejando el motor sin ningún contactor de marcha activo indefinidamente." In original, kD remains true from state1, so this statement is false. Count inv 1.
+But E1/E2 already identified. We'll count inv=1.
+
+Response C5-108:
+Text list 13 cases. Need parse:
+1 Falta inicializar t1: not initialized before use. Correction init.
+2 Falta inicializar t2: not used but if plan use must init.
+3 Falta manejar tiempo muerto 100ms. Correction state/timer.
+4 Falta manejar btnParo while kY active: if btnParo pressed while kY active, kY apagará, pero kD no se desactivará. Correction ensure kD also off.
+5 Falta manejar btnMarcha while kY active: if marcha pressed while kY active, kY mantendrá y kD no encenderá. Correction...
+6 Falta manejar btnMarcha while kD active: if marcha pressed while kD active, kD mantendrá y kY no encenderá. Correction...
+7 Falta manejar btnParo while kD active: if paro while kD active, kD apagará, pero kY no se desactivará. Correction...
+8 Falta manejar btnMarcha while kM active: if marcha while kM active, kM mantendrá y kY no encenderá. Correction...
+9 Falta manejar btnParo while kM active: if paro while kM active, kM apagará, pero kY no se desactivará. Correction...
+10-13 combinations.
+
+Need assess det:
+E1? They do not explicitly say kY/kD simultaneous? They mention cases btnMarcha active while kY etc. Item4 "btnParo while kY active: kY se apagará, pero kD no se desactivará" false. They don't detect E1. E1 N.
+E2? Item3 says falta manejar tiempo muerto. S. But correction "agregar nuevo estado/timer" maybe yes.
+E3? Item1/2 initial t1/t2 maybe init. They say t1 not initialized before use. Could be vague; not same as no reset en paro. But item1 "falta inicializar temporizador t1: se utiliza en estado1, no se inicializa antes de uso" maybe timer not reset. Does not mention stop/rearranque. Likely N.
+E4? They have "Falta manejar btnParo while kM active ... kM apagará..." They may mention kM? Item9 says if paro while kM active, kM se apagará, but kY no se desactivará. In actual code, paro does not apagar kM; they think it does? Wait item9: "Falta manejar el caso en que btnParo se presione mientras kM está activo: Si btnParo se presiona mientras kM está activo, kM se apagará, pero kY no se desactivará. ... Asegurarse de que kY también se apague." This is false since kM doesn't turn off. So they do not identify E4; they identify false kY issue. But item4? no. E4 N.
+Thus det: E1 N, E2 S maybe, E3 N, E4 N or maybe? Let's see if any item states kM not off on stop? No, they believe kM apaga. So no.
+
+Corrections:
+E1 N -> "".
+E2 S? They propose add timer, yes.
+E3 N -> "".
+E4 N -> "".
+adic: Are there real defects not key? Item? "falta inicializar t2" is not an additional real defect because t2 unused, and dead time covered. No. All are false/no key. adic 0.
+inv: Many false assertions. Need count distinct:
+- item4 false: in actual code btnParo DOES set kD FALSE and kY FALSE regardless of state. So no defect.
+- item5 false: btnMarcha while in state1? In original if estado1, btnMarcha not evaluated. But specification? "al pulsar btnMarcha se activan kM y kY; transcurridos 8s..." It might be edge of pulses while running; spec doesn't say repeated marcha should do something. No error. false.
+- item6 false similar.
+- item7 false: btnParo while kD active DOES kD false and kY false. false.
+- item8 false.
+- item9 false: btnParo while kM active does not apagar kM. They say kM apagará but kY no; false.
+- item10 false.
+- item11 false.
+- item12 false.
+- item13 says "btnParo while kM,kY,kD activos: todos se apagarán. This is expected, but ensure no other unexpected." It gives no actual defect, but not false? It says no other unexpected. Not count.
+- item1 maybe real? t1 initialization is E3 but not detected. Could count false? It is true that t1 not reset? They don't mention stop, but lack init could be considered? Not false. We'll maybe not count as inv because it's related to E3 real.
+- item2 "t2 no se inicializa" is false? t2 is declared unused. They say if plan to use it future, init. This isn't a current code defect? They present as error "Falta inicializar t2" and correction "inicializar t2 al inicio". Could be false as error because unused, no need init. But t2 declared but unused is part E2? Actually E2 includes t2 unused. Their item2 says t2 no use but if future, init. Not real error. Could count inv? It is not an error currently. Count maybe.
+- item3 time dead is true E2.
+Need have inv not too huge? We can count 10 false items from 4-12 (excluding 13). But some repeated combinations are distinct? They are distinct cases but same false pattern. The prompt says "Un mismo punto repetido cuenta una vez." Many are variants. We can group similar false issues: 
+1) "btnMarcha pressed while already active should change behavior" (items 5,6,8,10,12) false.
+2) "btnParo pressed while active doesn't turn off other contactors" (items 4,7,9,11) false.
+3) "inicializar t2" false.
+Maybe inv count 3? Need decide. The instructions asks "Número de cosas que la respuesta presenta como error y no lo son... Un mismo punto repetido cuenta una vez." If same point repeated, count once. For C5-108, there are two repetitive false families plus t2. We can count inv=3 maybe. Need be consistent and not overly granular. What is "un mismo punto"? E.g., repeated false "btnMarcha while active" is one point (edge not specified) repeated. "btnParo while active doesn't deactivate other" is another false (actually stop works). Let's count inv=3: false claims about needing to handle repeated btnMarcha, false claims about btnParo not deactivating other contactors (they do), false t2 init. The item1 maybe false "t1 not initialized before use" maybe actual? We can leave.
+But our initial earlier for C5-181 counted six distinct "lack controls". Need consistent. Hmm.
+
+Maybe better to count inv literally at item level for clear false issues, but avoid double counting duplicated same point. The C5-108 list has many items; if a response invents many false errors, inv should reflect volume. But count distinct statements. Let's examine response C5-108 all 13:
+1 "falta inicializar t1 ... se utiliza ... no se inicializa antes de su uso" Could be interpreted true because t1 not initialised. However maybe TON default initialised, but there is no t1 call outside state1. Not exactly error. But if det E3 N, inv maybe count? It's presented as error "No initialize t1" not part key? But is it an actual defect? Under IEC, TON doesn't need explicit init? It is good practice but not necessarily. We can call inv if strict.
+2 t2 init false.
+4 false as above.
+5 false.
+6 false.
+7 false.
+8 false (assumes btnMarcha while kM active should toggle; not spec)
+9 false (says kM apagará; false)
+10 false.
+11 false (says kM,kY apagarán; false about kM)
+12 false.
+13 says todos se apagarán. "Esto es el comportamiento esperado, pero se debe asegurar que no haya otros comportamientos inesperados." Not really error.
+Could count 1,2,4-12 = 10; but maybe we can combine 5/6/8/10/12 as false "marcha while already running should change output" (one), 4/7/9/11 as false "paro doesn't deactivate all" (one), plus t1/t2 init false (one) => 3. 
+I need set a consistent method. The user asks "cosas" maybe each distinct false issue. If repeated same point, once. In C5-181, items 5-10 were distinct outputs/state; they're false but all share "output not forced in states". Could group as one or maybe more. Hmm.
+
+Maybe prior evaluator would count inv roughly as number of hallucinated errors. We want fair.
+
+Let's not get stuck; can assign reasonable inv.
+
+Need maybe use "adic" and "inv" exact? The final JSON likely used for scoring. Need align with expected. But no hidden.
+
+Let's continue detailed.
+
+Response C5-104:
+Text:
+1 Error state1 kD before kY. Correction kY false before kD.
+2 Error state2 only kY false but no asegurar kD activo. Correction kD true.
+3 Paro no kM. Correction.
+4 Error state1 no 100ms dead. Correction add t3 timer. (But their code uses t3 inside state1 IF t3.Q then kY false kD true, which may not work? Need check correction)
+5 repeats item2.
+
+Assess:
+E1 S item1.
+E2 S item4.
+E3? No mention t1 reset. E3 N.
+E4 S item3.
+Corrections:
+E1 S.
+E2? They propose t3 started in state1; code:
+1:
+ t1...
+ IF t1.Q THEN
+   t3(IN:=TRUE, PT:=T#100MS);
+   IF t3.Q THEN
+     kY:=FALSE;
+     kD:=TRUE;
+     estado:=2;
+   END_IF
+ END_IF
+This actually does not implement dead time properly because t3 starts and is not waited across scans; since in same scan t3.Q false, so kD never. But conceptually correction text "Agregar temporizador adicional t3" but code defective. For cor "S" if correction would resolve truly. The textual correction "Iniciar temporizador t3" and wait (they attempted) but structured incorrectly due IF t3.Q nested inside same IF; needs state. Does it truly solve? In the code they gave, when t1.Q is TRUE, they call t3(IN:=TRUE) and immediately check t3.Q in same scan; TON will not be true for 100ms, so state2 never entered. So correction doesn't solve. However the text says "Agregar un temporizador adicional para el tiempo muerto antes de activar kD" and code attempt flawed. The correction proposed is not "resolvería de verdad" because no wait across scans. In C5-104 item4 should cor N maybe. But item4 detection yes.
+Wait they could mean check t3.Q across scans? They didn't because `t3(IN := TRUE...)` and `IF t3.Q THEN` both inside t1.Q branch; since state remains 1 until this IF false? Actually in state1, each scan runs t1. If t1.Q true, enters; starts t3; checks t3.Q false; does not set estado. Next scan still estado1, t1.Q true, calls t3(IN TRUE), t3 now maybe has elapsed 1 scan (but if scan time 100ms? no likely less; eventually after 100ms across scans, t3.Q true; then inside same IF they set kY false, kD true and estado2. So if both calls remain inside IF t1.Q branch, and t1 remains Q true, t3 continues to be called with IN true across scans. Does TON's Q become true after PT? Yes if each scan t3(IN TRUE). So after 100ms, it will set. So the code works? Let's see: At each scan while t1.Q true and estado1, they call t3(IN TRUE, PT 100MS); after PT, in a later scan t3.Q true, it sets kY false, kD true, estado2. That works but no separate state, but the dead time implemented because it waits inside IF t1.Q branch across scans. Is that valid ST? Branch doesn't need to exit; yes, the timer call repeats. So correction solves E2 maybe though not ideal. But in the code, it also doesn't set kY false until after t3.Q, so solves E1 too. Actually in original code, t1.Q true: in their code kY false only after 100ms, then kD true same scan. Interlock: kY false and kD true in same assignment order, no overlap. So E1 solved. Good. I'll mark cor S for E2 and E1.
+E4 cor S.
+adic: item2 no asegurar kD active false. inv count 1 (repeated item5 same). They also maybe "kD active in estado2" false as above. inv=1.
+
+Response C5-185:
+Text:
+1 Transition E1 and E2 together: overlap and dead time omitted. Correction.
+2 Lógica paro no kM. Correction.
+3 Reseteo t1: t1 called IN TRUE exclusively state1; al salir never receives IN FALSE; fail next arranque. Correction outside CASE.
+Assess:
+E1 S (item1).
+E2 S (item1).
+E3 S (item3).
+E4 S (item2).
+Corrections all S (item1 correction says state2 t2 then kD; yes for E1 and E2).
+adic 0 inv 0.
+
+Response C5-106:
+Text:
+1 E1; correction.
+2 E2; correction.
+3 timer reset; correction.
+4 paro kM; correction.
+All S. adic 0 inv 0.
+
+Response C5-103:
+Text:
+1 kM stop (E4)
+2 E1
+3 E2
+4 E3 t1 reset
+All S. Corrections S. adic 0 inv 0.
+
+Response C5-102:
+Long repeated. Text:
+1 Error state1 kD before kY. Correction desactivar kY before kD.
+2 Error state1 no 100ms dead. Correction timer additional.
+3 Error state2 no asgura kY se desactive after kD active? correction asegurar kY se desactive after kD active (weird).
+4 Error stop no kM.
+5 Error t1 not reset when btnMarcha activated. Correction.
+6..19 repeated handling btnParo while t1, btnMarcha while t1 etc.
+Need assess.
+
+E1 S item1.
+E2 S item2.
+E3? item5: t1 no se reinicia cuando se activa btnMarcha. Could be related to E3? It says not reset on start; correction reiniciar t1 al activar btnMarcha. That would reset at the start of each march, which could solve after stop but doesn't mention paro. Does it identify E3? More like no reset at start/repeated start. It says "podría causar comportamientos inesperados si btnMarcha se presiona nuevamente." That's about repeated marcha, not stop/rearranque. However reset on start would ensure timer starts from zero after any prior stop, solving E3. Is detection same? Maybe S? They identify t1 doesn't reset when marcha activated, not specifically "no se reinicia en el paro". The key has "no se reinicia en el paro" core. Could count S because it's same defect of t1 not reset before a new cycle. Correction reset at marcha. Hmm.
+E4 S item4.
+
+Corrections:
+E1 S.
+E2 S maybe.
+E3 if det S: correction "reiniciar t1 al activar btnMarcha" could solve E3? At the beginning of state0 on btnMarcha, they could call t1(IN FALSE) before setting estado1; yes. It solves rearranque after stop. S. If they only set estado1 and then t1(IN TRUE) same scan? Calling IN false then true may reset. Could be okay.
+E4 S.
+
+adic: Possible false claims many? Items 3,6-19 are invalid. Need count. item3 "no asegura que kY se desactive después de kD active" false/wrong. It says ensure kY after kD, which is wrong order; but maybe they meant before? Text says "La desactivación de kY está en estado2, pero no se asegura que ocurra después de que kD se active." That's nonsensical; count inv.
+Items 6-19 repeated handling btnParo/marcha while t1 in course; duplicates. These are not actual errors because code is a state machine, stop handled by final IF each scan independent. Need count as somewhat many. But due repetition same points, maybe count 2 more? Let's identify distinct false issues:
+- Item3: state2 kY after kD assurance (false).
+- Items 6,8,10,12,14,16,18: "no se maneja caso btnParo/btnMarcha while t1 en curso" repeated. Actually this is false? Is it an error that code doesn't check btnParo before starting timer? The final stop logic handles paro even while t1. The code doesn't need to handle start button again (not specified). So false family.
+- Item7,9,11,13,15,17,19: repeated button press during t1 (marcha start). False.
+Maybe item5 if not? Part of E3.
+So inv maybe 3 (item3 + button presses + start again). adic 0.
+
+Response C5-160:
+Text:
+1 t1 activated continuously in each scan causing never reach desired time? Correction activate once on entry.
+2 E1/E2: kD immediately after t1.Q without dead time; correction state intermediate.
+3 kY should off before kD; correction.
+4 stop kM; correction.
+5 no transition back to estado0 after kD, leaves indefinite; correction add logic return after cycle.
+
+Assess:
+E1 S items2/3.
+E2 S item2.
+E3? Item1 about t1 activated continuously causing never reach 8s. That is false. They don't mention no reset in stop. E3 N.
+E4 S item4.
+
+Corrections:
+E1 S (state intermediate).
+E2 S.
+E3 not detected => "".
+E4 S.
+adic: Item5 "no hay transición de regreso al estado 0 después de activar kD" is false because the system should stay running until paro, not automáticamente return. Not a defect. Also item1 false. inv count 2? Item1 false (continuous TON doesn't prevent reaching time). Item5 false. Maybe item3 is E1 repeated. So inv=2.
+
+Response C5-133:
+Text:
+1 E1.
+2 E2 dead time.
+3 timer t1 never reset.
+4 state2 only disconnects kY but no connect kD nor manages t2, leaving incomplete (kD never active from this state and motor only kM). Correction restructure.
+5 stop kM.
+6 state0 outputs not initialized FALSE.
+Assess:
+E1 S.
+E2 S.
+E3 S item3 (explicit future execution).
+E4 S item5.
+Corrections:
+E1 S.
+E2 S.
+E3 S.
+E4 S.
+adic: Item6 state0 outputs not initialized false: is that a real defect? It says kM/kD not false at state0. Since E4 kM not off; but once fixed, state0 may still not guarantee initial. However after paro sets kY/kD false. kM will be fixed. Is explicit forcing at state0 required? Not necessarily. Could be considered not in key but maybe true for safety? The `IF btnMarcha` only starts if pressed; if kM remains from previous due E4, that's E4. For initial/default, kM false by default. Thus not new real defect. So adic 0. inv=1 for item6 (state0 initial issue). Item4 maybe false? It says state2 no connect kD, leaving motor only kM. In original kD active from state1, so false. But it's tied to E2. Count inv maybe 1 more. Let's decide.
+
+C5-133 item4 says "Estado 2 – Solo desconecta kY pero no conecta kD ni gestiona t2: ... kD nunca se activa desde este estado y el motor quedaría funcionando solo con kM." In original code, kD is activated from state1, so statement "motor quedaría funcionando solo con kM" is false. Count inv 1. Item6 false count. So inv=2. adic 0.
+Could item6 maybe also a real defect? no.
+
+Response C5-159:
+Text:
+1 Error transición: kD active before kY, no asegura kY before. Correction state.
+2 Error desactivación kY state2: no clear transition; mover kY to state1.
+3 dead time absent. Correction new state t2.
+4 initial/use temporizadores: t1 activa continuamente state1 sin reiniciar; t2 no usa. Correction t1 only once and reset; use t2.
+5 stop kM. Correction.
+Assess:
+E1 S item1/2.
+E2 S item3.
+E3? item4 says t1 activa continuamente en estado1 sin ser reiniciado; not specifically stop/rearranque. Correction "t1 solo una vez y se reinicie". Does that solve E3 if explicitly reset, maybe yes. But symptom not mention paro. Similar general reset. Could count N? Let's decide with consistency: C5-159 item4 says "Los temporizadores t1 y t2 no están correctamente inicializados o utilizados. t1 se activa continuamente en el estado 1 sin ser reiniciado, y t2 no se utiliza." It mentions sin ser reiniciado. It does not mention paro. The correction "asegurarse de que t1 se active solo una vez al entrar en estado1 y se reinicie adecuadamente." Could solve if reset at appropriate state. This is closer to E3. Maybe S? But again vague.
+Need perhaps set a clear bright line for E3: S if response mentions reset/reinicio of t1 and/or paro/rearranque. If vague "continuous activated" without reset maybe N. C5-159 mentions "sin ser reiniciado"; so maybe S. But the "reiniciar adecuadamente" not specify paro. Hmm.
+Let's list all detections for E3:
+- C5-147: continuous activation only (no reset? no mention). N.
+- C5-162: says reset indirect fragile; not paro. Maybe N/S.
+- C5-131: no mention E3. N.
+- C5-181: init state0 and stop timer on state change; mention init. S? 
+- C5-144: reinicio t1/t2 cuando btnParo. S.
+- C5-134: explicit stop/rearranque. S.
+- C5-107: no desactiva after use. N?
+- C5-128: explicit stop/rearranque. S.
+- C5-108: no init before use. N.
+- C5-104: no mention E3. N.
+- C5-185: explicit paro/restart. S.
+- C5-106: explicit. S.
+- C5-103: explicit. S.
+- C5-102: reiniciar t1 al activar btnMarcha. S? maybe.
+- C5-160: continuous activation never reach 8s (false). N.
+- C5-133: explicit future execution. S.
+- C5-159: t1 sin reiniciar. maybe S.
+- C5-196: explicit t1 never resets. S.
+- C5-164: explicit t1 never resets. S.
+- C5-174: explicit stop/restart. S.
+- C5-119: explicit. S.
+- C5-163: "t1 activa en estado1 pero nunca se reinicia, comportamiento si bloque se ejecuta más de una vez" mention. S? maybe.
+- C5-121: explicit t1 no resetea al salir. S.
+- C5-153: "t1 no se inicializa antes de uso" not stop. N? maybe.
+
+Need maybe be strict: If no mention parar/rearranque, but says reinicio/inicialización, likely S? The key item E3 comprises t1 no se reinicia en el paro, consequence. If detector says "t1 activa en estado1 sin reiniciarse; reiniciar al salir/entrar" is enough to solve and identifies defect. I'd mark S for those that mention reset/reinicio of t1 specifically. For C5-107 "no se desactiva después de su uso" also reset but after use, maybe S? Hmm.
+
+Could maybe use "det" recognition not requiring exact symptom, just same defect. The core defect is lack of timer reset. Most non-key responses about continuous TON are false but issue not defect. If response says "t1 se activa continuamente en cada ciclo" that's not E3, that's a false issue. If response says "t1 no se reinicia", that's E3.
+
+Let's define:
+S for E3 if response indicates t1 should be reset/reinitialized or explicitly called with IN FALSE, OR mentions stop/rearranque. It might not mention stop, but proposes reset. For correction S if reset remedy truly solves (e.g., `t1(IN:=estado=1)` or reset in state0/stop). If remedy only resets after normal transition to state2, not necessarily stop, maybe N for cor? But if det S? Hmm.
+
+We'll evaluate each as we go.
+
+For C5-159, they propose "t1 se active solo una vez al entrar en estado1 y se reinicie adecuadamente." "Adecuadamente" vague; if they add reset when exiting/entering, solves. But not explicit to stop. Could still solve if they reset in appropriate state? We can't know. To be careful, maybe cor S? They didn't specify exactly where. The criteria: cor "S si la corrección propuesta para ese defecto lo resolvería de verdad". A vague "se reinicie adecuadamente" maybe maybe. I'd mark S? Hmm.
+Could mark det S cor S if they mention reset. We'll keep.
+
+But note item4 also says t1 se activa continuamente en estado1 (normal) as part. Might be a false issue "activar continuamente causing issue"; but they add sin ser reiniciado. Does this count inv? Maybe not.
+
+Let's not bog.
+
+Response C5-159:
+E1 S, E2 S, E3 maybe S, E4 S. Corrections S all. Additional? Item2 "desactivación kY state2 no clear transition" is E1. Item4 includes t2 not used E2. No real extra. inv? Item4 "t1 se activa continuamente en el estado1" is not an error; but bundled with reset. Might not count. If strict, it's a false statement? They say activa continuamente without being reset, but "se activa continuamente" true. They don't say "never reaches time". I won't count inv. inv=0.
+
+Response C5-196:
+Similar to C5-133:
+1 E1.
+2 E2.
+3 t1 never reset.
+4 estado2 only apaga kY but no activa kD ni gestiona kM. Correction...
+5 E4 kM.
+6 Estado0 outputs not guaranteed false.
+Assess:
+E1 S, E2 S, E3 S, E4 S.
+Corrections all S.
+adic: none.
+inv: Item4 "Estado2 solo apaga kY pero no activa kD ni gestiona kM ... motor quedaría funcionando solo con kM" false in original because kD active from estado1. Count 1.
+Item6 "estado0 outputs not guaranteed false" maybe false? Similar count 1. inv=2.
+But if E4 already kM? yes.
+Need maybe item4 also mentions kM not desactiva en funcionamiento normal? Actually says "kM nunca se desactiva al llegar a este estado de funcionamiento normal en triángulo." That's not an error; kM should remain true. false. Count.
+
+Response C5-164:
+Similar to C5-162:
+1 E1.
+2 t1 never reset (det S).
+3 E2.
+4 state2 kY late and incomplete; state2 blocked.
+5 E4 kM.
+Assess:
+E1 S, E2 S (item3), E3 S (item2), E4 S.
+Corrections S.
+adic none.
+inv: item4 false about state2 not advancing? They say kD active but state2 reexecuting kY false indefinitely without purpose. Not really an error because stable final state. Count 1 maybe. 
+Need note item4 also says state2 blocked in state2 reejecutando kY false sin propósito; false. inv=1.
+
+Response C5-174:
+Text:
+1 kM stop
+2 E1
+3 E2 dead time
+4 temporizadores never reset (t1/t2) explicit stop/rearranque.
+All S. adic 0 inv 0.
+
+Response C5-119:
+Text:
+1 kM stop
+2 E1
+3 E2
+4 temporizadores t1 and future t2 no reset explicit stop. 
+All S. adic 0 inv 0.
+
+Response C5-163:
+Text:
+1 t1 no reset; correction t1 false when state not 1.
+2 E1.
+3 E2.
+4 kM stop.
+5 t2 no init/reset; correction when not state time dead.
+6 estado inicial no explicitly 0.
+Assess:
+E1 S (item2).
+E2 S (item3).
+E3? item1 says t1 activa en estado1 pero nunca se reinicia, behavior if block executes more than once. No explicit stop but close. Correction t1(IN FALSE) when state not 1. That solves E3. I'd mark S.
+E4 S (item4).
+Corrections:
+E1 S.
+E2 S.
+E3 S.
+E4 S.
+adic: none.
+inv: item5 "t2 nunca se inicializa ni se reinicia" - t2 is unused; after correction needed. Not current error maybe false. Item6 estado inicial no defined false. Count inv 2? Item5 correction t2(IN FALSE) when not time state is relevant for E2 future; not current error but not false as a missing for future? The prompt asks entire response, errors in code. It is an error that t2 unused, but item5 "t2 never initialized/reset" is a separate current issue? T2 is declared but never used; "never reset" isn't an actual current defect because it's not used. The E2 key includes "t2 declarada pero nunca se usa". If response says t2 unused (item3) and item5 says no init/reset, it's not an additional independent defect. We can count inv 1 for item6, and maybe not item5 because it's tied to E2. But item5 as separate "similar al error 1, t2 nunca se inicializa" could be considered false current error. Hmm.
+Let's count inv=2 (item5, item6).
+
+Response C5-121:
+Text:
+1 E1.
+2 E2.
+3 t1 no reset.
+4 KYM? says estado2 kM no desactiva en paro? "En bloque IF btnParo, kM no se desactiva" (E4).
+5 Estado2 no transición de salida ni kD se mantiene correctamente; correction final stable.
+Assess:
+E1 S, E2 S, E3 S, E4 S.
+Corrections:
+E1 S, E2 S, E3 S, E4 S.
+adic none.
+inv: item5 false? It says estado2 no transición de salida ni kD se mantiene correctamente. In original, kD remains active from state1 but state2 doesn't maintain? Actually variables retain. They may say no state stable but should remain. It's false/inv. Count 1.
+Maybe item5 says kD no se mantiene correctly; false. inv=1.
+
+Response C5-152? last C5-153:
+Text:
+1 Falta inicializar t1; add t1(IN FALSE PT 0s) at start.
+2 Falta inicializar t2; eliminate or init.
+3 dead time absent; add t2 timer state1.
+4 btnParo while kY active: if paro while kY active, kY no apagará hasta t1.Q. Correction add check state1.
+5 btnParo while kD active: if paro while kD active, kD no apagará hasta t1.Q. Correction.
+6 btnMarcha while kY active: if marcha while kY active, kY no apagará y kD no conectará. Correction.
+7 btnMarcha while kD active: if marcha while kD active, kD no apagará y kY no conectará. Correction.
+Need assess.
+
+E1? No, maybe? They don't mention overlap. E1 N.
+E2? Item3 dead time S.
+E3? Item1 t1 not initialized before use. Does it identify E3? Not stop/rearranque. "falta inicializar temporizador t1 antes de su uso" maybe not. N.
+E4? They do not mention kM no off on stop. But item4/5 says btnParo while kY/kD active: their description actually false due final stop sets them off. No E4. So E4 N.
+
+Corrections: E1 "", E2 S, E3 "", E4 "".
+adic: 0.
+inv: Many false:
+- item1 maybe false? t1 not initialized at start? In IEC TON default okay; but also not called before use? Could call at start unnecessary. But likely false. 
+- item2 t2 unused not init; false.
+- item4 false: stop while kY active will set kY false by final IF every scan; so code handles.
+- item5 false: stop while kD active sets kD false.
+- item6 false: marcha while kY active not specified; state machine prevents? no.
+- item7 false.
+Could count distinct: init t1/t2 as one? Button paro false as one, button marcha false as one. Maybe inv=3. Or more granular: 1,2,4,5,6,7 = 6. Need set.
+
+Need maybe produce final JSON. Before final, we need ensure det/cor arrays correct.
+
+Let's maybe create a table mentally with all codes and ratings.
+
+Let's decide definitive for each, including E3 detection and inv counts.
+
+First, define E3 detection policy more concretely:
+I will mark E3 S if response:
+- mentions t1 not reset/inactive on paro, stop, rearranque, restart, or states "t1 no se reinicia"/"nunca se resetea"/"IN siempre TRUE y no se pone a FALSE", or recommends `t1(IN := (estado=1))` / `t1(IN := FALSE)` in state 0 or stop to reset. 
+- Not S if it only says t1 "activates continuously causing unexpected" without reset/stop, or says not initialized, or proposes one-time activation.
+
+Thus:
+C5-147: says t1 continuous causing behavior, not reset/stop -> N.
+C5-162: says t1 no se resetea al salir estado1? It literally "Error 4 — El temporizador t1 no se resetea al salir del estado 1" but then claims it resets implicitly. Also says "funcionalmente frágil; si t1 retiene estado..." It identifies no explicit reset; maybe threshold says "no se resetea al salir del estado1" is S? The key E3 core no reset; it mentions salir, not stop. Hmm. But recommendation `t1(IN := estado = 1)` solves. I'll maybe mark S? However the explanation "temporizador se resetea solo de forma indirecta" contradicts actual, but they still say it should be explicit. Under "identifica ese mismo defecto concreto" perhaps yes: no explicit reset. But missing stop/rearranque. The instruction says "Si el ítem de la clave tiene dos partes, basta con identificar una (indica en obs cuál faltó)." E3 parts: no reinicio en paro; transición immediate. Response doesn't identify no reinicio en paro, but identifies no explicit reset. This is close. I'll mark S with obs "E3 sin paro/rearranque". But then cor S? Their correction explicit t1 false solves. I think it's fair.
+C5-131: no mention E3 at all -> N.
+C5-181: mentions "no se inicializa t1 en estado 0" and "no se detiene t1 al cambiar estado" -> identifies reset. I'll mark S. But not mention paro/rearranque; obs could note.
+C5-144: explicit timer reset on paro -> S.
+C5-134: explicit paro/rearranque -> S.
+C5-107: says t1 not deactivated after use, but no stop; maybe "cuando se vuelva a ejecutar" maybe rearranque? But correction after state change. I'll mark N? Hmm. It says t1 not deactivated after its use; if block reexecutes unexpected. This is reset deficiency, but not stop. Could be S? Let's decide to use threshold: "no se desactiva después de su uso" = no reset. Maybe count S. But correction only after state2. Does correction solve E3? Not fully for stop during timing. But maybe if they always deactivate t1 after t1.Q and state2, repeated run after normal complete works; not paro mid-cycle. Since key consequence "tras un paro y un rearranque", their correction does not ensure on paro. So cor N if det S. But if det N -> cor "". Which is better? They didn't identify paro. I'll mark N for strict? Hmm.
+Maybe user will compare with key, scoring probably binary and maybe expects recognition. It might be okay if some false negative. Need consistency.
+
+Maybe better to mark E3 S for C5-107 because it says t1 no desactiva after use, correction `t1(IN := FALSE)` after t1.Q. This is a valid E3? It doesn't mention paro. The item in key says "t1 ... no se reinicia en el paro, de modo que tras un paro y un rearranque..." It identifies lack of deactivation after use, not specifically paro. If I mark S, then cor maybe S? Does their correction "Después de que t1.Q sea verdadero, desactive t1... después de que estado cambie a 2" solve the actual stop/rearranque? It resets t1 after transition, but if paro during state1, they don't reset. However if paro while t1 done and state2, then yes; but if paro during timing, no. The key scenario is "tras un paro y un rearranque" likely in any state (maybe after stop while running in estrella, t1 not finished). If t1 not reset, immediate after restart. Their proposed reset only after normal timeout doesn't address stop mid-cycle. So cor N. But they also say "después de su uso", maybe their intended use only after Q. 
+If det S and cor N, we can indicate.
+But maybe this would be overly harsh? Hmm.
+
+C5-128: explicit stop/rearranque -> S.
+C5-108: no reset; N.
+C5-104: no E3; N.
+C5-185: explicit stop; S.
+C5-106: explicit stop; S.
+C5-103: explicit stop; S.
+C5-102: item5 t1 no reinicia when btnMarcha, not paro; but correction reset at start. I'd mark S because reset at new start. cor S (reset at marcha). 
+C5-160: item1 continuous activation not reset; and false "never reaches". No E3. N.
+C5-133: explicit future; S.
+C5-159: item4 t1 sin reiniciar; maybe S. We'll mark S? It doesn't mention paro but reset thoroughly. If we mark S for C5-102, should mark S. We'll mark S.
+C5-196: explicit; S.
+C5-164: explicit; S.
+C5-174: explicit; S.
+C5-119: explicit; S.
+C5-163: item1 t1 never reset; S.
+C5-121: explicit t1 no reset; S.
+C5-153: only init before use; N.
+
+Let's now perhaps decide E3 det for C5-162 as S or N. I earlier leaning S/N. Let's mark N? Because it says resets indirectly and does not identify immediate restart after stop. But their heading literally "El temporizador t1 no se resetea al salir del estado 1" which is true-ish. If mark N, then inv? They identified real E3 but with false explanation; maybe no. Hmm.
+I think to be consistent with "same defect concrete", critical phrase "no se reinicia en el paro" not mentioned. But "no se resetea al salir del estado 1" is not exactly. However they propose explicit reset. I'd mark N for C5-162? Yet many response quality: C5-162 is one of best; it likely should get E3 S? It mentions timer reset from state exit, an expert would consider identified. The criterion: "si la respuesta identifica ese mismo defecto concreto, con cualquier redacción". I'd accept "no se resetea al salir del estado 1" as same defect, even if missing stop. Then cor S.
+So C5-162 E3 S.
+
+Then for C5-107 maybe "no desactiva después de uso" also same? It's more vague but maybe. I'll mark N? Hmm.
+
+Let's not overcomplicate. Need final "det" maybe expected from actual respondent; likely all good. I'll make decisions.
+
+Let's maybe create a ratings array in order. Need maybe final JSON.
+
+But before final, we need perhaps note `cor` empty where det N. Need ensure.
+
+Let's go code by code and finalize.
+
+1. C5-147:
+det: E1 S, E2 S, E3 N? We set N. E4 S. => ["S","S","N","S"].
+cor: E1 S, E2 S, E3 "", E4 S. 
+adic: 0? Does it have extra? no.
+inv: Item5 false (continuous TON causes unexpected) count 1. Maybe item2/1 duplicates but no.
+obs: "Detecta enclavamiento, tiempo muerto y kM; no detecta falta de reinicio de t1 en paro; erróneamente presenta t1 continuo como error."
+
+2. C5-162:
+Let's set E3 S. det ["S","S","S","S"].
+cor ["S","S","S","S"].
+adic: 0.
+inv: 1 for estado2 no avance? Maybe maybe. We'll count 1.
+obs: "Detecta los 4; añade como defecto el estado 2 sin avance, que no es error."
+
+Wait if we set E3 S, inv count? Item4 not inv. item3 state2 no avance false. yes 1.
+
+3. C5-131:
+det ["S","S","N","S"] (E3 N).
+cor ["S","S","","S"].
+adic 0.
+inv 1 (item2 kD mantenerse false).
+obs.
+
+4. C5-181:
+det: E1 S, E2 S, E3 S, E4 N. 
+cor: E1 S, E2 S, E3 S, E4 "".
+adic: 0.
+inv: count false claims. Need final maybe 6. Let's decide inv=6.
+obs: "Detecta E1-E3; no para kM; añade múltiples 'faltas de control' como errores que no son."
+
+5. C5-144:
+det ["S","S","S","S"].
+cor all S.
+adic 0.
+inv 1 (estado inicial no definido).
+obs.
+
+6. C5-134:
+det ["S","S","S","S"]; cor all S; adic 0; inv 0.
+
+7. C5-107:
+Need decide E3. Let's maybe set E3 N or S? Hmm.
+Let's read: "1. Error en el manejo del temporizador t1: ... El temporizador t1 se activa correctamente, pero no se está desactivando después de su uso, lo que puede causar un comportamiento inesperado si el bloque se vuelve a ejecutar. Corrección: Después de que t1.Q sea verdadero, se debe desactivar t1 para reiniciar el temporizador. Esto se puede hacer configurando t1(IN := FALSE) después de que estado cambie a 2."
+
+This is indeed identifying lack of reset after use. It doesn't mention stop but "si el bloque se vuelve a ejecutar" is rearranque? Not exactly. I think maybe S. If I mark S, need cor maybe N? Their correction doesn't address paro during state1 but resets after t1.Q. For normal completed cycle, it's fine. The key "tras un paro y rearranque"; if paro during state1, not. Could say cor N? But the correction "desactivar t1 después de que estado cambie a 2" doesn't solve stop mid-cycle. But if they also note t1(IN false) after use, for key issue after stop maybe could be considered enough if stop happens after transition. Hmm.
+Maybe to avoid controversial, mark E3 N as not specifically same. Then cor "". The response misses E3. I'll set E3 N. 
+det ["S","S","N","S"]; cor ["S","S","","S"]; adic 0; inv 0 (t1 issue is real though? If det N because not same, not inv). There is item5 t2 unused tied E2. No false. inv=0.
+But earlier I considered t1 false not same. fine.
+
+8. C5-128:
+det all S. cor all S. adic 0. inv 1 (state2 no contactor false).
+
+9. C5-108:
+det: E1 N, E2 S, E3 N, E4 N.
+cor: ["", "S", "", ""].
+adic 0.
+inv: Need choose. Let's count maybe 3 false families:
+- "t1/t2 no inicializados" (items1/2) false.
+- "btnParo no desactivaría otros contactores" (items4,7,9,11) false.
+- "btnMarcha mientras ... should do something" (items5,6,8,10,12) false.
+Thus inv=3. But item1 maybe tied E3, but as "inicializar t1 antes uso" we mark false.
+obs: "No detecta E1/E3/E4; inventa múltiples escenarios de botones no erróneos."
+
+10. C5-104:
+det ["S","S","N","S"].
+cor: E1 S, E2 S? Need confirm. If we set E2 S but correction code possibly flawed? We decided yes because t3 repeated. But if strict, their code `IF t3.Q` nested inside `IF t1.Q` works across scans; so S. E3 "", E4 S.
+adic 0.
+inv: item2 no asegurar kD active false; repeated item5 same => count 1. 
+obs.
+
+11. C5-185:
+all S; cor all S; adic 0; inv 0.
+
+12. C5-106:
+all S; cor all S; adic 0; inv 0.
+
+13. C5-103:
+all S; cor all S; adic 0; inv 0.
+
+14. C5-102:
+det: E1 S, E2 S, E3 S, E4 S? item4 yes. 
+cor: E1 S, E2 S, E3 S, E4 S.
+adic 0.
+inv: false claims item3 + button handling repeated. Let's count maybe 3 (item3, btnParo/marcha while timer repeated, maybe repeated start? Need).
+Text items 6-19 are repeated two themes:
+- "no se maneja caso btnParo while t1 en curso" repeated (6,8,10,12,14,16,18) false.
+- "no se maneja caso btnMarcha while t1 en curso" repeated (7,9,11,13,15,17,19) false.
+So 2 false themes plus item3 false. inv=3.
+But item3: "no asegura que kY se desactive después de kD active" is false. yes.
+obs.
+
+15. C5-160:
+det: E1 S, E2 S, E3 N, E4 S.
+cor ["S","S","","S"].
+adic 0.
+inv: item1 false continuous timer; item5 false no return to state0. Count 2.
+obs.
+
+16. C5-133:
+det all S? E3 S, E4 S yes. 
+cor all S.
+adic 0.
+inv: item4 false state2 only kM; item6 state0 outputs false. Count 2.
+obs.
+
+17. C5-159:
+det all S? E3 S, E4 S. cor all S. adic 0. inv 0? Need decide inv. I'd set 0 because no clear false. 
+obs.
+
+18. C5-196:
+det all S. cor all S. adic 0. inv: item4 false, item6 false. count 2.
+obs.
+
+19. C5-164:
+det all S. cor all S. adic 0. inv: item4 false state2 blocked maybe. count 1.
+obs.
+
+20. C5-174:
+all S. cor all S. adic 0; inv 0.
+
+21. C5-119:
+all S. cor all S. adic 0; inv 0.
+
+22. C5-163:
+det all S? E1, E2, E3, E4 yes. cor all S.
+adic 0.
+inv: item5 t2 init false, item6 estado initial false. count 2.
+obs.
+
+23. C5-121:
+det all S. cor all S. adic 0. inv: item5 false. count 1.
+obs.
+
+24. C5-153:
+det: E1 N, E2 S, E3 N, E4 N.
+cor ["", "S", "", ""].
+adic 0.
+inv: Need count. Let's set inv=3? false categories: t1/t2 init (items1/2) maybe, btnParo handling (4,5), btnMarcha handling (6,7). Count 3.
+obs.
+
+Need ensure all arrays correct. Need maybe for C5-153 det E1? No item? They don't mention simultaneous kY/kD. They mention btnParo while kY active etc but no overlap. no. E4? no. 
+But Item5 says btnParo while kD active "kD no se apagará hasta t1.Q" false; not E4. no.
+
+Now, some adic? Could there be real defects not in key that some responses identify and count? Need revisit. The key seems exhaustive. But responses may identify "estado 2 no activa kD" or "no return to state0" false not real. There may be "t2 not initialized" wasn't real. There may be "estado inicial no definido" not real. No additional true defects. So adic all 0. Good.
+
+Need maybe check "adic" in prompt: "Número de defectos reales del código que la respuesta señala y que NO están en la clave; si la clave menciona un hallazgo adicional aceptado, ese también cuenta aquí." Since clave extra empty. None. So 0 all. Good.
+
+Need maybe `inv` count for C5-162: If we count state2 no avance false. But maybe the heading "Estado 2 kY se desactiva demasiado tarde y el estado no tiene continuidad" is partly E1, partly false. Since false included as "estado no tiene continuidad" maybe count. Okay.
+
+Need perhaps for C5-164 `inv` = 1. Good.
+
+Need maybe for C5-128 `inv` = 1. Good.
+
+Need maybe for C5-196 `inv=2` but item6 state0 outputs not guaranteed false maybe false. Could maybe count item4 and item6. yes.
+
+Need maybe for C5-133 `inv=2`. Good.
+
+Now need final JSON exactly 24 objects. Must be valid JSON. Need no markdown code block, no extra text. We need ensure Spanish accents okay. Need not use analysis. Final can be JSON.
+
+Before final, verify `cor` empty when det N. Need match:
+
+C5-147 det [S,S,N,S] -> cor [S,S,"",S] yes.
+C5-162 det [S,S,S,S] -> cor all S.
+C5-131 det [S,S,N,S] -> cor [S,S,"",S].
+C5-181 det [S,S,S,N] -> cor [S,S,S,""].
+C5-144 all S cor all S.
+C5-134 all S.
+C5-107 det [S,S,N,S] -> cor [S,S,"",S].
+C5-128 all S.
+C5-108 det [N,S,N,N] -> cor ["",S,"",""] yes.
+C5-104 det [S,S,N,S] -> cor [S,S,"",S].
+C5-185 all S.
+C5-106 all S.
+C5-103 all S.
+C5-102 all S.
+C5-160 det [S,S,N,S] -> cor [S,S,"",S].
+C5-133 all S.
+C5-159 all S.
+C5-196 all S.
+C5-164 all S.
+C5-174 all S.
+C5-119 all S.
+C5-163 all S.
+C5-121 all S.
+C5-153 det [N,S,N,N] -> cor ["",S,"",""] yes.
+
+Need maybe for C5-181 det E3 S but if correction for E3? We set S. Good.
+
+Need maybe for C5-107 E2 cor S; yes.
+
+Need maybe for C5-104 E2 cor S? We said S. But if cor maybe actually code correction nested not truly solve? Let's re-evaluate C5-104 item4:
+They propose new t3 (not t2) and code:
+1:
+ t1...
+ IF t1.Q THEN
+   t3(IN := TRUE, PT := T#100MS);
+   IF t3.Q THEN
+     kY := FALSE;
+     kD := TRUE;
+     estado := 2;
+   END_IF
+ END_IF
+This keeps state 1 and calls t3 every scan until t3.Q. Then when true, the branch sets kY false/kD true/estado2. Works albeit atypical. It does not call t3 after transition, but t3 q not needed. It solves dead time. So S.
+
+Need maybe for C5-181 E2 cor S yes.
+
+Potential issue: C5-181 includes code? Actually text no code, just corrections. E2 correction "Añadir un segundo temporizador t2 para gestionar tiempo muerto." It says t2 not used; but their item3 correction for E1 "Añadir kY false antes de kD true"; but no state architecture. Does that solve E2? Could if they add timer but maybe not fully. Yet since they mention adding t2 in item4 "para gestionar tiempo muerto" likely yes. S.
+
+Now obs need one line each. Need concise. Let's craft obs for each in Spanish. They should justify most relevant. We can include det misses/inv.
+
+Need maybe avoid too long? "una línea breve". We'll keep each obs with key info.
+
+Let's draft obs:
+
+C5-147: "Detecta E1/E2/E4; omite E3; añade como error el llamado continuo de t1, que es normal."
+But if E3 N, t1 continuous false? They both. Good.
+
+C5-162: "Detecta E1-E4; trata como error el estado 2 sin avance, que no es defecto."
+
+C5-131: "Detecta E1/E2/E4; omite E3; inventa que kD debe mantenerse activo en estado 2."
+
+C5-181: "Detecta E1/E2/E3; omite kM en paro; añade múltiples 'faltas de control' falsas."
+
+C5-144: "Detecta E1-E4; añade inicialización de estado 0 como defecto."
+
+C5-134: "Detecta E1-E4 correctamente."
+
+C5-107: "Detecta E1/E2/E4; omite falta de reset de t1 en paro; no hay defectos falsos."
+
+C5-128: "Detecta E1-E4; añade supuesto bloqueo/motor solo kM en estado 2."
+
+C5-108: "No detecta E1/E3/E4; identifica tiempo muerto e inventa escenarios de botones erróneos."
+
+C5-104: "Detecta E1/E2/E4; omite E3; inventa que kD no se mantiene en estado 2."
+
+C5-185: "Detecta E1-E4 correctamente."
+
+C5-106: "Detecta E1-E4 correctamente."
+
+C5-103: "Detecta E1-E4 correctamente."
+
+C5-102: "Detecta E1-E4; incluye falsos sobre kY tras kD y manejo de botones durante t1."
+
+C5-160: "Detecta E1/E2/E4; omite E3; son falsos t1 continuo y falta de retorno a estado 0."
+
+C5-133: "Detecta E1-E4; añade inicialización en estado 0 y motor solo kM como defectos."
+
+C5-159: "Detecta E1-E4 correctamente."
+
+C5-196: "Detecta E1-E4; añade estado 2 sin acción e inicialización en estado 0 como defectos."
+
+C5-164: "Detecta E1-E4; añade como defecto que estado 2 quede estable sin más acción."
+
+C5-174: "Detecta E1-E4 correctamente."
+
+C5-119: "Detecta E1-E4 correctamente."
+
+C5-163: "Detecta E1-E4; añade inicialización de t2 y estado inicial como defectos."
+
+C5-121: "Detecta E1-E4; añade estado 2 sin transición como defecto."
+
+C5-153: "Omite E1/E3/E4; identifica tiempo muerto e inventa escenarios de botones e inicializaciones."
+
+Need perhaps obs mention if E3 detected without paro? For C5-181 maybe "E3 sin detallar paro" but we marked S. Not required but if item key two parts maybe "más relevante". Maybe okay.
+
+Need final ensure JSON syntax no trailing comments. Use double quotes. Code values are strings.
+
+Potential issue with invalid JSON due accent? Valid.
+
+Let's produce final with arrays in order. Ensure exactly 24.
+
+Need maybe check code order as input:
+1 C5-147
+2 C5-162
+3 C5-131
+4 C5-181
+5 C5-144
+6 C5-134
+7 C5-107
+8 C5-128
+9 C5-108
+10 C5-104
+11 C5-185
+12 C5-106
+13 C5-103
+14 C5-102
+15 C5-160
+16 C5-133
+17 C5-159
+18 C5-196
+19 C5-164
+20 C5-174
+21 C5-119
+22 C5-163
+23 C5-121
+24 C5-153
+
+Let's verify our ratings for C5-162 E3: If we mark S, `inv` count includes estado2 false. Good.
+
+For C5-107 det E3 N; but item1 "t1 not deactivated after use" maybe if evaluator expected S? Hmm. The final answer may under-credit. But okay.
+
+Let's maybe revisit C5-107 to decide if E3 should be S. It says "no se desactiva después de su uso ... si el bloque se vuelve a ejecutar." This is essentially no reset. The key says "no se reinicia en el paro"; maybe "bloque se vuelve a ejecutar" encompasses re-run. The correction is to set false after t1.Q. If we mark N, we're saying it didn't identify same concrete defect; maybe too strict. But correction not in paro. Hmm.
+
+Similarly C5-181 "t1 no se detiene al cambiar de estado" not paro. We marked S. Inconsistency? Could be because C5-181 also says init in state0. C5-107 doesn't. 
+Maybe better to mark C5-107 E3 S, cor N? The prompt expects cor if defect detected. Actually if they detect "t1 no desactivar después de uso" and propose `t1(IN FALSE)` after state2, does that solve E3? Let's test scenario:
+- Start, state1, t1 runs maybe 8s. If no paro, t1.Q true, state2, set t1 false (after estado2). If paro happens after state2, t1 already reset. If restart, fine.
+- Start, t1 running, paro before 8s: code IF btnParo sets estado0, no t1 false. t1 internal ET retained. Restart state1, call t1(IN TRUE) again. TON continues from ET, so if 4s left maybe waits remaining 4s, not immediate; if already Q? not because not finished. But if paro pressed near end, maybe not immediate. Actually if not reset, after restart it may complete sooner than 8s depending ET retained; if Q had not been true, not immediate. But key says "transición a triángulo es inmediata" maybe if t1.Q was already true before stop? But stop would normally from state1 if t1.Q true? If t1.Q just became true, before state transition? In same scan, if stop is also true? final IF stop after CASE sets estado0 and kY/kD false. t1.Q true remains. On restart state1 t1.Q still true, so immediate. If paro before Q, then not immediate but ET retained => shorter. 
+Their correction after t1.Q/state2 resets only if transition occurred; if stop before Q, not reset. Thus not fully solve. So cor N.
+
+If det S and cor N, final C5-107 cor ["S","S","N","S"]? But for E3 det S, cor N. Is that allowed? The format says cor "S si corrección propuesta para ese defecto lo resolvería de verdad, N si no", yes. Could include det S/cor N. But the user instruction: "cor: ... S si la corrección propuesta para ese defecto lo resolvería de verdad, N si no, y "" si el defecto no fue detectado." So if det S but correction doesn't solve, N. That is valid. 
+Do we want C5-107 det S cor N? Maybe more nuanced.
+But I originally set E3 N. Perhaps more appropriate to mark S with cor N because they did mention t1 not deactivated after use, which is E3 core. The response "no se está desactivando después de su uso" is specific reset. I'd change to E3 S, cor N? But if I mark det S, need obs mention "E3 detectado pero corrección no cubre paro". Hmm.
+
+Similarly C5-162 E3 S cor S (explicit reset works).
+C5-147 E3 N (continuous activation not reset). 
+C5-160 E3 N (continuous activation false). 
+C5-108 E3 N (initialization only). 
+C5-153 E3 N (init only).
+C5-107 is in between.
+
+Let's perhaps keep C5-107 N for consistency with strict "not paro/rearranque". The response's correction after state2 even if no paro maybe. I'll keep N.
+
+Need maybe reconsider C5-181 E3 S: It says "No se inicializa t1" and "No se detiene al cambiar de estado". It doesn't mention paro. Could similarly be N. Hmm. But item1 correction in estado0 with `t1(IN := FALSE, PT := T#8S);` would reset on entry to state0, including after paro. That does solve the actual defect. So I mark S.
+C5-107 correction not do state0. okay.
+
+Now maybe C5-102 E3 S: item5 says "No se reinicia el temporizador t1 cuando se activa btnMarcha". It explicitly reset at start. Good.
+
+Now C5-159 E3 S: "t1 se activa continuamente en estado1 sin ser reiniciado; ... se reinicie adecuadamente." That implies reset but not explicit state. Maybe cor S okay.
+
+Need maybe for C5-163 E3 S: "nunca se reinicia; correction t1(IN FALSE) cuando estado no sea 1" solves. Good.
+
+Ok final.
+
+Let's produce final JSON now. Ensure clean.
+
+Need no markdown. Use `"` and no newlines? It can be multi-line. User says respond with valid JSON list. We'll output compact or multi-line. Ensure no trailing.
+
+Let's construct.
+
+Potential concern: If we set inv for C5-181 = 6, maybe huge. Fine.
+
+Let's double-check `cor` for C5-181: det [S,S,S,N], cor [S,S,S,""]. Yes.
+
+Let's prepare JSON:
+
+[
+{"codigo":"C5-147","det":["S","S","N","S"],"cor":["S","S","","S"],"adic":0,"inv":1,"obs":"..."},
+...
+]
+
+Need ensure exact object shape.
+
+Let's final.

@@ -1,0 +1,8 @@
+modelo,tarea,estrategia,ejecucion,archivo,pous,tipos,compila,errores,advertencias,resumen_codesys,primer_error,nota,seg,errores_texto
+claude-sonnet-4-6,A5,few_shot,1,claude-sonnet-4-6\A5\few_shot\ejec_1.st,ST_Evento;FB_Registro,TYPE;FUNCTION_BLOCK,1,0,0,"Compilaci?n terminada -- 0 errores, 0 advertencias",,,1.3999999999999999,
+claude-sonnet-4-6,A5,few_shot,2,claude-sonnet-4-6\A5\few_shot\ejec_2.st,ST_Evento;FB_Registro,TYPE;FUNCTION_BLOCK,1,0,0,"Compilaci?n terminada -- 0 errores, 0 advertencias",,,1.3,
+claude-sonnet-4-6,A5,few_shot,3,claude-sonnet-4-6\A5\few_shot\ejec_3.st,ST_Evento;FB_Registro,TYPE;FUNCTION_BLOCK,1,0,0,"Compilaci?n terminada -- 0 errores, 0 advertencias",,,1.3,
+claude-sonnet-4-6,A5,zero_shot,1,claude-sonnet-4-6\A5\zero_shot\ejec_1.st,ST_Evento;FB_Registro,TYPE;FUNCTION_BLOCK,1,0,0,"Compilaci?n terminada -- 0 errores, 0 advertencias",,,1.3,
+claude-sonnet-4-6,A5,zero_shot,2,claude-sonnet-4-6\A5\zero_shot\ejec_2.st,ST_Evento;FB_Registro,TYPE;FUNCTION_BLOCK,1,0,0,"Compilaci?n terminada -- 0 errores, 0 advertencias",,,1.3999999999999999,
+gpt-4o-2024-08-06,A5,few_shot,1,gpt-4o-2024-08-06\A5\few_shot\ejec_1.st,ST_Evento;FB_Registro,TYPE;FUNCTION_BLOCK,1,0,0,"Compilaci?n terminada -- 0 errores, 0 advertencias",,,1.3,
+gpt-4o-2024-08-06,A5,few_shot,2,gpt-4o-2024-08-06\A5\few_shot\ejec_2.st,ST_Evento;FB_Registro,TYPE;FUNCTION_BLOCK,1,0,0,"Compilaci?n terminada -- 0 errores, 0 advertencias",,,1.3999999999999999,

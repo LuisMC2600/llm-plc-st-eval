@@ -1,0 +1,48 @@
+Mapa de pasos: mapa_pasos_harness.csv
+Filas clasificadas: 249 (esperado 249) -> clasificacion_fallos_cwe.csv
+
+Metodo de clasificacion:
+  automatico     110   44.2 %
+  paso_harness    88   35.3 %
+  juicio          51   20.5 %
+
+Metodo por c1_categoria:
+metodo                automatico  juicio  paso_harness  All
+c1_categoria                                               
+FALLA_LOGICA                   0      51            88  139
+INTERFAZ_NO_CONFORME          28       0             0   28
+NO_COMPILA                    82       0             0   82
+All                          110      51            88  249
+
+Reglas NO_COMPILA aplicadas:
+regla
+N01    21
+N02     7
+N03     2
+N04     4
+N05     4
+N06     1
+N07     5
+N08     3
+N09     5
+N10     1
+N11     5
+N12     5
+N13     8
+N14     1
+N15    10
+
+Categoria x modelo:
+modelo_corto    Claude  GPT-4o  Gemini  Qwen  All
+categoria_plc                                    
+CALCULO              0       0       0     1    1
+CONSTRUCCION         8      15       6    21   50
+CONVERSION           0      14       0     4   18
+DIALECTO             6       2       1     5   14
+FLANCO               0       4       0     5    9
+INICIALIZACION       5       5       0     7   17
+INTERFAZ             0      22       0     6   28
+SECUENCIA            4       6       0    12   22
+SEGURIDAD            1       7       1     6   15
+TEMPORIZACION       12      21       1    41   75
+All                 36      96       9   108  249

@@ -1,0 +1,434 @@
+[
+ {
+  "codigo": "C6-151",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto; E4 desglosado en reset y apagado."
+ },
+ {
+  "codigo": "C6-148",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto; E4 incluye reset y apagado."
+ },
+ {
+  "codigo": "C6-155",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto; E4 incluye reset y apagado."
+ },
+ {
+  "codigo": "C6-189",
+  "det": [
+   "N",
+   "S",
+   "S",
+   "N"
+  ],
+  "cor": [
+   "",
+   "S",
+   "S",
+   ""
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "E1 no identifica división entera; E4 no detectado."
+ },
+ {
+  "codigo": "C6-157",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto; E4 incluye reset y apagado."
+ },
+ {
+  "codigo": "C6-191",
+  "det": [
+   "N",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "",
+   "S",
+   "S",
+   "N"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "E1 no identifica división entera; E4 corrección incompleta y sin reset."
+ },
+ {
+  "codigo": "C6-168",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-190",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-109",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-175",
+  "det": [
+   "N",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "E1 no identifica división entera; E4 solo apagado, sin reset."
+ },
+ {
+  "codigo": "C6-135",
+  "det": [
+   "N",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "",
+   "N",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "E1 no identifica división entera; E2 corrección incompleta; E4 apagado vago, sin reset."
+ },
+ {
+  "codigo": "C6-188",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-143",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-140",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-182",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-142",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-124",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-156",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-139",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 1,
+  "obs": "Detecta E1-E4, pero propone encender enfriador dentro de rango válido (error falso)."
+ },
+ {
+  "codigo": "C6-193",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-112",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-195",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ },
+ {
+  "codigo": "C6-120",
+  "det": [
+   "S",
+   "S",
+   "N",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "No detecta falta de rawTemp<0; E4 cubre reset y apagado superior."
+ },
+ {
+  "codigo": "C6-192",
+  "det": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "cor": [
+   "S",
+   "S",
+   "S",
+   "S"
+  ],
+  "adic": 0,
+  "inv": 0,
+  "obs": "Correcto."
+ }
+]

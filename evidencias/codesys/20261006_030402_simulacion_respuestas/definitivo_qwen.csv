@@ -1,0 +1,139 @@
+tarea,id,ciclo_ms,esperado,paso_esperado,compila,veredicto,resultado,pasos_fallidos,coincide,seg_sim,nota,errores,pou,errores_texto
+A1,qwen2.5-coder_14b|few_shot|ejec_1,10,,,0,,,,,,Encontrado token inesperado 'dt',17,,Encontrado token inesperado 'dt' || Se esperaba ';' en lugar de ':' || Encontrado token inesperado ':' || Se esperaba ';' en lugar de 'TIME' || Encontrado token inesperado 'TIME' || Se esperaba ';' en lugar de ':=' || Encontrado token inesperado ':=' || Se esperaba ';' en lugar de 'ciclo' || Se esperaba )' en lugar de 'dt' || Se esperaba expresi?n en vez de 'dt'
+A1,qwen2.5-coder_14b|few_shot|ejec_2,10,,,0,,,,,,Encontrado token inesperado 'dt',11,,Encontrado token inesperado 'dt' || Se esperaba ';' en lugar de ':' || Encontrado token inesperado ':' || Se esperaba ';' en lugar de 'TIME' || Encontrado token inesperado 'TIME' || Se esperaba ';' en lugar de ':=' || Encontrado token inesperado ':=' || Se esperaba ';' en lugar de 'ciclo' || Se esperaba )' en lugar de 'dt' || Se esperaba expresi?n en vez de 'dt'
+A1,qwen2.5-coder_14b|few_shot|ejec_3,10,,,0,,,,,,Encontrado token inesperado 'dt',17,,Encontrado token inesperado 'dt' || Se esperaba ';' en lugar de ':' || Encontrado token inesperado ':' || Se esperaba ';' en lugar de 'TIME' || Encontrado token inesperado 'TIME' || Se esperaba ';' en lugar de ':=' || Encontrado token inesperado ':=' || Se esperaba ';' en lugar de 'ciclo' || Se esperaba )' en lugar de 'dt' || Se esperaba expresi?n en vez de 'dt'
+A1,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,0,,,,,,Encontrado token inesperado 'dt',16,,Encontrado token inesperado 'dt' || Se esperaba ';' en lugar de ':' || Encontrado token inesperado ':' || Se esperaba ';' en lugar de 'TIME' || Encontrado token inesperado 'TIME' || Se esperaba ';' en lugar de ':=' || Encontrado token inesperado ':=' || Se esperaba ';' en lugar de 'ciclo' || Se esperaba ';' en lugar de 'dt' || Se esperaba expresi?n en vez de 'dt' || Se esperaba ';' en lugar de 'T#1s' || Encontrado token inesperado 'T#1s'
+A1,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,0,,,,,,Encontrado token inesperado 'dt',18,,Encontrado token inesperado 'dt' || Se esperaba ';' en lugar de ':' || Encontrado token inesperado ':' || Se esperaba ';' en lugar de 'TIME' || Encontrado token inesperado 'TIME' || Se esperaba ';' en lugar de ':=' || Encontrado token inesperado ':=' || Se esperaba ';' en lugar de 'ciclo' || Se esperaba ';' en lugar de 'T#1s' || Encontrado token inesperado 'T#1s' || Se esperaba expresi?n en vez de 'dt' || Se esperaba ';' en lugar de 'dt'
+A1,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,0,,,,,,Encontrado token inesperado 'dt',18,,Encontrado token inesperado 'dt' || Se esperaba ';' en lugar de ':' || Encontrado token inesperado ':' || Se esperaba ';' en lugar de 'TIME' || Encontrado token inesperado 'TIME' || Se esperaba ';' en lugar de ':=' || Encontrado token inesperado ':=' || Se esperaba ';' en lugar de 'ciclo' || Se esperaba ';' en lugar de 'dt' || Se esperaba expresi?n en vez de 'dt' || Se esperaba ';' en lugar de '/' || Encontrado token inesperado '/'
+A2,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1","8,9",,126.8,,,,
+A2,qwen2.5-coder_14b|few_shot|ejec_2,10,,,0,,,,,,La etiqueta CASE 5 tambi?n est? contenida en el margen 1 ... 5,1,,La etiqueta CASE 5 tambi?n est? contenida en el margen 1 ... 5
+A2,qwen2.5-coder_14b|few_shot|ejec_3,10,,,0,,,,,,Se esperaba ';' en lugar de 'NOT',12,,Se esperaba ';' en lugar de 'NOT' || Encontrado token inesperado 'NOT' || Se esperaba ';' en lugar de 'btnInicio' || Se esperaba ';' en lugar de 'THEN' || Encontrado token inesperado 'THEN' || Se esperaba ';' en lugar de 'inicioPulsado' || Se esperaba ';' en lugar de 'btnAbort' || Se esperaba ';' en lugar de 'abortPulsado'
+A2,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,0,,,,,,Instrucci?n inesperada,4,,Instrucci?n inesperada
+A2,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,0,,,,,,Instrucci?n inesperada,25,,Instrucci?n inesperada || Se esperaba ';' en lugar de 'TRUE' || Encontrado token inesperado 'TRUE' || Se esperaba ';' en lugar de 'FALSE' || Encontrado token inesperado 'FALSE'
+A2,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,0,,,,,,Instrucci?n inesperada,4,,Instrucci?n inesperada
+A3,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,2,2,2,2,2,2,2,2,2,2,2,2,2,2","1,2,3,4,5,6,7,8,9,10,11,12,13,14",,4.2000000000000002,,,,
+A3,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,2,2,2,2,2,2,2,2,2,2,2,2,2,2","1,2,3,4,5,6,7,8,9,10,11,12,13,14",,4.2999999999999998,,,,
+A3,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"1,2,2,2,2,2,2,2,2,2,2,2,2,2,2","1,2,3,4,5,6,7,8,9,10,11,12,13,14",,4.2999999999999998,,,,
+A3,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"1,1,1,2,2,2,2,2,2,1,2,1,2,2,2","3,4,5,6,7,8,10,12,13,14",,4.2999999999999998,,,,
+A3,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,2,"1,1,1,2,2,2,1,2,2,2,2,2,1,1,2","3,4,5,7,8,9,10,11,14",,4.2000000000000002,,,,
+A3,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,2,"1,1,1,2,2,2,1,2,2,2,2,2,1,1,2","3,4,5,7,8,9,10,11,14",,4.2000000000000002,,,,
+A4,qwen2.5-coder_14b|few_shot|ejec_1,10,,,0,,,,,,Encontrado token inesperado 'dt',16,,Encontrado token inesperado 'dt' || Se esperaba ';' en lugar de ':' || Encontrado token inesperado ':' || Se esperaba ';' en lugar de 'TIME' || Encontrado token inesperado 'TIME' || Se esperaba ';' en lugar de ':=' || Encontrado token inesperado ':=' || Se esperaba ';' en lugar de 'ciclo' || Se esperaba ';' en lugar de 'dt' || Se esperaba expresi?n en vez de 'dt' || Se esperaba ';' en lugar de '/' || Encontrado token inesperado '/'
+A4,qwen2.5-coder_14b|few_shot|ejec_2,10,,,0,,,,,,Encontrado token inesperado 'dt',16,,Encontrado token inesperado 'dt' || Se esperaba ';' en lugar de ':' || Encontrado token inesperado ':' || Se esperaba ';' en lugar de 'TIME' || Encontrado token inesperado 'TIME' || Se esperaba ';' en lugar de ':=' || Encontrado token inesperado ':=' || Se esperaba ';' en lugar de 'ciclo' || Se esperaba ';' en lugar de 'dt' || Se esperaba expresi?n en vez de 'dt' || Se esperaba ';' en lugar de '/' || Encontrado token inesperado '/'
+A4,qwen2.5-coder_14b|few_shot|ejec_3,10,,,0,,,,,,El tipo 'TIME' no puede convertirse en el tipo 'REAL',3,,El tipo 'TIME' no puede convertirse en el tipo 'REAL'
+A4,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,0,,,,,,Se esperaba ';' en lugar de 'REAL',6,,Se esperaba ';' en lugar de 'REAL' || Se esperaba expresi?n en vez de 'REAL'
+A4,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,0,,,,,,Se esperaba ';' en lugar de '(',9,,"Se esperaba ';' en lugar de '(' || Se esperaba ',' o ')' en lugar de 'REAL' || Se esperaba expresi?n en vez de 'REAL'"
+A4,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,0,,,,,,Se esperaba ';' en lugar de 'REAL',12,,Se esperaba ';' en lugar de 'REAL' || Se esperaba expresi?n en vez de 'REAL' || Encontrado token inesperado 'REAL' || Se esperaba ';' en lugar de '(' || Encontrado token inesperado '(' || Se esperaba ';' en lugar de 'ciclo' || Se esperaba ';' en lugar de ')' || Encontrado token inesperado ')' || Se esperaba ';' en lugar de '/' || Encontrado token inesperado '/' || Se esperaba ';' en lugar de '1000.0' || Encontrado token inesperado '1000.0'
+A5,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"2,2,2,2,2,2","0,1,2,3,4,5",,1.0,,,,
+A5,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"2,2,2,2,2,2","0,1,2,3,4,5",,1.0,,,,
+A5,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"2,2,2,2,2,2","0,1,2,3,4,5",,1.0,,,,
+A5,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"2,2,2,2,2,2","0,1,2,3,4,5",,1.0,,,,
+A5,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,2,"2,2,2,2,2,2","0,1,2,3,4,5",,1.0,,,,
+A5,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,2,"2,2,2,2,2,2","0,1,2,3,4,5",,1.0,,,,
+A6,qwen2.5-coder_14b|few_shot|ejec_1,10,,,0,,,,,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;  ,36,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;   || Exception text: System.NullReferenceException: Referencia a objeto no establecida como instancia de un objeto.     en _3S.CoDeSys.Compiler35220.Phase4_TypeCheck.TypeCheckerVisitor.(_IForStatement )  || Identificador 'i' sin definir || 'i' no es un destino de asignaci?n v?lido || El tipo 'Tipo desconocido: 'i'' no puede convertirse en el tipo 'AnyInt' || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdManual[i];  END_FOR;   || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := FALSE;  END_FOR;   || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := FALSE;  	forzado[i] := FALSE;  END_FOR;   || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	forzado[i] := FALSE;  END_FOR;  
+A6,qwen2.5-coder_14b|few_shot|ejec_2,10,,,0,,,,,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;  ,34,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;   || Exception text: System.NullReferenceException: Referencia a objeto no establecida como instancia de un objeto.     en _3S.CoDeSys.Compiler35220.Phase4_TypeCheck.TypeCheckerVisitor.(_IForStatement )  || Identificador 'i' sin definir || 'i' no es un destino de asignaci?n v?lido || El tipo 'Tipo desconocido: 'i'' no puede convertirse en el tipo 'AnyInt' || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdManual[i];  END_FOR;   || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := FALSE;  END_FOR;   || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	forzado[i] := FALSE;  END_FOR;  
+A6,qwen2.5-coder_14b|few_shot|ejec_3,10,,,0,,,,,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;  ,36,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;   || Exception text: System.NullReferenceException: Referencia a objeto no establecida como instancia de un objeto.     en _3S.CoDeSys.Compiler35220.Phase4_TypeCheck.TypeCheckerVisitor.(_IForStatement )  || Identificador 'i' sin definir || 'i' no es un destino de asignaci?n v?lido || El tipo 'Tipo desconocido: 'i'' no puede convertirse en el tipo 'AnyInt' || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdManual[i];  END_FOR;   || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := FALSE;  END_FOR;   || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := FALSE;  	forzado[i] := FALSE;  END_FOR;   || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	forzado[i] := FALSE;  END_FOR;  
+A6,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,0,,,,,,Instrucci?n inesperada,1,,Instrucci?n inesperada
+A6,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,0,,,,,,Instrucci?n inesperada,1,,Instrucci?n inesperada
+A6,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,0,,,,,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;  ,38,,Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdAuto[i];  END_FOR;   || Exception text: System.NullReferenceException: Referencia a objeto no establecida como instancia de un objeto.     en _3S.CoDeSys.Compiler35220.Phase4_TypeCheck.TypeCheckerVisitor.(_IForStatement )  || Identificador 'i' sin definir || 'i' no es un destino de asignaci?n v?lido || El tipo 'Tipo desconocido: 'i'' no puede convertirse en el tipo 'AnyInt' || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := cmdManual[i];  END_FOR;   || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	actuador[i] := FALSE;  	forzado[i] := FALSE;  END_FOR;   || Internal error in _IStatement: FOR i := 0 TO 7 BY 1 DO  	forzado[i] := FALSE;  END_FOR;  
+B1,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1",,,1.8,,,,
+B1,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1",,,1.8,,,,
+B1,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1",,,1.8,,,,
+B1,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1",,,1.8,,,,
+B1,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,0,,,,,,Se esperaba ';' en lugar de 'emergenciaActiva',12,,Se esperaba ';' en lugar de 'emergenciaActiva' || Se esperaba ';' en lugar de 'THEN' || Encontrado token inesperado 'THEN' || Se esperaba ';' en lugar de 'motorOn' || Se esperaba ';' en lugar de 'btnParo' || Se esperaba ';' en lugar de 'btnMarcha'
+B1,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,0,,,,,,Se esperaba ';' en lugar de 'emergenciaActiva',12,,Se esperaba ';' en lugar de 'emergenciaActiva' || Se esperaba ';' en lugar de 'THEN' || Encontrado token inesperado 'THEN' || Se esperaba ';' en lugar de 'motorOn' || Se esperaba ';' en lugar de 'btnParo' || Se esperaba ';' en lugar de 'btnMarcha'
+B2,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,2,2,1,2,1","1,2,4",,13.300000000000001,,,,
+B2,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,2,2,1,2,1","1,2,4",,13.6,,,,
+B2,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"1,2,2,1,2,1","1,2,4",,13.199999999999999,,,,
+B2,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1",,,13.6,,,,
+B2,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1",,,13.199999999999999,,,,
+B2,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,2,"1,2,1,1,1,1",1,,13.199999999999999,,,,
+B3,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1",,,3.0,,,,
+B3,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1",,,3.0,,,,
+B3,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"1,2,2,2,2,2,1","1,2,3,4,5",,3.0,,,,
+B3,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"1,2,2,2,2,2,1","1,2,3,4,5",,3.0,,,,
+B3,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1",,,3.0,,,,
+B3,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1",,,3.0,,,,
+B4,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,1,1,2,1,1,2,1,1,1","3,6",,2.2000000000000002,,,,
+B4,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,1,1,2,2,1,1,2,1,2","3,4,7,9",,2.2000000000000002,,,,
+B4,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"1,1,1,2,2,1,1,2,1,2","3,4,7,9",,2.2000000000000002,,,,
+B4,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"1,1,1,2,1,1,1,1,1,1",3,,2.2000000000000002,,,,
+B4,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,2.2000000000000002,,,,
+B4,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,2,"1,1,1,2,1,1,2,1,1,1","3,6",,2.2000000000000002,,,,
+B5,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"2,1,1,1,1,1,1,2,1","0,7",,71.700000000000003,,,,
+B5,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"2,1,1,1,1,1,1,2,1","0,7",,71.700000000000003,,,,
+B5,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"2,1,1,1,1,1,1,2,1","0,7",,71.599999999999994,,,,
+B5,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"2,1,1,1,1,2,1,2,1","0,5,7",,71.700000000000003,,,,
+B5,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,2,"2,1,1,1,1,2,1,2,1","0,5,7",,71.599999999999994,,,,
+B5,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,2,"1,1,2,1,1,2,1,2,1","2,5,7",,71.700000000000003,,,,
+B6,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,2,1",1,,10.0,,,,
+B6,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,2,1",1,,10.0,,,,
+B6,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"1,2,1",1,,10.0,,,,
+B6,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,1,"1,1,1",,,10.0,,,,
+B6,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,1,"1,1,1",,,10.0,,,,
+B6,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,1,"1,1,1",,,10.0,,,,
+B7,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,1.8,,,FUNCTION_BLOCK,
+B7,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,1.8,,,FUNCTION_BLOCK,
+B7,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,1.8,,,FUNCTION_BLOCK,
+B7,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,0,,,,,,'modoAuto' no es ninguna entrada de 'SELBOMBA',3,PROGRAM,'modoAuto' no es ninguna entrada de 'SELBOMBA' || 'btnManual' no es ninguna entrada de 'SELBOMBA' || 'nivelBajo' no es ninguna entrada de 'SELBOMBA'
+B7,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,0,,,,,,'modoAuto' no es ninguna entrada de 'SELBOMBA',3,PROGRAM,'modoAuto' no es ninguna entrada de 'SELBOMBA' || 'btnManual' no es ninguna entrada de 'SELBOMBA' || 'nivelBajo' no es ninguna entrada de 'SELBOMBA'
+B7,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,0,,,,,,'modoAuto' no es ninguna entrada de 'SELBOMBA',3,PROGRAM,'modoAuto' no es ninguna entrada de 'SELBOMBA' || 'btnManual' no es ninguna entrada de 'SELBOMBA' || 'nivelBajo' no es ninguna entrada de 'SELBOMBA'
+B8,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1,1,1",,,3.0,,,,
+B8,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1,1,1",,,3.0,,,,
+B8,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1,1",,,3.0,,,,
+B8,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1,1,1",,,3.0,,,,
+B8,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,2,"1,2,2,2,2,2,2,1,2","1,2,3,4,5,6,8",,3.0,,,,
+B8,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1,1",,,3.0,,,,
+C3,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,1,1,2,1,1,1,1,1,2,1","3,9",,23.0,,,,
+C3,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,1,1,2,1,1,1,1,1,2,1","3,9",,23.0,,,,
+C3,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1,1,1,1",,,23.100000000000001,,,,
+C3,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,0,,,,,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion',2,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion' || 'btnParo' no es ninguna entrada de 'PRG_Conversion'
+C3,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,0,,,,,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion',2,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion' || 'btnParo' no es ninguna entrada de 'PRG_Conversion'
+C3,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,0,,,,,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion',2,,'btnMarcha' no es ninguna entrada de 'PRG_Conversion' || 'btnParo' no es ninguna entrada de 'PRG_Conversion'
+I1,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,1,2,2,2,2,2,2,2","2,3,4,5,6,7,8",,71.299999999999997,,,,
+I1,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,1,2,2,2,2,2,2,2","2,3,4,5,6,7,8",,71.200000000000003,,,,
+I1,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"1,1,2,2,2,2,2,2,2","2,3,4,5,6,7,8",,71.299999999999997,,,,
+I1,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"2,1,2,2,1,1,2,2,2","0,2,3,6,7,8",,71.299999999999997,,,,
+I1,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,2,"1,2,2,2,2,2,2,2,2","1,2,3,4,5,6,7,8",,71.200000000000003,,,,
+I1,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,2,"2,1,2,2,1,2,2,2,1","0,2,3,5,6,7",,71.299999999999997,,,,
+I2,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,1,2,2,1,1,1,1,1,1,1,1","2,3",,63.5,,,,
+I2,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,1,2,2,1,1,1,1,1,1,1,1","2,3",,63.100000000000001,,,,
+I2,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"1,1,2,2,2,2,2,1,1,2,1,2","2,3,4,5,6,9,11",,63.100000000000001,,,,
+I2,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"1,1,1,1,2,2,2,1,1,1,1,1","4,5,6",,63.5,,,,
+I2,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,2,"1,1,1,1,2,2,2,1,1,1,1,1","4,5,6",,63.100000000000001,,,,
+I2,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,2,"1,1,1,1,2,2,2,1,1,1,1,1","4,5,6",,63.5,,,,
+I3,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,2.2000000000000002,,,,
+I3,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,1,2,2,1,1,1,1,1,1","2,3",,2.2000000000000002,,,,
+I3,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"1,1,2,2,1,1,1,1,1,1","2,3",,2.2000000000000002,,,,
+I3,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,2.2000000000000002,,,,
+I3,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,2.2000000000000002,,,,
+I3,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1,1,1",,,2.2000000000000002,,,,
+I4,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,2,1,2,1,1","1,3",,9.5999999999999996,,,,
+I4,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,2,1,2,1,1","1,3",,9.5999999999999996,,,,
+I4,qwen2.5-coder_14b|few_shot|ejec_3,10,,,0,,,,,,Se esperaba ';' en lugar de 'ESTADO_INICIAL',2,,Se esperaba ';' en lugar de 'ESTADO_INICIAL' || Se esperaba ';' en lugar de 'IF'
+I4,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"1,1,2,2,2,1","2,3,4",,9.5999999999999996,,,,
+I4,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,2,"1,1,2,2,1,1","2,3",,9.5999999999999996,,,,
+I4,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,0,,,,,,Se esperaba ';' en lugar de 'ESTADO_INICIAL',2,,Se esperaba ';' en lugar de 'ESTADO_INICIAL' || Se esperaba ';' en lugar de 'IF'
+I5,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"2,2,2,2,2,2,2","0,1,2,3,4,5,6",,4.7000000000000002,,,,
+I5,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,2,2,2,2,2,2","1,2,3,4,5,6",,4.7000000000000002,,,,
+I5,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"2,2,2,2,2,2,2","0,1,2,3,4,5,6",,4.7000000000000002,,,,
+I5,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"1,2,2,2,2,2,2","1,2,3,4,5,6",,4.7000000000000002,,,,
+I5,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,0,,,,,,'PTR' no es ninguna entrada de 'TON',4,,'PTR' no es ninguna entrada de 'TON' || Identificador 'PTR' sin definir
+I5,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,0,,,,,,Se esperaba ';' en lugar de 'piezaDetectada',4,,Se esperaba ';' en lugar de 'piezaDetectada' || Se esperaba ';' en lugar de 'THEN' || Encontrado token inesperado 'THEN' || Se esperaba ';' en lugar de 'IF'
+I6,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,1,1,2,1,1,1,1",3,,1.3999999999999999,,,,
+I6,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1,1",,,1.3999999999999999,,,,
+I6,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1",,,1.3999999999999999,,,,
+I6,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1,1",,,1.3999999999999999,,,,
+I6,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1,1",,,1.3999999999999999,,,,
+I6,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1",,,1.3999999999999999,,,,
+I7,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,1,1,2,1,1,1,1,1,1,2,2,2,1","3,10,11,12",,2.2000000000000002,,,,
+I7,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,1,2,1,2,2,2,2,2,2,1,2,2,2","2,4,5,6,7,8,9,11,12,13",,2.2000000000000002,,,,
+I7,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"1,1,1,1,1,1,1,1,1,2,1,1,1,1",9,,2.2000000000000002,,,,
+I7,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"1,2,1,1,1,2,2,2,2,2,1,1,1,1","1,5,6,7,8,9",,2.2000000000000002,,,,
+I7,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,1,2,"1,1,1,2,1,1,2,1,2,2,1,2,1,1","3,6,8,9,11",,2.2000000000000002,,,,
+I7,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,2,"1,1,1,2,1,1,2,2,2,2,1,2,1,1","3,6,7,8,9,11",,2.2000000000000002,,,,
+I8,qwen2.5-coder_14b|few_shot|ejec_1,10,,,1,2,"1,2,1,2,2,1,1,1,1,1,2,1,1,2,2,2,1,2,2","1,3,4,10,13,14,15,17,18",,11.199999999999999,,,,
+I8,qwen2.5-coder_14b|few_shot|ejec_2,10,,,1,2,"1,2,1,2,2,1,1,1,1,1,2,1,1,2,2,2,1,2,2","1,3,4,10,13,14,15,17,18",,11.199999999999999,,,,
+I8,qwen2.5-coder_14b|few_shot|ejec_3,10,,,1,2,"1,2,1,2,2,1,1,1,1,1,2,1,1,2,2,2,1,2,2","1,3,4,10,13,14,15,17,18",,11.199999999999999,,,,
+I8,qwen2.5-coder_14b|zero_shot|ejec_1,10,,,1,2,"1,2,1,2,2,1,1,1,1,1,2,1,1,2,1,1,2,1,2","1,3,4,10,13,16,18",,11.199999999999999,,,,
+I8,qwen2.5-coder_14b|zero_shot|ejec_2,10,,,0,,,,,,Se esperaba ';' en lugar de 'btnMarcha',5,,Se esperaba ';' en lugar de 'btnMarcha' || Se esperaba ';' en lugar de 'THEN' || '(btnMarcha AND permisivoCumplido);  ' no es ninguna instrucci?n v?lida || Encontrado token inesperado 'THEN' || Se esperaba ';' en lugar de 'comp'
+I8,qwen2.5-coder_14b|zero_shot|ejec_3,10,,,1,2,"1,2,1,1,1,1,1,2,2,2,1,1,1,2,2,2,1,1,2","1,7,8,9,13,14,15,18",,11.199999999999999,,,,

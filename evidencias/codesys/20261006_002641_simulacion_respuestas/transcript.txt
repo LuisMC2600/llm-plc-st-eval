@@ -1,0 +1,22 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20261006002641
+Nombre de usuario: DESKTOP-2K8TKD6\LUIS C
+Usuario RunAs: DESKTOP-2K8TKD6\LUIS C
+Nombre de la configuración: 
+Máquina: DESKTOP-2K8TKD6 (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File .\codesys\ejecutar_simular_lote.ps1 -Modo respuestas -Carpeta data\processed_definitivo\gpt-4o-2024-08-06 -Ciclos 10 -Salida data\results_codesys\definitivo_gpt4o.csvcd C:\Users\LUIS C\Downloads\1 Trabajo de Grado\llm-plc-st-eval
+Id. de proceso: 31388
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20261006002641
+**********************

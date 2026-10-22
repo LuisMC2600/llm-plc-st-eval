@@ -1,0 +1,60 @@
+===== RÚBRICA OFICIAL (evaluador LLM DeepSeek deepseek-v4-pro): 600 respuestas =====
+Media (DE) por criterio, escala 0–3; total 0–15
+modelo                   estrategia    funcional    iec          coherencia   claridad     mantenibilid total       
+gemini-3.1-pro-preview   ambas         2.83 (0.67)  2.67 (0.76)  2.94 (0.26)  2.43 (0.50)  1.83 (0.47)  12.71 (1.70)
+gemini-3.1-pro-preview   zero_shot     2.81 (0.71)  2.53 (0.85)  2.96 (0.20)  2.47 (0.50)  1.84 (0.46)  12.61 (1.69)
+gemini-3.1-pro-preview   few_shot      2.85 (0.63)  2.80 (0.63)  2.92 (0.32)  2.40 (0.49)  1.83 (0.47)  12.80 (1.70)
+claude-sonnet-4-6        ambas         2.39 (1.12)  2.41 (0.90)  2.61 (0.72)  2.59 (0.53)  1.85 (0.54)  11.84 (2.91)
+claude-sonnet-4-6        zero_shot     2.37 (1.10)  2.41 (0.90)  2.64 (0.67)  2.72 (0.53)  1.91 (0.57)  12.05 (2.87)
+claude-sonnet-4-6        few_shot      2.40 (1.13)  2.41 (0.90)  2.57 (0.77)  2.45 (0.50)  1.79 (0.50)  11.63 (2.92)
+gpt-4o-2024-08-06        ambas         1.26 (1.38)  1.69 (1.03)  1.66 (1.13)  1.93 (0.43)  1.45 (0.50)  7.99 (3.47) 
+gpt-4o-2024-08-06        zero_shot     1.01 (1.30)  1.37 (0.91)  1.48 (1.08)  1.85 (0.42)  1.39 (0.49)  7.11 (3.19) 
+gpt-4o-2024-08-06        few_shot      1.51 (1.42)  2.00 (1.06)  1.84 (1.16)  2.01 (0.42)  1.51 (0.50)  8.87 (3.52) 
+qwen2.5-coder_14b        ambas         0.94 (1.32)  1.59 (0.90)  1.33 (1.10)  1.83 (0.42)  1.25 (0.43)  6.94 (3.11) 
+qwen2.5-coder_14b        zero_shot     0.95 (1.32)  1.40 (0.89)  1.24 (1.07)  1.72 (0.45)  1.17 (0.38)  6.48 (3.01) 
+qwen2.5-coder_14b        few_shot      0.93 (1.33)  1.77 (0.86)  1.41 (1.12)  1.95 (0.36)  1.33 (0.47)  7.40 (3.13) 
+TODOS                    ambas         1.85 (1.40)  2.09 (1.01)  2.13 (1.10)  2.20 (0.57)  1.59 (0.55)  9.87 (3.78) 
+TODOS                    zero_shot     1.79 (1.40)  1.93 (1.04)  2.08 (1.11)  2.19 (0.63)  1.58 (0.57)  9.56 (3.92) 
+TODOS                    few_shot      1.92 (1.39)  2.25 (0.96)  2.19 (1.08)  2.20 (0.50)  1.61 (0.53)  10.17 (3.61)
+
+Por nivel (B básico, I intermedio, A avanzado, C comparativa):
+  B (n=192) funcio 2.30 (1.16) iec 2.35 (0.67) cohere 2.35 (0.95) clarid 2.17 (0.55) manten 1.60 (0.53) total 10.78 (3.11)
+  I (n=192) funcio 1.70 (1.44) iec 2.18 (0.88) cohere 1.86 (1.18) clarid 2.12 (0.60) manten 1.62 (0.57) total 9.48 (3.97)
+  A (n=144) funcio 1.15 (1.41) iec 1.37 (1.32) cohere 1.94 (1.13) clarid 2.24 (0.58) manten 1.56 (0.56) total 8.26 (4.04)
+  C (n=72) funcio 2.49 (1.05) iec 2.58 (0.57) cohere 2.67 (0.82) clarid 2.38 (0.48) manten 1.56 (0.50) total 11.67 (2.73)
+
+===== FEW-SHOT vs ZERO-SHOT por modelo (Wilcoxon pareado por tarea × ejecución; Holm por criterio) =====
+  funcional      gemini-3.1-pro-preview   n=75  dif. media few−zero +0.04  p=0.5809  p_Holm=1.0000
+  funcional      claude-sonnet-4-6        n=75  dif. media few−zero +0.03  p=0.8803  p_Holm=1.0000
+  funcional      gpt-4o-2024-08-06        n=75  dif. media few−zero +0.49  p=0.0018  p_Holm=0.0074  *
+  funcional      qwen2.5-coder_14b        n=75  dif. media few−zero -0.01  p=0.6820  p_Holm=1.0000
+  iec            gemini-3.1-pro-preview   n=75  dif. media few−zero +0.27  p=0.0052  p_Holm=0.0104  *
+  iec            claude-sonnet-4-6        n=75  dif. media few−zero +0.00  p=0.8841  p_Holm=0.8841
+  iec            gpt-4o-2024-08-06        n=75  dif. media few−zero +0.63  p=0.0000  p_Holm=0.0000  *
+  iec            qwen2.5-coder_14b        n=75  dif. media few−zero +0.37  p=0.0001  p_Holm=0.0002  *
+  coherencia     gemini-3.1-pro-preview   n=75  dif. media few−zero -0.04  p=0.2568  p_Holm=0.7705
+  coherencia     claude-sonnet-4-6        n=75  dif. media few−zero -0.07  p=0.4883  p_Holm=0.7705
+  coherencia     gpt-4o-2024-08-06        n=75  dif. media few−zero +0.36  p=0.0064  p_Holm=0.0254  *
+  coherencia     qwen2.5-coder_14b        n=75  dif. media few−zero +0.17  p=0.3024  p_Holm=0.7705
+  claridad       gemini-3.1-pro-preview   n=75  dif. media few−zero -0.07  p=0.2752  p_Holm=0.2752
+  claridad       claude-sonnet-4-6        n=75  dif. media few−zero -0.27  p=0.0004  p_Holm=0.0016  *
+  claridad       gpt-4o-2024-08-06        n=75  dif. media few−zero +0.16  p=0.0047  p_Holm=0.0094  *
+  claridad       qwen2.5-coder_14b        n=75  dif. media few−zero +0.23  p=0.0007  p_Holm=0.0020  *
+  mantenibilidad gemini-3.1-pro-preview   n=75  dif. media few−zero -0.01  p=0.5637  p_Holm=0.5637
+  mantenibilidad claude-sonnet-4-6        n=75  dif. media few−zero -0.12  p=0.0491  p_Holm=0.0981
+  mantenibilidad gpt-4o-2024-08-06        n=75  dif. media few−zero +0.12  p=0.0290  p_Holm=0.0871
+  mantenibilidad qwen2.5-coder_14b        n=75  dif. media few−zero +0.16  p=0.0047  p_Holm=0.0187  *
+  total          gemini-3.1-pro-preview   n=75  dif. media few−zero +0.19  p=0.1391  p_Holm=0.2782
+  total          claude-sonnet-4-6        n=75  dif. media few−zero -0.43  p=0.2601  p_Holm=0.2782
+  total          gpt-4o-2024-08-06        n=75  dif. media few−zero +1.76  p=0.0000  p_Holm=0.0000  *
+  total          qwen2.5-coder_14b        n=75  dif. media few−zero +0.92  p=0.0065  p_Holm=0.0196  *
+
+===== CONCORDANCIA ENTRE EVALUADORES (oficial DeepSeek vs segundo Claude), 600 respuestas =====
+  funcional       n=167  exacto  76.6 %  ±1 100.0 %  kappa ponderado 0.71  dif. media oficial−segundo -0.15  (solo celdas no fijadas por CODESYS)
+  iec             n=518  exacto  83.8 %  ±1  97.7 %  kappa ponderado 0.67  dif. media oficial−segundo -0.03  (solo celdas no fijadas por CODESYS)
+  coherencia      n=600  exacto  65.0 %  ±1  97.7 %  kappa ponderado 0.85  dif. media oficial−segundo +0.29
+  claridad        n=600  exacto  64.2 %  ±1  99.3 %  kappa ponderado 0.46  dif. media oficial−segundo +0.21
+  mantenibilidad  n=600  exacto  67.3 %  ±1 100.0 %  kappa ponderado 0.48  dif. media oficial−segundo -0.04
+  Referencia: < 0,40 pobre; 0,41–0,60 moderado; 0,61–0,80 sustancial; > 0,80 casi perfecto (Landis y Koch, 1977).
+
+Guardado: /sessions/rcw-01rugg5tamb6x2jhe9yakxsc/mnt/1 Trabajo de Grado/llm-plc-st-eval/data/results/rubrica_definitivo.csv

@@ -1,0 +1,9 @@
+1. **Fórmula de escalado — división entera antes de la conversión a REAL** (`rawTemp / 27648 * 100`): `rawTemp` y `27648` son ambos `INT`, por lo que la división se realiza en aritmética entera y produce siempre 0 (ya que rawTemp < 27648), haciendo que `tempC` sea siempre 0.0. Corrección: convertir primero a REAL y luego operar: `tempC := INT_TO_REAL(rawTemp) / 27648.0 * 100.0;`
+
+2. **Umbrales de la histéresis intercambiados** (`IF tempC >= 75.0` para encender y `ELSIF tempC <= 80.0` para apagar): la lógica está invertida respecto a la especificación. El enfriador debe encenderse al llegar a 80.0 y apagarse al bajar a 75.0. Además, la condición `ELSIF tempC <= 80.0` es siempre verdadera cuando la primera rama es falsa (tempC < 75.0), eliminando cualquier histéresis real. Corrección: `IF tempC >= 80.0 THEN enfriador := TRUE; ELSIF tempC <= 75.0 THEN enfriador := FALSE; END_IF`
+
+3. **Falta la comprobación del límite inferior del rango** (`IF rawTemp > 27648`): la alarma solo se activa cuando rawTemp supera 27648, pero no cuando es negativo (< 0), incumpliendo la especificación que exige vigilar ambos extremos del rango. Corrección: `IF rawTemp < 0 OR rawTemp > 27648 THEN`
+
+4. **La alarma nunca se desactiva** (bloque `IF rawTemp > 27648`): `almSensor` solo recibe `TRUE` y jamás vuelve a `FALSE`, quedando enclavada indefinidamente. Corrección: añadir rama `ELSE almSensor := FALSE;` (o equivalente).
+
+5. **El enfriador no se desactiva ante alarma de sensor** (bloque de alarma): la especificación exige apagar el enfriador cuando rawTemp está fuera de rango, pero el bloque de alarma no asigna ningún valor a `enfriador`. Corrección: dentro de la rama de alarma añadir `enfriador := FALSE;`.

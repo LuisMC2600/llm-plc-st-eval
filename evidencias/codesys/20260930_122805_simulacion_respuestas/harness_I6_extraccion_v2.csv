@@ -1,0 +1,13 @@
+tarea,id,ciclo_ms,esperado,paso_esperado,compila,veredicto,resultado,pasos_fallidos,coincide,seg_sim,nota,errores
+I6,claude-sonnet-4-6|few_shot|ejec_1,10,,,1,1,"1,1,1,1,1,1,1,1",,,1.3999999999999999,,
+I6,claude-sonnet-4-6|few_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1,1",,,1.3999999999999999,,
+I6,claude-sonnet-4-6|few_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1",,,1.3999999999999999,,
+I6,claude-sonnet-4-6|zero_shot|ejec_1,10,,,0,,,,,,El tipo 'Tipo desconocido: '(((REAL_TO_REAL(INT_TO_REAL(rawTemp)) * REAL#100) / INT_TO_REAL(INT#27648)) + TEMP_MIN)'' no puede convertirse en el tipo 'REAL',6
+I6,claude-sonnet-4-6|zero_shot|ejec_2,10,,,1,1,"1,1,1,1,1,1,1,1",,,1.3999999999999999,,
+I6,claude-sonnet-4-6|zero_shot|ejec_3,10,,,1,1,"1,1,1,1,1,1,1,1",,,1.3999999999999999,,
+I6,gpt-4o|few_shot|ejec_1,10,,,0,,,,,,Se esperaba ';' en lugar de ')',7
+I6,gpt-4o|few_shot|ejec_2,10,,,0,,,,,,Se esperaba ';' en lugar de ')',7
+I6,gpt-4o|few_shot|ejec_3,10,,,0,,,,,,Se esperaba ';' en lugar de ')',7
+I6,gpt-4o|zero_shot|ejec_1,10,,,0,,,,,,Se esperaba ';' en lugar de ')',7
+I6,gpt-4o|zero_shot|ejec_2,10,,,0,,,,,,Se esperaba ';' en lugar de ')',7
+I6,gpt-4o|zero_shot|ejec_3,10,,,0,,,,,,"Se esperaba ,, AT o :' en lugar de 'VAR_OUTPUT'",15

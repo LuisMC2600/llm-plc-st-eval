@@ -1,0 +1,1338 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>I5 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>I5 — Banda con clasificación por sensores (Intermedio)</h1><p>24 respuestas identificadas solo por código. Puntúalas en la hoja I5 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa una banda transportadora clasificadora. La banda funciona continuamente (salida banda activa). El sensor sensorPresencia detecta el paso de cada pieza; si en ese momento sensorAltura está activo, la pieza es alta y debe desviarse: el pistón (salida piston) debe activarse durante 1 segundo, comenzando 2 segundos después de la detección (tiempo que tarda la pieza en llegar al desviador). Contar las piezas altas en nAltas y las bajas en nBajas. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Clasificadora con variables de entrada sensorPresencia, sensorAltura (BOOL) y salidas banda, piston (BOOL) y nAltas, nBajas (INT). Usa los tiempos T#2S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_I5.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea I5 (banda clasificadora)
+    ---------------------------------------------------------------------------
+    La banda funciona siempre. Cada flanco de sensorPresencia cuenta una pieza;
+    si sensorAltura esta activo en ese instante la pieza es alta y debe
+    desviarse: el piston se activa durante 1 s, comenzando 2 s despues de la
+    deteccion. Se cuentan altas y bajas por separado.
+
+    USO: crear este PROGRAM junto al FUNCTION_BLOCK de la respuesta a evaluar y
+    ejecutar en modo Simulacion. Al terminar, leer &#x27;veredicto&#x27;: 1 = supera,
+    2 = falla.
+
+    ---------------------------------------------------------------------------
+    CORRECCION DEL 2026-09-09 (enmienda 11). Validado con validar_harness_I5.py.
+    La version anterior REPROBABA a la implementacion correcta en los tres
+    ciclos de tarea.
+
+    Causa: el paso que decia comprobar &quot;antes de 2 s&quot; esperaba 1800 ms contando
+    desde su propio inicio, pero la deteccion de la pieza alta ocurre 200 ms
+    antes, en el paso anterior. El tiempo efectivo desde la deteccion era por
+    tanto de 2000 ms exactos, es decir justo el instante en que el piston se
+    activa, y la evaluacion lo encontraba ya activado.
+
+    Es el tercer caso del mismo error, tras I4 (enmienda 5) e I2 (enmienda 10):
+    una ventana calculada como si la fase empezara en el limite del paso,
+    cuando en realidad empieza antes. Conviene enunciarlo como regla: el
+    tiempo de una ventana se cuenta desde el evento que la origina, no desde
+    el paso en que se escribe.
+
+    Correccion: las tres ventanas del desvio se recalculan con margen explicito
+    de 0,3 s a 0,5 s respecto a los flancos del pulso, tomando como origen la
+    deteccion real. Con la secuencia corregida se discriminan un retardo de
+    1,5 s, la ausencia de retardo, un pulso de 2 s y el desvio indebido de las
+    piezas bajas.
+
+    Cronologia (t = 0 en el arranque del banco; deteccion de la pieza alta en
+    t = 0,7 s; pulso correcto de 2,7 s a 3,7 s):
+        paso 4 evalua en t = 2,4 s  -&gt; 0,3 s ANTES de que el piston se active
+        paso 5 evalua en t = 3,2 s  -&gt; dentro del pulso, a 0,5 s de cada flanco
+        paso 6 evalua en t = 4,0 s  -&gt; 0,3 s DESPUES de que el piston se apague
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reposo: la banda debe estar en marcha desde el principio *)
+            sensorPresencia := FALSE; sensorAltura := FALSE;
+            tEspera := T#200MS;
+            espBanda := TRUE; espPiston := FALSE; espAltas := 0; espBajas := 0;
+        1:  (* Pieza baja con presencia SOSTENIDA: debe contar una sola vez *)
+            sensorPresencia := TRUE; sensorAltura := FALSE;
+            tEspera := T#300MS;
+            espBanda := TRUE; espPiston := FALSE; espAltas := 0; espBajas := 1;
+        2:  (* Se retira la pieza baja *)
+            sensorPresencia := FALSE;
+            tEspera := T#200MS;
+            espBanda := TRUE; espPiston := FALSE; espAltas := 0; espBajas := 1;
+        3:  (* Pieza ALTA: aqui empieza a contar el retardo de 2 s del desvio *)
+            sensorPresencia := TRUE; sensorAltura := TRUE;
+            tEspera := T#200MS;
+            espBanda := TRUE; espPiston := FALSE; espAltas := 1; espBajas := 1;
+
+        (* --- Ventanas del desvio, con origen en la deteccion (enmienda 11) --- *)
+        4:  (* t = 2,4 s: 0,3 s antes de que el piston deba activarse *)
+            sensorPresencia := FALSE; sensorAltura := FALSE;
+            tEspera := T#1500MS;
+            espBanda := TRUE; espPiston := FALSE; espAltas := 1; espBajas := 1;
+        5:  (* t = 3,2 s: dentro del pulso, a 0,5 s de cada flanco *)
+            tEspera := T#800MS;
+            espBanda := TRUE; espPiston := TRUE;  espAltas := 1; espBajas := 1;
+        6:  (* t = 4,0 s: 0,3 s despues de que el piston deba apagarse *)
+            tEspera := T#800MS;
+            espBanda := TRUE; espPiston := FALSE; espAltas := 1; espBajas := 1;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#I5-9795">I5-9795</a><a href="#I5-6031">I5-6031</a><a href="#I5-2725">I5-2725</a><a href="#I5-5960">I5-5960</a><a href="#I5-5429">I5-5429</a><a href="#I5-7024">I5-7024</a><a href="#I5-3559">I5-3559</a><a href="#I5-2602">I5-2602</a><a href="#I5-3769">I5-3769</a><a href="#I5-4146">I5-4146</a><a href="#I5-8743">I5-8743</a><a href="#I5-3551">I5-3551</a><a href="#I5-3570">I5-3570</a><a href="#I5-9566">I5-9566</a><a href="#I5-2807">I5-2807</a><a href="#I5-9964">I5-9964</a><a href="#I5-4776">I5-4776</a><a href="#I5-8715">I5-8715</a><a href="#I5-6743">I5-6743</a><a href="#I5-6738">I5-6738</a><a href="#I5-6315">I5-6315</a><a href="#I5-3665">I5-3665</a><a href="#I5-2293">I5-2293</a><a href="#I5-8675">I5-8675</a></div>
+<div class="caja resp" id="I5-9795"><div class="cod"><h3>I5-9795</h3><span>1 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de paso de pieza *)
+    sensorAltura    : BOOL; (* Sensor de altura: TRUE = pieza alta *)
+END_VAR
+VAR_OUTPUT
+    banda   : BOOL; (* Banda transportadora activa *)
+    piston  : BOOL; (* Pistón desviador *)
+    nAltas  : INT;  (* Contador de piezas altas *)
+    nBajas  : INT;  (* Contador de piezas bajas *)
+END_VAR
+VAR
+    tRetardo : TON; (* Retardo de 2 s hasta llegar al desviador *)
+    tPulso   : TP;  (* Pulso de 1 s para activar el pistón *)
+    rPresencia : R_TRIG; (* Flanco ascendente del sensor de presencia *)
+    bPiezaAlta : BOOL;   (* Indica que la pieza detectada es alta *)
+END_VAR
+
+(* La banda funciona siempre *)
+banda := TRUE;
+
+(* Detectar flanco ascendente del sensor de presencia *)
+rPresencia(CLK := sensorPresencia);
+
+IF rPresencia.Q THEN
+    IF sensorAltura THEN
+        (* Pieza alta: registrar y armar retardo *)
+        nAltas     := nAltas + 1;
+        bPiezaAlta := TRUE;
+    ELSE
+        (* Pieza baja: solo contar *)
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* Retardo de 2 s: la pieza tarda ese tiempo en llegar al desviador *)
+tRetardo(IN := bPiezaAlta, PT := T#2S);
+
+(* Al cumplirse el retardo, lanzar pulso de 1 s en el pistón *)
+tPulso(IN := tRetardo.Q, PT := T#1S);
+
+(* Cuando el pulso termina, limpiar la bandera de pieza alta *)
+IF NOT tPulso.Q AND NOT tRetardo.Q AND bPiezaAlta THEN
+    (* El temporizador de retardo aún no ha arrancado o ya terminó el pulso *)
+    (* Limpiar solo cuando el ciclo completo haya concluido *)
+    IF tRetardo.ET = T#0S AND NOT tRetardo.IN THEN
+        bPiezaAlta := FALSE;
+    END_IF;
+END_IF;
+
+(* Limpiar bandera al finalizar el pulso del pistón *)
+IF tPulso.Q = FALSE AND tRetardo.Q = FALSE AND tRetardo.ET &gt;= T#2S THEN
+    bPiezaAlta := FALSE;
+END_IF;
+
+(* Activar pistón durante el pulso de 1 s *)
+piston := tPulso.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-6031"><div class="cod"><h3>I5-6031</h3><span>2 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Detecta el paso de una pieza *)
+    sensorAltura    : BOOL; (* Detecta si la pieza es alta *)
+END_VAR
+VAR_OUTPUT
+    banda   : BOOL; (* Control de la banda transportadora *)
+    piston  : BOOL; (* Control del pistón desviador *)
+    nAltas  : INT;  (* Contador de piezas altas *)
+    nBajas  : INT;  (* Contador de piezas bajas *)
+END_VAR
+VAR
+    flancoPresencia : R_TRIG; (* Detector de flanco para contar solo una vez por pieza *)
+    esperaPiston    : BOOL;   (* Marca para iniciar el retardo del pistón *)
+    timerRetardo    : TON;    (* Temporizador para el tiempo de viaje (2s) *)
+    timerPiston     : TP;     (* Temporizador para la duración del pistón (1s) *)
+END_VAR
+
+(* La banda está siempre activa *)
+banda := TRUE;
+
+(* Detectar el flanco de subida del sensor de presencia *)
+flancoPresencia(CLK := sensorPresencia);
+
+(* Lógica de clasificación y conteo al detectar una pieza *)
+IF flancoPresencia.Q THEN
+    IF sensorAltura THEN
+        nAltas := nAltas + 1;
+        esperaPiston := TRUE; (* Activa la bandera para iniciar el retardo *)
+    ELSE
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* Temporizador TON: espera 2 segundos desde que se detecta la pieza alta *)
+timerRetardo(IN := esperaPiston, PT := T#2S);
+
+(* Cuando pasan los 2 segundos, se resetea la marca de espera *)
+IF timerRetardo.Q THEN
+    esperaPiston := FALSE;
+END_IF;
+
+(* Temporizador TP: genera un pulso de 1 segundo para el pistón *)
+(* Se dispara exactamente cuando timerRetardo.Q se activa *)
+timerPiston(IN := timerRetardo.Q, PT := T#1S);
+
+(* Asignar la salida del temporizador al pistón *)
+piston := timerPiston.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-2725"><div class="cod"><h3>I5-2725</h3><span>3 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (4 errores).<div class="err">Mensajes del compilador: L?nea 11, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;piezaDetectada&#x27; || L?nea 11, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;THEN&#x27; || L?nea 11, columna 1 (Impl) Encontrado token inesperado &#x27;THEN&#x27; || L?nea 12, columna 1 (Impl) Se esperaba &#x27;;&#x27; en lugar de &#x27;IF&#x27;</div></div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; // Sensor de presencia de pieza
+    sensorAltura : BOOL; // Sensor de altura de pieza
+END_VAR
+
+VAR_OUTPUT
+    banda : BOOL; // Salida de la banda transportadora
+    piston : BOOL; // Salida del pistón para desviar piezas altas
+    nAltas : INT; // Contador de piezas altas
+    nBajas : INT; // Contador de piezas bajas
+END_VAR
+
+VAR
+    timerDelay : TON; // Temporizador para el retardo de 2 segundos
+    timerPiston : TON; // Temporizador para el activo del pistón durante 1 segundo
+    piezaDetectada : BOOL; // Bandera para indicar si una pieza ha sido detectada
+END_VAR
+
+// Inicialización de temporizadores
+timerDelay(IN := FALSE, PT := T#2S);
+timerPiston(IN := FALSE, PT := T#1S);
+
+// Banda transportadora siempre activa
+banda := TRUE;
+
+// Proceso principal
+IF sensorPresencia THEN
+    piezaDetectada := TRUE;
+    timerDelay(IN := TRUE); // Iniciar el temporizador de retardo
+ELSEIF piezaDetectada THEN
+    IF timerDelay.Q THEN
+        IF sensorAltura THEN
+            nAltas := nAltas + 1; // Incrementar contador de piezas altas
+            timerPiston(IN := TRUE); // Iniciar el temporizador del pistón
+            piston := TRUE; // Activar el pistón
+        ELSE
+            nBajas := nBajas + 1; // Incrementar contador de piezas bajas
+        END_IF
+        piezaDetectada := FALSE; // Resetear la bandera de detección
+    END_IF
+END_IF
+
+// Control del pistón
+IF timerPiston.Q THEN
+    timerPiston(IN := FALSE); // Detener el temporizador del pistón
+    piston := FALSE; // Desactivar el pistón
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-5960"><div class="cod"><h3>I5-5960</h3><span>4 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; // Sensor que detecta el paso de una pieza
+    sensorAltura : BOOL;    // Sensor que detecta si la pieza es alta
+END_VAR
+
+VAR_OUTPUT
+    banda : BOOL;           // Salida para activar la banda transportadora
+    piston : BOOL;          // Salida para activar el pistón desviador
+    nAltas : INT := 0;      // Contador de piezas altas
+    nBajas : INT := 0;      // Contador de piezas bajas
+END_VAR
+
+VAR
+    trigPresencia : R_TRIG; // Detector de flanco de subida para el sensor de presencia
+    esperaPiston : BOOL;    // Marca de memoria para iniciar el retardo del pistón
+    tonRetardo : TON;       // Temporizador de retardo (llegada al desviador)
+    tpPiston : TP;          // Temporizador de pulso (duración de activación del pistón)
+END_VAR
+
+// 1. La banda funciona continuamente
+banda := TRUE;
+
+// 2. Detección del paso de una pieza (flanco de subida)
+trigPresencia(CLK := sensorPresencia);
+
+IF trigPresencia.Q THEN
+    IF sensorAltura THEN
+        // Es una pieza alta
+        nAltas := nAltas + 1;
+        esperaPiston := TRUE; // Se activa la bandera para iniciar el retardo
+    ELSE
+        // Es una pieza baja
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+// 3. Temporizador de retardo: espera 2 segundos a que la pieza llegue al pistón
+tonRetardo(IN := esperaPiston, PT := T#2S);
+
+// Al cumplirse los 2 segundos, se apaga la marca de espera
+IF tonRetardo.Q THEN
+    esperaPiston := FALSE; 
+END_IF;
+
+// 4. Temporizador de pulso: activa el pistón durante 1 segundo
+// Se dispara con el flanco de subida de tonRetardo.Q
+tpPiston(IN := tonRetardo.Q, PT := T#1S);
+
+// 5. Asignación de la salida física del pistón
+piston := tpPiston.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-5429"><div class="cod"><h3>I5-5429</h3><span>5 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Detecta el paso de una pieza *)
+    sensorAltura    : BOOL; (* TRUE si la pieza es alta *)
+END_VAR
+
+VAR_OUTPUT
+    banda   : BOOL; (* Activa la banda transportadora *)
+    piston  : BOOL; (* Activa el desviador *)
+    nAltas  : INT;  (* Contador de piezas altas *)
+    nBajas  : INT;  (* Contador de piezas bajas *)
+END_VAR
+
+VAR
+    rPresencia      : R_TRIG;       (* Flanco ascendente de sensorPresencia *)
+    piezaAlta       : BOOL;         (* Indica que la pieza detectada es alta *)
+    timerRetardo    : TON;          (* Retardo de 2 s hasta el desviador *)
+    timerPiston     : TON;          (* Duración de 1 s del pistón *)
+END_VAR
+
+(* ─────────────────────────────────────────────
+   La banda funciona siempre de forma continua
+   ───────────────────────────────────────────── *)
+banda := TRUE;
+
+(* ─────────────────────────────────────────────
+   Detección de flanco ascendente en sensorPresencia
+   ───────────────────────────────────────────── *)
+rPresencia(CLK := sensorPresencia);
+
+IF rPresencia.Q THEN
+    (* Nueva pieza detectada *)
+    IF sensorAltura THEN
+        (* Pieza alta: armar retardo y contabilizar *)
+        piezaAlta := TRUE;
+        nAltas    := nAltas + 1;
+    ELSE
+        (* Pieza baja: solo contabilizar *)
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* ─────────────────────────────────────────────
+   Temporizador de retardo: 2 s desde la detección
+   Se activa mientras piezaAlta esté pendiente y
+   el pistón aún no haya comenzado su ciclo
+   ───────────────────────────────────────────── *)
+timerRetardo(IN := piezaAlta AND NOT timerPiston.Q,
+             PT := T#2S);
+
+(* ─────────────────────────────────────────────
+   Temporizador del pistón: 1 s de activación
+   Arranca cuando el retardo ha concluido
+   ───────────────────────────────────────────── *)
+timerPiston(IN := timerRetardo.Q,
+            PT := T#1S);
+
+(* ─────────────────────────────────────────────
+   Salida del pistón activa durante el segundo
+   temporizador
+   ───────────────────────────────────────────── *)
+piston := timerPiston.IN AND NOT timerPiston.Q;
+
+(* ─────────────────────────────────────────────
+   Cuando el pistón termina su ciclo, limpiar
+   el flag y dejar que los temporizadores se
+   reinicien en el siguiente ciclo de scan
+   ───────────────────────────────────────────── *)
+IF timerPiston.Q THEN
+    piezaAlta := FALSE;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-7024"><div class="cod"><h3>I5-7024</h3><span>6 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 3 de 7 pasos del harness (pasos 3,4,5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de paso de pieza *)
+    sensorAltura    : BOOL; (* TRUE = pieza alta *)
+END_VAR
+
+VAR_OUTPUT
+    banda   : BOOL; (* Banda transportadora activa *)
+    piston  : BOOL; (* Pistón desviador *)
+    nAltas  : INT;  (* Contador de piezas altas *)
+    nBajas  : INT;  (* Contador de piezas bajas *)
+END_VAR
+
+VAR
+    tRetardo    : TON; (* Temporizador retardo 2 s hasta el desviador *)
+    tPiston     : TON; (* Temporizador duración del pistón 1 s *)
+    rPresencia  : R_TRIG; (* Flanco ascendente del sensor de presencia *)
+    bPiezaAlta  : BOOL;  (* Indica que la pieza detectada es alta *)
+    bContado    : BOOL;  (* Evita contar la misma pieza más de una vez *)
+END_VAR
+
+(* ------------------------------------------------------------------ *)
+(* 1. La banda funciona siempre                                        *)
+(* ------------------------------------------------------------------ *)
+banda := TRUE;
+
+(* ------------------------------------------------------------------ *)
+(* 2. Detectar flanco ascendente del sensor de presencia              *)
+(* ------------------------------------------------------------------ *)
+rPresencia(CLK := sensorPresencia);
+
+IF rPresencia.Q THEN
+    (* Capturar si la pieza es alta en el momento de la detección *)
+    bPiezaAlta := sensorAltura;
+    bContado   := FALSE; (* Reiniciar bandera de conteo *)
+
+    IF bPiezaAlta THEN
+        (* Arrancar el temporizador de retardo (2 s) *)
+        tRetardo.IN := FALSE; (* Reset previo para reiniciar *)
+    END_IF;
+END_IF;
+
+(* ------------------------------------------------------------------ *)
+(* 3. Temporizador de retardo: 2 s desde la detección                 *)
+(* ------------------------------------------------------------------ *)
+tRetardo(IN := bPiezaAlta AND NOT tPiston.Q,
+         PT := T#2S);
+
+(* ------------------------------------------------------------------ *)
+(* 4. Temporizador de pistón: 1 s de activación                       *)
+(* ------------------------------------------------------------------ *)
+tPiston(IN := tRetardo.Q,
+        PT := T#1S);
+
+(* ------------------------------------------------------------------ *)
+(* 5. Activar pistón durante el tiempo definido                       *)
+(* ------------------------------------------------------------------ *)
+piston := tPiston.IN AND NOT tPiston.Q;
+(* tPiston.IN=TRUE y Q=FALSE =&gt; dentro del período de 1 s            *)
+
+(* ------------------------------------------------------------------ *)
+(* 6. Cuando el pistón termina, limpiar estado y contar               *)
+(* ------------------------------------------------------------------ *)
+IF tPiston.Q AND NOT bContado THEN
+    nAltas   := nAltas + 1;
+    bContado   := TRUE;
+    bPiezaAlta := FALSE; (* Liberar para la siguiente pieza *)
+    tRetardo.IN := FALSE; (* Reiniciar temporizadores *)
+    tPiston.IN  := FALSE;
+END_IF;
+
+(* ------------------------------------------------------------------ *)
+(* 7. Contar piezas bajas (flanco de presencia + altura inactiva)     *)
+(* ------------------------------------------------------------------ *)
+IF rPresencia.Q AND NOT sensorAltura THEN
+    nBajas := nBajas + 1;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-3559"><div class="cod"><h3>I5-3559</h3><span>7 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; // Sensor que detecta la presencia de una pieza
+    sensorAltura : BOOL;    // Sensor que detecta si la pieza es alta
+END_VAR
+
+VAR_OUTPUT
+    banda : BOOL;   // Salida para activar la banda transportadora
+    piston : BOOL;  // Salida para activar el pistón desviador
+    nAltas : INT;   // Contador de piezas altas
+    nBajas : INT;   // Contador de piezas bajas
+END_VAR
+
+VAR
+    timerRetraso : TON; // Temporizador para el retraso de 2 segundos
+    timerPiston : TON;  // Temporizador para la activación del pistón durante 1 segundo
+    piezaDetectada : BOOL; // Indica si una pieza ha sido detectada
+    piezaAlta : BOOL; // Indica si la pieza detectada es alta
+END_VAR
+
+// Inicialización de la banda transportadora
+banda := TRUE;
+
+// Detección de una pieza
+IF sensorPresencia AND NOT piezaDetectada THEN
+    piezaDetectada := TRUE;
+    piezaAlta := sensorAltura;
+    timerRetraso(IN := TRUE, PT := T#2S); // Inicia el temporizador de retraso
+END_IF
+
+// Manejo del temporizador de retraso
+IF timerRetraso.Q THEN
+    timerRetraso(IN := FALSE); // Detiene el temporizador de retraso
+
+    IF piezaAlta THEN
+        timerPiston(IN := TRUE, PT := T#1S); // Inicia el temporizador del pistón
+        nAltas := nAltas + 1; // Incrementa el contador de piezas altas
+    ELSE
+        nBajas := nBajas + 1; // Incrementa el contador de piezas bajas
+    END_IF
+
+    piezaDetectada := FALSE; // Reinicia la detección de pieza
+END_IF
+
+// Manejo del temporizador del pistón
+IF timerPiston.Q THEN
+    piston := FALSE; // Desactiva el pistón
+    timerPiston(IN := FALSE); // Detiene el temporizador del pistón
+ELSE
+    piston := timerPiston.Q; // Activa el pistón mientras el temporizador está activo
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-2602"><div class="cod"><h3>I5-2602</h3><span>8 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de presencia de piezas *)
+    sensorAltura : BOOL;    (* Sensor de altura de piezas *)
+END_VAR
+VAR_OUTPUT
+    banda : BOOL;   (* Banda transportadora activa *)
+    piston : BOOL;  (* Pistón para desviar piezas altas *)
+    nAltas : INT;   (* Contador de piezas altas *)
+    nBajas : INT;   (* Contador de piezas bajas *)
+END_VAR
+VAR
+    tRetraso : TON; (* Temporizador para retraso de 2 segundos *)
+    tPiston : TON;  (* Temporizador para activación de pistón por 1 segundo *)
+    piezaAltaDetectada : BOOL; (* Indica si una pieza alta fue detectada *)
+END_VAR
+
+(* La banda siempre está activa *)
+banda := TRUE;
+
+(* Detectar y contar piezas *)
+IF sensorPresencia THEN
+    IF sensorAltura THEN
+        nAltas := nAltas + 1;
+        piezaAltaDetectada := TRUE;
+        tRetraso(IN := TRUE, PT := T#2S);
+    ELSE
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* Control del pistón *)
+IF tRetraso.Q THEN
+    tPiston(IN := piezaAltaDetectada, PT := T#1S);
+    piezaAltaDetectada := FALSE; (* Resetear la detección de pieza alta después del retraso *)
+END_IF;
+
+piston := tPiston.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-3769"><div class="cod"><h3>I5-3769</h3><span>9 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de presencia de piezas *)
+    sensorAltura : BOOL;    (* Sensor de altura de piezas *)
+END_VAR
+VAR_OUTPUT
+    banda : BOOL;           (* Banda transportadora activa *)
+    piston : BOOL;          (* Pistón para desviar piezas altas *)
+    nAltas : INT;           (* Contador de piezas altas *)
+    nBajas : INT;           (* Contador de piezas bajas *)
+END_VAR
+VAR
+    tRetraso : TON;         (* Temporizador de retraso de 2 segundos *)
+    tPulso : TON;           (* Temporizador de pulso de 1 segundo *)
+    piezaAltaDetectada : BOOL; (* Indica si una pieza alta fue detectada *)
+END_VAR
+
+(* La banda transportadora siempre está activa *)
+banda := TRUE;
+
+(* Detectar y contar piezas *)
+IF sensorPresencia THEN
+    IF sensorAltura THEN
+        nAltas := nAltas + 1;
+        piezaAltaDetectada := TRUE;
+        tRetraso(IN := TRUE, PT := T#2S);
+    ELSE
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* Control del pistón para desviar piezas altas *)
+IF piezaAltaDetectada AND tRetraso.Q THEN
+    tPulso(IN := TRUE, PT := T#1S);
+    piezaAltaDetectada := FALSE; (* Resetear la detección de pieza alta *)
+END_IF;
+
+piston := tPulso.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-4146"><div class="cod"><h3>I5-4146</h3><span>10 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 4 de 7 pasos del harness (pasos 3,4,5,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; // Sensor que detecta la presencia de una pieza
+    sensorAltura : BOOL;    // Sensor que detecta si la pieza es alta
+END_VAR
+
+VAR_OUTPUT
+    banda : BOOL := TRUE;   // Salida que activa la banda transportadora
+    piston : BOOL := FALSE; // Salida que activa el pistón desviador
+    nAltas : INT := 0;      // Contador de piezas altas
+    nBajas : INT := 0;      // Contador de piezas bajas
+END_VAR
+
+VAR
+    estadoAnteriorPresencia : BOOL := FALSE; // Estado anterior del sensor de presencia
+    temporizadorRetraso : TON;              // Temporizador para el retraso de 2 segundos
+    temporizadorPiston : TON;               // Temporizador para la duración de 1 segundo del pistón
+    activarPiston : BOOL := FALSE;          // Bandera para activar el pistón
+END_VAR
+
+// Inicialización de los temporizadores
+temporizadorRetraso(IN := FALSE, PT := T#2S);
+temporizadorPiston(IN := FALSE, PT := T#1S);
+
+// Detectar flanco de subida del sensor de presencia
+IF (sensorPresencia AND NOT estadoAnteriorPresencia) THEN
+    IF sensorAltura THEN
+        // Iniciar temporizador de retraso para piezas altas
+        temporizadorRetraso(IN := TRUE);
+        activarPiston := TRUE;
+    ELSE
+        // Incrementar contador de piezas bajas
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+// Actualizar estado anterior del sensor de presencia
+estadoAnteriorPresencia := sensorPresencia;
+
+// Control del pistón
+IF activarPiston THEN
+    // Si el temporizador de retraso ha terminado, iniciar temporizador del pistón
+    IF temporizadorRetraso.Q THEN
+        temporizadorPiston(IN := TRUE);
+        temporizadorRetraso(IN := FALSE);
+    END_IF;
+
+    // Activar el pistón durante 1 segundo
+    IF temporizadorPiston.Q THEN
+        piston := FALSE;
+        temporizadorPiston(IN := FALSE);
+        activarPiston := FALSE;
+        nAltas := nAltas + 1; // Incrementar contador de piezas altas
+    ELSE
+        piston := TRUE;
+    END_IF;
+ELSE
+    piston := FALSE;
+END_IF;
+
+banda := TRUE; // La banda siempre está activa
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-8743"><div class="cod"><h3>I5-8743</h3><span>11 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor que detecta el paso de una pieza *)
+    sensorAltura : BOOL;    (* Sensor que detecta si la pieza es alta *)
+END_VAR
+
+VAR_OUTPUT
+    banda : BOOL;           (* Salida para activar la banda transportadora *)
+    piston : BOOL;          (* Salida para activar el pistón desviador *)
+    nAltas : INT := 0;      (* Contador de piezas altas *)
+    nBajas : INT := 0;      (* Contador de piezas bajas *)
+END_VAR
+
+VAR
+    trigPresencia : R_TRIG; (* Detector de flanco de subida para la presencia *)
+    tonRetardo : TON;       (* Temporizador para el retardo de 2 segundos *)
+    tpPiston : TP;          (* Temporizador de pulso para el pistón de 1 segundo *)
+    esperandoPiston : BOOL := FALSE; (* Memoria para el retardo del pistón *)
+END_VAR
+
+(* 1. La banda funciona continuamente *)
+banda := TRUE;
+
+(* 2. Detección de nueva pieza (flanco de subida) *)
+trigPresencia(CLK := sensorPresencia);
+
+IF trigPresencia.Q THEN
+    IF sensorAltura THEN
+        (* Es una pieza alta *)
+        nAltas := nAltas + 1;
+        esperandoPiston := TRUE; (* Inicia el proceso de desvío *)
+    ELSE
+        (* Es una pieza baja *)
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* 3. Temporizador de retardo (2 segundos hasta llegar al desviador) *)
+tonRetardo(IN := esperandoPiston, PT := T#2S);
+
+(* Al cumplirse el tiempo de retardo, reseteamos la memoria de espera *)
+IF tonRetardo.Q THEN
+    esperandoPiston := FALSE;
+END_IF;
+
+(* 4. Temporizador del pistón (pulso de 1 segundo) *)
+(* Se dispara con el flanco de subida de tonRetardo.Q *)
+tpPiston(IN := tonRetardo.Q, PT := T#1S);
+
+(* 5. Activación de la salida del pistón *)
+piston := tpPiston.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-3551"><div class="cod"><h3>I5-3551</h3><span>12 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 7 de 7 pasos del harness (pasos 0,1,2,3,4,5,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de presencia de pieza *)
+    sensorAltura : BOOL; (* Sensor de altura de pieza *)
+END_VAR
+VAR_OUTPUT
+    banda : BOOL; (* Banda transportadora activa *)
+    piston : BOOL; (* Pistón para desviar piezas altas *)
+    nAltas : INT; (* Contador de piezas altas *)
+    nBajas : INT; (* Contador de piezas bajas *)
+END_VAR
+VAR
+    tEspera : TP; (* Temporizador para esperar 2 segundos *)
+    tPiston : TP; (* Temporizador para activar el pistón durante 1 segundo *)
+    piezaDetectada : BOOL; (* Bandera para indicar si una pieza ha sido detectada *)
+END_VAR
+
+(* La banda funciona continuamente *)
+banda := TRUE;
+
+(* Detectar pieza y iniciar temporizador de espera *)
+IF sensorPresencia AND NOT piezaDetectada THEN
+    tEspera(IN := TRUE, PT := T#2S);
+    piezaDetectada := TRUE;
+END_IF;
+
+(* Si la pieza es alta, activar el pistón después de 2 segundos *)
+IF tEspera.Q AND sensorAltura THEN
+    tPiston(IN := TRUE, PT := T#1S);
+    nAltas := nAltas + 1;
+ELSE
+    nBajas := nBajas + 1;
+END_IF;
+
+(* Activar el pistón durante 1 segundo *)
+piston := tPiston.Q;
+
+(* Reiniciar la bandera de detección cuando el temporizador de espera termine *)
+IF tEspera.Q THEN
+    piezaDetectada := FALSE;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-3570"><div class="cod"><h3>I5-3570</h3><span>13 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> No compila (4 errores).<div class="err">Mensajes del compilador: L?nea 11, columna 1 (Impl) &#x27;PTR&#x27; no es ninguna entrada de &#x27;TON&#x27; || L?nea 11, columna 1 (Impl) Identificador &#x27;PTR&#x27; sin definir || L?nea 20, columna 1 (Impl) &#x27;PTR&#x27; no es ninguna entrada de &#x27;TON&#x27; || L?nea 20, columna 1 (Impl) Identificador &#x27;PTR&#x27; sin definir</div></div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; // Sensor de presencia de pieza
+    sensorAltura : BOOL;    // Sensor de altura de pieza
+END_VAR
+
+VAR_OUTPUT
+    banda : BOOL;          // Salida para activar la banda
+    piston : BOOL;         // Salida para activar el pistón
+    nAltas : INT;          // Contador de piezas altas
+    nBajas : INT;          // Contador de piezas bajas
+END_VAR
+
+VAR
+    timer1 : TON;           // Timer para esperar 2 segundos
+    timer2 : TON;           // Timer para activar el pistón durante 1 segundo
+    piezaDetectada : BOOL;  // Bandera para detectar pieza
+END_VAR
+
+// Inicialización de variables
+IF NOT piezaDetectada THEN
+    timer1(IN := FALSE);
+    timer2(IN := FALSE);
+    piston := FALSE;
+END_IF
+
+// Detectar pieza
+IF sensorPresencia AND NOT piezaDetectada THEN
+    piezaDetectada := TRUE;
+    timer1(IN := TRUE);
+    timer1(PTR := T#2S);
+END_IF
+
+// Esperar 2 segundos antes de evaluar la altura
+IF timer1.Q THEN
+    timer1(IN := FALSE);
+    IF sensorAltura THEN
+        nAltas := nAltas + 1;
+        timer2(IN := TRUE);
+        timer2(PTR := T#1S);
+        piston := TRUE;
+    ELSE
+        nBajas := nBajas + 1;
+    END_IF
+END_IF
+
+// Activar el pistón durante 1 segundo
+IF timer2.Q THEN
+    timer2(IN := FALSE);
+    piston := FALSE;
+END_IF
+
+// Mantener la banda activa
+banda := TRUE;
+
+// Reiniciar la bandera de detección de pieza
+IF sensorPresencia = FALSE THEN
+    piezaDetectada := FALSE;
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-9566"><div class="cod"><h3>I5-9566</h3><span>14 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 4 de 7 pasos del harness (pasos 3,4,5,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL;  // Sensor que detecta la presencia de una pieza
+    sensorAltura : BOOL;     // Sensor que detecta si la pieza es alta
+END_VAR
+
+VAR_OUTPUT
+    banda : BOOL;            // Salida para activar la banda transportadora
+    piston : BOOL;           // Salida para activar el pistón desviador
+    nAltas : INT;            // Contador de piezas altas
+    nBajas : INT;            // Contador de piezas bajas
+END_VAR
+
+VAR
+    timerRetraso : TON;      // Temporizador para retrasar la activación del pistón
+    timerDuracion : TON;     // Temporizador para la duración del pistón activado
+    presenciaDetectada : BOOL; // Indica si se ha detectado una pieza
+    piezaAlta : BOOL;        // Indica si la pieza detectada es alta
+END_VAR
+
+// Inicialización de la banda transportadora
+banda := TRUE;
+
+// Detección de una pieza
+IF sensorPresencia AND NOT presenciaDetectada THEN
+    presenciaDetectada := TRUE;
+    piezaAlta := sensorAltura;
+    
+    // Iniciar temporizador de retraso si la pieza es alta
+    IF piezaAlta THEN
+        timerRetraso(IN := TRUE, PT := T#2S);
+    ELSE
+        nBajas := nBajas + 1; // Incrementar contador de piezas bajas
+    END_IF
+END_IF
+
+// Manejo del temporizador de retraso
+IF timerRetraso.Q THEN
+    timerRetraso(IN := FALSE);
+    timerDuracion(IN := TRUE, PT := T#1S);
+    piston := TRUE;
+END_IF
+
+// Manejo del temporizador de duración del pistón
+IF timerDuracion.Q THEN
+    timerDuracion(IN := FALSE);
+    piston := FALSE;
+    nAltas := nAltas + 1; // Incrementar contador de piezas altas
+END_IF
+
+// Reiniciar detección de presencia
+IF NOT sensorPresencia THEN
+    presenciaDetectada := FALSE;
+END_IF
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-2807"><div class="cod"><h3>I5-2807</h3><span>15 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de presencia de pieza *)
+    sensorAltura : BOOL; (* Sensor de altura de pieza *)
+END_VAR
+VAR_OUTPUT
+    banda : BOOL; (* Salida de la banda transportadora *)
+    piston : BOOL; (* Salida del pistón para desviar piezas altas *)
+    nAltas : INT; (* Contador de piezas altas *)
+    nBajas : INT; (* Contador de piezas bajas *)
+END_VAR
+VAR
+    tEspera : TP; (* Temporizador para esperar 2 segundos *)
+    tPiston : TP; (* Temporizador para activar el pistón durante 1 segundo *)
+    piezaDetectada : BOOL; (* Bandera para indicar que una pieza ha sido detectada *)
+END_VAR
+
+(* La banda funciona continuamente *)
+banda := TRUE;
+
+(* Contador de piezas altas y bajas *)
+IF sensorPresencia AND NOT piezaDetectada THEN
+    piezaDetectada := TRUE;
+    IF sensorAltura THEN
+        nAltas := nAltas + 1;
+    ELSE
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* Temporizador para esperar 2 segundos después de detectar una pieza *)
+tEspera(IN := piezaDetectada, PT := T#2S);
+
+(* Temporizador para activar el pistón durante 1 segundo *)
+IF tEspera.Q THEN
+    piston := TRUE;
+    tPiston(IN := TRUE, PT := T#1S);
+ELSE
+    piston := FALSE;
+END_IF;
+
+(* Reiniciar la bandera de pieza detectada cuando el temporizador del pistón termina *)
+IF tPiston.Q THEN
+    piezaDetectada := FALSE;
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-9964"><div class="cod"><h3>I5-9964</h3><span>16 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; // Sensor de presencia de pieza
+    sensorAltura : BOOL;    // Sensor de altura de pieza
+END_VAR
+
+VAR_OUTPUT
+    banda : BOOL;          // Salida para activar la banda
+    piston : BOOL;         // Salida para activar el pistón
+END_VAR
+
+VAR
+    nAltas : INT := 0;      // Contador de piezas altas
+    nBajas : INT := 0;      // Contador de piezas bajas
+    timer1 : TON;           // Timer para el tiempo de espera (2s)
+    timer2 : TON;           // Timer para el tiempo de activación del pistón (1s)
+    estado : INT := 0;      // Estado de la máquina de estados
+END_VAR
+
+// Máquina de estados
+CASE estado OF
+    0: // Estado inicial
+        banda := TRUE; // La banda funciona continuamente
+        IF sensorPresencia THEN
+            estado := 1; // Detectada pieza, iniciar temporizador
+            timer1(IN := TRUE, PT := T#2S); // Iniciar temporizador de 2s
+        END_IF
+
+    1: // Esperando que la pieza llegue al desviador
+        IF timer1.Q THEN
+            IF sensorAltura THEN
+                estado := 2; // Pieza alta, activar pistón
+                timer2(IN := TRUE, PT := T#1S); // Iniciar temporizador de 1s
+                nAltas := nAltas + 1; // Incrementar contador de piezas altas
+            ELSE
+                estado := 0; // Pieza baja, continuar
+                nBajas := nBajas + 1; // Incrementar contador de piezas bajas
+            END_IF
+        END_IF
+
+    2: // Activando el pistón
+        piston := TRUE;
+        IF timer2.Q THEN
+            piston := FALSE; // Desactivar pistón
+            estado := 0; // Volver al estado inicial
+        END_IF
+
+    ELSE
+        estado := 0; // Estado desconocido, volver al inicial
+END_CASE</pre></div>
+<div class="caja resp" id="I5-4776"><div class="cod"><h3>I5-4776</h3><span>17 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de paso de pieza *)
+    sensorAltura : BOOL;    (* Sensor de pieza alta *)
+END_VAR
+VAR_OUTPUT
+    banda : BOOL;           (* Salida de la banda transportadora *)
+    piston : BOOL;          (* Salida del piston desviador *)
+    nAltas : INT;           (* Contador de piezas altas *)
+    nBajas : INT;           (* Contador de piezas bajas *)
+END_VAR
+VAR
+    trigPresencia : R_TRIG; (* Flanco de subida del sensor de presencia *)
+    tpRetardo : TP;         (* Temporizador para el retardo de 2s *)
+    ftrigRetardo : F_TRIG;  (* Flanco de bajada para detectar fin del retardo *)
+    tpPiston : TP;          (* Temporizador para el pulso del piston de 1s *)
+    piezaAlta : BOOL;       (* Marca temporal de pieza alta detectada *)
+END_VAR
+
+(* La banda funciona continuamente *)
+banda := TRUE;
+
+(* Deteccion de una nueva pieza (flanco de subida) *)
+trigPresencia(CLK := sensorPresencia);
+
+(* Clasificacion y conteo *)
+piezaAlta := FALSE;
+IF trigPresencia.Q THEN
+    IF sensorAltura THEN
+        nAltas := nAltas + 1;
+        piezaAlta := TRUE; (* Dispara la secuencia del desviador *)
+    ELSE
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* Retardo de 2 segundos al detectar una pieza alta *)
+tpRetardo(IN := piezaAlta, PT := T#2S);
+
+(* El fin del retardo genera un flanco de bajada *)
+ftrigRetardo(CLK := tpRetardo.Q);
+
+(* Pulso de 1 segundo para activar el piston desviador tras el retardo *)
+tpPiston(IN := ftrigRetardo.Q, PT := T#1S);
+piston := tpPiston.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-8715"><div class="cod"><h3>I5-8715</h3><span>18 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 7 pasos del harness (pasos 5; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de paso de pieza *)
+    sensorAltura    : BOOL; (* TRUE = pieza alta *)
+END_VAR
+
+VAR_OUTPUT
+    banda   : BOOL; (* Salida banda transportadora *)
+    piston  : BOOL; (* Salida pistón desviador *)
+    nAltas  : INT;  (* Contador de piezas altas *)
+    nBajas  : INT;  (* Contador de piezas bajas *)
+END_VAR
+
+VAR
+    tRetardo    : TON; (* Temporizador retardo 2 s hasta el desviador *)
+    tPiston     : TON; (* Temporizador duración del pistón 1 s *)
+    rPresencia  : R_TRIG; (* Flanco ascendente del sensor de presencia *)
+    bPiezaAlta  : BOOL;  (* Memoriza si la pieza detectada es alta *)
+    bEsperando  : BOOL;  (* TRUE mientras se espera el retardo de 2 s *)
+END_VAR
+
+(* ── Banda siempre activa ─────────────────────────────────────── *)
+banda := TRUE;
+
+(* ── Detección de flanco en sensorPresencia ───────────────────── *)
+rPresencia(CLK := sensorPresencia);
+
+IF rPresencia.Q THEN
+    (* Nueva pieza detectada; registrar su tipo y arrancar retardo *)
+    bPiezaAlta := sensorAltura;
+
+    IF bPiezaAlta THEN
+        nAltas := nAltas + 1; (* Contar pieza alta *)
+        bEsperando := TRUE;   (* Activar espera del retardo *)
+    ELSE
+        nBajas := nBajas + 1; (* Contar pieza baja; no se desvía *)
+    END_IF;
+END_IF;
+
+(* ── Temporizador de retardo: 2 s desde detección ────────────── *)
+tRetardo(IN := bEsperando, PT := T#2S);
+
+IF tRetardo.Q THEN
+    (* Han pasado 2 s: activar pistón y arrancar su temporizador *)
+    bEsperando := FALSE;
+    tRetardo(IN := FALSE); (* Resetear temporizador de retardo *)
+END_IF;
+
+(* ── Temporizador de duración del pistón: 1 s ────────────────── *)
+tPiston(IN := tRetardo.Q, PT := T#1S);
+(* Nota: tRetardo.Q permanece TRUE un ciclo; el flanco es suficiente
+   para que tPiston arranque con IN=TRUE en ese ciclo.             *)
+
+piston := tPiston.IN AND NOT tPiston.Q;
+(* El pistón está activo mientras tPiston cuenta y aún no terminó *)
+
+IF tPiston.Q THEN
+    tPiston(IN := FALSE); (* Resetear temporizador del pistón *)
+END_IF;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-6743"><div class="cod"><h3>I5-6743</h3><span>19 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Detecta el paso de una pieza *)
+    sensorAltura : BOOL;    (* Detecta si la pieza es alta *)
+END_VAR
+VAR_OUTPUT
+    banda : BOOL;           (* Salida de la banda transportadora *)
+    piston : BOOL;          (* Salida del piston desviador *)
+    nAltas : INT;           (* Contador de piezas altas *)
+    nBajas : INT;           (* Contador de piezas bajas *)
+END_VAR
+VAR
+    flancoPresencia : R_TRIG; (* Detector de flanco para nueva pieza *)
+    tpRetardo : TP;           (* Temporizador para el retardo de llegada (2s) *)
+    finRetardo : F_TRIG;      (* Detector de fin del retardo *)
+    tpPiston : TP;            (* Temporizador para la activacion del piston (1s) *)
+    pulsoAlta : BOOL;         (* Marca interna para iniciar el retardo *)
+END_VAR
+
+(* La banda funciona continuamente *)
+banda := TRUE;
+
+(* Deteccion del paso de una nueva pieza *)
+flancoPresencia(CLK := sensorPresencia);
+
+pulsoAlta := FALSE;
+
+(* Clasificacion y conteo al detectar la pieza *)
+IF flancoPresencia.Q THEN
+    IF sensorAltura THEN
+        nAltas := nAltas + 1;
+        pulsoAlta := TRUE; (* Inicia la secuencia de desvio *)
+    ELSE
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* Genera un pulso de 2 segundos como retardo de llegada al desviador *)
+tpRetardo(IN := pulsoAlta, PT := T#2S);
+
+(* Detecta cuando terminan los 2 segundos de retardo *)
+finRetardo(CLK := tpRetardo.Q);
+
+(* Activa el piston durante 1 segundo justo al terminar el retardo *)
+tpPiston(IN := finRetardo.Q, PT := T#1S);
+piston := tpPiston.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-6738"><div class="cod"><h3>I5-6738</h3><span>20 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de paso de pieza *)
+    sensorAltura    : BOOL; (* TRUE = pieza alta *)
+END_VAR
+VAR_OUTPUT
+    banda   : BOOL; (* Banda transportadora activa *)
+    piston  : BOOL; (* Pistón desviador *)
+    nAltas  : INT;  (* Contador de piezas altas *)
+    nBajas  : INT;  (* Contador de piezas bajas *)
+END_VAR
+VAR
+    rPresencia  : R_TRIG; (* Flanco ascendente de sensorPresencia *)
+    tRetardo    : TON;    (* Retardo de 2 s hasta el desviador *)
+    tPulso      : TP;     (* Pulso de 1 s del pistón *)
+    bEsAlta     : BOOL;   (* Indica que la pieza detectada es alta *)
+END_VAR
+
+(* La banda funciona siempre *)
+banda := TRUE;
+
+(* Detectar flanco ascendente de presencia de pieza *)
+rPresencia(CLK := sensorPresencia);
+
+IF rPresencia.Q THEN
+    IF sensorAltura THEN
+        (* Pieza alta: registrar y armar retardo *)
+        nAltas  := nAltas + 1;
+        bEsAlta := TRUE;
+    ELSE
+        (* Pieza baja: solo contar *)
+        nBajas  := nBajas + 1;
+        bEsAlta := FALSE;
+    END_IF;
+END_IF;
+
+(* Retardo de 2 s: arranca cuando hay pieza alta pendiente *)
+tRetardo(IN := bEsAlta, PT := T#2S);
+
+(* Al cumplirse el retardo, disparar el pulso del pistón y limpiar la bandera *)
+IF tRetardo.Q THEN
+    bEsAlta := FALSE; (* Evita rearrancar el retardo *)
+END_IF;
+
+(* Pulso de 1 s del pistón, iniciado por el flanco de salida del retardo *)
+tPulso(IN := tRetardo.Q, PT := T#1S);
+piston := tPulso.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-6315"><div class="cod"><h3>I5-6315</h3><span>21 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de paso de pieza *)
+    sensorAltura    : BOOL; (* Sensor de pieza alta *)
+END_VAR
+VAR_OUTPUT
+    banda   : BOOL; (* Banda transportadora activa *)
+    piston  : BOOL; (* Piston desviador *)
+    nAltas  : INT;  (* Contador de piezas altas *)
+    nBajas  : INT;  (* Contador de piezas bajas *)
+END_VAR
+VAR
+    tRetardo : TON; (* Temporizador de retardo 2 s hasta el desviador *)
+    tPulso   : TP;  (* Temporizador de pulso 1 s del piston *)
+    rPresencia : R_TRIG; (* Flanco ascendente del sensor de presencia *)
+    piezaAlta  : BOOL;   (* Indica que la pieza detectada es alta *)
+END_VAR
+
+(* La banda funciona continuamente *)
+banda := TRUE;
+
+(* Detectar flanco ascendente del sensor de presencia *)
+rPresencia(CLK := sensorPresencia);
+
+IF rPresencia.Q THEN
+    IF sensorAltura THEN
+        (* Pieza alta: registrar y armar retardo *)
+        nAltas    := nAltas + 1;
+        piezaAlta := TRUE;
+    ELSE
+        (* Pieza baja: solo registrar *)
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* Retardo de 2 s: la pieza tarda ese tiempo en llegar al desviador *)
+tRetardo(IN := piezaAlta, PT := T#2S);
+
+(* Al cumplirse el retardo, lanzar pulso de 1 s en el piston *)
+tPulso(IN := tRetardo.Q, PT := T#1S);
+
+(* Cuando el pulso termina, desactivar la bandera de pieza alta *)
+IF tPulso.Q = FALSE AND tRetardo.Q THEN
+    (* El pulso TP.Q cae al terminar; limpiar cuando TP ya no este activo *)
+    (* Se limpia piezaAlta cuando el temporizador de pulso finaliza *)
+    piezaAlta := FALSE;
+END_IF;
+
+(* Activar piston durante el pulso de 1 s *)
+piston := tPulso.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-3665"><div class="cod"><h3>I5-3665</h3><span>22 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de paso de pieza *)
+    sensorAltura : BOOL;    (* Sensor de pieza alta *)
+END_VAR
+VAR_OUTPUT
+    banda : BOOL;           (* Salida de la banda transportadora *)
+    piston : BOOL;          (* Salida del piston desviador *)
+    nAltas : INT;           (* Contador de piezas altas *)
+    nBajas : INT;           (* Contador de piezas bajas *)
+END_VAR
+VAR
+    trigPresencia : R_TRIG; (* Flanco de subida del sensor de presencia *)
+    pulsoAlta : BOOL;       (* Marca de deteccion de pieza alta *)
+    tRetardo : TP;          (* Temporizador de retardo de llegada *)
+    trigFinRetardo : F_TRIG;(* Flanco de bajada del retardo *)
+    tPiston : TP;           (* Temporizador de activacion del piston *)
+END_VAR
+
+(* La banda funciona continuamente *)
+banda := TRUE;
+
+(* Detectar el paso de una nueva pieza *)
+trigPresencia(CLK := sensorPresencia);
+
+pulsoAlta := FALSE;
+IF trigPresencia.Q THEN
+    IF sensorAltura THEN
+        nAltas := nAltas + 1;
+        pulsoAlta := TRUE; (* Inicia la secuencia de desvio *)
+    ELSE
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* Generar retardo de 2s desde la deteccion *)
+tRetardo(IN := pulsoAlta, PT := T#2S);
+
+(* Detectar el fin del retardo de 2s *)
+trigFinRetardo(CLK := tRetardo.Q);
+
+(* Activar el piston por 1s al terminar el retardo *)
+tPiston(IN := trigFinRetardo.Q, PT := T#1S);
+piston := tPiston.Q;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-2293"><div class="cod"><h3>I5-2293</h3><span>23 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 6 de 7 pasos del harness (pasos 1,2,3,4,5,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de presencia de piezas *)
+    sensorAltura : BOOL;    (* Sensor de altura de piezas *)
+END_VAR
+VAR_OUTPUT
+    banda : BOOL;           (* Banda transportadora activa *)
+    piston : BOOL;          (* Pistón para desviar piezas altas *)
+    nAltas : INT;           (* Contador de piezas altas *)
+    nBajas : INT;           (* Contador de piezas bajas *)
+END_VAR
+VAR
+    tRetraso : TON;         (* Temporizador para retraso de 2 segundos *)
+    tPulso : TP;            (* Temporizador para pulso de 1 segundo *)
+    piezaAltaDetectada : BOOL; (* Indica si una pieza alta fue detectada *)
+END_VAR
+
+(* La banda transportadora siempre está activa *)
+banda := TRUE;
+
+(* Detectar y contar piezas altas y bajas *)
+IF sensorPresencia THEN
+    IF sensorAltura THEN
+        (* Si la pieza es alta, incrementar el contador de piezas altas *)
+        nAltas := nAltas + 1;
+        piezaAltaDetectada := TRUE;
+        tRetraso(IN := TRUE, PT := T#2S);
+    ELSE
+        (* Si la pieza es baja, incrementar el contador de piezas bajas *)
+        nBajas := nBajas + 1;
+    END_IF;
+END_IF;
+
+(* Activar el pistón después de 2 segundos si una pieza alta fue detectada *)
+IF tRetraso.Q THEN
+    tPulso(IN := piezaAltaDetectada, PT := T#1S);
+    piezaAltaDetectada := FALSE; (* Resetear la detección de pieza alta *)
+END_IF;
+
+(* Salida del pistón activada por el pulso de 1 segundo *)
+piston := tPulso.Q;
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="I5-8675"><div class="cod"><h3>I5-8675</h3><span>24 de 24</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 7 de 7 pasos del harness (pasos 0,1,2,3,4,5,6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Clasificadora
+VAR_INPUT
+    sensorPresencia : BOOL; (* Sensor de presencia de pieza *)
+    sensorAltura : BOOL; (* Sensor de altura de pieza *)
+END_VAR
+VAR_OUTPUT
+    banda : BOOL; (* Banda transportadora activa *)
+    piston : BOOL; (* Pistón para desviar piezas altas *)
+    nAltas : INT; (* Contador de piezas altas *)
+    nBajas : INT; (* Contador de piezas bajas *)
+END_VAR
+VAR
+    tEspera : TP; (* Temporizador para esperar 2 segundos *)
+    tPiston : TP; (* Temporizador para activar el pistón durante 1 segundo *)
+    piezaDetectada : BOOL; (* Bandera para detectar pieza *)
+END_VAR
+
+(* La banda funciona continuamente *)
+banda := TRUE;
+
+(* Detectar pieza y esperar 2 segundos *)
+IF sensorPresencia AND NOT piezaDetectada THEN
+    tEspera(IN := TRUE, PT := T#2S);
+    piezaDetectada := TRUE;
+END_IF
+
+(* Si la pieza es alta, activar el pistón durante 1 segundo *)
+IF tEspera.Q AND sensorAltura THEN
+    tPiston(IN := TRUE, PT := T#1S);
+    nAltas := nAltas + 1;
+ELSE
+    nBajas := nBajas + 1;
+END_IF
+
+(* Activar el pistón *)
+piston := tPiston.Q;
+
+(* Reiniciar la bandera cuando la pieza ha sido procesada *)
+IF tPiston.Q THEN
+    piezaDetectada := FALSE;
+END_IF
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

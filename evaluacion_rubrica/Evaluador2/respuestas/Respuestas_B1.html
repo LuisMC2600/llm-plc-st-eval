@@ -1,0 +1,134 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B1 — respuestas a ciegas</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f5f7;color:#1c1e21;line-height:1.45}
+header{background:#1f4e78;color:#fff;padding:16px 28px}header h1{margin:0;font-size:19px}header p{margin:6px 0 0;font-size:13px;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:10px 28px 60px}.caja{background:#fff;border:1px solid #d0d4da;border-radius:6px;padding:14px 18px;margin:14px 0}
+.resp{border-left:5px solid #1f4e78}.cod{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}h3{margin:0;font-size:16px}
+.cod span{font-size:12px;color:#5f6670}pre{white-space:pre-wrap;word-wrap:break-word;font-family:Consolas,'Courier New',monospace;font-size:13px;margin:0}
+.auto{background:#eef4fb;border:1px solid #b9cfe8;border-radius:4px;padding:8px 10px;margin-bottom:10px;font-size:13px}.err{color:#8a1c1c;font-size:12px;margin-top:6px}
+details summary{cursor:pointer;font-weight:bold;color:#1f4e78}.idx a{display:inline-block;margin:2px 8px 2px 0;font-size:13px;color:#1f4e78}
+@media print{.caja{break-inside:avoid}}</style></head><body>
+<header><h1>B1 — Arranque/paro de motor con enclavamiento (Basico)</h1><p>3 respuestas identificadas solo por código. Puntúalas en la hoja B1 de la ficha, en este orden.</p></header><main>
+<div class="caja"><details open><summary>Enunciado que recibieron los modelos (versión zero-shot)</summary><pre>Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.
+
+Tarea: programa el control de arranque y paro de un motor trifásico. El motor debe arrancar al pulsar el botón de marcha y mantenerse encendido al soltarlo. Debe detenerse al pulsar el botón de paro o el paro de emergencia; tras un paro de emergencia el motor no debe rearrancar aunque el botón de marcha siga pulsado. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Motor con variables de entrada btnMarcha, btnParo, btnEmerg (BOOL) y salida motorOn (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.</pre></details></div>
+<div class="caja"><details><summary>Protocolo de prueba: pasos del harness con que se simuló cada respuesta</summary><pre>Harness: PRG_Test_B1.st
+
+BANCO DE PRUEBA AUTOVERIFICABLE — Tarea B1 (arranque/paro con enclavamiento)
+    ---------------------------------------------------------------------------
+    Implementa el protocolo de 7 pasos de la ficha de evaluacion de B1 como
+    codigo ST. El programa aplica las entradas paso a paso, compara la salida
+    del bloque bajo prueba contra el valor esperado y emite un veredicto.
+
+    Ventaja para la investigacion: la verificacion funcional deja de depender
+    de que el investigador manipule variables a mano en linea. El mismo
+    protocolo se aplica de forma identica a las 24 respuestas de B1, lo que
+    elimina la variabilidad del operador. El veredicto queda en una variable
+    que el ScriptEngine puede leer, o que puede volcarse a archivo.
+
+    LO QUE NO HACE: no juzga claridad estructural ni mantenibilidad. Esos
+    criterios de la rubrica siguen requiriendo lectura humana del codigo.
+
+    USO: crear este PROGRAM en el proyecto, junto al FUNCTION_BLOCK de la
+    respuesta a evaluar. Ejecutar en modo Simulacion. Al terminar la secuencia,
+    leer &#x27;veredicto&#x27;: 1 = supera todos los pasos, 2 = falla al menos uno.
+    El arreglo &#x27;resultado&#x27; indica que paso concreto fallo.
+
+--- Pasos (CASE paso OF) ---
+
+        0:  (* Reposo: ninguna entrada activa *)
+            btnMarcha := FALSE; btnParo := FALSE; btnEmerg := FALSE;
+            esperado  := FALSE;
+        1:  (* Arranque con pulso de marcha *)
+            btnMarcha := TRUE;
+            esperado  := TRUE;
+        2:  (* Se suelta la marcha: debe mantenerse (enclavamiento) *)
+            btnMarcha := FALSE;
+            esperado  := TRUE;
+        3:  (* Paro normal *)
+            btnParo   := TRUE;
+            esperado  := FALSE;
+        4:  (* Rearranque tras paro normal *)
+            btnParo   := FALSE; btnMarcha := TRUE;
+            esperado  := TRUE;
+        5:  (* Paro de emergencia *)
+            btnEmerg  := TRUE;
+            esperado  := FALSE;
+        6:  (* Se libera la emergencia con la marcha aun pulsada:
+               NO debe rearrancar solo *)
+            btnEmerg  := FALSE;
+            esperado  := FALSE;</pre></details></div>
+<div class="caja idx"><b>Códigos, en orden:</b><br><a href="#B1-1729">B1-1729</a><a href="#B1-1689">B1-1689</a><a href="#B1-9711">B1-9711</a></div>
+<div class="caja resp" id="B1-1729"><div class="cod"><h3>B1-1729</h3><span>1 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Motor
+VAR_INPUT
+    btnMarcha : BOOL; // TRUE al pulsar para arrancar
+    btnParo   : BOOL; // TRUE al pulsar para detener
+    btnEmerg  : BOOL; // TRUE al activar el paro de emergencia
+END_VAR
+
+VAR_OUTPUT
+    motorOn   : BOOL; // Estado del motor (TRUE = Encendido)
+END_VAR
+
+VAR
+    rtMarcha  : R_TRIG; // Detector de flanco de subida para el botón de marcha
+END_VAR
+
+// Detección de flanco ascendente para evitar el rearranque automático 
+// si el botón de marcha se mantiene pulsado tras una emergencia.
+rtMarcha(CLK := btnMarcha);
+
+// Lógica de control: Enclavamiento con paro dominante.
+// El motor se enciende con el flanco de marcha y se mantiene (motorOn).
+// Se detiene inmediatamente si btnParo o btnEmerg son TRUE.
+motorOn := (motorOn OR rtMarcha.Q) AND NOT btnParo AND NOT btnEmerg;
+
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B1-1689"><div class="cod"><h3>B1-1689</h3><span>2 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Falla 1 de 7 pasos del harness (pasos 6; numerados desde 0).</div><pre>FUNCTION_BLOCK FB_Motor
+VAR_INPUT
+    btnMarcha : BOOL; (* Botón de marcha *)
+    btnParo : BOOL;   (* Botón de paro *)
+    btnEmerg : BOOL;  (* Botón de paro de emergencia *)
+END_VAR
+VAR_OUTPUT
+    motorOn : BOOL;   (* Estado del motor *)
+END_VAR
+VAR
+    estadoMotor : BOOL; (* Estado interno del motor *)
+END_VAR
+
+(* Control de arranque y paro del motor *)
+IF btnEmerg THEN
+    estadoMotor := FALSE; (* Paro de emergencia, motor apagado *)
+ELSIF btnParo THEN
+    estadoMotor := FALSE; (* Botón de paro, motor apagado *)
+ELSIF btnMarcha THEN
+    estadoMotor := TRUE;  (* Botón de marcha, motor encendido *)
+END_IF
+
+motorOn := estadoMotor; (* Salida del estado del motor *)
+END_FUNCTION_BLOCK</pre></div>
+<div class="caja resp" id="B1-9711"><div class="cod"><h3>B1-9711</h3><span>3 de 3</span></div><div class="auto"><b>Resultado en CODESYS:</b> Compila. Pasa los 7 pasos del harness.</div><pre>FUNCTION_BLOCK FB_Motor
+VAR_INPUT
+    btnMarcha : BOOL; (* Boton de marcha *)
+    btnParo : BOOL; (* Boton de paro *)
+    btnEmerg : BOOL; (* Boton de emergencia *)
+END_VAR
+VAR_OUTPUT
+    motorOn : BOOL; (* Motor encendido *)
+END_VAR
+VAR
+    estadoEmergencia : BOOL := FALSE; (* Estado de emergencia *)
+END_VAR
+
+(* Control de arranque y paro del motor *)
+IF btnEmerg THEN
+    estadoEmergencia := TRUE;
+    motorOn := FALSE;
+ELSIF estadoEmergencia THEN
+    motorOn := FALSE;
+ELSIF btnParo THEN
+    motorOn := FALSE;
+ELSIF btnMarcha THEN
+    motorOn := TRUE;
+END_IF;
+END_FUNCTION_BLOCK</pre></div>
+</main></body></html>

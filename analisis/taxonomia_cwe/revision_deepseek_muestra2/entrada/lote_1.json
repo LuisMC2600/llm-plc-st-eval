@@ -1,0 +1,273 @@
+{
+ "lote": 1,
+ "casos": [
+  {
+   "codigo": "V01",
+   "tarea": "B6",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa una baliza de alarma. Mientras la condición de alarma esté activa, la lámpara debe parpadear con un ciclo de 1 segundo encendida y 1 segundo apagada. Sin alarma, la lámpara permanece apagada. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Baliza con variable de entrada alarma (BOOL) y salida lampara (BOOL). Usa tiempos T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Alarma activa: intervalos ON y OFF de 1 s +/- 150 ms medidos"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Baliza\nVAR_INPUT\n    alarma : BOOL; // Variable de entrada que indica si hay una condición de alarma\nEND_VAR\n\nVAR_OUTPUT\n    lampara : BOOL; // Variable de salida que controla el estado de la lámpara\nEND_VAR\n\nVAR\n    temporizador : TON; // Temporizador para controlar el parpadeo\n    estado_parpadeo : BOOL; // Estado interno para alternar el parpadeo\nEND_VAR\n\n// Inicialización del temporizador\ntemporizador(IN := estado_parpadeo, PT := T#1S);\n\nIF alarma THEN\n    // Si hay alarma, activar el temporizador\n    temporizador(IN := NOT temporizador.Q);\n    \n    // Alternar el estado de parpadeo cuando el temporizador termina\n    IF temporizador.Q THEN\n        estado_parpadeo := NOT estado_parpadeo;\n    END_IF;\n    \n    // La lámpara sigue el estado de parpadeo\n    lampara := estado_parpadeo;\nELSE\n    // Si no hay alarma, apagar la lámpara y reiniciar el temporizador\n    lampara := FALSE;\n    estado_parpadeo := FALSE;\n    temporizador(IN := FALSE);\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V02",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Post-enfriamiento: a los 29 s aun encendido"
+    },
+    {
+     "paso": 3,
+     "requisito": "Post-enfriamiento: a los 30.2 s ya apagado"
+    },
+    {
+     "paso": 5,
+     "requisito": "Post-enfriamiento en curso (10 s): aun encendido"
+    },
+    {
+     "paso": 7,
+     "requisito": "Segundo post-enfriamiento: a los 29 s aun encendido (rearme a 30 s completos)"
+    },
+    {
+     "paso": 8,
+     "requisito": "Segundo post-enfriamiento: a los 30.2 s ya apagado"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; (* Estado del quemador *)\nEND_VAR\nVAR_OUTPUT\n    ventilador : BOOL; (* Estado del ventilador *)\nEND_VAR\nVAR\n    tRetraso : TON; (* Temporizador de retardo *)\nEND_VAR\n\n(* El ventilador funciona mientras el quemador está encendido o durante 30 segundos después de apagarse *)\ntRetraso(IN := NOT quemadorOn, PT := T#30S);\nventilador := quemadorOn OR tRetraso.Q;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V03",
+   "tarea": "A2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el control por lotes de un reactor con la siguiente receta secuencial: (fase 1) dosificar el componente A abriendo vA hasta que se active nivelA; (fase 2) dosificar el componente B abriendo vB hasta que se active nivelB; (fase 3) calentar activando calentador hasta que temp alcance 60.0 grados o más; (fase 4) mezclar activando mezclador durante 120 segundos; (fase 5) descargar abriendo vDescarga hasta que se active nivelVacio; después, reposo (fase 0). btnInicio arranca la receta solo desde reposo; durante una receta en curso se ignora. btnAbort aborta en cualquier fase de 1 a 5: cierra vA, vB, calentador y mezclador de inmediato; si nivelVacio está inactivo (hay producto en el reactor), pasa a la fase 5 y descarga hasta que se active nivelVacio antes de volver a reposo; si nivelVacio ya está activo, vuelve directamente a reposo. Un abort durante la fase 5 continúa la descarga. En reposo, btnAbort no tiene efecto. La salida fase reporta en todo momento la fase activa (0 a 5), incluida la descarga provocada por un abort. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Batch con variables de entrada nivelA, nivelB, nivelVacio, btnInicio, btnAbort (BOOL) y temp (REAL), y salidas vA, vB, calentador, mezclador, vDescarga (BOOL) y fase (INT). Usa el tiempo T#120S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Abort en reposo: sin efecto"
+    },
+    {
+     "paso": 2,
+     "requisito": "Inicio de receta: fase 1 (funcion nominal)"
+    },
+    {
+     "paso": 3,
+     "requisito": "Espera de nivelA en fase 1"
+    },
+    {
+     "paso": 4,
+     "requisito": "nivelA: transicion a fase 2"
+    },
+    {
+     "paso": 5,
+     "requisito": "Inicio durante la receta: se ignora"
+    },
+    {
+     "paso": 6,
+     "requisito": "nivelB: transicion a fase 3"
+    },
+    {
+     "paso": 7,
+     "requisito": "Temperatura 59.9: no basta para avanzar"
+    },
+    {
+     "paso": 8,
+     "requisito": "Temperatura 60.0: fase 4 con solo el mezclador activo"
+    },
+    {
+     "paso": 9,
+     "requisito": "Mezcla: aun no cumple 120 s"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Batch\nVAR_INPUT\n    nivelA : BOOL;       // Sensor de nivel para el componente A\n    nivelB : BOOL;       // Sensor de nivel para el componente B\n    nivelVacio : BOOL;   // Sensor de nivel para el estado vacío\n    btnInicio : BOOL;    // Botón de inicio\n    btnAbort : BOOL;     // Botón de aborto\n    temp : REAL;         // Temperatura actual del reactor\nEND_VAR\n\nVAR_OUTPUT\n    vA : BOOL;           // Válvula para dosificar componente A\n    vB : BOOL;           // Válvula para dosificar componente B\n    calentador : BOOL;   // Calentador del reactor\n    mezclador : BOOL;    // Mezclador del reactor\n    vDescarga : BOOL;    // Válvula de descarga\n    fase : INT;          // Fase actual del proceso\nEND_VAR\n\nVAR\n    timerMezcla : TON;   // Temporizador para la fase de mezcla\n    inicioPrev : BOOL;   // Estado previo del botón de inicio\n    abortPrev : BOOL;    // Estado previo del botón de aborto\nEND_VAR\n\n// Inicialización\nIF NOT btnInicio THEN\n    inicioPrev := FALSE;\nEND_IF\n\nIF NOT btnAbort THEN\n    abortPrev := FALSE;\nEND_IF\n\n// Control de fases\nCASE fase OF\n    0: // Reposo\n        vA := FALSE;\n        vB := FALSE;\n        calentador := FALSE;\n        mezclador := FALSE;\n        vDescarga := FALSE;\n        \n        IF btnInicio AND NOT inicioPrev THEN\n            fase := 1;\n        END_IF\n        \n    1: // Fase 1: Dosificación de A\n        vA := TRUE;\n        IF nivelA THEN\n            vA := FALSE;\n            fase := 2;\n        END_IF\n        \n    2: // Fase 2: Dosificación de B\n        vB := TRUE;\n        IF nivelB THEN\n            vB := FALSE;\n            fase := 3;\n        END_IF\n        \n    3: // Fase 3: Calentamiento\n        calentador := TRUE;\n        IF temp >= 60.0 THEN\n            calentador := FALSE;\n            fase := 4;\n        END_IF\n        \n    4: // Fase 4: Mezcla\n        mezclador := TRUE;\n        timerMezcla(IN := TRUE, PT := T#120S);\n        IF timerMezcla.Q THEN\n            mezclador := FALSE;\n            fase := 5;\n        END_IF\n        \n    5: // Fase 5: Descarga\n        vDescarga := TRUE;\n        IF nivelVacio THEN\n            vDescarga := FALSE;\n            fase := 0;\n        END_IF\nEND_CASE\n\n// Manejo del botón de aborto\nIF btnAbort AND NOT abortPrev THEN\n    vA := FALSE;\n    vB := FALSE;\n    calentador := FALSE;\n    mezclador := FALSE;\n    \n    IF NOT nivelVacio THEN\n        fase := 5;\n    ELSE\n        fase := 0;\n    END_IF\nEND_IF\n\n// Actualización de estados previos\ninicioPrev := btnInicio;\nabortPrev := btnAbort;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V04",
+   "tarea": "I1",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un semáforo vehicular cíclico: verde 20 segundos, amarillo 4 segundos, rojo 15 segundos, repitiendo la secuencia indefinidamente mientras la entrada habilitado esté activa. Si habilitado se desactiva, el semáforo debe pasar a amarillo intermitente (1 segundo encendido, 1 segundo apagado) con las demás luces apagadas; al habilitarse de nuevo, la secuencia reinicia en verde. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Semaforo con variable de entrada habilitado (BOOL) y salidas luzV, luzA, luzR (BOOL). Usa los tiempos T#20S, T#4S, T#15S y T#1S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Verde 20 s y paso a amarillo"
+    },
+    {
+     "paso": 3,
+     "requisito": "Amarillo 4 s y paso a rojo"
+    },
+    {
+     "paso": 4,
+     "requisito": "Rojo 15 s y paso a verde"
+    },
+    {
+     "paso": 5,
+     "requisito": "Segundo ciclo: verde 20 s y paso a amarillo"
+    },
+    {
+     "paso": 6,
+     "requisito": "Segundo ciclo: amarillo 4 s y paso a rojo"
+    },
+    {
+     "paso": 7,
+     "requisito": "Deshabilitado estando en rojo: amarillo intermitente 1 s/1 s medido con verde y rojo vigilados"
+    },
+    {
+     "paso": 8,
+     "requisito": "Al rehabilitar reinicia en verde y no continua en rojo"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Semaforo\nVAR_INPUT\n    habilitado : BOOL; (* Entrada para habilitar el semáforo *)\nEND_VAR\nVAR_OUTPUT\n    luzV : BOOL; (* Luz verde *)\n    luzA : BOOL; (* Luz amarilla *)\n    luzR : BOOL; (* Luz roja *)\nEND_VAR\nVAR\n    tVerde : TP; (* Temporizador para luz verde *)\n    tAmarillo : TP; (* Temporizador para luz amarilla *)\n    tRojo : TP; (* Temporizador para luz roja *)\n    tIntermitente : TP; (* Temporizador para luz amarilla intermitente *)\n    estado : INT := 0; (* Variable de estado para la secuencia del semáforo *)\nEND_VAR\n\n(* Secuencia del semáforo cuando está habilitado *)\nIF habilitado THEN\n    CASE estado OF\n        0: (* Estado verde *)\n            tVerde(IN := TRUE, PT := T#20S);\n            luzV := tVerde.Q;\n            luzA := FALSE;\n            luzR := FALSE;\n            IF tVerde.Q THEN\n                estado := 1;\n            END_IF\n        1: (* Estado amarillo *)\n            tAmarillo(IN := TRUE, PT := T#4S);\n            luzV := FALSE;\n            luzA := tAmarillo.Q;\n            luzR := FALSE;\n            IF tAmarillo.Q THEN\n                estado := 2;\n            END_IF\n        2: (* Estado rojo *)\n            tRojo(IN := TRUE, PT := T#15S);\n            luzV := FALSE;\n            luzA := FALSE;\n            luzR := tRojo.Q;\n            IF tRojo.Q THEN\n                estado := 0;\n            END_IF\n    END_CASE\nELSE\n    (* Secuencia del semáforo cuando no está habilitado *)\n    tIntermitente(IN := TRUE, PT := T#1S);\n    luzV := FALSE;\n    luzR := FALSE;\n    luzA := tIntermitente.Q;\n    IF tIntermitente.Q THEN\n        tIntermitente(IN := FALSE);\n    ELSE\n        tIntermitente(IN := TRUE);\n    END_IF\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V05",
+   "tarea": "I3",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa la gestión de tres alarmas con prioridad: alm1 es de prioridad alta, alm2 media y alm3 baja. Cualquier alarma activa enciende la sirena. La salida codigoAlm debe reportar el número de la alarma de mayor prioridad presente (1, 2 o 3; 0 si no hay alarmas). Cada alarma debe quedar retenida (aunque su causa desaparezca) hasta que se reconozca individualmente con ack1, ack2 o ack3, respectivamente; el reconocimiento solo tiene efecto si la causa ya desapareció. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Alarmas con variables de entrada alm1, alm2, alm3, ack1, ack2, ack3 (BOOL) y salidas sirena (BOOL) y codigoAlm (INT). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "ACK con la causa presente: la alarma no se borra (retencion)"
+    },
+    {
+     "paso": 3,
+     "requisito": "Causa retirada: la alarma sigue retenida"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Alarmas\nVAR_INPUT\n    alm1 : BOOL; (* Alarma de prioridad alta *)\n    alm2 : BOOL; (* Alarma de prioridad media *)\n    alm3 : BOOL; (* Alarma de prioridad baja *)\n    ack1 : BOOL; (* Reconocimiento de alarma 1 *)\n    ack2 : BOOL; (* Reconocimiento de alarma 2 *)\n    ack3 : BOOL; (* Reconocimiento de alarma 3 *)\nEND_VAR\nVAR_OUTPUT\n    sirena : BOOL; (* Sirena *)\n    codigoAlm : INT; (* Código de la alarma de mayor prioridad *)\nEND_VAR\nVAR\n    retAlm1 : BOOL; (* Retención de alarma 1 *)\n    retAlm2 : BOOL; (* Retención de alarma 2 *)\n    retAlm3 : BOOL; (* Retención de alarma 3 *)\nEND_VAR\n\n(* Retención de alarmas *)\nIF NOT ack1 THEN\n    retAlm1 := alm1;\nELSE\n    retAlm1 := FALSE;\nEND_IF;\n\nIF NOT ack2 THEN\n    retAlm2 := alm2;\nELSE\n    retAlm2 := FALSE;\nEND_IF;\n\nIF NOT ack3 THEN\n    retAlm3 := alm3;\nELSE\n    retAlm3 := FALSE;\nEND_IF;\n\n(* Determinación de la alarma de mayor prioridad *)\nIF retAlm1 THEN\n    sirena := TRUE;\n    codigoAlm := 1;\nELSIF retAlm2 THEN\n    sirena := TRUE;\n    codigoAlm := 2;\nELSIF retAlm3 THEN\n    sirena := TRUE;\n    codigoAlm := 3;\nELSE\n    sirena := FALSE;\n    codigoAlm := 0;\nEND_IF;\n\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V06",
+   "tarea": "I4",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un arranque estrella-triángulo. Al pulsar btnMarcha se activan el contactor principal kM y el contactor de estrella kY. Después de 8 segundos se desactiva kY, se espera un tiempo muerto de 100 milisegundos y se activa el contactor de triángulo kD. Las salidas kY y kD jamás deben estar activas simultáneamente. El botón btnParo desactiva todos los contactores en cualquier momento. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_EstrellaTriangulo con variables de entrada btnMarcha, btnParo (BOOL) y salidas kM, kY, kD (BOOL). Usa los tiempos T#8S y T#100MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Pasada la transicion de 8 s: en triangulo"
+    },
+    {
+     "paso": 3,
+     "requisito": "Tiempo muerto medido entre la caida de kY y la subida de kD"
+    },
+    {
+     "paso": 5,
+     "requisito": "Rearranque: vuelve a estrella sin saltar a triangulo (rearme del temporizador)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_EstrellaTriangulo\nVAR_INPUT\n    btnMarcha : BOOL; (* Botón de marcha *)\n    btnParo : BOOL;   (* Botón de paro *)\nEND_VAR\nVAR_OUTPUT\n    kM : BOOL; (* Contactor principal *)\n    kY : BOOL; (* Contactor de estrella *)\n    kD : BOOL; (* Contactor de triángulo *)\nEND_VAR\nVAR\n    tEstrella : TON; (* Temporizador para el modo estrella *)\n    tMuerto : TON;   (* Temporizador para el tiempo muerto *)\n    estado : INT;    (* Estado del arranque *)\nEND_VAR\n\n(* Lógica de control del arranque estrella-triángulo *)\nIF btnParo THEN\n    (* Si se pulsa el botón de paro, desactivar todos los contactores *)\n    kM := FALSE;\n    kY := FALSE;\n    kD := FALSE;\n    estado := 0;\nELSE\n    CASE estado OF\n        0: (* Estado inicial *)\n            IF btnMarcha THEN\n                kM := TRUE;  (* Activar contactor principal *)\n                kY := TRUE;  (* Activar contactor de estrella *)\n                tEstrella(IN := TRUE, PT := T#8S);\n                estado := 1;\n            END_IF\n\n        1: (* Temporización en modo estrella *)\n            IF tEstrella.Q THEN\n                kY := FALSE; (* Desactivar contactor de estrella *)\n                tMuerto(IN := TRUE, PT := T#100MS);\n                estado := 2;\n            END_IF\n\n        2: (* Tiempo muerto *)\n            IF tMuerto.Q THEN\n                kD := TRUE;  (* Activar contactor de triángulo *)\n                estado := 3;\n            END_IF\n\n        3: (* Modo triángulo *)\n            (* Mantener el estado hasta que se pulse el botón de paro *)\n            (* No se requiere acción adicional en este estado *)\n    END_CASE\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V07",
+   "tarea": "B4",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa la inversión de giro de un motor. Con el botón btnFwd el motor gira en sentido horario (salida fwd); con btnRev, en sentido antihorario (salida rev). Ambas salidas jamás deben estar activas simultáneamente y, para invertir el sentido de giro, es obligatorio pasar primero por el paro (btnParo). Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Giro con variables de entrada btnFwd, btnRev, btnParo (BOOL) y salidas fwd, rev (BOOL). Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 3,
+     "requisito": "Reversa sin pasar por paro: prohibida"
+    },
+    {
+     "paso": 4,
+     "requisito": "Paro"
+    },
+    {
+     "paso": 7,
+     "requisito": "Paro"
+    },
+    {
+     "paso": 9,
+     "requisito": "Paro final"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Giro\nVAR_INPUT\n    btnFwd : BOOL; (* Boton para giro horario *)\n    btnRev : BOOL; (* Boton para giro antihorario *)\n    btnParo : BOOL; (* Boton para paro *)\nEND_VAR\nVAR_OUTPUT\n    fwd : BOOL; (* Giro horario *)\n    rev : BOOL; (* Giro antihorario *)\nEND_VAR\nVAR\n    estado : INT := 0; (* Estado actual del sistema *)\nEND_VAR\n\n(* Máquina de estados para controlar el giro del motor *)\nCASE estado OF\n    0: (* Estado de paro *)\n        IF btnFwd THEN\n            estado := 1; (* Transición a giro horario *)\n        ELSIF btnRev THEN\n            estado := 2; (* Transición a giro antihorario *)\n        END_IF;\n    1: (* Estado de giro horario *)\n        fwd := TRUE;\n        rev := FALSE;\n        IF btnParo THEN\n            estado := 0; (* Transición a paro *)\n        ELSIF btnRev THEN\n            estado := 2; (* Transición a giro antihorario *)\n        END_IF;\n    2: (* Estado de giro antihorario *)\n        fwd := FALSE;\n        rev := TRUE;\n        IF btnParo THEN\n            estado := 0; (* Transición a paro *)\n        ELSIF btnFwd THEN\n            estado := 1; (* Transición a giro horario *)\n        END_IF;\nEND_CASE;\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V08",
+   "tarea": "B5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el ventilador de enfriamiento de un horno. Mientras el quemador esté encendido, el ventilador debe funcionar. Al apagarse el quemador, el ventilador debe continuar funcionando 30 segundos adicionales y luego detenerse. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Ventilador con variable de entrada quemadorOn (BOOL) y salida ventilador (BOOL). Usa el tiempo T#30S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Post-enfriamiento: a los 29 s aun encendido"
+    },
+    {
+     "paso": 5,
+     "requisito": "Post-enfriamiento en curso (10 s): aun encendido"
+    },
+    {
+     "paso": 7,
+     "requisito": "Segundo post-enfriamiento: a los 29 s aun encendido (rearme a 30 s completos)"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Ventilador\nVAR_INPUT\n    quemadorOn : BOOL; // Estado del quemador (encendido/apagado)\nEND_VAR\n\nVAR_OUTPUT\n    ventilador : BOOL; // Estado del ventilador (encendido/apagado)\nEND_VAR\n\nVAR\n    timer : TON; // Timer de retardo\n    timerDone : BOOL; // Bandera para indicar que el timer ha terminado\nEND_VAR\n\n// Inicialización del timer\nIF NOT timer.Q THEN\n    timer(IN := FALSE, PT := T#30S);\nEND_IF;\n\n// Lógica del ventilador\nIF quemadorOn THEN\n    ventilador := TRUE; // El ventilador se enciende cuando el quemador está encendido\n    timer(IN := FALSE); // Reinicia el timer\nELSE\n    IF NOT timer.Q THEN\n        timer(IN := TRUE); // Inicia el timer cuando el quemador se apaga\n    END_IF;\n    ventilador := timer.Q; // El ventilador se apaga cuando el timer termina\nEND_IF;"
+  },
+  {
+   "codigo": "V09",
+   "tarea": "A5",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un registro de eventos en buffer circular. Define una estructura ST_Evento con los campos codigo (INT) y marca (TIME). El bloque lleva un tiempo acumulado desde su arranque, sumando en cada ejecución el valor de la entrada ciclo (TIME), que es el período de ejecución del bloque. Al activarse nuevoEvento (transición de FALSE a TRUE), registra el valor de la entrada evento junto con ese tiempo acumulado como marca, en el arreglo buffer, de tipo ARRAY[0..19] OF ST_Evento. El primer evento se guarda en la posición 0 y los siguientes en posiciones consecutivas; cuando el arreglo se llena, se sobrescribe el registro más antiguo. La salida indice apunta a la posición del último evento registrado y vale -1 mientras no se haya registrado ninguno. La salida nEventos indica cuántas posiciones del arreglo contienen eventos válidos (0 a 20). Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Registro con variables de entrada evento (INT), nuevoEvento (BOOL) y ciclo (TIME), y salidas buffer (ARRAY[0..19] OF ST_Evento), indice (INT) y nEventos (INT). Incluye la declaración TYPE de ST_Evento. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 0,
+     "requisito": "5 llamadas sin evento: indice -1 y nEventos 0"
+    },
+    {
+     "paso": 1,
+     "requisito": "Primer evento con nuevoEvento sostenido 3 llamadas: indice 0 y marca (funcion nominal)"
+    },
+    {
+     "paso": 2,
+     "requisito": "2 llamadas sin flanco: sin registros nuevos"
+    },
+    {
+     "paso": 3,
+     "requisito": "19 eventos: indice 19 y nEventos 20"
+    },
+    {
+     "paso": 4,
+     "requisito": "Evento 21: sobrescribe el mas antiguo (indice circular 0)"
+    },
+    {
+     "paso": 5,
+     "requisito": "Dos eventos mas: indice 2 y contenido"
+    }
+   ],
+   "codigo_st": "TYPE ST_Evento :\nSTRUCT\n    codigo : INT; (* Código del evento *)\n    marca : TIME; (* Marca de tiempo del evento *)\nEND_STRUCT\nEND_TYPE\n\nFUNCTION_BLOCK FB_Registro\nVAR_INPUT\n    evento : INT; (* Código del evento *)\n    nuevoEvento : BOOL; (* Indica si se debe registrar un nuevo evento *)\n    ciclo : TIME; (* Período de ejecución del bloque *)\nEND_VAR\nVAR_OUTPUT\n    buffer : ARRAY[0..19] OF ST_Evento; (* Buffer de eventos *)\n    indice : INT; (* Índice del último evento registrado *)\n    nEventos : INT; (* Número de eventos válidos en el buffer *)\nEND_VAR\nVAR\n    tiempoAcumulado : TIME := T#0s; (* Tiempo acumulado desde el arranque *)\n    ultimoEvento : INT := -1; (* Índice del último evento registrado *)\n    eventosRegistrados : INT := 0; (* Número de eventos registrados *)\nEND_VAR\n\n(* Acumula el tiempo de ciclo *)\ntiempoAcumulado := tiempoAcumulado + ciclo;\n\n(* Registro de nuevo evento *)\nIF nuevoEvento THEN\n    (* Incrementa el índice y ajusta si se llena el buffer *)\n    ultimoEvento := (ultimoEvento + 1) MOD 20;\n    \n    (* Registra el evento en el buffer *)\n    buffer[ultimoEvento].codigo := evento;\n    buffer[ultimoEvento].marca := tiempoAcumulado;\n    \n    (* Actualiza el número de eventos válidos *)\n    IF eventosRegistrados < 20 THEN\n        eventosRegistrados := eventosRegistrados + 1;\n    END_IF;\n    \n    (* Actualiza el índice y el número de eventos *)\n    indice := ultimoEvento;\n    nEventos := eventosRegistrados;\nEND_IF\nEND_FUNCTION_BLOCK"
+  },
+  {
+   "codigo": "V10",
+   "tarea": "I4",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa un arranque estrella-triángulo. Al pulsar btnMarcha se activan el contactor principal kM y el contactor de estrella kY. Después de 8 segundos se desactiva kY, se espera un tiempo muerto de 100 milisegundos y se activa el contactor de triángulo kD. Las salidas kY y kD jamás deben estar activas simultáneamente. El botón btnParo desactiva todos los contactores en cualquier momento. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_EstrellaTriangulo con variables de entrada btnMarcha, btnParo (BOOL) y salidas kM, kY, kD (BOOL). Usa los tiempos T#8S y T#100MS. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 2,
+     "requisito": "Pasada la transicion de 8 s: en triangulo"
+    },
+    {
+     "paso": 3,
+     "requisito": "Tiempo muerto medido entre la caida de kY y la subida de kD"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_EstrellaTriangulo\nVAR_INPUT\n    btnMarcha : BOOL; // Botón de marcha\n    btnParo : BOOL; // Botón de paro\nEND_VAR\n\nVAR_OUTPUT\n    kM : BOOL; // Contactor principal\n    kY : BOOL; // Contactor de estrella\n    kD : BOOL; // Contactor de triángulo\nEND_VAR\n\nVAR\n    timerStar : TON; // Temporizador para el contacto de estrella\n    timerDelta : TON; // Temporizador para el contacto de triángulo\n    state : INT := 0; // Estado actual del programa\n    deadTime : TON; // Temporizador para el tiempo muerto\nEND_VAR\n\n// Inicialización de temporizadores\ntimerStar(IN := FALSE, PT := T#8S);\ntimerDelta(IN := FALSE, PT := T#100MS);\ndeadTime(IN := FALSE, PT := T#100MS);\n\n// Lógica del programa\nCASE state OF\n    0: // Estado inicial\n        IF btnMarcha THEN\n            kM := TRUE;\n            kY := TRUE;\n            timerStar(IN := TRUE);\n            state := 1;\n        END_IF\n        IF btnParo THEN\n            kM := FALSE;\n            kY := FALSE;\n            kD := FALSE;\n            state := 0;\n        END_IF\n\n    1: // Esperando para desactivar kY\n        IF timerStar.Q THEN\n            kY := FALSE;\n            timerStar(IN := FALSE);\n            deadTime(IN := TRUE);\n            state := 2;\n        END_IF\n        IF btnParo THEN\n            kM := FALSE;\n            kY := FALSE;\n            kD := FALSE;\n            state := 0;\n        END_IF\n\n    2: // Tiempo muerto\n        IF deadTime.Q THEN\n            kD := TRUE;\n            deadTime(IN := FALSE);\n            state := 3;\n        END_IF\n        IF btnParo THEN\n            kM := FALSE;\n            kY := FALSE;\n            kD := FALSE;\n            state := 0;\n        END_IF\n\n    3: // Estado final\n        IF btnParo THEN\n            kM := FALSE;\n            kY := FALSE;\n            kD := FALSE;\n            state := 0;\n        END_IF\nEND_CASE"
+  },
+  {
+   "codigo": "V11",
+   "tarea": "B2",
+   "enunciado": "Eres un asistente de programación de PLC. Trabajas conforme al estándar IEC 61131-3.\n\nTarea: programa el control de una válvula de drenaje de un tanque. Cuando el sensor de nivel alto se active y permanezca activo durante 5 segundos continuos, la válvula debe abrir. Si el nivel deja de estar alto, la válvula debe cerrar de inmediato, sin retardo. Programa en Structured Text (ST) conforme a IEC 61131-3, en un FUNCTION_BLOCK llamado FB_Valvula con variable de entrada nivelAlto (BOOL) y salida valvula (BOOL). Usa el tiempo T#5S. Entrega únicamente el código, con la declaración completa de variables y comentarios breves.",
+   "pasos_fallidos_del_banco": [
+    {
+     "paso": 1,
+     "requisito": "Nivel alto 3 s: aun no abre (TON de 5 s)"
+    },
+    {
+     "paso": 2,
+     "requisito": "Nivel alto 6 s acumulados: ya abre"
+    },
+    {
+     "paso": 4,
+     "requisito": "Nuevo ciclo completo: rearme del temporizador"
+    }
+   ],
+   "codigo_st": "FUNCTION_BLOCK FB_Valvula\nVAR_INPUT\n    nivelAlto : BOOL; (* Sensor de nivel alto *)\nEND_VAR\nVAR_OUTPUT\n    valvula : BOOL; (* Válvula de drenaje *)\nEND_VAR\nVAR\n    tNivelAlto : TP; (* Temporizador para el nivel alto *)\nEND_VAR\n\n(* Temporizador que se activa cuando el nivel está alto *)\ntNivelAlto(IN := nivelAlto, PT := T#5S);\n\n(* La válvula se abre si el temporizador ha expirado *)\nvalvula := tNivelAlto.Q;\n\n(* La válvula se cierra inmediatamente si el nivel deja de estar alto *)\nIF NOT nivelAlto THEN\n    valvula := FALSE;\nEND_IF\nEND_FUNCTION_BLOCK"
+  }
+ ]
+}
